@@ -59,10 +59,41 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-navy: var(--navy);
+  --color-deep-blue: var(--deep-blue);
+  --color-royal: var(--royal);
+  --color-sky: var(--sky);
+  --color-mist: var(--mist);
+  --color-paper: var(--paper);
+  --color-gold: var(--gold);
+  --color-teal: var(--teal);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-line: var(--line);
+  --font-display: "Playfair Display", serif;
+  --font-serif-italic: "Cormorant Garamond", serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.875rem;
+  --navy: oklch(0.238 0.072 259.5);
+  --deep-blue: oklch(0.348 0.086 259.2);
+  --royal: oklch(0.452 0.118 259.6);
+  --sky: oklch(0.716 0.093 246.6);
+  --mist: oklch(0.951 0.014 247.5);
+  --paper: oklch(0.981 0.006 247.9);
+  --gold: oklch(0.735 0.098 85.6);
+  --teal: oklch(0.522 0.093 168.3);
+  --ink: oklch(0.256 0.031 258.4);
+  --ink-soft: oklch(0.475 0.031 258.6);
+  --line: oklch(0.902 0.019 247.9);
+  --page-bg: radial-gradient(1200px 600px at 50% -10%, oklch(0.31 0.077 259) 0%, var(--navy) 55%, oklch(0.19 0.062 262) 100%);
+  --gradient-cover: linear-gradient(135deg, var(--navy) 0%, var(--deep-blue) 55%, var(--royal) 100%);
+  --gradient-final: linear-gradient(160deg, var(--navy), var(--deep-blue) 60%, var(--royal));
+  --gradient-progress: linear-gradient(90deg, var(--royal), var(--sky));
+  --shadow-card: 0 20px 40px -24px oklch(0.19 0.062 262 / 0.45);
+  --shadow-cover: 0 30px 60px -20px oklch(0.19 0.062 262 / 0.7);
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
@@ -138,7 +169,15 @@
   }
 
   body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
+    background: var(--page-bg);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: var(--font-sans);
   }
+}
+
+@utility card-surface {
+  background-color: #fff;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-card);
 }
