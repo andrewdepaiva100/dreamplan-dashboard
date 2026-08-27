@@ -73,6 +73,9 @@ function Index() {
     return () => clearInterval(t);
   }, []);
 
+  const OVERHEAD_TARGET = 584.78;
+  const [reconcileKey, setReconcileKey] = useState<string>("groceries");
+
   const targetBudget = sum(plan.budget);
   const personalCash = plan.funds.checking + plan.funds.savings;
   const familyContrib = plan.funds.herParents + plan.funds.yourParents;
@@ -319,6 +322,49 @@ function Index() {
                 <TotalRow label="Baseline Overhead" values={[`${currency(overhead)}/mo`]} />
               </tbody>
             </table>
+            {(() => {
+              const gap = Math.round((OVERHEAD_TARGET - overhead) * 100) / 100;
+              if (Math.abs(gap) < 0.005) {
+                return (
+                  <p className="mt-3 flex items-center gap-2 rounded-xl bg-teal/10 px-3.5 py-2.5 text-[12.5px] font-semibold text-teal">
+                    <span className="h-[7px] w-[7px] rounded-full bg-teal" />
+                    Rows reconciled — totals exactly {currency(OVERHEAD_TARGET)}/mo.
+                  </p>
+                );
+              }
+              return (
+                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-gold/10 px-3.5 py-2.5">
+                  <span className="text-[12.5px] text-ink-soft">
+                    Rows are <b className="text-navy">{currency(Math.abs(gap))}</b>{" "}
+                    {gap > 0 ? "short of" : "above"} the document's {currency(OVERHEAD_TARGET)}/mo
+                    total. Auto-adjust
+                  </span>
+                  <select
+                    value={reconcileKey}
+                    onChange={(e) => setReconcileKey(e.target.value)}
+                    className="rounded-lg border border-ink/15 bg-white px-2 py-1 text-[12.5px] font-medium text-navy outline-none focus:border-royal"
+                  >
+                    {MONTHLY_ROWS.map((r) => (
+                      <option key={r.key} value={r.key}>
+                        {r.label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const row = MONTHLY_ROWS.find((r) => r.key === reconcileKey)!;
+                      const next =
+                        Math.round((plan.monthly[row.key] + gap) * 100) / 100;
+                      setField("monthly", row.key, next, `${row.label} (reconciliation)`, money);
+                    }}
+                    className="rounded-lg bg-royal px-3 py-1 text-[12.5px] font-semibold text-white transition-colors hover:bg-navy"
+                  >
+                    Apply {signedCurrency(gap)}
+                  </button>
+                </div>
+              );
+            })()}
           </div>
 
           <div>
