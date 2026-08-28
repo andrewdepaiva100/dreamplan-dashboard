@@ -65,7 +65,7 @@ const MONTHLY_ROWS: {
 ];
 
 function Index() {
-  const { plan, hydrated, savedAt, setField, setFurnishing, addComment, reset } = usePlan();
+  const { plan, hydrated, savedAt, online, setField, setFurnishing, addComment, reset } = usePlan();
   const [, tick] = useState(0);
 
   useEffect(() => {
@@ -126,12 +126,16 @@ function Index() {
         </p>
         <div className="relative mx-auto mt-5 h-0.5 w-16 bg-gold" />
         <div className="relative mt-4 flex items-center justify-center gap-2 text-xs text-sky">
-          <span className="h-[7px] w-[7px] rounded-full bg-teal" />
-          {hydrated
-            ? savedAt
-              ? `Saved ${relativeTime(savedAt)} — edits stay on this device`
-              : "Synced — edits save automatically on this device"
-            : "Loading your saved plan…"}
+          <span
+            className={`h-[7px] w-[7px] rounded-full ${online ? "bg-teal" : "bg-gold"}`}
+          />
+          {!hydrated
+            ? "Loading the shared plan…"
+            : !online
+              ? "Offline — changes saved on this device and will sync when reconnected"
+              : savedAt
+                ? `Live sync · updated ${relativeTime(savedAt)} — everyone sees this`
+                : "Live sync on — edits appear on every device instantly"}
         </div>
       </header>
 
