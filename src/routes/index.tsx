@@ -1,5 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
+import { lockSite, requireUnlocked } from "@/lib/gate.functions";
+
 import {
   Callout,
   DateInput,
@@ -40,8 +43,10 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: () => requireUnlocked(),
   component: Index,
 });
+
 
 const BUDGET_ROWS: { key: keyof ReturnType<typeof usePlan>["plan"]["budget"]; label: string }[] = [
   { key: "venue", label: "Marriage (Venue & Operations)" },
@@ -66,7 +71,10 @@ const MONTHLY_ROWS: {
 
 function Index() {
   const { plan, hydrated, savedAt, online, setField, setFurnishing, addComment, reset } = usePlan();
+  const router = useRouter();
+  const lock = useServerFn(lockSite);
   const [, tick] = useState(0);
+
 
   useEffect(() => {
     const t = setInterval(() => tick((n) => n + 1), 60_000);
@@ -137,7 +145,18 @@ function Index() {
                 ? `Live sync · updated ${relativeTime(savedAt)} — everyone sees this`
                 : "Live sync on — edits appear on every device instantly"}
         </div>
+        <button
+          type="button"
+          onClick={async () => {
+            await lock({});
+            await router.navigate({ to: "/unlock" });
+          }}
+          className="absolute right-4 top-4 rounded-lg border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+        >
+          Lock
+        </button>
       </header>
+
 
       {/* PERSISTENT METRIC STRIP */}
       <div className="sticky top-0 z-20 -mt-7 grid grid-cols-2 gap-3.5 px-2 pt-2 md:grid-cols-4">
