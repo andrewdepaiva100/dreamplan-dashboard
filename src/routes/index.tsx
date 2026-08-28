@@ -65,7 +65,7 @@ const MONTHLY_ROWS: {
 ];
 
 function Index() {
-  const { plan, hydrated, savedAt, setField, setFurnishing, addComment, reset } = usePlan();
+  const { plan, hydrated, savedAt, online, setField, setFurnishing, addComment, reset } = usePlan();
   const [, tick] = useState(0);
 
   useEffect(() => {
