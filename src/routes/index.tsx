@@ -43,8 +43,10 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: () => requireUnlocked(),
   component: Index,
 });
+
 
 const BUDGET_ROWS: { key: keyof ReturnType<typeof usePlan>["plan"]["budget"]; label: string }[] = [
   { key: "venue", label: "Marriage (Venue & Operations)" },
