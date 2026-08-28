@@ -148,7 +148,7 @@ function Index() {
         <button
           type="button"
           onClick={async () => {
-            await lock({ data: undefined });
+            await lock({});
             await router.navigate({ to: "/unlock" });
           }}
           className="absolute right-4 top-4 rounded-lg border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/20"
