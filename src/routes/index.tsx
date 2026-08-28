@@ -1,7 +1,7 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { lockSite, requireUnlocked } from "@/lib/gate.functions";
+import { isUnlocked, lockSite } from "@/lib/gate.functions";
 
 import {
   Callout,
@@ -43,7 +43,11 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  loader: () => requireUnlocked(),
+  loader: async () => {
+    const { unlocked } = await isUnlocked();
+    if (!unlocked) throw redirect({ to: "/unlock" });
+    return null;
+  },
   component: Index,
 });
 
