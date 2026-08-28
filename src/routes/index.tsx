@@ -71,7 +71,10 @@ const MONTHLY_ROWS: {
 
 function Index() {
   const { plan, hydrated, savedAt, online, setField, setFurnishing, addComment, reset } = usePlan();
+  const router = useRouter();
+  const lock = useServerFn(lockSite);
   const [, tick] = useState(0);
+
 
   useEffect(() => {
     const t = setInterval(() => tick((n) => n + 1), 60_000);
