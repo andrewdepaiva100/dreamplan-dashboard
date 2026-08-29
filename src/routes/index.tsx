@@ -74,7 +74,7 @@ const MONTHLY_ROWS: {
 ];
 
 function Index() {
-  const { plan, hydrated, savedAt, online, setField, setFurnishing, addComment, reset } = usePlan();
+  const { plan, hydrated, savedAt, online, setField, setFurnishing, setPaymentField, togglePayment, addComment, reset } = usePlan();
   const router = useRouter();
   const lock = useServerFn(lockSite);
   const [, tick] = useState(0);
@@ -103,6 +103,13 @@ function Index() {
 
   const furnConservative = plan.furnishing.reduce((a, r) => a + r.conservative, 0);
   const furnMid = plan.furnishing.reduce((a, r) => a + r.mid, 0);
+
+  const paidTotal = plan.payments.reduce((a, r) => a + (r.paid ? r.amount : 0), 0);
+  const paidCount = plan.payments.filter((r) => r.paid).length;
+  const paymentsTotal = plan.payments.reduce((a, r) => a + r.amount, 0);
+  const paidPct = paymentsTotal > 0 ? (paidTotal / paymentsTotal) * 100 : 0;
+  const remainingChecking = plan.funds.checking - paidTotal;
+  const weddingRemaining = Math.max(0, plan.budget.venue - paidTotal);
 
   const money = (v: unknown) => currency(Number(v));
 
@@ -317,6 +324,105 @@ function Index() {
             </b>{" "}
             to absorb overages and seed the first year together.
           </p>
+        </div>
+      </Page>
+
+      {/* WEDDING PAYMENT SCHEDULE */}
+      <Page id="payments" tag="Payment Tracker" title="Wedding Payment Schedule & Progress Tracker">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl bg-[image:var(--gradient-cover)] p-5 text-white shadow-[var(--shadow-cover)]">
+            <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-sky">
+              Starting Checking Balance
+            </div>
+            <div className="mt-1.5 font-display text-[26px] font-bold">
+              {currency(plan.funds.checking)}
+            </div>
+            <p className="mt-1 text-[12px] text-sky">
+              Baseline before any wedding installment payments.
+            </p>
+          </div>
+          <div className="rounded-2xl border-2 border-teal/40 bg-teal/10 p-5">
+            <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-teal">
+              Remaining Checking Balance after Payments
+            </div>
+            <div className="mt-1.5 font-display text-[26px] font-bold text-teal">
+              {currency(remainingChecking)}
+            </div>
+            <p className="mt-1 text-[12px] text-ink-soft">
+              {currency(plan.funds.checking)} minus {currency(paidTotal)} across {paidCount} paid{" "}
+              {paidCount === 1 ? "installment" : "installments"}.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <div className="flex items-center justify-between text-[13px] text-ink-soft">
+            <span>
+              <b className="text-navy">{paidCount} of {plan.payments.length}</b> payments made
+            </span>
+            <span>
+              <b className="text-navy">{currency(paidTotal)}</b> paid ·{" "}
+              <b className="text-navy">{currency(weddingRemaining)}</b> remaining wedding balance
+            </span>
+          </div>
+          <div className="mt-2 h-2.5 overflow-hidden rounded-md bg-mist">
+            <div
+              className="h-full rounded-md bg-[image:var(--gradient-progress)] transition-all duration-300"
+              style={{ width: `${paidPct}%` }}
+            />
+          </div>
+          <p className="mt-1.5 text-[12.5px] text-ink-soft">
+            <b className="text-navy">{paidPct.toFixed(1)}% of the {currency(paymentsTotal)} schedule complete</b>
+          </p>
+        </div>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {plan.payments.map((p) => {
+            const balanceAfter = plan.funds.checking - plan.payments
+              .slice(0, plan.payments.indexOf(p) + 1)
+              .reduce((a, r) => a + r.amount, 0);
+            return (
+              <div
+                key={p.key}
+                className={`rounded-2xl border-2 p-4 transition-colors ${
+                  p.paid ? "border-teal/50 bg-teal/10" : "border-mist bg-white"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-royal">
+                    {p.label}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => togglePayment(p.key)}
+                    className={`rounded-full px-3 py-1 text-[11.5px] font-bold transition-colors ${
+                      p.paid
+                        ? "bg-teal text-white hover:bg-teal/85"
+                        : "bg-mist text-ink-soft hover:bg-royal hover:text-white"
+                    }`}
+                  >
+                    {p.paid ? "✓ Paid" : "Mark Paid"}
+                  </button>
+                </div>
+                <div className="mt-2.5 flex items-center gap-2 text-[13px] text-ink-soft">
+                  <DateInput
+                    value={p.date}
+                    onCommit={(v) => setPaymentField(p.key, "date", v)}
+                  />
+                </div>
+                <div className="mt-2 flex items-center gap-1">
+                  <MoneyInput
+                    value={p.amount}
+                    onCommit={(n) => setPaymentField(p.key, "amount", n, money)}
+                  />
+                </div>
+                <p className="mt-2 border-t border-mist pt-2 text-[12px] text-ink-soft">
+                  Balance left:{" "}
+                  <b className={p.paid ? "text-teal" : "text-navy"}>{currency(balanceAfter)}</b>
+                </p>
+              </div>
+            );
+          })}
         </div>
       </Page>
 
