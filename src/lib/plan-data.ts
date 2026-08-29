@@ -49,6 +49,13 @@ export type PlanState = {
     goal: number;
     date: string;
   };
+  payments: {
+    key: string;
+    label: string;
+    date: string;
+    amount: number;
+    paid: boolean;
+  }[];
   log: { id: string; label: string; from: string; to: string; at: number }[];
   comments: { id: string; author: string; text: string; at: number }[];
 };
@@ -141,6 +148,14 @@ export const DEFAULT_PLAN: PlanState = {
     goal: 20000,
     date: "2027-01-31",
   },
+  payments: [
+    { key: "p1", label: "Payment 1", date: "2026-08-17", amount: 3905, paid: true },
+    { key: "p2", label: "Payment 2", date: "2026-09-11", amount: 3905, paid: false },
+    { key: "p3", label: "Payment 3", date: "2026-10-16", amount: 3905, paid: false },
+    { key: "p4", label: "Payment 4", date: "2026-11-13", amount: 3905, paid: false },
+    { key: "p5", label: "Payment 5", date: "2026-12-11", amount: 3905, paid: false },
+    { key: "p6", label: "Payment 6", date: "2027-01-12", amount: 3905, paid: false },
+  ],
   log: [],
   comments: [],
 };
