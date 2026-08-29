@@ -212,6 +212,37 @@ export function usePlan() {
     [],
   );
 
+  const setPaymentField = useCallback(
+    (
+      key: string,
+      field: "date" | "amount",
+      value: string | number,
+      format: (v: unknown) => string = (v) => String(v),
+    ) => {
+      setPlan((p) => {
+        const row = p.payments.find((r) => r.key === key);
+        if (!row || row[field] === value) return p;
+        return {
+          ...p,
+          payments: p.payments.map((r) =>
+            r.key === key ? { ...r, [field]: value } : r,
+          ),
+          log: [
+            {
+              id: uid(),
+              label: `${row.label} — ${field === "amount" ? "Amount" : "Date"}`,
+              from: format(row[field]),
+              to: format(value),
+              at: Date.now(),
+            },
+            ...p.log,
+          ].slice(0, 100),
+        };
+      });
+    },
+    [],
+  );
+
   const togglePayment = useCallback((key: string) => {
     setPlan((p) => {
       const row = p.payments.find((r) => r.key === key);
@@ -267,6 +298,7 @@ export function usePlan() {
     online,
     setField,
     setFurnishing,
+    setPaymentField,
     togglePayment,
     addComment,
     logChange,
