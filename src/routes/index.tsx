@@ -74,7 +74,7 @@ const MONTHLY_ROWS: {
 ];
 
 function Index() {
-  const { plan, hydrated, savedAt, online, setField, setFurnishing, togglePayment, addComment, reset } = usePlan();
+  const { plan, hydrated, savedAt, online, setField, setFurnishing, setPaymentField, togglePayment, addComment, reset } = usePlan();
   const router = useRouter();
   const lock = useServerFn(lockSite);
   const [, tick] = useState(0);
@@ -407,28 +407,13 @@ function Index() {
                 <div className="mt-2.5 flex items-center gap-2 text-[13px] text-ink-soft">
                   <DateInput
                     value={p.date}
-                    onCommit={(v) =>
-                      setField(
-                        "payments",
-                        p.key as never,
-                        { ...p, date: v } as never,
-                        `${p.label} date`,
-                      )
-                    }
+                    onCommit={(v) => setPaymentField(p.key, "date", v)}
                   />
                 </div>
                 <div className="mt-2 flex items-center gap-1">
                   <MoneyInput
                     value={p.amount}
-                    onCommit={(n) =>
-                      setField(
-                        "payments",
-                        p.key as never,
-                        { ...p, amount: n } as never,
-                        `${p.label} amount`,
-                        money,
-                      )
-                    }
+                    onCommit={(n) => setPaymentField(p.key, "amount", n, money)}
                   />
                 </div>
                 <p className="mt-2 border-t border-mist pt-2 text-[12px] text-ink-soft">
