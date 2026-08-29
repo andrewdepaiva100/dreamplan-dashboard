@@ -18,6 +18,7 @@ const merge = (parsed: Partial<PlanState>): PlanState => ({
   milestones: { ...DEFAULT_PLAN.milestones, ...parsed.milestones },
   emergency: { ...DEFAULT_PLAN.emergency, ...parsed.emergency },
   furnishing: parsed.furnishing?.length ? parsed.furnishing : clone(DEFAULT_PLAN.furnishing),
+  payments: parsed.payments?.length ? parsed.payments : clone(DEFAULT_PLAN.payments),
   log: parsed.log ?? [],
   comments: parsed.comments ?? [],
 });
@@ -211,6 +212,28 @@ export function usePlan() {
     [],
   );
 
+  const togglePayment = useCallback((key: string) => {
+    setPlan((p) => {
+      const row = p.payments.find((r) => r.key === key);
+      if (!row) return p;
+      const paid = !row.paid;
+      return {
+        ...p,
+        payments: p.payments.map((r) => (r.key === key ? { ...r, paid } : r)),
+        log: [
+          {
+            id: uid(),
+            label: `${row.label} (${row.date})`,
+            from: row.paid ? "Paid" : "Unpaid",
+            to: paid ? "Paid" : "Unpaid",
+            at: Date.now(),
+          },
+          ...p.log,
+        ].slice(0, 100),
+      };
+    });
+  }, []);
+
   const addComment = useCallback((author: string, text: string) => {
     setPlan((p) => ({
       ...p,
@@ -244,6 +267,7 @@ export function usePlan() {
     online,
     setField,
     setFurnishing,
+    togglePayment,
     addComment,
     logChange,
     reset,
