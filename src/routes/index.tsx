@@ -378,9 +378,13 @@ function Index() {
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {plan.payments.map((p) => {
-            const balanceAfter = plan.funds.checking - plan.payments
-              .slice(0, plan.payments.indexOf(p) + 1)
-              .reduce((a, r) => a + r.amount, 0);
+            const balanceAfter = Math.max(
+              0,
+              plan.funds.checking -
+                plan.payments
+                  .slice(0, plan.payments.indexOf(p) + 1)
+                  .reduce((a, r) => a + r.amount, 0),
+            );
             return (
               <div
                 key={p.key}
