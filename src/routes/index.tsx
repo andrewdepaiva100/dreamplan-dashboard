@@ -74,7 +74,7 @@ const MONTHLY_ROWS: {
 ];
 
 function Index() {
-  const { plan, hydrated, savedAt, online, setField, setFurnishing, addComment, reset } = usePlan();
+  const { plan, hydrated, savedAt, online, setField, setFurnishing, togglePayment, addComment, reset } = usePlan();
   const router = useRouter();
   const lock = useServerFn(lockSite);
   const [, tick] = useState(0);
@@ -103,6 +103,13 @@ function Index() {
 
   const furnConservative = plan.furnishing.reduce((a, r) => a + r.conservative, 0);
   const furnMid = plan.furnishing.reduce((a, r) => a + r.mid, 0);
+
+  const paidTotal = plan.payments.reduce((a, r) => a + (r.paid ? r.amount : 0), 0);
+  const paidCount = plan.payments.filter((r) => r.paid).length;
+  const paymentsTotal = plan.payments.reduce((a, r) => a + r.amount, 0);
+  const paidPct = paymentsTotal > 0 ? (paidTotal / paymentsTotal) * 100 : 0;
+  const remainingChecking = plan.funds.checking - paidTotal;
+  const weddingRemaining = Math.max(0, plan.budget.venue - paidTotal);
 
   const money = (v: unknown) => currency(Number(v));
 
