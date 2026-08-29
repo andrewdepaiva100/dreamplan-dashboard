@@ -108,8 +108,8 @@ function Index() {
   const paidCount = plan.payments.filter((r) => r.paid).length;
   const paymentsTotal = plan.payments.reduce((a, r) => a + r.amount, 0);
   const paidPct = paymentsTotal > 0 ? (paidTotal / paymentsTotal) * 100 : 0;
-  const remainingChecking = plan.funds.checking - paidTotal;
-  const weddingRemaining = Math.max(0, plan.budget.venue - paidTotal);
+  const remainingChecking = Math.max(0, plan.funds.checking - paidTotal);
+  const weddingRemaining = Math.max(0, paymentsTotal - paidTotal);
 
   const money = (v: unknown) => currency(Number(v));
 
