@@ -194,7 +194,9 @@ export const DEFAULT_PLAN: PlanState = {
     { key: "p5", label: "Payment 5", date: "2026-12-11", amount: 3905, paid: false },
     { key: "p6", label: "Payment 6", date: "2027-01-12", amount: 3905, paid: false },
   ],
+  expenses: [],
   log: [],
+
   comments: [],
 };
 
