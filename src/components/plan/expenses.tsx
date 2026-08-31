@@ -39,8 +39,9 @@ export function ExpenseTracker({ expenses, baseline, surplus, onAdd, onRemove }:
     return [...set].sort().reverse();
   }, [expenses]);
 
-  const [month, setMonth] = useState(months[0]);
-  const activeMonth = months.includes(month) ? month : months[0];
+  const [month, setMonth] = useState(months[0] ?? monthKey(todayIso()));
+  const activeMonth = months.includes(month) ? month : (months[0] ?? monthKey(todayIso()));
+
 
   const rows = useMemo(
     () =>
