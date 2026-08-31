@@ -56,9 +56,47 @@ export type PlanState = {
     amount: number;
     paid: boolean;
   }[];
+  expenses: {
+    id: string;
+    date: string;
+    label: string;
+    category: ExpenseCategory;
+    payer: string;
+    amount: number;
+  }[];
   log: { id: string; label: string; from: string; to: string; at: number }[];
   comments: { id: string; author: string; text: string; at: number }[];
 };
+
+export type ExpenseCategory =
+  | "spotify"
+  | "cinemark"
+  | "phone"
+  | "health"
+  | "life"
+  | "groceries"
+  | "lifestyle"
+  | "other";
+
+export const EXPENSE_CATEGORIES: { key: ExpenseCategory; label: string }[] = [
+  { key: "spotify", label: "Spotify" },
+  { key: "cinemark", label: "Cinemark" },
+  { key: "phone", label: "Phone" },
+  { key: "health", label: "Health Insurance" },
+  { key: "life", label: "Life Insurance" },
+  { key: "groceries", label: "Groceries" },
+  { key: "lifestyle", label: "Lifestyle Service" },
+  { key: "other", label: "Other / One-off" },
+];
+
+export const monthKey = (iso: string) => iso.slice(0, 7);
+
+export const monthLabel = (key: string) => {
+  const d = new Date(`${key}-01T00:00:00`);
+  if (Number.isNaN(d.getTime())) return key;
+  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+};
+
 
 export const DEFAULT_PLAN: PlanState = {
   budget: {
@@ -156,7 +194,9 @@ export const DEFAULT_PLAN: PlanState = {
     { key: "p5", label: "Payment 5", date: "2026-12-11", amount: 3905, paid: false },
     { key: "p6", label: "Payment 6", date: "2027-01-12", amount: 3905, paid: false },
   ],
+  expenses: [],
   log: [],
+
   comments: [],
 };
 

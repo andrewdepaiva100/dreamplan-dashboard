@@ -14,6 +14,8 @@ import {
   TotalRow,
 } from "@/components/plan/primitives";
 import { ActivityPanel } from "@/components/plan/activity";
+import { ExpenseTracker } from "@/components/plan/expenses";
+
 import {
   countdownLabel,
   currency,
@@ -74,7 +76,7 @@ const MONTHLY_ROWS: {
 ];
 
 function Index() {
-  const { plan, hydrated, savedAt, online, setField, setFurnishing, setPaymentField, togglePayment, addComment, reset } = usePlan();
+  const { plan, hydrated, savedAt, online, setField, setFurnishing, setPaymentField, togglePayment, addExpense, removeExpense, addComment, reset } = usePlan();
   const router = useRouter();
   const lock = useServerFn(lockSite);
   const [, tick] = useState(0);
@@ -570,7 +572,28 @@ function Index() {
             </ul>
           </div>
         </div>
+
+        <div className="mt-9 border-t border-mist pt-7">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-royal">
+            Shared Expense Tracker
+          </h3>
+          <p className="mt-1 text-[13.5px] text-ink-soft">
+            Log what Andrew and Maria actually spend each month. Entries mapped to an overhead
+            category are compared against the {currency(OVERHEAD_TARGET)}/mo baseline; every logged
+            dollar is also subtracted from the live surplus.
+          </p>
+          <div className="mt-4">
+            <ExpenseTracker
+              expenses={plan.expenses}
+              baseline={overhead}
+              surplus={surplus}
+              onAdd={addExpense}
+              onRemove={removeExpense}
+            />
+          </div>
+        </div>
       </Page>
+
 
       {/* SECTION 3 */}
       <Page id="s3" tag="Page 3 of 5" title="Savings Roadmap & Milestones">
