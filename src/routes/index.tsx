@@ -14,6 +14,8 @@ import {
   TotalRow,
 } from "@/components/plan/primitives";
 import { ActivityPanel } from "@/components/plan/activity";
+import { ExpenseTracker } from "@/components/plan/expenses";
+
 import {
   countdownLabel,
   currency,
