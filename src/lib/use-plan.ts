@@ -350,7 +350,10 @@ export function usePlan() {
     setFurnishing,
     setPaymentField,
     togglePayment,
+    addExpense,
+    removeExpense,
     addComment,
+
     logChange,
     reset,
   };
