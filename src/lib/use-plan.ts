@@ -267,7 +267,55 @@ export function usePlan() {
     });
   }, []);
 
+  const addExpense = useCallback(
+    (e: {
+      date: string;
+      label: string;
+      category: PlanState["expenses"][number]["category"];
+      payer: string;
+      amount: number;
+    }) => {
+      setPlan((p) => ({
+        ...p,
+        expenses: [{ id: uid(), ...e }, ...p.expenses].slice(0, 500),
+        log: [
+          {
+            id: uid(),
+            label: `Expense added — ${e.label}`,
+            from: e.payer,
+            to: e.amount.toLocaleString("en-US", { style: "currency", currency: "USD" }),
+            at: Date.now(),
+          },
+          ...p.log,
+        ].slice(0, 100),
+      }));
+    },
+    [],
+  );
+
+  const removeExpense = useCallback((id: string) => {
+    setPlan((p) => {
+      const row = p.expenses.find((e) => e.id === id);
+      if (!row) return p;
+      return {
+        ...p,
+        expenses: p.expenses.filter((e) => e.id !== id),
+        log: [
+          {
+            id: uid(),
+            label: `Expense removed — ${row.label}`,
+            from: row.amount.toLocaleString("en-US", { style: "currency", currency: "USD" }),
+            to: "deleted",
+            at: Date.now(),
+          },
+          ...p.log,
+        ].slice(0, 100),
+      };
+    });
+  }, []);
+
   const addComment = useCallback((author: string, text: string) => {
+
     setPlan((p) => ({
       ...p,
       comments: [
