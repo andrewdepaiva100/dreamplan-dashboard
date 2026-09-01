@@ -181,7 +181,7 @@ function Index() {
       </header>
 
       {/* SECTION QUICK NAV */}
-      <nav className="mt-5 flex flex-wrap justify-center gap-2">
+      <nav className="mt-4 flex flex-wrap justify-center gap-1.5">
         {SECTION_LINKS.map((s) => (
           <button
             key={s.id}
@@ -189,7 +189,7 @@ function Index() {
             onClick={() =>
               document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" })
             }
-            className="rounded-full border border-navy/15 bg-white px-3.5 py-1.5 text-[12px] font-semibold text-navy shadow-sm transition-colors hover:bg-navy hover:text-white"
+            className="rounded-full border border-navy/15 bg-white px-2.5 py-1 text-[10.5px] font-semibold text-navy shadow-sm transition-colors hover:bg-navy hover:text-white"
           >
             {s.label}
           </button>
