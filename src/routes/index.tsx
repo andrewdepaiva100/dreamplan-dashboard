@@ -181,7 +181,7 @@ function Index() {
       </header>
 
       {/* SECTION QUICK NAV */}
-      <nav className="mt-4 flex flex-wrap justify-center gap-1.5">
+      <nav className="relative z-30 mt-4 flex flex-wrap justify-center gap-1.5">
         {SECTION_LINKS.map((s) => (
           <button
             key={s.id}
