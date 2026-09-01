@@ -24,6 +24,7 @@ import {
 } from "@/components/plan/primitives";
 import { ActivityPanel } from "@/components/plan/activity";
 import { ExpenseTracker } from "@/components/plan/expenses";
+import { Donut, SurplusGauge } from "@/components/plan/charts";
 
 import {
   countdownLabel,
@@ -80,6 +81,22 @@ const BUDGET_ROWS: { key: keyof ReturnType<typeof usePlan>["plan"]["budget"]; la
   { key: "desserts", label: "Desserts Budget" },
   { key: "makeup", label: "Makeup & Beauty Budget" },
 ];
+
+const BUDGET_COLORS: Record<string, string> = {
+  venue: "var(--navy)",
+  honeymoon: "var(--royal)",
+  dress: "var(--sky)",
+  desserts: "var(--gold)",
+  makeup: "var(--teal)",
+};
+
+const FUND_COLORS = {
+  checking: "var(--navy)",
+  savings: "var(--royal)",
+  marcus: "var(--gold)",
+  herParents: "var(--teal)",
+  yourParents: "var(--sky)",
+} as const;
 
 const MONTHLY_ROWS: {
   key: keyof ReturnType<typeof usePlan>["plan"]["monthly"];
