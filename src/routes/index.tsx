@@ -64,13 +64,13 @@ export const Route = createFileRoute("/")({
 
 
 const SECTION_LINKS = [
-  { id: "s1", label: "Budget & Funds" },
-  { id: "payments", label: "Wedding Payments" },
-  { id: "s2", label: "Monthly & Lease" },
-  { id: "s3", label: "Savings Roadmap" },
-  { id: "s4", label: "Furnishing Budget" },
-  { id: "s5", label: "Final Goal & Emergency" },
-  { id: "activity", label: "Activity & Notes" },
+  { id: "s1", label: "Budget & Funds", Icon: Wallet },
+  { id: "payments", label: "Wedding Payments", Icon: CreditCard },
+  { id: "s2", label: "Monthly & Lease", Icon: CalendarDays },
+  { id: "s3", label: "Savings Roadmap", Icon: Map },
+  { id: "s4", label: "Furnishing Budget", Icon: Sofa },
+  { id: "s5", label: "Final Goal & Emergency", Icon: ShieldCheck },
+  { id: "activity", label: "Activity & Notes", Icon: ClipboardList },
 ];
 
 const BUDGET_ROWS: { key: keyof ReturnType<typeof usePlan>["plan"]["budget"]; label: string }[] = [
