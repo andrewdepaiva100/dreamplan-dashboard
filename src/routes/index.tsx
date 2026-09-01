@@ -91,7 +91,7 @@ function Index() {
   const [reconcileKey, setReconcileKey] = useState<string>("groceries");
 
   const targetBudget = sum(plan.budget);
-  const personalCash = plan.funds.checking + plan.funds.savings;
+  const personalCash = plan.funds.checking + plan.funds.savings + plan.funds.marcus;
   const familyContrib = plan.funds.herParents + plan.funds.yourParents;
   const totalAvailable = personalCash + familyContrib;
   const surplus = totalAvailable - targetBudget;
@@ -267,6 +267,25 @@ function Index() {
                     <MoneyInput
                       value={plan.funds.savings}
                       onCommit={(n) => setField("funds", "savings", n, "Savings balance", money)}
+                    />
+                  </Td>
+                </tr>
+                <tr>
+                  <Td>
+                    Marcus High Yield Savings (Acct{" "}
+                    <TextInput
+                      value={plan.funds.marcusAcct}
+                      onCommit={(v) =>
+                        setField("funds", "marcusAcct", v, "Marcus account number")
+                      }
+                      className="w-24 text-center text-[13.5px]"
+                    />
+                    )
+                  </Td>
+                  <Td num>
+                    <MoneyInput
+                      value={plan.funds.marcus}
+                      onCommit={(n) => setField("funds", "marcus", n, "Marcus balance", money)}
                     />
                   </Td>
                 </tr>
