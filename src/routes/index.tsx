@@ -151,6 +151,19 @@ function Index() {
 
   const money = (v: unknown) => currency(Number(v));
 
+  const budgetSlices = BUDGET_ROWS.map((r) => ({
+    label: r.label,
+    value: plan.budget[r.key],
+    color: BUDGET_COLORS[r.key]!,
+  }));
+  const fundSlices = [
+    { label: "Checking", value: plan.funds.checking, color: FUND_COLORS.checking },
+    { label: "Savings", value: plan.funds.savings, color: FUND_COLORS.savings },
+    { label: "Marcus HYSA", value: plan.funds.marcus, color: FUND_COLORS.marcus },
+    { label: "Her Parents", value: plan.funds.herParents, color: FUND_COLORS.herParents },
+    { label: "Your Parents", value: plan.funds.yourParents, color: FUND_COLORS.yourParents },
+  ];
+
   const stats = [
     { label: "Target Budget", value: currency(targetBudget), tone: "navy" as const },
     { label: "Total Available", value: currency(totalAvailable), tone: "navy" as const },
