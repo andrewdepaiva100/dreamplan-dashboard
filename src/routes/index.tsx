@@ -190,7 +190,7 @@ function Index() {
       </header>
 
       {/* SECTION QUICK NAV */}
-      <nav className="relative z-30 mt-4 flex flex-wrap justify-center gap-1.5">
+      <nav className="relative z-30 mt-4 flex flex-wrap justify-center gap-2">
         {SECTION_LINKS.map((s) => (
           <button
             key={s.id}
@@ -198,8 +198,9 @@ function Index() {
             onClick={() =>
               document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" })
             }
-            className="rounded-full border border-navy/15 bg-white px-2.5 py-1 text-[10.5px] font-semibold text-navy shadow-sm transition-colors hover:bg-navy hover:text-white"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-navy/15 bg-white px-3 py-1.5 text-[11px] font-semibold text-navy shadow-sm transition-colors hover:bg-navy hover:text-white"
           >
+            <s.Icon size={13} strokeWidth={2} />
             {s.label}
           </button>
         ))}
