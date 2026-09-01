@@ -20,7 +20,7 @@ export function MoneyInput({
   return (
     <input
       inputMode="decimal"
-      className={`w-full rounded-lg border border-transparent bg-transparent px-2 py-1 font-semibold text-navy transition-colors hover:bg-mist focus:border-royal focus:bg-white focus:outline-none focus:ring-4 focus:ring-royal/10 ${
+      className={`w-full rounded-lg border border-transparent bg-transparent px-2 py-1.5 font-semibold tabular-nums text-navy underline decoration-dotted decoration-ink/25 underline-offset-4 transition-colors hover:bg-mist hover:decoration-royal focus:border-royal focus:bg-white focus:no-underline focus:outline-none focus:ring-4 focus:ring-royal/10 ${
         align === "center" ? "text-center" : "text-right"
       }`}
       value={draft}
