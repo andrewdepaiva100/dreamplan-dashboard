@@ -1,6 +1,15 @@
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
+import {
+  CalendarDays,
+  ClipboardList,
+  CreditCard,
+  Map,
+  ShieldCheck,
+  Sofa,
+  Wallet,
+} from "lucide-react";
 import { isUnlocked, lockSite } from "@/lib/gate.functions";
 
 import {
@@ -55,13 +64,13 @@ export const Route = createFileRoute("/")({
 
 
 const SECTION_LINKS = [
-  { id: "s1", label: "Budget & Funds" },
-  { id: "payments", label: "Wedding Payments" },
-  { id: "s2", label: "Monthly & Lease" },
-  { id: "s3", label: "Savings Roadmap" },
-  { id: "s4", label: "Furnishing Budget" },
-  { id: "s5", label: "Final Goal & Emergency" },
-  { id: "activity", label: "Activity & Notes" },
+  { id: "s1", label: "Budget & Funds", Icon: Wallet },
+  { id: "payments", label: "Wedding Payments", Icon: CreditCard },
+  { id: "s2", label: "Monthly & Lease", Icon: CalendarDays },
+  { id: "s3", label: "Savings Roadmap", Icon: Map },
+  { id: "s4", label: "Furnishing Budget", Icon: Sofa },
+  { id: "s5", label: "Final Goal & Emergency", Icon: ShieldCheck },
+  { id: "activity", label: "Activity & Notes", Icon: ClipboardList },
 ];
 
 const BUDGET_ROWS: { key: keyof ReturnType<typeof usePlan>["plan"]["budget"]; label: string }[] = [
@@ -181,7 +190,7 @@ function Index() {
       </header>
 
       {/* SECTION QUICK NAV */}
-      <nav className="relative z-30 mt-4 flex flex-wrap justify-center gap-1.5">
+      <nav className="relative z-30 mt-4 flex flex-wrap justify-center gap-2">
         {SECTION_LINKS.map((s) => (
           <button
             key={s.id}
@@ -189,8 +198,9 @@ function Index() {
             onClick={() =>
               document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" })
             }
-            className="rounded-full border border-navy/15 bg-white px-2.5 py-1 text-[10.5px] font-semibold text-navy shadow-sm transition-colors hover:bg-navy hover:text-white"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-navy/15 bg-white px-3 py-1.5 text-[11px] font-semibold text-navy shadow-sm transition-colors hover:bg-navy hover:text-white"
           >
+            <s.Icon size={13} strokeWidth={2} />
             {s.label}
           </button>
         ))}
