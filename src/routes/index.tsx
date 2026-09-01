@@ -207,18 +207,22 @@ function Index() {
       </nav>
 
       {/* SCRIPTURE BANNER */}
-      <div className="relative z-30 mx-2 mt-4 rounded-2xl border border-gold/30 bg-white/95 px-5 py-4 text-center shadow-[var(--shadow-card)]">
-        <p className="font-serif-italic text-[17px] italic leading-relaxed text-navy">
-          “For which of you, desiring to build a tower, does not first sit down and count the cost, whether he has enough to complete it?”
-        </p>
-        <p className="mt-2 text-[11px] font-semibold uppercase tracking-widest text-gold">
-          Luke 14:28 · ESV
-        </p>
+      <div className="relative mt-6 rounded-2xl border-t-2 border-gold bg-white/95 px-6 py-6 text-center shadow-[var(--shadow-card)] backdrop-blur-sm">
+        <blockquote className="mx-auto max-w-2xl">
+          <p className="font-display text-lg italic leading-relaxed text-navy md:text-xl">
+            “For which of you, desiring to build a tower, does not first sit down and count the cost, whether he has enough to complete it?”
+          </p>
+          <footer className="mt-3">
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-gold">
+              Luke 14:28 · ESV
+            </span>
+          </footer>
+        </blockquote>
       </div>
 
       {/* PERSISTENT METRIC STRIP */}
 
-      <div className="sticky top-0 z-20 -mt-7 grid grid-cols-2 gap-3.5 px-2 pt-2 md:grid-cols-4">
+      <div className="sticky top-0 z-20 mt-6 grid grid-cols-2 gap-3.5 px-2 pt-2 md:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="card-surface rounded-2xl px-4 py-4">
             <div className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
