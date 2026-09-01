@@ -285,9 +285,17 @@ function Index() {
               </thead>
               <tbody>
                 {BUDGET_ROWS.map((r) => (
-                  <tr key={r.key}>
-                    <Td>{r.label}</Td>
-                    <Td num>
+                  <tr key={r.key} className="transition-colors hover:bg-mist/70">
+                    <Td>
+                      <span className="flex items-center gap-2.5">
+                        <span
+                          className="h-2.5 w-2.5 shrink-0 rounded-full"
+                          style={{ background: BUDGET_COLORS[r.key] }}
+                        />
+                        {r.label}
+                      </span>
+                    </Td>
+                    <Td num className="w-[130px]">
                       <MoneyInput
                         value={plan.budget[r.key]}
                         onCommit={(n) => setField("budget", r.key, n, r.label, money)}
@@ -298,6 +306,9 @@ function Index() {
                 <TotalRow label="Total Target Budget" values={[currency(targetBudget)]} />
               </tbody>
             </table>
+            <div className="mt-6 rounded-2xl border border-line bg-paper p-4">
+              <Donut slices={budgetSlices} total={targetBudget} centerLabel="Target" />
+            </div>
           </div>
 
           <div>
@@ -312,57 +323,81 @@ function Index() {
                 </tr>
               </thead>
               <tbody>
-                <tr>
+                <tr className="transition-colors hover:bg-mist/70">
                   <Td>
-                    Checking (Acct{" "}
-                    <TextInput
-                      value={plan.funds.checkingAcct}
-                      onCommit={(v) =>
-                        setField("funds", "checkingAcct", v, "Checking account number")
-                      }
-                      className="w-24 text-center text-[13.5px]"
-                    />
-                    )
+                    <span className="flex items-center gap-2.5">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ background: FUND_COLORS.checking }}
+                      />
+                      <span>
+                        Checking (Acct{" "}
+                        <TextInput
+                          value={plan.funds.checkingAcct}
+                          onCommit={(v) =>
+                            setField("funds", "checkingAcct", v, "Checking account number")
+                          }
+                          className="w-24 text-center text-[13.5px]"
+                        />
+                        )
+                      </span>
+                    </span>
                   </Td>
-                  <Td num>
+                  <Td num className="w-[130px]">
                     <MoneyInput
                       value={plan.funds.checking}
                       onCommit={(n) => setField("funds", "checking", n, "Checking balance", money)}
                     />
                   </Td>
                 </tr>
-                <tr>
+                <tr className="transition-colors hover:bg-mist/70">
                   <Td>
-                    Savings (Acct{" "}
-                    <TextInput
-                      value={plan.funds.savingsAcct}
-                      onCommit={(v) =>
-                        setField("funds", "savingsAcct", v, "Savings account number")
-                      }
-                      className="w-24 text-center text-[13.5px]"
-                    />
-                    )
+                    <span className="flex items-center gap-2.5">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ background: FUND_COLORS.savings }}
+                      />
+                      <span>
+                        Savings (Acct{" "}
+                        <TextInput
+                          value={plan.funds.savingsAcct}
+                          onCommit={(v) =>
+                            setField("funds", "savingsAcct", v, "Savings account number")
+                          }
+                          className="w-24 text-center text-[13.5px]"
+                        />
+                        )
+                      </span>
+                    </span>
                   </Td>
-                  <Td num>
+                  <Td num className="w-[130px]">
                     <MoneyInput
                       value={plan.funds.savings}
                       onCommit={(n) => setField("funds", "savings", n, "Savings balance", money)}
                     />
                   </Td>
                 </tr>
-                <tr>
+                <tr className="transition-colors hover:bg-mist/70">
                   <Td>
-                    Marcus High Yield Savings (Acct{" "}
-                    <TextInput
-                      value={plan.funds.marcusAcct}
-                      onCommit={(v) =>
-                        setField("funds", "marcusAcct", v, "Marcus account number")
-                      }
-                      className="w-24 text-center text-[13.5px]"
-                    />
-                    )
+                    <span className="flex items-center gap-2.5">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ background: FUND_COLORS.marcus }}
+                      />
+                      <span>
+                        Marcus High Yield Savings (Acct{" "}
+                        <TextInput
+                          value={plan.funds.marcusAcct}
+                          onCommit={(v) =>
+                            setField("funds", "marcusAcct", v, "Marcus account number")
+                          }
+                          className="w-24 text-center text-[13.5px]"
+                        />
+                        )
+                      </span>
+                    </span>
                   </Td>
-                  <Td num>
+                  <Td num className="w-[130px]">
                     <MoneyInput
                       value={plan.funds.marcus}
                       onCommit={(n) => setField("funds", "marcus", n, "Marcus balance", money)}
@@ -375,9 +410,17 @@ function Index() {
                     {currency(personalCash)}
                   </Td>
                 </tr>
-                <tr>
-                  <Td>Her Parents' Support</Td>
-                  <Td num>
+                <tr className="transition-colors hover:bg-mist/70">
+                  <Td>
+                    <span className="flex items-center gap-2.5">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ background: FUND_COLORS.herParents }}
+                      />
+                      Her Parents' Support
+                    </span>
+                  </Td>
+                  <Td num className="w-[130px]">
                     <MoneyInput
                       value={plan.funds.herParents}
                       onCommit={(n) =>
@@ -386,9 +429,17 @@ function Index() {
                     />
                   </Td>
                 </tr>
-                <tr>
-                  <Td>Your Parents' Support</Td>
-                  <Td num>
+                <tr className="transition-colors hover:bg-mist/70">
+                  <Td>
+                    <span className="flex items-center gap-2.5">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ background: FUND_COLORS.yourParents }}
+                      />
+                      Your Parents' Support
+                    </span>
+                  </Td>
+                  <Td num className="w-[130px]">
                     <MoneyInput
                       value={plan.funds.yourParents}
                       onCommit={(n) =>
@@ -406,7 +457,17 @@ function Index() {
                 <TotalRow label="Total Sum Available" values={[currency(totalAvailable)]} />
               </tbody>
             </table>
+            <div className="mt-6 rounded-2xl border border-line bg-paper p-4">
+              <Donut slices={fundSlices} total={totalAvailable} centerLabel="Available" />
+            </div>
           </div>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-line bg-paper p-5">
+          <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-royal">
+            Budget vs Available
+          </div>
+          <SurplusGauge target={targetBudget} available={totalAvailable} />
         </div>
 
         <div
