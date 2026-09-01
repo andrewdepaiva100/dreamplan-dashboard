@@ -206,6 +206,16 @@ function Index() {
         ))}
       </nav>
 
+      {/* SCRIPTURE BANNER */}
+      <div className="relative z-30 mx-2 mt-4 rounded-2xl border border-gold/30 bg-white/95 px-5 py-4 text-center shadow-[var(--shadow-card)]">
+        <p className="font-serif-italic text-[17px] italic leading-relaxed text-navy">
+          “For which of you, desiring to build a tower, does not first sit down and count the cost, whether he has enough to complete it?”
+        </p>
+        <p className="mt-2 text-[11px] font-semibold uppercase tracking-widest text-gold">
+          Luke 14:28 · ESV
+        </p>
+      </div>
+
       {/* PERSISTENT METRIC STRIP */}
 
       <div className="sticky top-0 z-20 -mt-7 grid grid-cols-2 gap-3.5 px-2 pt-2 md:grid-cols-4">
