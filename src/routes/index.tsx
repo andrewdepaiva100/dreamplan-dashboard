@@ -170,8 +170,24 @@ function Index() {
         </button>
       </header>
 
+      {/* SECTION QUICK NAV */}
+      <nav className="mt-5 flex flex-wrap justify-center gap-2">
+        {SECTION_LINKS.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() =>
+              document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }
+            className="rounded-full border border-navy/15 bg-white px-3.5 py-1.5 text-[12px] font-semibold text-navy shadow-sm transition-colors hover:bg-navy hover:text-white"
+          >
+            {s.label}
+          </button>
+        ))}
+      </nav>
 
       {/* PERSISTENT METRIC STRIP */}
+
       <div className="sticky top-0 z-20 -mt-7 grid grid-cols-2 gap-3.5 px-2 pt-2 md:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="card-surface rounded-2xl px-4 py-4">
