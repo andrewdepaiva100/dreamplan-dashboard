@@ -8,6 +8,33 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 
 const ROW_ID = "shared";
 
+type Person = PlanState["devotionals"]["people"]["andrew"];
+
+// Handles both the new per-person shape and the older shared-entry shape.
+function migrateDevotionals(raw: any): PlanState["devotionals"] {
+  const empty = (): Person => ({ current: null, days: {} });
+  if (raw?.people?.andrew && raw?.people?.maria) {
+    return {
+      people: {
+        andrew: { current: raw.people.andrew.current ?? null, days: raw.people.andrew.days ?? {} },
+        maria: { current: raw.people.maria.current ?? null, days: raw.people.maria.days ?? {} },
+      },
+    };
+  }
+  const andrew = empty();
+  const maria = empty();
+  const days = raw?.days ?? {};
+  for (const [dateKey, d] of Object.entries<any>(days)) {
+    andrew.days[dateKey] = { entryId: d.entryId, note: d.andrew ?? "", at: d.at ?? Date.now() };
+    maria.days[dateKey] = { entryId: d.entryId, note: d.maria ?? "", at: d.at ?? Date.now() };
+  }
+  const cur = raw?.current?.date ?? null;
+  andrew.current = cur;
+  maria.current = cur;
+  return { people: { andrew, maria } };
+}
+
+
 const merge = (parsed: Partial<PlanState>): PlanState => ({
   ...clone(DEFAULT_PLAN),
   ...parsed,
