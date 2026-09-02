@@ -19,9 +19,10 @@ export type HealthSnapshot = {
 export const getDbMetrics = createServerFn({ method: "GET" }).handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  const { data: metrics, error: metricsError } = await supabaseAdmin
+  const { data: rawMetrics, error: metricsError } = await supabaseAdmin
     .rpc("get_db_metrics")
-    .single<DbMetrics>();
+    .single();
+  const metrics = rawMetrics as DbMetrics | null;
   if (metricsError || !metrics) {
     throw new Error(metricsError?.message ?? "Could not read database metrics");
   }
@@ -45,10 +46,10 @@ export const getDbMetrics = createServerFn({ method: "GET" }).handler(async () =
 export const takeHealthSnapshot = createServerFn({ method: "POST" }).handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  const { data, error } = await supabaseAdmin.rpc("take_health_snapshot").single<string>();
+  const { data, error } = await supabaseAdmin.rpc("take_health_snapshot").single();
   if (error) {
     throw new Error(error.message);
   }
 
-  return { ok: true as const, id: data };
+  return { ok: true as const, id: data as string };
 });
