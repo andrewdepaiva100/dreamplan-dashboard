@@ -125,6 +125,11 @@ function Index() {
 
   const OVERHEAD_TARGET = 584.78;
   const [reconcileKey, setReconcileKey] = useState<string>("groceries");
+  const [active, setActive] = useState<string | null>(null);
+  const goTo = (id: string | null) => {
+    setActive(id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const targetBudget = sum(plan.budget);
   const personalCash = plan.funds.checking + plan.funds.savings + plan.funds.marcus;
@@ -219,33 +224,33 @@ function Index() {
         </button>
       </header>
 
-      {/* SECTION QUICK NAV */}
-      <nav className="relative z-30 mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        {SECTION_LINKS.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() =>
-              document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" })
-            }
-            className="card-surface group flex flex-col items-start gap-2.5 rounded-2xl px-4 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-[var(--shadow-cover)]"
-          >
-            <span
-              className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-110 ${s.tint}`}
+      {/* SECTION QUICK NAV (overview only) */}
+      {!active && (
+        <nav className="relative z-30 mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {SECTION_LINKS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => goTo(s.id)}
+              className="card-surface group flex flex-col items-start gap-2.5 rounded-2xl px-4 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-[var(--shadow-cover)]"
             >
-              <s.Icon size={19} strokeWidth={2} />
-            </span>
-            <span>
-              <span className="block text-[13.5px] font-bold leading-snug text-navy">
-                {s.label}
+              <span
+                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-110 ${s.tint}`}
+              >
+                <s.Icon size={19} strokeWidth={2} />
               </span>
-              <span className="mt-0.5 block text-[11px] leading-snug text-ink-soft">
-                {s.desc}
+              <span>
+                <span className="block text-[13.5px] font-bold leading-snug text-navy">
+                  {s.label}
+                </span>
+                <span className="mt-0.5 block text-[11px] leading-snug text-ink-soft">
+                  {s.desc}
+                </span>
               </span>
-            </span>
-          </button>
-        ))}
-      </nav>
+            </button>
+          ))}
+        </nav>
+      )}
 
       {/* SCRIPTURE BANNER */}
       <div className="relative mt-6 rounded-2xl border-t-2 border-gold bg-white/95 px-6 py-6 text-center shadow-[var(--shadow-card)] backdrop-blur-sm">
