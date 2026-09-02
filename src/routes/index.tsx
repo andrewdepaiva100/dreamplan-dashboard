@@ -2,6 +2,7 @@ import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import {
+  ArrowLeft,
   CalendarDays,
   ClipboardList,
   CreditCard,
@@ -252,7 +253,8 @@ function Index() {
         </nav>
       )}
 
-      {/* SCRIPTURE BANNER */}
+      {/* SCRIPTURE BANNER (overview only) */}
+      {!active && (
       <div className="relative mt-6 rounded-2xl border-t-2 border-gold bg-white/95 px-6 py-6 text-center shadow-[var(--shadow-card)] backdrop-blur-sm">
         <blockquote className="mx-auto max-w-2xl">
           <p className="font-display text-lg italic leading-relaxed text-navy md:text-xl">
