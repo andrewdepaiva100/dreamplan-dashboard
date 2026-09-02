@@ -10,11 +10,19 @@ const ROW_ID = "shared";
 
 type Person = PlanState["devotionals"]["people"]["andrew"];
 
+// Bumped when the devotional bank is rebuilt; old entry IDs no longer map to
+// the same readings, so stored history is cleared once.
+const BANK_VERSION = "bsb-1500";
+
 // Handles both the new per-person shape and the older shared-entry shape.
 function migrateDevotionals(raw: any): PlanState["devotionals"] {
   const empty = (): Person => ({ current: null, days: {} });
+  if (raw?.bank !== BANK_VERSION) {
+    return { bank: BANK_VERSION, people: { andrew: empty(), maria: empty() } };
+  }
   if (raw?.people?.andrew && raw?.people?.maria) {
     return {
+      bank: BANK_VERSION,
       people: {
         andrew: { current: raw.people.andrew.current ?? null, days: raw.people.andrew.days ?? {} },
         maria: { current: raw.people.maria.current ?? null, days: raw.people.maria.days ?? {} },
