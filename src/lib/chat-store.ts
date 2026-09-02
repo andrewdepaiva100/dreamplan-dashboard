@@ -43,12 +43,12 @@ export async function deleteThread(id: string) {
 export async function loadMessages(threadId: string): Promise<UIMessage[]> {
   const { data, error } = await supabase
     .from("chat_messages")
-    .select("id, role, parts, created_at")
+    .select("client_id, role, parts, created_at")
     .eq("thread_id", threadId)
     .order("created_at", { ascending: true });
   if (error) throw error;
   return (data ?? []).map((row) => ({
-    id: row.id as string,
+    id: (row.client_id ?? crypto.randomUUID()) as string,
     role: row.role as UIMessage["role"],
     parts: (row.parts ?? []) as UIMessage["parts"],
   }));
@@ -57,12 +57,12 @@ export async function loadMessages(threadId: string): Promise<UIMessage[]> {
 export async function saveMessage(threadId: string, message: UIMessage) {
   await supabase.from("chat_messages").upsert(
     {
-      id: message.id,
+      client_id: message.id,
       thread_id: threadId,
       role: message.role,
       parts: message.parts as unknown as never,
     },
-    { onConflict: "id" },
+    { onConflict: "client_id" },
   );
   await touchThread(threadId);
 }
