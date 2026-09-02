@@ -1057,6 +1057,7 @@ function Index() {
           onOpen={openDevotional}
           onNote={setDevotionalNote}
           onSelectDay={selectDevotionalDay}
+          onBack={() => goTo(null)}
         />
       </Page>
       )}
