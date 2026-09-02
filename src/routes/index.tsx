@@ -2,6 +2,7 @@ import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import {
+  Activity as ActivityIcon,
   ArrowLeft,
   BookOpen,
   CalendarDays,
