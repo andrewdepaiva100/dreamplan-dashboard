@@ -141,14 +141,14 @@ export function Devotionals({
   const meta = PEOPLE.find((p) => p.id === who)!;
 
   const openToday = () => {
-    const existing = person.days[today];
+    const existing = person.days?.[today];
     const id = existing ? existing.entryId : seedFor(who, today);
     const e = getDevotional(id);
     onOpen(who, today, id, `${e.reference} — ${e.title}`);
   };
 
   const pullAnother = () => {
-    const base = person.days[today]?.entryId ?? seedFor(who, today);
+    const base = person.days?.[today]?.entryId ?? seedFor(who, today);
     const id = (base + 1 + Math.floor(Math.random() * 97)) % TOTAL_DEVOTIONALS;
     const e = getDevotional(id);
     onOpen(who, today, id, `${e.reference} — ${e.title}`);
