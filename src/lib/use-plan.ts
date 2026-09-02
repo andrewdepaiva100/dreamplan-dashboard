@@ -330,6 +330,55 @@ export function usePlan() {
     }));
   }, []);
 
+  const openDevotional = useCallback((dateKey: string, entryId: number, label: string) => {
+    setPlan((p) => {
+      const existing = p.devotionals.days[dateKey];
+      const day = existing
+        ? { ...existing, entryId }
+        : { entryId, andrew: "", maria: "", at: Date.now() };
+      const changed = !existing || existing.entryId !== entryId;
+      return {
+        ...p,
+        devotionals: {
+          current: { date: dateKey, entryId },
+          days: { ...p.devotionals.days, [dateKey]: day },
+        },
+        log: changed
+          ? [
+              { id: uid(), label: `Devotional opened — ${dateKey}`, from: "—", to: label, at: Date.now() },
+              ...p.log,
+            ].slice(0, 100)
+          : p.log,
+      };
+    });
+  }, []);
+
+  const setDevotionalNote = useCallback(
+    (dateKey: string, who: "andrew" | "maria", text: string) => {
+      setPlan((p) => {
+        const day = p.devotionals.days[dateKey];
+        if (!day || day[who] === text) return p;
+        return {
+          ...p,
+          devotionals: {
+            ...p.devotionals,
+            days: { ...p.devotionals.days, [dateKey]: { ...day, [who]: text } },
+          },
+        };
+      });
+    },
+    [],
+  );
+
+  const selectDevotionalDay = useCallback((dateKey: string) => {
+    setPlan((p) => {
+      const day = p.devotionals.days[dateKey];
+      if (!day) return p;
+      return { ...p, devotionals: { ...p.devotionals, current: { date: dateKey, entryId: day.entryId } } };
+    });
+  }, []);
+
+
   const reset = useCallback(() => {
     setPlan({
       ...clone(DEFAULT_PLAN),
