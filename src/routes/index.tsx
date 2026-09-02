@@ -40,6 +40,7 @@ import {
   sum,
 } from "@/lib/plan-data";
 import { usePlan } from "@/lib/use-plan";
+import { getDbMetrics, takeHealthSnapshot, type DbMetrics, type HealthSnapshot } from "@/lib/health.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
