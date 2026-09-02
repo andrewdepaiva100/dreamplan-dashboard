@@ -407,6 +407,10 @@ export function usePlan() {
     addExpense,
     removeExpense,
     addComment,
+    openDevotional,
+    setDevotionalNote,
+    selectDevotionalDay,
+
 
     logChange,
     reset,
