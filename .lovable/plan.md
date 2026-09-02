@@ -15,6 +15,11 @@ Add an eighth main button, "Devotionals", to the overview menu. Tapping it opens
 
 A bank of 1,000 unique entries, built into the app (no network call, works instantly). Each entry combines a real scripture passage with a marriage-preparation theme (unity, patience, money and stewardship, forgiveness, purity, communication, serving, trusting God's timing, family, gratitude) and 3 tailored reflection questions. Entries are composed from a large curated pool of verses and theme content so all 1,000 are distinct.
 
+**Length:** each devotional message runs 300-500 words — a full multi-paragraph reading (opening on the passage, what it means, how it applies to engaged life and money, and a closing prayer prompt), not a short blurb. Word count is validated when the bank is generated so every entry lands in range.
+
+Because 1,000 long readings is a large amount of text, the bank is stored as pre-generated data files split into chunks and loaded on demand, so the dashboard itself stays fast to open.
+
+
 ## Live sync
 
 Devotional selection, opened state, and both note boxes save into the same shared cloud record the rest of the plan already uses, so changes appear on the other phone within a second. Every devotional opened and notes saved are recorded in the Activity log.
