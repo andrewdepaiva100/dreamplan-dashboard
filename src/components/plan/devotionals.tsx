@@ -83,8 +83,15 @@ export function Devotionals({
 }) {
   const [who, setWho] = useState<Who | null>(null);
 
+  // Hooks must run unconditionally — compute the selected person's entry up
+  // front with guards, before any early return below.
+  const person = who ? devotionals?.people?.[who] : undefined;
+  const currentDate = person?.current ?? null;
+  const day = currentDate && person ? person.days?.[currentDate] : undefined;
+  const entry = useMemo(() => (day ? getDevotional(day.entryId) : null), [day]);
+
   // Landing view: pick a person.
-  if (!who) {
+  if (!who || !person) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
