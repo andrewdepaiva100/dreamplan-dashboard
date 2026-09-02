@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
+  BookOpen,
   CalendarDays,
   ClipboardList,
   CreditCard,
@@ -25,7 +26,9 @@ import {
 } from "@/components/plan/primitives";
 import { ActivityPanel } from "@/components/plan/activity";
 import { ExpenseTracker } from "@/components/plan/expenses";
+import { Devotionals } from "@/components/plan/devotionals";
 import { Donut, SurplusGauge } from "@/components/plan/charts";
+
 
 import {
   countdownLabel,
@@ -72,7 +75,9 @@ const SECTION_LINKS = [
   { id: "s3", label: "Savings Roadmap", desc: "Milestones & countdowns", Icon: Map, tint: "bg-gold/15 text-gold" },
   { id: "s4", label: "Furnishing Budget", desc: "Room-by-room tiers", Icon: Sofa, tint: "bg-teal/10 text-teal" },
   { id: "s5", label: "Final Goal & Emergency", desc: "$20k buffer fund", Icon: ShieldCheck, tint: "bg-navy/10 text-navy" },
+  { id: "devotionals", label: "Devotionals", desc: "Daily reading & notes", Icon: BookOpen, tint: "bg-gold/15 text-gold" },
   { id: "activity", label: "Activity & Notes", desc: "History & comments", Icon: ClipboardList, tint: "bg-royal/10 text-royal" },
+
 ];
 
 const BUDGET_ROWS: { key: keyof ReturnType<typeof usePlan>["plan"]["budget"]; label: string }[] = [
@@ -113,7 +118,7 @@ const MONTHLY_ROWS: {
 ];
 
 function Index() {
-  const { plan, hydrated, savedAt, online, setField, setFurnishing, setPaymentField, togglePayment, addExpense, removeExpense, addComment, reset } = usePlan();
+  const { plan, hydrated, savedAt, online, setField, setFurnishing, setPaymentField, togglePayment, addExpense, removeExpense, addComment, openDevotional, setDevotionalNote, selectDevotionalDay, reset } = usePlan();
   const router = useRouter();
   const lock = useServerFn(lockSite);
   const [, tick] = useState(0);
@@ -1044,12 +1049,25 @@ function Index() {
       </Page>
       )}
 
+      {/* DEVOTIONALS */}
+      {active === "devotionals" && (
+      <Page id="devotionals" title="Daily Devotionals for Andrew & Maria">
+        <Devotionals
+          devotionals={plan.devotionals}
+          onOpen={openDevotional}
+          onNote={setDevotionalNote}
+          onSelectDay={selectDevotionalDay}
+        />
+      </Page>
+      )}
+
       {/* ACTIVITY */}
       {active === "activity" && (
       <Page id="activity" title="Edit History & Shared Notes">
         <ActivityPanel log={plan.log} comments={plan.comments} onAddComment={addComment} />
       </Page>
       )}
+
 
       {/* SECTION JUMP BAR (section view only) */}
       {active && (
