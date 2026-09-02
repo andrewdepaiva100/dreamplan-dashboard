@@ -83,8 +83,15 @@ export function Devotionals({
 }) {
   const [who, setWho] = useState<Who | null>(null);
 
+  // Hooks must run unconditionally — compute the selected person's entry up
+  // front with guards, before any early return below.
+  const person = who ? devotionals?.people?.[who] : undefined;
+  const currentDate = person?.current ?? null;
+  const day = currentDate && person ? person.days?.[currentDate] : undefined;
+  const entry = useMemo(() => (day ? getDevotional(day.entryId) : null), [day]);
+
   // Landing view: pick a person.
-  if (!who) {
+  if (!who || !person) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -131,28 +138,23 @@ export function Devotionals({
   }
 
   const today = todayKey();
-  const person = devotionals.people[who];
   const meta = PEOPLE.find((p) => p.id === who)!;
 
-  const currentDate = person.current;
-  const day = currentDate ? person.days[currentDate] : undefined;
-  const entry = useMemo(() => (day ? getDevotional(day.entryId) : null), [day]);
-
   const openToday = () => {
-    const existing = person.days[today];
+    const existing = person.days?.[today];
     const id = existing ? existing.entryId : seedFor(who, today);
     const e = getDevotional(id);
     onOpen(who, today, id, `${e.reference} — ${e.title}`);
   };
 
   const pullAnother = () => {
-    const base = person.days[today]?.entryId ?? seedFor(who, today);
+    const base = person.days?.[today]?.entryId ?? seedFor(who, today);
     const id = (base + 1 + Math.floor(Math.random() * 97)) % TOTAL_DEVOTIONALS;
     const e = getDevotional(id);
     onOpen(who, today, id, `${e.reference} — ${e.title}`);
   };
 
-  const recent = Object.entries(person.days)
+  const recent = Object.entries(person.days ?? {})
     .sort((a, b) => (a[0] < b[0] ? 1 : -1))
     .slice(0, 8);
 
@@ -282,7 +284,7 @@ export function Devotionals({
                   </div>
                   <div className="mt-0.5 text-[11.5px] text-ink-soft">
                     {formatDate(dateKey)} · {relativeTime(d.at)}
-                    {d.note.trim() ? " · notes saved" : ""}
+                    {d.note?.trim() ? " · notes saved" : ""}
                   </div>
                 </button>
               );
