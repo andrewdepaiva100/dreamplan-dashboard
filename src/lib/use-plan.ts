@@ -17,9 +17,9 @@ const BANK_VERSION = "bsb-1500";
 // Handles both the new per-person shape and the older shared-entry shape.
 function migrateDevotionals(raw: any): PlanState["devotionals"] {
   const empty = (): Person => ({ current: null, days: {} });
-  if (raw?.bank !== BANK_VERSION) {
-    return { bank: BANK_VERSION, people: { andrew: empty(), maria: empty() } };
-  }
+  // Older app builds accidentally omitted `bank` when saving devotional
+  // changes. Keep valid per-person data from those payloads instead of
+  // treating every realtime echo as a bank migration and closing the view.
   if (raw?.people?.andrew && raw?.people?.maria) {
     return {
       bank: BANK_VERSION,
@@ -28,6 +28,9 @@ function migrateDevotionals(raw: any): PlanState["devotionals"] {
         maria: { current: raw.people.maria.current ?? null, days: raw.people.maria.days ?? {} },
       },
     };
+  }
+  if (raw?.bank !== BANK_VERSION) {
+    return { bank: BANK_VERSION, people: { andrew: empty(), maria: empty() } };
   }
   const andrew = empty();
   const maria = empty();
@@ -70,6 +73,7 @@ export function usePlan() {
   const skipSave = useRef(true);
   const lastSynced = useRef<string>("");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const devotionalWritePendingUntil = useRef(0);
 
   // Initial load: shared cloud record wins, local cache is the offline fallback.
   useEffect(() => {
@@ -133,6 +137,9 @@ export function usePlan() {
         (payload) => {
           const incoming = (payload.new as { state?: Partial<PlanState> } | null)?.state;
           if (!incoming) return;
+          // A delayed realtime event can arrive between a local devotional tap
+          // and its debounced save. Do not let that older snapshot undo the tap.
+          if (Date.now() < devotionalWritePendingUntil.current) return;
           const serialized = JSON.stringify(merge(incoming));
           if (serialized === lastSynced.current) return; // our own echo
           lastSynced.current = serialized;
@@ -364,6 +371,7 @@ export function usePlan() {
 
   const openDevotional = useCallback(
     (who: "andrew" | "maria", dateKey: string, entryId: number, label: string) => {
+      devotionalWritePendingUntil.current = Date.now() + 1_500;
       setPlan((p) => {
         const person = p.devotionals.people[who];
         const existing = person.days[dateKey];
@@ -375,6 +383,7 @@ export function usePlan() {
         return {
           ...p,
           devotionals: {
+            ...p.devotionals,
             people: {
               ...p.devotionals.people,
               [who]: { current: dateKey, days: { ...person.days, [dateKey]: day } },
@@ -394,6 +403,7 @@ export function usePlan() {
 
   const setDevotionalNote = useCallback(
     (who: "andrew" | "maria", dateKey: string, text: string) => {
+      devotionalWritePendingUntil.current = Date.now() + 1_500;
       setPlan((p) => {
         const person = p.devotionals.people[who];
         const day = person.days[dateKey];
@@ -401,6 +411,7 @@ export function usePlan() {
         return {
           ...p,
           devotionals: {
+            ...p.devotionals,
             people: {
               ...p.devotionals.people,
               [who]: { ...person, days: { ...person.days, [dateKey]: { ...day, note: text } } },
@@ -413,12 +424,14 @@ export function usePlan() {
   );
 
   const selectDevotionalDay = useCallback((who: "andrew" | "maria", dateKey: string) => {
+    devotionalWritePendingUntil.current = Date.now() + 1_500;
     setPlan((p) => {
       const person = p.devotionals.people[who];
       if (!person.days[dateKey]) return p;
       return {
         ...p,
         devotionals: {
+          ...p.devotionals,
           people: { ...p.devotionals.people, [who]: { ...person, current: dateKey } },
         },
       };
