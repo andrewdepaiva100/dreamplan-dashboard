@@ -292,6 +292,7 @@ function Index() {
           </div>
         ))}
       </div>
+      )}
 
       {/* BACK TO OVERVIEW (section view only) */}
       {active && (
