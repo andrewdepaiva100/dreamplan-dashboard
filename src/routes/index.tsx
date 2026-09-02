@@ -1044,12 +1044,25 @@ function Index() {
       </Page>
       )}
 
+      {/* DEVOTIONALS */}
+      {active === "devotionals" && (
+      <Page id="devotionals" title="Daily Devotionals for Andrew & Maria">
+        <Devotionals
+          devotionals={plan.devotionals}
+          onOpen={openDevotional}
+          onNote={setDevotionalNote}
+          onSelectDay={selectDevotionalDay}
+        />
+      </Page>
+      )}
+
       {/* ACTIVITY */}
       {active === "activity" && (
       <Page id="activity" title="Edit History & Shared Notes">
         <ActivityPanel log={plan.log} comments={plan.comments} onAddComment={addComment} />
       </Page>
       )}
+
 
       {/* SECTION JUMP BAR (section view only) */}
       {active && (
