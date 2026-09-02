@@ -2,6 +2,7 @@ import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import {
+  ArrowLeft,
   CalendarDays,
   ClipboardList,
   CreditCard,
@@ -125,6 +126,11 @@ function Index() {
 
   const OVERHEAD_TARGET = 584.78;
   const [reconcileKey, setReconcileKey] = useState<string>("groceries");
+  const [active, setActive] = useState<string | null>(null);
+  const goTo = (id: string | null) => {
+    setActive(id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const targetBudget = sum(plan.budget);
   const personalCash = plan.funds.checking + plan.funds.savings + plan.funds.marcus;
@@ -219,35 +225,36 @@ function Index() {
         </button>
       </header>
 
-      {/* SECTION QUICK NAV */}
-      <nav className="relative z-30 mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        {SECTION_LINKS.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() =>
-              document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" })
-            }
-            className="card-surface group flex flex-col items-start gap-2.5 rounded-2xl px-4 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-[var(--shadow-cover)]"
-          >
-            <span
-              className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-110 ${s.tint}`}
+      {/* SECTION QUICK NAV (overview only) */}
+      {!active && (
+        <nav className="relative z-30 mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {SECTION_LINKS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => goTo(s.id)}
+              className="card-surface group flex flex-col items-start gap-2.5 rounded-2xl px-4 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-[var(--shadow-cover)]"
             >
-              <s.Icon size={19} strokeWidth={2} />
-            </span>
-            <span>
-              <span className="block text-[13.5px] font-bold leading-snug text-navy">
-                {s.label}
+              <span
+                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-110 ${s.tint}`}
+              >
+                <s.Icon size={19} strokeWidth={2} />
               </span>
-              <span className="mt-0.5 block text-[11px] leading-snug text-ink-soft">
-                {s.desc}
+              <span>
+                <span className="block text-[13.5px] font-bold leading-snug text-navy">
+                  {s.label}
+                </span>
+                <span className="mt-0.5 block text-[11px] leading-snug text-ink-soft">
+                  {s.desc}
+                </span>
               </span>
-            </span>
-          </button>
-        ))}
-      </nav>
+            </button>
+          ))}
+        </nav>
+      )}
 
-      {/* SCRIPTURE BANNER */}
+      {/* SCRIPTURE BANNER (overview only) */}
+      {!active && (
       <div className="relative mt-6 rounded-2xl border-t-2 border-gold bg-white/95 px-6 py-6 text-center shadow-[var(--shadow-card)] backdrop-blur-sm">
         <blockquote className="mx-auto max-w-2xl">
           <p className="font-display text-lg italic leading-relaxed text-navy md:text-xl">
@@ -260,6 +267,7 @@ function Index() {
           </footer>
         </blockquote>
       </div>
+      )}
 
       {/* PERSISTENT METRIC STRIP */}
 
@@ -280,7 +288,22 @@ function Index() {
         ))}
       </div>
 
+      {/* BACK TO OVERVIEW (section view only) */}
+      {active && (
+        <div className="mt-6">
+          <button
+            type="button"
+            onClick={() => goTo(null)}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            <ArrowLeft size={16} strokeWidth={2.2} />
+            Back to Overview
+          </button>
+        </div>
+      )}
+
       {/* SECTION 1 */}
+      {active === "s1" && (
       <Page id="s1" title="Target Budget & Available Funds">
         <div className="grid gap-9 md:grid-cols-2">
           <div>
@@ -499,8 +522,10 @@ function Index() {
           </p>
         </div>
       </Page>
+      )}
 
       {/* WEDDING PAYMENT SCHEDULE */}
+      {active === "payments" && (
       <Page id="payments" title="Wedding Payment Schedule & Progress Tracker">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl bg-[image:var(--gradient-cover)] p-5 text-white shadow-[var(--shadow-cover)]">
@@ -602,8 +627,10 @@ function Index() {
           })}
         </div>
       </Page>
+      )}
 
       {/* SECTION 2 */}
+      {active === "s2" && (
       <Page id="s2" title="Monthly Expenses & Lease Reserve">
         <div className="grid gap-9 md:grid-cols-2">
           <div>
@@ -764,9 +791,11 @@ function Index() {
           </div>
         </div>
       </Page>
+      )}
 
 
       {/* SECTION 3 */}
+      {active === "s3" && (
       <Page id="s3" title="Savings Roadmap & Milestones">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse">
@@ -894,8 +923,10 @@ function Index() {
           </ol>
         </Callout>
       </Page>
+      )}
 
       {/* SECTION 4 */}
+      {active === "s4" && (
       <Page id="s4" title="Florida Apartment Furnishing Budget">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[620px] border-collapse">
@@ -940,8 +971,10 @@ function Index() {
           {currency(furnMid)} mid-range tier.
         </Callout>
       </Page>
+      )}
 
       {/* SECTION 5 */}
+      {active === "s5" && (
       <Page id="s5" title="The Final Goal & Emergency Fund">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {[
@@ -1009,11 +1042,33 @@ function Index() {
           </p>
         </div>
       </Page>
+      )}
 
       {/* ACTIVITY */}
+      {active === "activity" && (
       <Page id="activity" title="Edit History & Shared Notes">
         <ActivityPanel log={plan.log} comments={plan.comments} onAddComment={addComment} />
       </Page>
+      )}
+
+      {/* SECTION JUMP BAR (section view only) */}
+      {active && (
+        <nav className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
+          {SECTION_LINKS.filter((s) => s.id !== active).map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => goTo(s.id)}
+              className="card-surface flex items-center gap-2.5 rounded-xl px-3.5 py-3 text-left transition-all hover:border-gold/50"
+            >
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${s.tint}`}>
+                <s.Icon size={15} strokeWidth={2} />
+              </span>
+              <span className="text-[12px] font-bold leading-tight text-navy">{s.label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
 
       <div className="mt-6 text-center">
         <button
