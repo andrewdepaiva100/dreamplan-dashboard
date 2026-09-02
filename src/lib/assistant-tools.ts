@@ -83,35 +83,44 @@ export const addNoteInput = z.object({
  * the shared plan, so the browser renders an approve/cancel card and applies
  * the change through the existing usePlan actions.
  */
+const actionOutput = z.object({ applied: z.boolean(), detail: z.string() });
+
 export const assistantTools = {
   updateMoney: tool({
     description:
       "Change a dollar amount on the plan (budget line, account balance, monthly overhead item, lease reserve, milestone amount or emergency goal).",
     inputSchema: updateMoneyInput,
+    outputSchema: actionOutput,
   }),
   updateDate: tool({
     description: "Change a date on the plan (lease date, furnishing date, emergency fund date).",
     inputSchema: updateDateInput,
+    outputSchema: actionOutput,
   }),
   setPaymentPaid: tool({
     description: "Mark one of the six wedding installments as paid or unpaid.",
     inputSchema: setPaymentPaidInput,
+    outputSchema: actionOutput,
   }),
   updatePayment: tool({
     description: "Change the date or amount of one of the six wedding installments.",
     inputSchema: updatePaymentInput,
+    outputSchema: actionOutput,
   }),
   addExpense: tool({
     description: "Log a real spent expense in the shared expense tracker.",
     inputSchema: addExpenseInput,
+    outputSchema: actionOutput,
   }),
   removeExpense: tool({
     description: "Delete a logged expense by its id.",
     inputSchema: removeExpenseInput,
+    outputSchema: actionOutput,
   }),
   addNote: tool({
     description: "Post a note/comment to the shared Activity feed.",
     inputSchema: addNoteInput,
+    outputSchema: actionOutput,
   }),
 } as const;
 
