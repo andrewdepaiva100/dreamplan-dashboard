@@ -5,6 +5,7 @@ import {
   idForDate,
   todayKey,
   TOTAL_DEVOTIONALS,
+  TRANSLATION,
 } from "@/lib/devotionals";
 import { formatDate, relativeTime, type PlanState } from "@/lib/plan-data";
 
@@ -98,7 +99,7 @@ export function Devotionals({
           <div>
             <h2 className="font-display text-2xl font-bold text-navy">Daily Devotionals</h2>
             <p className="mt-1 max-w-xl text-[14px] leading-relaxed text-ink-soft">
-              Choose whose space to open. Andrew and Maria each have their own devotional from the bank, private notes, and history — all synced live.
+              Choose whose space to open. Andrew and Maria each have their own devotional from the bank, private reflections, and history — all synced live.
             </p>
           </div>
           <button
@@ -192,7 +193,7 @@ export function Devotionals({
           </button>
         )}
         <span className="text-[12px] text-ink-soft">
-          {TOTAL_DEVOTIONALS.toLocaleString()} devotionals for engaged couples
+          {TOTAL_DEVOTIONALS.toLocaleString()} devotionals for your personal walk with God
         </span>
       </div>
 
@@ -227,7 +228,7 @@ export function Devotionals({
                 &ldquo;{entry.verse}&rdquo;
               </p>
               <cite className="mt-2 block text-[12.5px] font-semibold not-italic text-royal">
-                {entry.reference} (WEB)
+                {entry.reference} ({TRANSLATION})
               </cite>
             </blockquote>
 
