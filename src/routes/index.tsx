@@ -142,6 +142,65 @@ function Index() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const [health, setHealth] = useState<{
+    metrics: DbMetrics | null;
+    latest: HealthSnapshot | null;
+    history: HealthSnapshot[];
+    loading: boolean;
+  }>({ metrics: null, latest: null, history: [], loading: false });
+  const lastLoggedLevel = useRef<string | null>(null);
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${(bytes / Math.pow(k, i)).toFixed(i > 0 ? 2 : 0)} ${sizes[i]}`;
+  };
+
+  const alertLevel = (pct: number) => {
+    if (pct >= 90) return "critical";
+    if (pct >= 80) return "warning";
+    return "ok";
+  };
+
+  const fetchHealth = useCallback(async () => {
+    setHealth((h) => ({ ...h, loading: true }));
+    try {
+      const result = await getMetrics({});
+      setHealth({ ...result, loading: false });
+    } catch (e) {
+      console.error("[health] fetch error:", e);
+      setHealth((h) => ({ ...h, loading: false }));
+    }
+  }, [getMetrics]);
+
+  const handleSnap = async () => {
+    try {
+      await snapMetrics({});
+      await fetchHealth();
+    } catch (e) {
+      console.error("[health] snapshot error:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (active === "health") fetchHealth();
+  }, [active, fetchHealth]);
+
+  useEffect(() => {
+    if (!health.metrics) return;
+    const limitMb = health.latest?.data_disk_limit_mb ?? 500;
+    const current = alertLevel((health.metrics.db_size_bytes / (limitMb * 1024 * 1024)) * 100);
+    const previous = health.latest
+      ? alertLevel((health.latest.db_size_bytes / (health.latest.data_disk_limit_mb * 1024 * 1024)) * 100)
+      : "ok";
+    if (current !== previous && current !== lastLoggedLevel.current) {
+      logChange("Storage alert level", previous, current);
+      lastLoggedLevel.current = current;
+    }
+  }, [health.metrics, health.latest, logChange]);
+
   const targetBudget = sum(plan.budget);
   const personalCash = plan.funds.checking + plan.funds.savings + plan.funds.marcus;
   const familyContrib = plan.funds.herParents + plan.funds.yourParents;
