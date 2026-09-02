@@ -39,7 +39,7 @@ function migrateDevotionals(raw: any): PlanState["devotionals"] {
   const cur = raw?.current?.date ?? null;
   andrew.current = cur;
   maria.current = cur;
-  return { people: { andrew, maria } };
+  return { bank: BANK_VERSION, people: { andrew, maria } };
 }
 
 
