@@ -83,12 +83,19 @@ export function Devotionals({
   onBack: () => void;
 }) {
   const [who, setWho] = useState<Who | null>(null);
+  const [localOpen, setLocalOpen] = useState<
+    Partial<Record<Who, { dateKey: string; entryId: number }>>
+  >({});
 
   // Hooks must run unconditionally — compute the selected person's entry up
   // front with guards, before any early return below.
   const person = who ? devotionals?.people?.[who] : undefined;
-  const currentDate = person?.current ?? null;
-  const day = currentDate && person ? person.days?.[currentDate] : undefined;
+  const optimistic = who ? localOpen[who] : undefined;
+  const currentDate = optimistic?.dateKey ?? person?.current ?? null;
+  const savedDay = currentDate && person ? person.days?.[currentDate] : undefined;
+  const day = optimistic
+    ? { entryId: optimistic.entryId, note: savedDay?.note ?? "", at: savedDay?.at ?? Date.now() }
+    : savedDay;
   const entry = useMemo(() => (day ? getDevotional(day.entryId) : null), [day]);
 
   // Landing view: pick a person.
@@ -145,6 +152,7 @@ export function Devotionals({
     const existing = person.days?.[today];
     const id = existing ? existing.entryId : seedFor(who, today);
     const e = getDevotional(id);
+    setLocalOpen((open) => ({ ...open, [who]: { dateKey: today, entryId: id } }));
     onOpen(who, today, id, `${e.reference} — ${e.title}`);
   };
 
@@ -152,6 +160,7 @@ export function Devotionals({
     const base = person.days?.[today]?.entryId ?? seedFor(who, today);
     const id = (base + 1 + Math.floor(Math.random() * 97)) % TOTAL_DEVOTIONALS;
     const e = getDevotional(id);
+    setLocalOpen((open) => ({ ...open, [who]: { dateKey: today, entryId: id } }));
     onOpen(who, today, id, `${e.reference} — ${e.title}`);
   };
 
@@ -275,7 +284,13 @@ export function Devotionals({
               return (
                 <button
                   key={dateKey}
-                  onClick={() => onSelectDay(who, dateKey)}
+                  onClick={() => {
+                    setLocalOpen((open) => ({
+                      ...open,
+                      [who]: { dateKey, entryId: d.entryId },
+                    }));
+                    onSelectDay(who, dateKey);
+                  }}
                   className={`rounded-xl border px-4 py-3 text-left transition-colors ${
                     isActive ? "border-royal bg-royal/5" : "border-line bg-white hover:bg-mist"
                   }`}
