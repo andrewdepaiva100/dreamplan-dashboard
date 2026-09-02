@@ -274,8 +274,8 @@ function Index() {
       </div>
       )}
 
-      {/* PERSISTENT METRIC STRIP */}
-
+      {/* PERSISTENT METRIC STRIP (hidden in the Devotionals reading view) */}
+      {active !== "devotionals" && (
       <div className="sticky top-0 z-20 mt-6 grid grid-cols-2 gap-3.5 px-2 pt-2 md:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="card-surface rounded-2xl px-4 py-4">
