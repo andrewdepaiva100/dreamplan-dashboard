@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, RefreshCw, Sparkles } from "lucide-react";
+import { BookOpen, RefreshCw, Sparkles, User } from "lucide-react";
 import {
   getDevotional,
   idForDate,
@@ -7,6 +7,16 @@ import {
   TOTAL_DEVOTIONALS,
 } from "@/lib/devotionals";
 import { formatDate, relativeTime, type PlanState } from "@/lib/plan-data";
+
+type Who = "andrew" | "maria";
+
+const PEOPLE: { id: Who; name: string; accent: string; active: string }[] = [
+  { id: "andrew", name: "Andrew", accent: "text-royal", active: "border-royal bg-royal text-white" },
+  { id: "maria", name: "Maria", accent: "text-gold", active: "border-gold bg-gold text-white" },
+];
+
+// Each person gets an independent entry from the bank for the same day.
+const seedFor = (who: Who, dateKey: string) => idForDate(`${who}:${dateKey}`);
 
 function NoteBox({
   name,
@@ -26,7 +36,6 @@ function NoteBox({
     if (!focused) setDraft(value);
   }, [value, focused]);
 
-  // Debounced save so both phones stay in sync while typing.
   useEffect(() => {
     if (!focused) return;
     const t = setTimeout(() => onCommit(draft), 600);
@@ -37,7 +46,7 @@ function NoteBox({
     <div className="rounded-2xl border border-line bg-white p-4">
       <div className="mb-2 flex items-center justify-between">
         <span className={`text-[13px] font-bold uppercase tracking-wider ${accent}`}>
-          {name}
+          {name}&apos;s reflection
         </span>
         <span className="text-[11px] text-ink-soft">
           {draft.trim() ? `${draft.trim().split(/\s+/).length} words` : "notes & prayers"}
@@ -51,7 +60,7 @@ function NoteBox({
           setFocused(false);
           onCommit(draft);
         }}
-        rows={7}
+        rows={8}
         placeholder={`${name}, write your reflections, prayer requests, or answers to today's questions…`}
         className="w-full resize-y rounded-xl border border-line bg-mist/50 px-3 py-2.5 text-[14px] leading-relaxed text-ink focus:border-royal focus:bg-white focus:outline-none focus:ring-4 focus:ring-royal/10"
       />
@@ -66,43 +75,76 @@ export function Devotionals({
   onSelectDay,
 }: {
   devotionals: PlanState["devotionals"];
-  onOpen: (dateKey: string, entryId: number, label: string) => void;
-  onNote: (dateKey: string, who: "andrew" | "maria", text: string) => void;
-  onSelectDay: (dateKey: string) => void;
+  onOpen: (who: Who, dateKey: string, entryId: number, label: string) => void;
+  onNote: (who: Who, dateKey: string, text: string) => void;
+  onSelectDay: (who: Who, dateKey: string) => void;
 }) {
+  const [who, setWho] = useState<Who>("andrew");
   const today = todayKey();
-  const current = devotionals.current;
-  const entry = useMemo(
-    () => (current ? getDevotional(current.entryId) : null),
-    [current],
-  );
-  const day = current ? devotionals.days[current.date] : undefined;
+  const person = devotionals.people[who];
+  const meta = PEOPLE.find((p) => p.id === who)!;
+
+  const currentDate = person.current;
+  const day = currentDate ? person.days[currentDate] : undefined;
+  const entry = useMemo(() => (day ? getDevotional(day.entryId) : null), [day]);
 
   const openToday = () => {
-    const existing = devotionals.days[today];
-    const id = existing ? existing.entryId : idForDate(today);
-    onOpen(today, id, `${getDevotional(id).reference} — ${getDevotional(id).title}`);
+    const existing = person.days[today];
+    const id = existing ? existing.entryId : seedFor(who, today);
+    const e = getDevotional(id);
+    onOpen(who, today, id, `${e.reference} — ${e.title}`);
   };
 
   const pullAnother = () => {
-    const base = devotionals.days[today]?.entryId ?? idForDate(today);
+    const base = person.days[today]?.entryId ?? seedFor(who, today);
     const id = (base + 1 + Math.floor(Math.random() * 97)) % TOTAL_DEVOTIONALS;
-    onOpen(today, id, `${getDevotional(id).reference} — ${getDevotional(id).title}`);
+    const e = getDevotional(id);
+    onOpen(who, today, id, `${e.reference} — ${e.title}`);
   };
 
-  const recent = Object.entries(devotionals.days)
+  const recent = Object.entries(person.days)
     .sort((a, b) => (a[0] < b[0] ? 1 : -1))
     .slice(0, 8);
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3">
+      {/* Whose devotional */}
+      <div className="flex flex-wrap items-center gap-2">
+        {PEOPLE.map((p) => {
+          const isActive = p.id === who;
+          const hasToday = !!devotionals.people[p.id].days[today];
+          return (
+            <button
+              key={p.id}
+              onClick={() => setWho(p.id)}
+              className={`inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-[14px] font-bold transition-colors ${
+                isActive ? p.active : "border-line bg-white text-navy hover:bg-mist"
+              }`}
+            >
+              <User className="h-4 w-4" />
+              {p.name}
+              {hasToday && (
+                <span
+                  className={`ml-1 h-1.5 w-1.5 rounded-full ${
+                    isActive ? "bg-white" : "bg-teal"
+                  }`}
+                />
+              )}
+            </button>
+          );
+        })}
+        <span className="text-[12px] text-ink-soft">
+          Each of you gets your own reading &amp; notes
+        </span>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           onClick={openToday}
           className="inline-flex items-center gap-2 rounded-xl bg-navy px-5 py-3 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-royal"
         >
           <Sparkles className="h-4 w-4 text-gold" />
-          Open Today&apos;s Devotional
+          Open {meta.name}&apos;s Devotional
         </button>
         {entry && (
           <button
@@ -121,22 +163,27 @@ export function Devotionals({
       {!entry && (
         <div className="mt-6 rounded-2xl border border-dashed border-line bg-mist/50 px-6 py-10 text-center">
           <BookOpen className="mx-auto mb-3 h-7 w-7 text-gold" />
-          <p className="text-[14px] font-semibold text-navy">No devotional opened yet</p>
+          <p className="text-[14px] font-semibold text-navy">
+            No devotional opened yet for {meta.name}
+          </p>
           <p className="mt-1 text-[13px] text-ink-soft">
-            Tap “Open Today&apos;s Devotional” and it will appear here for both of you.
+            Tap the button above and {meta.name}&apos;s reading will appear here on both phones.
           </p>
         </div>
       )}
 
-      {entry && current && (
+      {entry && currentDate && (
         <>
           <article className="mt-6 rounded-2xl border border-line bg-white p-6 sm:p-8">
             <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
-              <span className="rounded-full bg-gold/15 px-2.5 py-1 text-gold">
-                {entry.title}
+              <span className={`rounded-full bg-mist px-2.5 py-1 ${meta.accent}`}>
+                {meta.name}
               </span>
-              <span>{formatDate(current.date)}</span>
-              <span>#{entry.id + 1} of {TOTAL_DEVOTIONALS.toLocaleString()}</span>
+              <span className="rounded-full bg-gold/15 px-2.5 py-1 text-gold">{entry.title}</span>
+              <span>{formatDate(currentDate)}</span>
+              <span>
+                #{entry.id + 1} of {TOTAL_DEVOTIONALS.toLocaleString()}
+              </span>
             </div>
 
             <blockquote className="mt-4 border-l-4 border-gold bg-mist/60 px-5 py-4">
@@ -158,7 +205,7 @@ export function Devotionals({
 
             <div className="mt-6 rounded-2xl border-l-4 border-l-teal bg-teal/10 p-5">
               <div className="mb-2 text-[13.5px] font-bold text-navy">
-                Three questions to discuss together
+                Three reflection questions
               </div>
               <ol className="list-decimal space-y-2 pl-5 text-[14px] leading-relaxed text-ink">
                 {entry.questions.map((q, i) => (
@@ -168,18 +215,12 @@ export function Devotionals({
             </div>
           </article>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className="mt-5">
             <NoteBox
-              name="Andrew"
-              accent="text-royal"
-              value={day?.andrew ?? ""}
-              onCommit={(v) => onNote(current.date, "andrew", v)}
-            />
-            <NoteBox
-              name="Maria"
-              accent="text-gold"
-              value={day?.maria ?? ""}
-              onCommit={(v) => onNote(current.date, "maria", v)}
+              name={meta.name}
+              accent={meta.accent}
+              value={day?.note ?? ""}
+              onCommit={(v) => onNote(who, currentDate, v)}
             />
           </div>
         </>
@@ -188,20 +229,18 @@ export function Devotionals({
       {recent.length > 0 && (
         <div className="mt-7">
           <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-ink-soft">
-            Recent devotionals
+            {meta.name}&apos;s recent devotionals
           </h3>
           <div className="grid gap-2 sm:grid-cols-2">
             {recent.map(([dateKey, d]) => {
               const e = getDevotional(d.entryId);
-              const active = current?.date === dateKey;
+              const isActive = currentDate === dateKey;
               return (
                 <button
                   key={dateKey}
-                  onClick={() => onSelectDay(dateKey)}
+                  onClick={() => onSelectDay(who, dateKey)}
                   className={`rounded-xl border px-4 py-3 text-left transition-colors ${
-                    active
-                      ? "border-royal bg-royal/5"
-                      : "border-line bg-white hover:bg-mist"
+                    isActive ? "border-royal bg-royal/5" : "border-line bg-white hover:bg-mist"
                   }`}
                 >
                   <div className="text-[13.5px] font-semibold text-navy">
@@ -209,8 +248,7 @@ export function Devotionals({
                   </div>
                   <div className="mt-0.5 text-[11.5px] text-ink-soft">
                     {formatDate(dateKey)} · {relativeTime(d.at)}
-                    {d.andrew.trim() ? " · Andrew wrote notes" : ""}
-                    {d.maria.trim() ? " · Maria wrote notes" : ""}
+                    {d.note.trim() ? " · notes saved" : ""}
                   </div>
                 </button>
               );
