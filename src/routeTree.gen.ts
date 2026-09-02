@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UnlockRouteImport } from './routes/unlock'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as AssistantIndexRouteImport } from './routes/assistant.index'
 import { Route as ApiPublicHealthSnapRouteImport } from './routes/api/public/health-snap'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AssistantIndexRoute = AssistantIndexRouteImport.update({
+  id: '/assistant/',
+  path: '/assistant/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHealthSnapRoute = ApiPublicHealthSnapRouteImport.update({
   id: '/api/public/health-snap',
   path: '/api/public/health-snap',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/unlock': typeof UnlockRoute
   '/api/chat': typeof ApiChatRoute
+  '/assistant/': typeof AssistantIndexRoute
   '/api/public/health-snap': typeof ApiPublicHealthSnapRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/unlock': typeof UnlockRoute
   '/api/chat': typeof ApiChatRoute
+  '/assistant': typeof AssistantIndexRoute
   '/api/public/health-snap': typeof ApiPublicHealthSnapRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,29 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/unlock': typeof UnlockRoute
   '/api/chat': typeof ApiChatRoute
+  '/assistant/': typeof AssistantIndexRoute
   '/api/public/health-snap': typeof ApiPublicHealthSnapRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/unlock' | '/api/chat' | '/api/public/health-snap'
+  fullPaths:
+    '/' | '/unlock' | '/api/chat' | '/assistant/' | '/api/public/health-snap'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/unlock' | '/api/chat' | '/api/public/health-snap'
-  id: '__root__' | '/' | '/unlock' | '/api/chat' | '/api/public/health-snap'
+  to: '/' | '/unlock' | '/api/chat' | '/assistant' | '/api/public/health-snap'
+  id:
+    | '__root__'
+    | '/'
+    | '/unlock'
+    | '/api/chat'
+    | '/assistant/'
+    | '/api/public/health-snap'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   UnlockRoute: typeof UnlockRoute
   ApiChatRoute: typeof ApiChatRoute
+  AssistantIndexRoute: typeof AssistantIndexRoute
   ApiPublicHealthSnapRoute: typeof ApiPublicHealthSnapRoute
 }
 
@@ -92,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/assistant/': {
+      id: '/assistant/'
+      path: '/assistant'
+      fullPath: '/assistant/'
+      preLoaderRoute: typeof AssistantIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/health-snap': {
       id: '/api/public/health-snap'
       path: '/api/public/health-snap'
@@ -106,6 +130,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   UnlockRoute: UnlockRoute,
   ApiChatRoute: ApiChatRoute,
+  AssistantIndexRoute: AssistantIndexRoute,
   ApiPublicHealthSnapRoute: ApiPublicHealthSnapRoute,
 }
 export const routeTree = rootRouteImport
