@@ -227,7 +227,7 @@ export function Devotionals({
                 &ldquo;{entry.verse}&rdquo;
               </p>
               <cite className="mt-2 block text-[12.5px] font-semibold not-italic text-royal">
-                {entry.reference} (WEB)
+                {entry.reference} ({TRANSLATION})
               </cite>
             </blockquote>
 
