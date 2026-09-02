@@ -65,13 +65,13 @@ export const Route = createFileRoute("/")({
 
 
 const SECTION_LINKS = [
-  { id: "s1", label: "Budget & Funds", Icon: Wallet },
-  { id: "payments", label: "Wedding Payments", Icon: CreditCard },
-  { id: "s2", label: "Monthly & Lease", Icon: CalendarDays },
-  { id: "s3", label: "Savings Roadmap", Icon: Map },
-  { id: "s4", label: "Furnishing Budget", Icon: Sofa },
-  { id: "s5", label: "Final Goal & Emergency", Icon: ShieldCheck },
-  { id: "activity", label: "Activity & Notes", Icon: ClipboardList },
+  { id: "s1", label: "Budget & Funds", desc: "Targets vs. available cash", Icon: Wallet, tint: "bg-navy/10 text-navy" },
+  { id: "payments", label: "Wedding Payments", desc: "6 installments & balance", Icon: CreditCard, tint: "bg-royal/10 text-royal" },
+  { id: "s2", label: "Monthly & Lease", desc: "Overhead & lease reserve", Icon: CalendarDays, tint: "bg-sky/20 text-deep-blue" },
+  { id: "s3", label: "Savings Roadmap", desc: "Milestones & countdowns", Icon: Map, tint: "bg-gold/15 text-gold" },
+  { id: "s4", label: "Furnishing Budget", desc: "Room-by-room tiers", Icon: Sofa, tint: "bg-teal/10 text-teal" },
+  { id: "s5", label: "Final Goal & Emergency", desc: "$20k buffer fund", Icon: ShieldCheck, tint: "bg-navy/10 text-navy" },
+  { id: "activity", label: "Activity & Notes", desc: "History & comments", Icon: ClipboardList, tint: "bg-royal/10 text-royal" },
 ];
 
 const BUDGET_ROWS: { key: keyof ReturnType<typeof usePlan>["plan"]["budget"]; label: string }[] = [
@@ -220,7 +220,7 @@ function Index() {
       </header>
 
       {/* SECTION QUICK NAV */}
-      <nav className="relative z-30 mt-4 flex flex-wrap justify-center gap-2">
+      <nav className="relative z-30 mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         {SECTION_LINKS.map((s) => (
           <button
             key={s.id}
@@ -228,10 +228,21 @@ function Index() {
             onClick={() =>
               document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" })
             }
-            className="inline-flex items-center gap-1.5 rounded-lg border border-navy/15 bg-white px-3 py-1.5 text-[11px] font-semibold text-navy shadow-sm transition-colors hover:bg-navy hover:text-white"
+            className="card-surface group flex flex-col items-start gap-2.5 rounded-2xl px-4 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-[var(--shadow-cover)]"
           >
-            <s.Icon size={13} strokeWidth={2} />
-            {s.label}
+            <span
+              className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-110 ${s.tint}`}
+            >
+              <s.Icon size={19} strokeWidth={2} />
+            </span>
+            <span>
+              <span className="block text-[13.5px] font-bold leading-snug text-navy">
+                {s.label}
+              </span>
+              <span className="mt-0.5 block text-[11px] leading-snug text-ink-soft">
+                {s.desc}
+              </span>
+            </span>
           </button>
         ))}
       </nav>
