@@ -5,6 +5,7 @@ import {
   idForDate,
   todayKey,
   TOTAL_DEVOTIONALS,
+  TRANSLATION,
 } from "@/lib/devotionals";
 import { formatDate, relativeTime, type PlanState } from "@/lib/plan-data";
 
