@@ -66,8 +66,13 @@ export type PlanState = {
     payer: string;
     amount: number;
   }[];
+  devotionals: {
+    current: { date: string; entryId: number } | null;
+    days: Record<string, { entryId: number; andrew: string; maria: string; at: number }>;
+  };
   log: { id: string; label: string; from: string; to: string; at: number }[];
   comments: { id: string; author: string; text: string; at: number }[];
+
 };
 
 export type ExpenseCategory =
