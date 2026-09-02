@@ -281,7 +281,7 @@ function Index() {
       </div>
 
       {/* SECTION 1 */}
-      <Page id="s1" tag="Page 1 of 5" title="Target Budget & Available Funds">
+      <Page id="s1" title="Target Budget & Available Funds">
         <div className="grid gap-9 md:grid-cols-2">
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider text-royal">
@@ -604,7 +604,7 @@ function Index() {
       </Page>
 
       {/* SECTION 2 */}
-      <Page id="s2" tag="Page 2 of 5" title="Monthly Expenses & Lease Reserve">
+      <Page id="s2" title="Monthly Expenses & Lease Reserve">
         <div className="grid gap-9 md:grid-cols-2">
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider text-royal">
@@ -767,7 +767,7 @@ function Index() {
 
 
       {/* SECTION 3 */}
-      <Page id="s3" tag="Page 3 of 5" title="Savings Roadmap & Milestones">
+      <Page id="s3" title="Savings Roadmap & Milestones">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse">
             <thead>
@@ -896,7 +896,7 @@ function Index() {
       </Page>
 
       {/* SECTION 4 */}
-      <Page id="s4" tag="Page 4 of 5" title="Florida Apartment Furnishing Budget">
+      <Page id="s4" title="Florida Apartment Furnishing Budget">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[620px] border-collapse">
             <thead>
@@ -942,7 +942,7 @@ function Index() {
       </Page>
 
       {/* SECTION 5 */}
-      <Page id="s5" tag="Page 5 of 5" title="The Final Goal & Emergency Fund">
+      <Page id="s5" title="The Final Goal & Emergency Fund">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {[
             { name: "Apartment Lease", amt: currency(plan.milestones.leaseAmount) },
