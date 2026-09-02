@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
+  BookOpen,
   CalendarDays,
   ClipboardList,
   CreditCard,
@@ -25,7 +26,9 @@ import {
 } from "@/components/plan/primitives";
 import { ActivityPanel } from "@/components/plan/activity";
 import { ExpenseTracker } from "@/components/plan/expenses";
+import { Devotionals } from "@/components/plan/devotionals";
 import { Donut, SurplusGauge } from "@/components/plan/charts";
+
 
 import {
   countdownLabel,
