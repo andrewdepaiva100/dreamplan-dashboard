@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
+import { Link, createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -10,6 +10,7 @@ import {
   CreditCard,
   Map,
   ShieldCheck,
+  Sparkles,
   Sofa,
   Wallet,
 } from "lucide-react";
@@ -79,6 +80,7 @@ const SECTION_LINKS = [
   { id: "s5", label: "Final Goal & Emergency", desc: "$20k buffer fund", Icon: ShieldCheck, tint: "bg-navy/10 text-navy" },
   { id: "devotionals", label: "Devotionals", desc: "Daily reading & notes", Icon: BookOpen, tint: "bg-gold/15 text-gold" },
   { id: "health", label: "Storage & Health", desc: "Database size & alerts", Icon: ActivityIcon, tint: "bg-teal/10 text-teal" },
+  { id: "assistant", label: "Plan Assistant", desc: "Ask questions & make changes", Icon: Sparkles, tint: "bg-gold/15 text-gold", href: "/assistant" },
   { id: "activity", label: "Activity & Notes", desc: "History & comments", Icon: ClipboardList, tint: "bg-royal/10 text-royal" },
 
 ];
@@ -190,7 +192,7 @@ function Index() {
 
   useEffect(() => {
     if (!health.metrics) return;
-    const limitMb = health.latest?.data_disk_limit_mb ?? 500;
+    const limitMb = health.latest?.data_disk_limit_mb ?? 1024;
     const current = alertLevel((health.metrics.db_size_bytes / (limitMb * 1024 * 1024)) * 100);
     const previous = health.latest
       ? alertLevel((health.latest.db_size_bytes / (health.latest.data_disk_limit_mb * 1024 * 1024)) * 100)
@@ -297,13 +299,9 @@ function Index() {
       {/* SECTION QUICK NAV (overview only) */}
       {!active && (
         <nav className="relative z-30 mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-          {SECTION_LINKS.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => goTo(s.id)}
-              className="card-surface group flex flex-col items-start gap-2.5 rounded-2xl px-4 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-[var(--shadow-cover)]"
-            >
+          {SECTION_LINKS.map((s) => {
+            const inner = (
+              <>
               <span
                 className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-110 ${s.tint}`}
               >
@@ -317,8 +315,20 @@ function Index() {
                   {s.desc}
                 </span>
               </span>
-            </button>
-          ))}
+              </>
+            );
+            const cls =
+              "card-surface group flex flex-col items-start gap-2.5 rounded-2xl px-4 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-[var(--shadow-cover)]";
+            return "href" in s && s.href ? (
+              <Link key={s.id} to={s.href} className={cls}>
+                {inner}
+              </Link>
+            ) : (
+              <button key={s.id} type="button" onClick={() => goTo(s.id)} className={cls}>
+                {inner}
+              </button>
+            );
+          })}
         </nav>
       )}
 
@@ -1133,7 +1143,7 @@ function Index() {
         {(() => {
           const metrics = health.metrics;
           const latest = health.latest;
-          const limitMb = latest?.data_disk_limit_mb ?? 500;
+          const limitMb = latest?.data_disk_limit_mb ?? 1024;
           const diskBytes = metrics?.db_size_bytes ?? 0;
           const diskPct = metrics ? Math.min(100, (diskBytes / (limitMb * 1024 * 1024)) * 100) : 0;
           const connPct = metrics ? (metrics.connections_used / metrics.connections_max) * 100 : 0;
