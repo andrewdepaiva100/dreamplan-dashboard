@@ -67,6 +67,7 @@ export type PlanState = {
     amount: number;
   }[];
   devotionals: {
+    bank?: string;
     people: Record<
       "andrew" | "maria",
       {
