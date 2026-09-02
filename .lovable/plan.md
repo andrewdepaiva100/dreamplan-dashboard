@@ -21,10 +21,11 @@ If you'd rather show real NIV/ESV text later, the clean route is a "Read in ESV"
 
 Because entry numbering changes, existing devotional history and notes are cleared on the shared cloud record when the new bank loads. All financial data (budget, funds, payments, expenses, activity log, comments) is untouched.
 
-## 3. Scripture banner behavior
+## 3. Scripture banner and top metric strip in Devotionals
 
 - The Luke 14:28 banner stays on the main dashboard overview, with spacing corrected so it sits cleanly above the metric cards with no overlap at any screen width.
-- The banner is fully hidden the moment you enter the Devotionals section (already the intended behavior — I'll confirm it holds on mobile widths too).
+- The banner is fully hidden the moment you enter the Devotionals section.
+- The sticky top metric strip (Target Budget / Total Available / Surplus Reserve / Baseline Monthly Overhead) is also hidden inside the Devotionals section — right now it floats over the devotional text as you scroll. Devotionals gets a clean, distraction-free reading screen; the strip still shows everywhere else.
 
 ## 4. Devotionals landing view
 
