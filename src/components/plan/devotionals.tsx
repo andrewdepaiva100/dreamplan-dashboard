@@ -154,7 +154,7 @@ export function Devotionals({
     onOpen(who, today, id, `${e.reference} — ${e.title}`);
   };
 
-  const recent = Object.entries(person.days)
+  const recent = Object.entries(person.days ?? {})
     .sort((a, b) => (a[0] < b[0] ? 1 : -1))
     .slice(0, 8);
 
