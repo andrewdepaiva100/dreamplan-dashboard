@@ -67,8 +67,13 @@ export type PlanState = {
     amount: number;
   }[];
   devotionals: {
-    current: { date: string; entryId: number } | null;
-    days: Record<string, { entryId: number; andrew: string; maria: string; at: number }>;
+    people: Record<
+      "andrew" | "maria",
+      {
+        current: string | null;
+        days: Record<string, { entryId: number; note: string; at: number }>;
+      }
+    >;
   };
   log: { id: string; label: string; from: string; to: string; at: number }[];
   comments: { id: string; author: string; text: string; at: number }[];
@@ -204,7 +209,12 @@ export const DEFAULT_PLAN: PlanState = {
     { key: "p6", label: "Payment 6", date: "2027-01-12", amount: 3905, paid: false },
   ],
   expenses: [],
-  devotionals: { current: null, days: {} },
+  devotionals: {
+    people: {
+      andrew: { current: null, days: {} },
+      maria: { current: null, days: {} },
+    },
+  },
   log: [],
 
 

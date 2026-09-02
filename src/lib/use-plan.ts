@@ -8,6 +8,33 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 
 const ROW_ID = "shared";
 
+type Person = PlanState["devotionals"]["people"]["andrew"];
+
+// Handles both the new per-person shape and the older shared-entry shape.
+function migrateDevotionals(raw: any): PlanState["devotionals"] {
+  const empty = (): Person => ({ current: null, days: {} });
+  if (raw?.people?.andrew && raw?.people?.maria) {
+    return {
+      people: {
+        andrew: { current: raw.people.andrew.current ?? null, days: raw.people.andrew.days ?? {} },
+        maria: { current: raw.people.maria.current ?? null, days: raw.people.maria.days ?? {} },
+      },
+    };
+  }
+  const andrew = empty();
+  const maria = empty();
+  const days = raw?.days ?? {};
+  for (const [dateKey, d] of Object.entries<any>(days)) {
+    andrew.days[dateKey] = { entryId: d.entryId, note: d.andrew ?? "", at: d.at ?? Date.now() };
+    maria.days[dateKey] = { entryId: d.entryId, note: d.maria ?? "", at: d.at ?? Date.now() };
+  }
+  const cur = raw?.current?.date ?? null;
+  andrew.current = cur;
+  maria.current = cur;
+  return { people: { andrew, maria } };
+}
+
+
 const merge = (parsed: Partial<PlanState>): PlanState => ({
   ...clone(DEFAULT_PLAN),
   ...parsed,
@@ -20,10 +47,7 @@ const merge = (parsed: Partial<PlanState>): PlanState => ({
   furnishing: parsed.furnishing?.length ? parsed.furnishing : clone(DEFAULT_PLAN.furnishing),
   payments: parsed.payments?.length ? parsed.payments : clone(DEFAULT_PLAN.payments),
   expenses: parsed.expenses ?? [],
-  devotionals: {
-    current: parsed.devotionals?.current ?? null,
-    days: parsed.devotionals?.days ?? {},
-  },
+  devotionals: migrateDevotionals(parsed.devotionals),
   log: parsed.log ?? [],
 
 
@@ -330,39 +354,49 @@ export function usePlan() {
     }));
   }, []);
 
-  const openDevotional = useCallback((dateKey: string, entryId: number, label: string) => {
-    setPlan((p) => {
-      const existing = p.devotionals.days[dateKey];
-      const day = existing
-        ? { ...existing, entryId }
-        : { entryId, andrew: "", maria: "", at: Date.now() };
-      const changed = !existing || existing.entryId !== entryId;
-      return {
-        ...p,
-        devotionals: {
-          current: { date: dateKey, entryId },
-          days: { ...p.devotionals.days, [dateKey]: day },
-        },
-        log: changed
-          ? [
-              { id: uid(), label: `Devotional opened — ${dateKey}`, from: "—", to: label, at: Date.now() },
-              ...p.log,
-            ].slice(0, 100)
-          : p.log,
-      };
-    });
-  }, []);
-
-  const setDevotionalNote = useCallback(
-    (dateKey: string, who: "andrew" | "maria", text: string) => {
+  const openDevotional = useCallback(
+    (who: "andrew" | "maria", dateKey: string, entryId: number, label: string) => {
       setPlan((p) => {
-        const day = p.devotionals.days[dateKey];
-        if (!day || day[who] === text) return p;
+        const person = p.devotionals.people[who];
+        const existing = person.days[dateKey];
+        const day = existing
+          ? { ...existing, entryId }
+          : { entryId, note: "", at: Date.now() };
+        const changed = !existing || existing.entryId !== entryId;
+        const name = who === "andrew" ? "Andrew" : "Maria";
         return {
           ...p,
           devotionals: {
-            ...p.devotionals,
-            days: { ...p.devotionals.days, [dateKey]: { ...day, [who]: text } },
+            people: {
+              ...p.devotionals.people,
+              [who]: { current: dateKey, days: { ...person.days, [dateKey]: day } },
+            },
+          },
+          log: changed
+            ? [
+                { id: uid(), label: `${name}'s devotional — ${dateKey}`, from: "—", to: label, at: Date.now() },
+                ...p.log,
+              ].slice(0, 100)
+            : p.log,
+        };
+      });
+    },
+    [],
+  );
+
+  const setDevotionalNote = useCallback(
+    (who: "andrew" | "maria", dateKey: string, text: string) => {
+      setPlan((p) => {
+        const person = p.devotionals.people[who];
+        const day = person.days[dateKey];
+        if (!day || day.note === text) return p;
+        return {
+          ...p,
+          devotionals: {
+            people: {
+              ...p.devotionals.people,
+              [who]: { ...person, days: { ...person.days, [dateKey]: { ...day, note: text } } },
+            },
           },
         };
       });
@@ -370,11 +404,16 @@ export function usePlan() {
     [],
   );
 
-  const selectDevotionalDay = useCallback((dateKey: string) => {
+  const selectDevotionalDay = useCallback((who: "andrew" | "maria", dateKey: string) => {
     setPlan((p) => {
-      const day = p.devotionals.days[dateKey];
-      if (!day) return p;
-      return { ...p, devotionals: { ...p.devotionals, current: { date: dateKey, entryId: day.entryId } } };
+      const person = p.devotionals.people[who];
+      if (!person.days[dateKey]) return p;
+      return {
+        ...p,
+        devotionals: {
+          people: { ...p.devotionals.people, [who]: { ...person, current: dateKey } },
+        },
+      };
     });
   }, []);
 
