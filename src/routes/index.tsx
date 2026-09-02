@@ -118,7 +118,7 @@ const MONTHLY_ROWS: {
 ];
 
 function Index() {
-  const { plan, hydrated, savedAt, online, setField, setFurnishing, setPaymentField, togglePayment, addExpense, removeExpense, addComment, reset } = usePlan();
+  const { plan, hydrated, savedAt, online, setField, setFurnishing, setPaymentField, togglePayment, addExpense, removeExpense, addComment, openDevotional, setDevotionalNote, selectDevotionalDay, reset } = usePlan();
   const router = useRouter();
   const lock = useServerFn(lockSite);
   const [, tick] = useState(0);
