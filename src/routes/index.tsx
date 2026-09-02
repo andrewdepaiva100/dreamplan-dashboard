@@ -281,6 +281,7 @@ function Index() {
       </div>
 
       {/* SECTION 1 */}
+      {active === "s1" && (
       <Page id="s1" title="Target Budget & Available Funds">
         <div className="grid gap-9 md:grid-cols-2">
           <div>
@@ -499,8 +500,10 @@ function Index() {
           </p>
         </div>
       </Page>
+      )}
 
       {/* WEDDING PAYMENT SCHEDULE */}
+      {active === "payments" && (
       <Page id="payments" title="Wedding Payment Schedule & Progress Tracker">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl bg-[image:var(--gradient-cover)] p-5 text-white shadow-[var(--shadow-cover)]">
@@ -602,8 +605,10 @@ function Index() {
           })}
         </div>
       </Page>
+      )}
 
       {/* SECTION 2 */}
+      {active === "s2" && (
       <Page id="s2" title="Monthly Expenses & Lease Reserve">
         <div className="grid gap-9 md:grid-cols-2">
           <div>
@@ -764,9 +769,11 @@ function Index() {
           </div>
         </div>
       </Page>
+      )}
 
 
       {/* SECTION 3 */}
+      {active === "s3" && (
       <Page id="s3" title="Savings Roadmap & Milestones">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse">
@@ -894,8 +901,10 @@ function Index() {
           </ol>
         </Callout>
       </Page>
+      )}
 
       {/* SECTION 4 */}
+      {active === "s4" && (
       <Page id="s4" title="Florida Apartment Furnishing Budget">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[620px] border-collapse">
@@ -940,8 +949,10 @@ function Index() {
           {currency(furnMid)} mid-range tier.
         </Callout>
       </Page>
+      )}
 
       {/* SECTION 5 */}
+      {active === "s5" && (
       <Page id="s5" title="The Final Goal & Emergency Fund">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {[
@@ -1009,11 +1020,14 @@ function Index() {
           </p>
         </div>
       </Page>
+      )}
 
       {/* ACTIVITY */}
+      {active === "activity" && (
       <Page id="activity" title="Edit History & Shared Notes">
         <ActivityPanel log={plan.log} comments={plan.comments} onAddComment={addComment} />
       </Page>
+      )}
 
       <div className="mt-6 text-center">
         <button
