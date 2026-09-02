@@ -1138,6 +1138,13 @@ function Index() {
           const diskPct = metrics ? Math.min(100, (diskBytes / (limitMb * 1024 * 1024)) * 100) : 0;
           const connPct = metrics ? (metrics.connections_used / metrics.connections_max) * 100 : 0;
           const level = alertLevel(diskPct);
+          const formatTimestamp = (iso: string) =>
+            new Date(iso).toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            });
           const levelStyles = {
             ok: { badge: "bg-teal text-white", bar: "bg-teal", text: "text-teal" },
             warning: { badge: "bg-gold text-navy", bar: "bg-gold", text: "text-gold" },
