@@ -1,7 +1,8 @@
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Activity as ActivityIcon,
   ArrowLeft,
   BookOpen,
   CalendarDays,
@@ -39,6 +40,7 @@ import {
   sum,
 } from "@/lib/plan-data";
 import { usePlan } from "@/lib/use-plan";
+import { getDbMetrics, takeHealthSnapshot, type DbMetrics, type HealthSnapshot } from "@/lib/health.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -76,6 +78,7 @@ const SECTION_LINKS = [
   { id: "s4", label: "Furnishing Budget", desc: "Room-by-room tiers", Icon: Sofa, tint: "bg-teal/10 text-teal" },
   { id: "s5", label: "Final Goal & Emergency", desc: "$20k buffer fund", Icon: ShieldCheck, tint: "bg-navy/10 text-navy" },
   { id: "devotionals", label: "Devotionals", desc: "Daily reading & notes", Icon: BookOpen, tint: "bg-gold/15 text-gold" },
+  { id: "health", label: "Storage & Health", desc: "Database size & alerts", Icon: ActivityIcon, tint: "bg-teal/10 text-teal" },
   { id: "activity", label: "Activity & Notes", desc: "History & comments", Icon: ClipboardList, tint: "bg-royal/10 text-royal" },
 
 ];
@@ -118,9 +121,11 @@ const MONTHLY_ROWS: {
 ];
 
 function Index() {
-  const { plan, hydrated, savedAt, online, setField, setFurnishing, setPaymentField, togglePayment, addExpense, removeExpense, addComment, openDevotional, setDevotionalNote, selectDevotionalDay, reset } = usePlan();
+  const { plan, hydrated, savedAt, online, setField, setFurnishing, setPaymentField, togglePayment, addExpense, removeExpense, addComment, openDevotional, setDevotionalNote, selectDevotionalDay, reset, logChange } = usePlan();
   const router = useRouter();
   const lock = useServerFn(lockSite);
+  const getMetrics = useServerFn(getDbMetrics);
+  const snapMetrics = useServerFn(takeHealthSnapshot);
   const [, tick] = useState(0);
 
 
@@ -136,6 +141,65 @@ function Index() {
     setActive(id);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  const [health, setHealth] = useState<{
+    metrics: DbMetrics | null;
+    latest: HealthSnapshot | null;
+    history: HealthSnapshot[];
+    loading: boolean;
+  }>({ metrics: null, latest: null, history: [], loading: false });
+  const lastLoggedLevel = useRef<string | null>(null);
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${(bytes / Math.pow(k, i)).toFixed(i > 0 ? 2 : 0)} ${sizes[i]}`;
+  };
+
+  const alertLevel = (pct: number) => {
+    if (pct >= 90) return "critical";
+    if (pct >= 80) return "warning";
+    return "ok";
+  };
+
+  const fetchHealth = useCallback(async () => {
+    setHealth((h) => ({ ...h, loading: true }));
+    try {
+      const result = await getMetrics();
+      setHealth({ ...result, loading: false });
+    } catch (e) {
+      console.error("[health] fetch error:", e);
+      setHealth((h) => ({ ...h, loading: false }));
+    }
+  }, [getMetrics]);
+
+  const handleSnap = async () => {
+    try {
+      await snapMetrics();
+      await fetchHealth();
+    } catch (e) {
+      console.error("[health] snapshot error:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (active === "health") fetchHealth();
+  }, [active, fetchHealth]);
+
+  useEffect(() => {
+    if (!health.metrics) return;
+    const limitMb = health.latest?.data_disk_limit_mb ?? 500;
+    const current = alertLevel((health.metrics.db_size_bytes / (limitMb * 1024 * 1024)) * 100);
+    const previous = health.latest
+      ? alertLevel((health.latest.db_size_bytes / (health.latest.data_disk_limit_mb * 1024 * 1024)) * 100)
+      : "ok";
+    if (current !== previous && current !== lastLoggedLevel.current) {
+      logChange("Storage alert level", previous, current);
+      lastLoggedLevel.current = current;
+    }
+  }, [health.metrics, health.latest, logChange]);
 
   const targetBudget = sum(plan.budget);
   const personalCash = plan.funds.checking + plan.funds.savings + plan.funds.marcus;
@@ -1060,6 +1124,129 @@ function Index() {
           onSelectDay={selectDevotionalDay}
           onBack={() => goTo(null)}
         />
+      </Page>
+      )}
+
+      {/* STORAGE & HEALTH */}
+      {active === "health" && (
+      <Page id="health" title="Storage & Health">
+        {(() => {
+          const metrics = health.metrics;
+          const latest = health.latest;
+          const limitMb = latest?.data_disk_limit_mb ?? 500;
+          const diskBytes = metrics?.db_size_bytes ?? 0;
+          const diskPct = metrics ? Math.min(100, (diskBytes / (limitMb * 1024 * 1024)) * 100) : 0;
+          const connPct = metrics ? (metrics.connections_used / metrics.connections_max) * 100 : 0;
+          const level = alertLevel(diskPct);
+          const formatTimestamp = (iso: string) =>
+            new Date(iso).toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            });
+          const levelStyles = {
+            ok: { badge: "bg-teal text-white", bar: "bg-teal", text: "text-teal" },
+            warning: { badge: "bg-gold text-navy", bar: "bg-gold", text: "text-gold" },
+            critical: { badge: "bg-destructive text-white", bar: "bg-destructive", text: "text-destructive" },
+          };
+
+          return (
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="card-surface rounded-2xl p-5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-ink-soft">Database size</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${levelStyles[level].badge}`}>
+                      {level === "ok" ? "Healthy" : level === "warning" ? "Watch" : "Critical"}
+                    </span>
+                  </div>
+                  <div className="mt-3 font-display text-[28px] font-bold text-navy">
+                    {metrics ? formatBytes(metrics.db_size_bytes) : "—"}
+                  </div>
+                  <div className="mt-2 text-[12px] text-ink-soft">
+                    Limit: {limitMb} MB · {diskPct.toFixed(1)}% used
+                  </div>
+                  <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-mist">
+                    <div
+                      className={`h-full transition-all ${levelStyles[level].bar}`}
+                      style={{ width: `${diskPct}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="card-surface rounded-2xl p-5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-ink-soft">Connections</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${levelStyles[alertLevel(connPct)].badge}`}>
+                      {metrics ? `${metrics.connections_used} / ${metrics.connections_max}` : "—"}
+                    </span>
+                  </div>
+                  <div className="mt-3 font-display text-[28px] font-bold text-navy">
+                    {metrics ? `${connPct.toFixed(0)}%` : "—"}
+                  </div>
+                  <div className="mt-2 text-[12px] text-ink-soft">Active DB connections right now</div>
+                  <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-mist">
+                    <div
+                      className={`h-full transition-all ${levelStyles[alertLevel(connPct)].bar}`}
+                      style={{ width: `${connPct}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="card-surface rounded-2xl p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h4 className="font-display text-lg font-bold text-navy">Snapshot history</h4>
+                    <p className="text-[12px] text-ink-soft">
+                      Last snapshot: {latest ? formatTimestamp(latest.measured_at) : "none"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSnap}
+                    disabled={health.loading}
+                    className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-royal disabled:opacity-50"
+                  >
+                    {health.loading ? "Checking…" : "Check now"}
+                  </button>
+                </div>
+
+                {health.history.length > 0 ? (
+                  <div className="mt-4 space-y-2">
+                    {health.history.slice(0, 12).map((snap) => {
+                      const pct = Math.min(100, (snap.db_size_bytes / (snap.data_disk_limit_mb * 1024 * 1024)) * 100);
+                      return (
+                        <div
+                          key={snap.id}
+                          className="flex items-center gap-3 rounded-xl bg-mist px-3 py-2"
+                        >
+                          <div className="w-24 shrink-0 text-[11px] font-medium text-ink-soft">
+                            {formatTimestamp(snap.measured_at)}
+                          </div>
+                          <div className="flex-1">
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white">
+                              <div
+                                className={`h-full ${levelStyles[alertLevel(pct)].bar}`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div className="w-20 shrink-0 text-right text-[12px] font-bold text-navy">
+                            {formatBytes(snap.db_size_bytes)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-ink-soft">No snapshots yet. Press “Check now” to record the first one.</p>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </Page>
       )}
 

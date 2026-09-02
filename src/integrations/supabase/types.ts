@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      health_snapshots: {
+        Row: {
+          connections_max: number
+          connections_used: number
+          data_disk_limit_mb: number
+          db_size_bytes: number
+          id: string
+          measured_at: string
+          wal_size_bytes: number | null
+        }
+        Insert: {
+          connections_max: number
+          connections_used: number
+          data_disk_limit_mb?: number
+          db_size_bytes: number
+          id?: string
+          measured_at?: string
+          wal_size_bytes?: number | null
+        }
+        Update: {
+          connections_max?: number
+          connections_used?: number
+          data_disk_limit_mb?: number
+          db_size_bytes?: number
+          id?: string
+          measured_at?: string
+          wal_size_bytes?: number | null
+        }
+        Relationships: []
+      }
       plan_state: {
         Row: {
           id: string
@@ -37,7 +67,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_db_metrics: {
+        Args: never
+        Returns: {
+          connections_max: number
+          connections_used: number
+          db_size_bytes: number
+        }[]
+      }
+      take_health_snapshot: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
