@@ -26,7 +26,7 @@ Devotional selection, opened state, and both note boxes save into the same share
 
 ## Technical notes
 
-- `src/lib/devotionals.ts` — deterministic generator producing 1,000 frozen entries (`{ id, reference, verse, message, questions: [3] }`) from curated verse + theme pools; a `pickForDate(dateKey)` helper.
+- `src/lib/devotionals/` — deterministic composer producing 1,000 entries (`{ id, reference, verse, message, questions: [3] }`) from curated verse + theme + application paragraph pools, each message assembled to 300-500 words; split into lazily imported chunks with an index module exposing `pickForDate(dateKey)` and `loadEntry(id)`.
 - `src/lib/plan-data.ts` — add `devotionals: { current: { date, entryId } | null, entries: Record<dateKey, { entryId, andrew, maria }> }` to `PlanState` and `DEFAULT_PLAN`; merge it in `use-plan.ts` so existing saved state upgrades cleanly.
 - `src/lib/use-plan.ts` — actions `openDevotional(dateKey, { fresh })` and `setDevotionalNote(dateKey, who, text)` (debounced note writes, activity-log entries), reusing the existing debounced upsert + realtime channel.
 - `src/components/plan/devotionals.tsx` — the section UI.
