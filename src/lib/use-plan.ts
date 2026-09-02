@@ -17,9 +17,9 @@ const BANK_VERSION = "bsb-1500";
 // Handles both the new per-person shape and the older shared-entry shape.
 function migrateDevotionals(raw: any): PlanState["devotionals"] {
   const empty = (): Person => ({ current: null, days: {} });
-  if (raw?.bank !== BANK_VERSION) {
-    return { bank: BANK_VERSION, people: { andrew: empty(), maria: empty() } };
-  }
+  // Older app builds accidentally omitted `bank` when saving devotional
+  // changes. Keep valid per-person data from those payloads instead of
+  // treating every realtime echo as a bank migration and closing the view.
   if (raw?.people?.andrew && raw?.people?.maria) {
     return {
       bank: BANK_VERSION,
@@ -28,6 +28,9 @@ function migrateDevotionals(raw: any): PlanState["devotionals"] {
         maria: { current: raw.people.maria.current ?? null, days: raw.people.maria.days ?? {} },
       },
     };
+  }
+  if (raw?.bank !== BANK_VERSION) {
+    return { bank: BANK_VERSION, people: { andrew: empty(), maria: empty() } };
   }
   const andrew = empty();
   const maria = empty();
