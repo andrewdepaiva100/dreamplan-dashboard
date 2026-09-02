@@ -167,7 +167,7 @@ function Index() {
   const fetchHealth = useCallback(async () => {
     setHealth((h) => ({ ...h, loading: true }));
     try {
-      const result = await getMetrics({});
+      const result = await getMetrics();
       setHealth({ ...result, loading: false });
     } catch (e) {
       console.error("[health] fetch error:", e);
@@ -177,7 +177,7 @@ function Index() {
 
   const handleSnap = async () => {
     try {
-      await snapMetrics({});
+      await snapMetrics();
       await fetchHealth();
     } catch (e) {
       console.error("[health] snapshot error:", e);
