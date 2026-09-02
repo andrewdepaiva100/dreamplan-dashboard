@@ -267,6 +267,7 @@ function Index() {
           </footer>
         </blockquote>
       </div>
+      )}
 
       {/* PERSISTENT METRIC STRIP */}
 
