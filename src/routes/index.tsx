@@ -501,7 +501,7 @@ function Index() {
       </Page>
 
       {/* WEDDING PAYMENT SCHEDULE */}
-      <Page id="payments" tag="Payment Tracker" title="Wedding Payment Schedule & Progress Tracker">
+      <Page id="payments" title="Wedding Payment Schedule & Progress Tracker">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl bg-[image:var(--gradient-cover)] p-5 text-white shadow-[var(--shadow-cover)]">
             <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-sky">
@@ -1011,7 +1011,7 @@ function Index() {
       </Page>
 
       {/* ACTIVITY */}
-      <Page id="activity" tag="Activity" title="Edit History & Shared Notes">
+      <Page id="activity" title="Edit History & Shared Notes">
         <ActivityPanel log={plan.log} comments={plan.comments} onAddComment={addComment} />
       </Page>
 
