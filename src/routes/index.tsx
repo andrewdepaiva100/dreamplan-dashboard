@@ -1200,7 +1200,7 @@ function Index() {
                   <div>
                     <h4 className="font-display text-lg font-bold text-navy">Snapshot history</h4>
                     <p className="text-[12px] text-ink-soft">
-                      Last snapshot: {latest ? formatDate(latest.measured_at) : "none"}
+                      Last snapshot: {latest ? formatTimestamp(latest.measured_at) : "none"}
                     </p>
                   </div>
                   <button
