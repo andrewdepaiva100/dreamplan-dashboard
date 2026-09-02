@@ -20,10 +20,7 @@ const merge = (parsed: Partial<PlanState>): PlanState => ({
   furnishing: parsed.furnishing?.length ? parsed.furnishing : clone(DEFAULT_PLAN.furnishing),
   payments: parsed.payments?.length ? parsed.payments : clone(DEFAULT_PLAN.payments),
   expenses: parsed.expenses ?? [],
-  devotionals: {
-    current: parsed.devotionals?.current ?? null,
-    days: parsed.devotionals?.days ?? {},
-  },
+  devotionals: migrateDevotionals(parsed.devotionals),
   log: parsed.log ?? [],
 
 
