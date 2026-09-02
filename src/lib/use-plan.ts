@@ -354,39 +354,49 @@ export function usePlan() {
     }));
   }, []);
 
-  const openDevotional = useCallback((dateKey: string, entryId: number, label: string) => {
-    setPlan((p) => {
-      const existing = p.devotionals.days[dateKey];
-      const day = existing
-        ? { ...existing, entryId }
-        : { entryId, andrew: "", maria: "", at: Date.now() };
-      const changed = !existing || existing.entryId !== entryId;
-      return {
-        ...p,
-        devotionals: {
-          current: { date: dateKey, entryId },
-          days: { ...p.devotionals.days, [dateKey]: day },
-        },
-        log: changed
-          ? [
-              { id: uid(), label: `Devotional opened — ${dateKey}`, from: "—", to: label, at: Date.now() },
-              ...p.log,
-            ].slice(0, 100)
-          : p.log,
-      };
-    });
-  }, []);
-
-  const setDevotionalNote = useCallback(
-    (dateKey: string, who: "andrew" | "maria", text: string) => {
+  const openDevotional = useCallback(
+    (who: "andrew" | "maria", dateKey: string, entryId: number, label: string) => {
       setPlan((p) => {
-        const day = p.devotionals.days[dateKey];
-        if (!day || day[who] === text) return p;
+        const person = p.devotionals.people[who];
+        const existing = person.days[dateKey];
+        const day = existing
+          ? { ...existing, entryId }
+          : { entryId, note: "", at: Date.now() };
+        const changed = !existing || existing.entryId !== entryId;
+        const name = who === "andrew" ? "Andrew" : "Maria";
         return {
           ...p,
           devotionals: {
-            ...p.devotionals,
-            days: { ...p.devotionals.days, [dateKey]: { ...day, [who]: text } },
+            people: {
+              ...p.devotionals.people,
+              [who]: { current: dateKey, days: { ...person.days, [dateKey]: day } },
+            },
+          },
+          log: changed
+            ? [
+                { id: uid(), label: `${name}'s devotional — ${dateKey}`, from: "—", to: label, at: Date.now() },
+                ...p.log,
+              ].slice(0, 100)
+            : p.log,
+        };
+      });
+    },
+    [],
+  );
+
+  const setDevotionalNote = useCallback(
+    (who: "andrew" | "maria", dateKey: string, text: string) => {
+      setPlan((p) => {
+        const person = p.devotionals.people[who];
+        const day = person.days[dateKey];
+        if (!day || day.note === text) return p;
+        return {
+          ...p,
+          devotionals: {
+            people: {
+              ...p.devotionals.people,
+              [who]: { ...person, days: { ...person.days, [dateKey]: { ...day, note: text } } },
+            },
           },
         };
       });
@@ -394,11 +404,16 @@ export function usePlan() {
     [],
   );
 
-  const selectDevotionalDay = useCallback((dateKey: string) => {
+  const selectDevotionalDay = useCallback((who: "andrew" | "maria", dateKey: string) => {
     setPlan((p) => {
-      const day = p.devotionals.days[dateKey];
-      if (!day) return p;
-      return { ...p, devotionals: { ...p.devotionals, current: { date: dateKey, entryId: day.entryId } } };
+      const person = p.devotionals.people[who];
+      if (!person.days[dateKey]) return p;
+      return {
+        ...p,
+        devotionals: {
+          people: { ...p.devotionals.people, [who]: { ...person, current: dateKey } },
+        },
+      };
     });
   }, []);
 
