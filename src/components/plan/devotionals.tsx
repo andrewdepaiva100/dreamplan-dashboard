@@ -138,12 +138,7 @@ export function Devotionals({
   }
 
   const today = todayKey();
-  const person = devotionals.people[who];
   const meta = PEOPLE.find((p) => p.id === who)!;
-
-  const currentDate = person.current;
-  const day = currentDate ? person.days[currentDate] : undefined;
-  const entry = useMemo(() => (day ? getDevotional(day.entryId) : null), [day]);
 
   const openToday = () => {
     const existing = person.days[today];
@@ -289,7 +284,7 @@ export function Devotionals({
                   </div>
                   <div className="mt-0.5 text-[11.5px] text-ink-soft">
                     {formatDate(dateKey)} · {relativeTime(d.at)}
-                    {d.note.trim() ? " · notes saved" : ""}
+                    {d.note?.trim() ? " · notes saved" : ""}
                   </div>
                 </button>
               );
