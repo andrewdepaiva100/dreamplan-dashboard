@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, RefreshCw, Sparkles, User } from "lucide-react";
+import { ArrowLeft, BookOpen, RefreshCw, Sparkles, User } from "lucide-react";
 import {
   getDevotional,
   idForDate,
@@ -73,13 +73,63 @@ export function Devotionals({
   onOpen,
   onNote,
   onSelectDay,
+  onBack,
 }: {
   devotionals: PlanState["devotionals"];
   onOpen: (who: Who, dateKey: string, entryId: number, label: string) => void;
   onNote: (who: Who, dateKey: string, text: string) => void;
   onSelectDay: (who: Who, dateKey: string) => void;
+  onBack: () => void;
 }) {
-  const [who, setWho] = useState<Who>("andrew");
+  const [who, setWho] = useState<Who | null>(null);
+
+  // Landing view: pick a person.
+  if (!who) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="font-display text-2xl font-bold text-navy">Daily Devotionals</h2>
+            <p className="mt-1 max-w-xl text-[14px] leading-relaxed text-ink-soft">
+              Choose whose space to open. Andrew and Maria each have their own devotional from the bank, private notes, and history — all synced live.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            <ArrowLeft size={16} strokeWidth={2.2} />
+            Back to Dashboard
+          </button>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {PEOPLE.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setWho(p.id)}
+              className="card-surface group flex flex-col items-center gap-4 rounded-2xl p-8 text-center transition-all hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-[var(--shadow-cover)]"
+            >
+              <span
+                className={`flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-transform group-hover:scale-110 ${p.active}`}
+              >
+                <User size={32} strokeWidth={2} />
+              </span>
+              <div>
+                <span className="block text-xl font-bold text-navy">{p.name}</span>
+                <span className="mt-1 block text-[13px] text-ink-soft">
+                  Open {p.name}&apos;s devotional space
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const today = todayKey();
   const person = devotionals.people[who];
   const meta = PEOPLE.find((p) => p.id === who)!;
@@ -107,38 +157,22 @@ export function Devotionals({
     .slice(0, 8);
 
   return (
-    <div>
-      {/* Whose devotional */}
-      <div className="flex flex-wrap items-center gap-2">
-        {PEOPLE.map((p) => {
-          const isActive = p.id === who;
-          const hasToday = !!devotionals.people[p.id].days[today];
-          return (
-            <button
-              key={p.id}
-              onClick={() => setWho(p.id)}
-              className={`inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-[14px] font-bold transition-colors ${
-                isActive ? p.active : "border-line bg-white text-navy hover:bg-mist"
-              }`}
-            >
-              <User className="h-4 w-4" />
-              {p.name}
-              {hasToday && (
-                <span
-                  className={`ml-1 h-1.5 w-1.5 rounded-full ${
-                    isActive ? "bg-white" : "bg-teal"
-                  }`}
-                />
-              )}
-            </button>
-          );
-        })}
-        <span className="text-[12px] text-ink-soft">
-          Each of you gets your own reading &amp; notes
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setWho(null)}
+          className="inline-flex items-center gap-2 rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-semibold text-navy transition-colors hover:bg-mist"
+        >
+          <ArrowLeft size={16} strokeWidth={2.2} />
+          Back to choice
+        </button>
+        <span className={`text-[13px] font-bold uppercase tracking-wider ${meta.accent}`}>
+          {meta.name}&apos;s devotional space
         </span>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           onClick={openToday}
           className="inline-flex items-center gap-2 rounded-xl bg-navy px-5 py-3 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-royal"
@@ -188,7 +222,7 @@ export function Devotionals({
 
             <blockquote className="mt-4 border-l-4 border-gold bg-mist/60 px-5 py-4">
               <p className="font-display text-[17px] leading-relaxed text-navy">
-                “{entry.verse}”
+                &ldquo;{entry.verse}&rdquo;
               </p>
               <cite className="mt-2 block text-[12.5px] font-semibold not-italic text-royal">
                 {entry.reference} (WEB)

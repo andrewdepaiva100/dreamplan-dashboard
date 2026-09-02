@@ -260,7 +260,7 @@ function Index() {
 
       {/* SCRIPTURE BANNER (overview only) */}
       {!active && (
-      <div className="relative mt-6 rounded-2xl border-t-2 border-gold bg-white/95 px-6 py-6 text-center shadow-[var(--shadow-card)] backdrop-blur-sm">
+      <div className="relative z-10 mt-6 mb-2 rounded-2xl border-t-2 border-gold bg-white/95 px-6 py-6 text-center shadow-[var(--shadow-card)] backdrop-blur-sm">
         <blockquote className="mx-auto max-w-2xl">
           <p className="font-display text-lg italic leading-relaxed text-navy md:text-xl">
             “For which of you, desiring to build a tower, does not first sit down and count the cost, whether he has enough to complete it?”
@@ -1057,6 +1057,7 @@ function Index() {
           onOpen={openDevotional}
           onNote={setDevotionalNote}
           onSelectDay={selectDevotionalDay}
+          onBack={() => goTo(null)}
         />
       </Page>
       )}
