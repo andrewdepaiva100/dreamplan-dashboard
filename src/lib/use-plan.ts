@@ -375,6 +375,7 @@ export function usePlan() {
         return {
           ...p,
           devotionals: {
+            ...p.devotionals,
             people: {
               ...p.devotionals.people,
               [who]: { current: dateKey, days: { ...person.days, [dateKey]: day } },
@@ -401,6 +402,7 @@ export function usePlan() {
         return {
           ...p,
           devotionals: {
+            ...p.devotionals,
             people: {
               ...p.devotionals.people,
               [who]: { ...person, days: { ...person.days, [dateKey]: { ...day, note: text } } },
@@ -419,6 +421,7 @@ export function usePlan() {
       return {
         ...p,
         devotionals: {
+          ...p.devotionals,
           people: { ...p.devotionals.people, [who]: { ...person, current: dateKey } },
         },
       };
