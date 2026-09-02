@@ -124,6 +124,8 @@ function Index() {
   const { plan, hydrated, savedAt, online, setField, setFurnishing, setPaymentField, togglePayment, addExpense, removeExpense, addComment, openDevotional, setDevotionalNote, selectDevotionalDay, reset } = usePlan();
   const router = useRouter();
   const lock = useServerFn(lockSite);
+  const getMetrics = useServerFn(getDbMetrics);
+  const snapMetrics = useServerFn(takeHealthSnapshot);
   const [, tick] = useState(0);
 
 
