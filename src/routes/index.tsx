@@ -288,6 +288,20 @@ function Index() {
         ))}
       </div>
 
+      {/* BACK TO OVERVIEW (section view only) */}
+      {active && (
+        <div className="mt-6">
+          <button
+            type="button"
+            onClick={() => goTo(null)}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            <ArrowLeft size={16} strokeWidth={2.2} />
+            Back to Overview
+          </button>
+        </div>
+      )}
+
       {/* SECTION 1 */}
       {active === "s1" && (
       <Page id="s1" title="Target Budget & Available Funds">
@@ -1035,6 +1049,25 @@ function Index() {
       <Page id="activity" title="Edit History & Shared Notes">
         <ActivityPanel log={plan.log} comments={plan.comments} onAddComment={addComment} />
       </Page>
+      )}
+
+      {/* SECTION JUMP BAR (section view only) */}
+      {active && (
+        <nav className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
+          {SECTION_LINKS.filter((s) => s.id !== active).map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => goTo(s.id)}
+              className="card-surface flex items-center gap-2.5 rounded-xl px-3.5 py-3 text-left transition-all hover:border-gold/50"
+            >
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${s.tint}`}>
+                <s.Icon size={15} strokeWidth={2} />
+              </span>
+              <span className="text-[12px] font-bold leading-tight text-navy">{s.label}</span>
+            </button>
+          ))}
+        </nav>
       )}
 
       <div className="mt-6 text-center">
