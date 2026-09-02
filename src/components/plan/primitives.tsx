@@ -92,12 +92,10 @@ export function DateInput({
 }
 
 export function Page({
-  tag,
   title,
   children,
   id,
 }: {
-  tag: string;
   title: string;
   id?: string;
   children: React.ReactNode;
@@ -107,11 +105,10 @@ export function Page({
       id={id}
       className="card-surface mt-7 scroll-mt-24 rounded-[18px] px-6 py-9 sm:px-11"
     >
-      <div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
-        <span className="inline-block h-0.5 w-5 bg-gold" />
-        {tag}
-      </div>
-      <h2 className="mb-6 font-display text-2xl font-bold text-navy">{title}</h2>
+      <h2 className="mb-6 flex items-center gap-3 font-display text-2xl font-bold text-navy">
+        <span className="inline-block h-6 w-1 rounded-full bg-gold" />
+        {title}
+      </h2>
       {children}
     </section>
   );
