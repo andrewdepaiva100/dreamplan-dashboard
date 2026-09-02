@@ -1223,7 +1223,7 @@ function Index() {
                           className="flex items-center gap-3 rounded-xl bg-mist px-3 py-2"
                         >
                           <div className="w-24 shrink-0 text-[11px] font-medium text-ink-soft">
-                            {formatDate(snap.measured_at)}
+                            {formatTimestamp(snap.measured_at)}
                           </div>
                           <div className="flex-1">
                             <div className="h-1.5 w-full overflow-hidden rounded-full bg-white">
