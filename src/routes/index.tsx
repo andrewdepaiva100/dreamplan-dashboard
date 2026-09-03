@@ -1127,6 +1127,13 @@ function Index() {
       </Page>
       )}
 
+      {/* SHARED CALENDAR */}
+      {active === "calendar" && (
+      <Page id="calendar" title="Shared Calendar">
+        <SharedCalendar onBack={() => goTo(null)} />
+      </Page>
+      )}
+
       {/* DEVOTIONALS */}
       {active === "devotionals" && (
       <Page id="devotionals" title="Daily Devotionals for Andrew & Maria">
