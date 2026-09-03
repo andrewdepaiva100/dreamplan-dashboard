@@ -85,6 +85,12 @@ export class QuestScene extends Phaser.Scene {
   private promptText!: Phaser.GameObjects.Text;
   private arrow!: Phaser.GameObjects.Triangle;
   private boss: Phaser.Physics.Arcade.Sprite | null = null;
+  spawnPoint = new Phaser.Math.Vector2(0, 0);
+  private animals: Phaser.GameObjects.Sprite[] = [];
+  private landmark: { sprite: Phaser.GameObjects.Sprite; title: string; body: string } | null = null;
+  private cutscenePlayed = false;
+  private autopilot: Phaser.Math.Vector2 | null = null;
+  private companion: Phaser.GameObjects.Sprite | null = null;
   private bossPhase = 0;
   private bossHits = 0;
   private bossTimer?: Phaser.Time.TimerEvent;
@@ -112,8 +118,14 @@ export class QuestScene extends Phaser.Scene {
     this.boss = null;
     this.bossPhase = 0;
     this.bossHits = 0;
+    this.animals = [];
+    this.landmark = null;
+    this.cutscenePlayed = false;
+    this.autopilot = null;
+    this.companion = null;
 
     this.buildZone(this.save.current_zone);
+    this.spawnCompanion();
 
     // ---- groups (pooled) -------------------------------------------------
     this.enemies = this.physics.add.group({ maxSize: 60, runChildUpdate: false });
@@ -154,6 +166,8 @@ export class QuestScene extends Phaser.Scene {
     g.on(EV.dash, this.dash, this);
     g.on(EV.interact, this.interact, this);
     g.on(EV.resume, this.onResume, this);
+    g.on(EV.travel, this.travelTo, this);
+    g.on(EV.guideme, this.startAutopilot, this);
 
     this.events.once("shutdown", () => {
       g.off(EV.stick, this.onStick, this);
@@ -161,6 +175,8 @@ export class QuestScene extends Phaser.Scene {
       g.off(EV.dash, this.dash, this);
       g.off(EV.interact, this.interact, this);
       g.off(EV.resume, this.onResume, this);
+      g.off(EV.travel, this.travelTo, this);
+      g.off(EV.guideme, this.startAutopilot, this);
       this.bossTimer?.remove();
     });
 
@@ -259,7 +275,9 @@ export class QuestScene extends Phaser.Scene {
   private addPlayer(tx: number, ty: number) {
     const x = this.wx(Phaser.Math.Clamp(tx, 2, DESIGN_W - 3));
     const y = this.wy(Phaser.Math.Clamp(ty, 2, DESIGN_H - 3));
-    this.makeWalkAnims();
+    this.makeWalkAnims("maria");
+    this.makeWalkAnims("andrew");
+    this.spawnPoint.set(x, y);
     this.player = this.physics.add.sprite(x, y, "maria-down-0");
     this.player.anims.play("maria-idle-down");
     this.player.setScale(1.1);
@@ -290,31 +308,224 @@ export class QuestScene extends Phaser.Scene {
     });
   }
 
-  /** 4-directional walk + idle animations for Maria. */
-  private makeWalkAnims() {
+  /** 4-directional walk + idle animations for a character sheet. */
+  private makeWalkAnims(who: "maria" | "andrew") {
     for (const dir of ["down", "side", "up"] as const) {
-      if (!this.anims.exists(`maria-walk-${dir}`)) {
+      if (!this.anims.exists(`${who}-walk-${dir}`)) {
         this.anims.create({
-          key: `maria-walk-${dir}`,
+          key: `${who}-walk-${dir}`,
           frames: [
-            { key: `maria-${dir}-0` },
-            { key: `maria-${dir}-1` },
-            { key: `maria-${dir}-0` },
-            { key: `maria-${dir}-2` },
+            { key: `${who}-${dir}-0` },
+            { key: `${who}-${dir}-1` },
+            { key: `${who}-${dir}-0` },
+            { key: `${who}-${dir}-2` },
           ],
           frameRate: 9,
           repeat: -1,
         });
       }
-      if (!this.anims.exists(`maria-idle-${dir}`)) {
+      if (!this.anims.exists(`${who}-idle-${dir}`)) {
         this.anims.create({
-          key: `maria-idle-${dir}`,
-          frames: [{ key: `maria-${dir}-0` }],
+          key: `${who}-idle-${dir}`,
+          frames: [{ key: `${who}-${dir}-0` }],
           frameRate: 1,
           repeat: -1,
         });
       }
     }
+  }
+
+  // =======================================================================
+  // LANDMARKS / WILDLIFE / TRAVEL
+  // =======================================================================
+
+  /** Places the act's flagship building with a solid footprint and a cutscene trigger. */
+  private addLandmark(key: string, tx: number, ty: number, title: string, body: string) {
+    const sprite = this.add.sprite(this.wx(tx), this.wy(ty), key).setDepth(11);
+    if (!this.solidDecor) this.solidDecor = this.physics.add.staticGroup();
+    const foot = this.solidDecor.create(
+      sprite.x,
+      sprite.y + sprite.height * 0.32,
+      key,
+    ) as Phaser.Physics.Arcade.Sprite;
+    foot.setVisible(false);
+    const b = foot.body as Phaser.Physics.Arcade.StaticBody;
+    b.setSize(sprite.width * 0.72, Math.max(16, sprite.height * 0.22));
+    b.updateFromGameObject?.();
+    this.landmark = { sprite, title, body };
+    this.tweens.add({
+      targets: sprite,
+      alpha: { from: 0.94, to: 1 },
+      duration: 2600,
+      yoyo: true,
+      repeat: -1,
+    });
+  }
+
+  /** Wandering, non-blocking wildlife that makes the realm feel alive. */
+  private spawnAnimals(seed: number, specs: [string, number, number, number][]) {
+    const rnd = irnd(seed);
+    for (const [key, tx, ty, count] of specs) {
+      for (let i = 0; i < count; i++) {
+        const x = this.wx(tx + (rnd() - 0.5) * 12);
+        const y = this.wy(ty + (rnd() - 0.5) * 8);
+        const a = this.add.sprite(x, y, key).setDepth(9);
+        a.setFlipX(rnd() < 0.5);
+        this.animals.push(a);
+        const roam = () => {
+          const nx = Phaser.Math.Clamp(a.x + (rnd() - 0.5) * 200, 64, MAP_W * TILE - 64);
+          const ny = Phaser.Math.Clamp(a.y + (rnd() - 0.5) * 160, 64, MAP_H * TILE - 64);
+          a.setFlipX(nx < a.x);
+          this.tweens.add({
+            targets: a,
+            x: nx,
+            y: ny,
+            duration: 2600 + rnd() * 3200,
+            ease: "Sine.easeInOut",
+            onComplete: () => this.time.delayedCall(700 + rnd() * 2600, roam),
+          });
+        };
+        this.time.delayedCall(rnd() * 2000, roam);
+      }
+    }
+  }
+
+  /** Andrew walks with Maria once the ceremony is complete (free roam). */
+  private spawnCompanion() {
+    if (!this.save.wedding_completed || this.save.current_zone === "cathedral") return;
+    this.companion = this.add
+      .sprite(this.player.x - 40, this.player.y + 12, "andrew-down-0")
+      .setDepth(19)
+      .setScale(1.1);
+    this.companion.anims.play("andrew-idle-down");
+  }
+
+  private updateCompanion() {
+    const c = this.companion;
+    if (!c) return;
+    const dx = this.player.x - 34 - c.x;
+    const dy = this.player.y + 10 - c.y;
+    const d = Math.hypot(dx, dy);
+    const moving = d > 12;
+    if (moving) {
+      const step = Math.min(SPEED * 1.05, d * 4) / 60;
+      c.x += (dx / d) * step * 4;
+      c.y += (dy / d) * step * 4;
+    }
+    let dir: "down" | "up" | "side" = "down";
+    if (Math.abs(dx) > Math.abs(dy)) {
+      dir = "side";
+      c.setFlipX(dx < 0);
+    } else dir = dy < 0 ? "up" : "down";
+    const key = `andrew-${moving ? "walk" : "idle"}-${dir}`;
+    if (c.anims.currentAnim?.key !== key) c.anims.play(key, true);
+    c.setDepth(c.y > this.player.y ? 21 : 19);
+  }
+
+  /** Which acts the player may fast-travel to (everything reached so far). */
+  zoneOrder(): ZoneId[] {
+    return ["sunlit_shores", "wedding_garden", "the_haven", "starry_ascent", "cathedral"];
+  }
+
+  unlockedZones(): ZoneId[] {
+    const order = this.zoneOrder();
+    if (this.save.wedding_completed) return order;
+    return order.slice(0, order.indexOf(this.save.current_zone) + 1);
+  }
+
+  /** Live minimap data for the React map overlay. */
+  getMapSnapshot() {
+    const step = 3;
+    const rows: string[] = [];
+    for (let y = 0; y < MAP_H; y += step) {
+      let row = "";
+      for (let x = 0; x < MAP_W; x += step) {
+        row += String(this.layer?.getTileAt(x, y)?.index ?? 0);
+      }
+      rows.push(row);
+    }
+    const pins: { x: number; y: number; label: string; kind: string }[] = [];
+    if (this.landmark)
+      pins.push({
+        x: this.landmark.sprite.x / (MAP_W * TILE),
+        y: this.landmark.sprite.y / (MAP_H * TILE),
+        label: this.landmark.title,
+        kind: "landmark",
+      });
+    for (const it of this.interactables) {
+      if (!it.enabled || !it.obj.active) continue;
+      if (!["relic", "gateway", "guide", "vault", "andrew", "andrew-ceremony"].includes(it.kind))
+        continue;
+      pins.push({
+        x: it.obj.x / (MAP_W * TILE),
+        y: it.obj.y / (MAP_H * TILE),
+        label: it.label,
+        kind: it.kind,
+      });
+    }
+    return {
+      rows,
+      player: { x: this.player.x / (MAP_W * TILE), y: this.player.y / (MAP_H * TILE) },
+      pins,
+      zone: this.save.current_zone,
+      unlocked: this.unlockedZones(),
+    };
+  }
+
+  private travelTo(zone: ZoneId) {
+    if (zone === this.save.current_zone) {
+      this.onResume();
+      return;
+    }
+    if (!this.unlockedZones().includes(zone)) {
+      this.emitToast("That realm is still sealed — reach it on foot first.");
+      return;
+    }
+    this.save.current_zone = zone;
+    this.emitSave();
+    this.onResume();
+    this.cameras.main.fadeOut(380, 0, 0, 0);
+    this.time.delayedCall(420, () => this.scene.restart({ save: this.save }));
+  }
+
+  /** "Guide Me": Maria walks herself toward the current objective. */
+  private startAutopilot() {
+    this.onResume();
+    const target = this.objectiveTarget();
+    if (!target) {
+      this.emitToast("No path to trace right now — explore a little further.");
+      return;
+    }
+    this.autopilot = new Phaser.Math.Vector2(target.x, target.y);
+    this.emitToast("A path of petals unfolds toward your goal.");
+  }
+
+  private cancelAutopilot() {
+    this.autopilot = null;
+  }
+
+  /** Fires once when Maria first reaches the act's flagship landmark. */
+  private checkCutscene() {
+    if (this.cutscenePlayed || !this.landmark) return;
+    const l = this.landmark;
+    if (Phaser.Math.Distance.Between(this.player.x, this.player.y, l.sprite.x, l.sprite.y) > 230)
+      return;
+    this.cutscenePlayed = true;
+    this.autopilot = null;
+    this.frozen = true;
+    this.player.setVelocity(0, 0);
+    this.physics.pause();
+    const cam = this.cameras.main;
+    cam.stopFollow();
+    cam.pan(l.sprite.x, l.sprite.y, 900, "Sine.easeInOut");
+    cam.zoomTo(cam.zoom * 1.18, 900);
+    this.game.events.emit(EV.act, { title: l.title });
+    this.time.delayedCall(1500, () => {
+      cam.pan(this.player.x, this.player.y, 600, "Sine.easeInOut");
+      cam.zoomTo(this.scale.width < 620 ? 1.1 : 1.45, 600);
+      cam.startFollow(this.player, true, 0.12, 0.12);
+      this.openModal({ type: "info", title: l.title, body: l.body });
+    });
   }
 
   private addInteractable(
