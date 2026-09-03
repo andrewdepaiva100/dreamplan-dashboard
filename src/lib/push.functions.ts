@@ -93,7 +93,7 @@ async function deliver(
         },
         { subject, publicKey, privateKey },
       );
-      const res = await fetch(row.endpoint, payload);
+      const res = await fetch(row.endpoint, payload as unknown as RequestInit);
       if (res.status === 404 || res.status === 410) {
         await supabase.from("push_subscriptions").delete().eq("endpoint", row.endpoint);
         failed += 1;
