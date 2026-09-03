@@ -1302,32 +1302,30 @@ export class QuestScene extends Phaser.Scene {
     this.pushHud();
   }
 
-  private transformTiles() {
-    const cx = Math.floor(this.player.x / TILE);
-    const cy = Math.floor(this.player.y / TILE);
-    const r = 3;
-    const bloom = this.save.current_zone === "starry_ascent" ? T.SKY : T.BLOOM;
-    for (let y = cy - r; y <= cy + r; y++) {
-      for (let x = cx - r; x <= cx + r; x++) {
-        const tile = this.layer.getTileAt(x, y);
-        if (!tile || tile.index !== T.GREY) continue;
-        if (Phaser.Math.Distance.Between(x * TILE, y * TILE, this.player.x, this.player.y) > 92)
-          continue;
-        this.layer.putTileAt(bloom, x, y);
-        if (Phaser.Math.Between(0, 100) > 88) {
-          const s = this.add
-            .sprite(x * TILE + 16, y * TILE + 16, "spark")
-            .setTint(0xffd7e5)
-            .setDepth(8);
-          this.tweens.add({
-            targets: s,
-            y: s.y - 24,
-            alpha: 0,
-            duration: 900,
-            onComplete: () => s.destroy(),
-          });
-        }
-      }
+  /** Maria's aura leaves a golden light trail of blooming petals and sparkles. */
+  private auraTrail(moving: boolean) {
+    const count = moving ? 2 : 1;
+    for (let i = 0; i < count; i++) {
+      const ox = Phaser.Math.Between(-22, 22);
+      const oy = Phaser.Math.Between(-6, 20);
+      const isPetal = Phaser.Math.Between(0, 100) > 45;
+      const s = this.add
+        .sprite(this.player.x + ox, this.player.y + oy, isPetal ? "petal" : "spark")
+        .setDepth(8)
+        .setAlpha(0.95)
+        .setScale(isPetal ? Phaser.Math.FloatBetween(0.7, 1.2) : Phaser.Math.FloatBetween(1, 1.8));
+      if (!isPetal) s.setTint(0xffe9a8);
+      this.tweens.add({
+        targets: s,
+        y: s.y - Phaser.Math.Between(14, 30),
+        x: s.x + Phaser.Math.Between(-10, 10),
+        angle: isPetal ? Phaser.Math.Between(-140, 140) : 0,
+        alpha: 0,
+        scale: 0.2,
+        duration: Phaser.Math.Between(700, 1200),
+        ease: "Sine.easeOut",
+        onComplete: () => s.destroy(),
+      });
     }
   }
 }
