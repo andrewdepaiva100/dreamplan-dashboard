@@ -1,0 +1,25 @@
+{
+  "name": "Andrew & Maria — Financial Master Plan",
+  "short_name": "Our Plan",
+  "description": "Shared wedding, savings and life plan for Andrew & Maria.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B1E3D",
+  "theme_color": "#0B1E3D",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
