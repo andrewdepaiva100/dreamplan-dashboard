@@ -92,7 +92,12 @@
   --ink: oklch(0.256 0.031 258.4);
   --ink-soft: oklch(0.475 0.031 258.6);
   --line: oklch(0.902 0.019 247.9);
+  --rose-gold: oklch(0.72 0.11 25);
+  --blush: oklch(0.88 0.06 25);
+  --petal: oklch(0.78 0.14 15);
+  --gold-glow: oklch(0.82 0.12 85);
   --page-bg: radial-gradient(1200px 600px at 50% -10%, oklch(0.31 0.077 259) 0%, var(--navy) 55%, oklch(0.19 0.062 262) 100%);
+
   --gradient-cover: linear-gradient(135deg, var(--navy) 0%, var(--deep-blue) 55%, var(--royal) 100%);
   --gradient-final: linear-gradient(160deg, var(--navy), var(--deep-blue) 60%, var(--royal));
   --gradient-progress: linear-gradient(90deg, var(--royal), var(--sky));
