@@ -742,6 +742,14 @@ export class QuestScene extends Phaser.Scene {
       // hidden alcove behind western grove
       this.rect(d, 6, 4, 5, 1, T.WALL);
       this.rect(d, 6, 4, 1, 6, T.WALL);
+      // main road: spawn -> river crossing -> grotto temple
+      this.road(d, [
+        [16, 50],
+        [40, 50],
+        [58, 50],
+        [72, 30],
+        [104, 30],
+      ]);
     });
 
     this.addPlayer(18, 51);
@@ -837,7 +845,42 @@ export class QuestScene extends Phaser.Scene {
       });
     }
     this.addInteractable(this.wx(24), this.wy(30), "rest-stone", "rest", "Rest here");
+    this.addLandmark(
+      "landmark-temple",
+      110,
+      24,
+      "The River Gate Temple",
+      "Moss-covered arches mark the old crossing. Torches still burn here for travellers who choose the quiet road.",
+    );
+    this.spawnAnimals(1101, [
+      ["duck", 60, 40, 5],
+      ["duck", 60, 70, 4],
+      ["deer", 20, 76, 3],
+      ["bird", 30, 22, 5],
+      ["cat", 14, 34, 2],
+    ]);
+    this.addStalls([
+      [12, 30],
+      [30, 40],
+    ]);
     if (this.save.relics_collected.includes("lantern")) this.spawnGateway(this.wx(108), this.wy(28));
+  }
+
+  /** Village market stalls — flat, collidable dressing. */
+  private addStalls(spots: [number, number][]) {
+    if (!this.solidDecor) this.solidDecor = this.physics.add.staticGroup();
+    for (const [x, y] of spots) {
+      const st = this.solidDecor.create(
+        this.wx(x),
+        this.wy(y),
+        "stall",
+      ) as Phaser.Physics.Arcade.Sprite;
+      st.setDepth(10);
+      const b = st.body as Phaser.Physics.Arcade.StaticBody;
+      b.setSize(st.width * 0.8, st.height * 0.4);
+      b.setOffset(st.width * 0.1, st.height * 0.6);
+      b.updateFromGameObject?.();
+    }
   }
 
   private openRiverGates() {
@@ -905,6 +948,14 @@ export class QuestScene extends Phaser.Scene {
       this.rect(d, 53, 62, 26, 1, T.WALL);
       this.rect(d, 53, 46, 1, 16, T.WALL);
       this.rect(d, 79, 46, 1, 16, T.WALL);
+      // garden promenade
+      this.road(d, [
+        [12, 92],
+        [66, 92],
+        [66, 68],
+        [108, 68],
+        [108, 50],
+      ]);
     });
     this.addPlayer(12, 90);
     this.scatterDecor(22, {
@@ -924,6 +975,19 @@ export class QuestScene extends Phaser.Scene {
       ],
       flowers: 120,
     });
+
+    this.addLandmark(
+      "landmark-conservatory",
+      121,
+      44,
+      "The Grand Conservatory",
+      "Glass and white iron hold an endless summer inside. Four seasonal keys wake its doors.",
+    );
+    this.spawnAnimals(2202, [
+      ["bird", 40, 30, 6],
+      ["cat", 60, 60, 3],
+      ["deer", 100, 84, 2],
+    ]);
 
     const seasons = ["Spring", "Summer", "Autumn", "Winter"];
     const spots: [number, number][] = [
@@ -1074,6 +1138,20 @@ export class QuestScene extends Phaser.Scene {
       this.rect(d, 95, 77, 30, 1, T.WALL);
       this.rect(d, 95, 94, 30, 1, T.WALL);
       this.rect(d, 95, 78, 1, 16, T.WALL);
+      // cobblestone streets of Haven Town
+      this.road(d, [
+        [14, 51],
+        [66, 51],
+        [66, 24],
+      ], 4);
+      this.road(d, [
+        [22, 20],
+        [22, 88],
+      ], 3);
+      this.road(d, [
+        [110, 20],
+        [110, 88],
+      ], 3);
     });
     this.addPlayer(18, 51);
     this.scatterDecor(33, {
@@ -1109,6 +1187,26 @@ export class QuestScene extends Phaser.Scene {
       flowers: 100,
       border: true,
     });
+
+    this.addLandmark(
+      "landmark-townhall",
+      66,
+      18,
+      "Haven Town Hall",
+      "The clock above the square keeps a slow, kind time. Neighbours gather here at dusk.",
+    );
+    this.addStalls([
+      [52, 30],
+      [60, 30],
+      [76, 30],
+      [84, 30],
+    ]);
+    this.spawnAnimals(3303, [
+      ["dog", 50, 60, 3],
+      ["cat", 90, 60, 3],
+      ["bird", 66, 40, 6],
+      ["duck", 66, 54, 4],
+    ]);
 
     this.zoneState["sheets"] = 0;
     const sheetSpots: [number, number][] = [
@@ -1169,6 +1267,14 @@ export class QuestScene extends Phaser.Scene {
           for (let i = 0; i < w; i += 3) this.rect(d, x + i, y + j, 1, 1, T.BLOOM);
     });
     this.addPlayer(20, 85);
+    this.addLandmark(
+      "landmark-observatory",
+      100,
+      22,
+      "The Starry Observatory",
+      "A crystal dome tuned to the constellations. Align the three pillars and the stairway of stars appears.",
+    );
+    this.spawnAnimals(4404, [["bird", 60, 50, 8]]);
 
     this.zoneState["pillars"] = [0, 0, 0];
     const pillarSpots: [number, number][] = [
@@ -1253,6 +1359,14 @@ export class QuestScene extends Phaser.Scene {
       ],
       flowers: 40,
     });
+    this.addLandmark(
+      "landmark-cathedral",
+      66,
+      6,
+      "The Grand Cathedral of Serenity",
+      "Rose glass, candlelight, and every soul you love waiting inside. The long road ends in joy.",
+    );
+    this.spawnAnimals(5505, [["bird", 66, 40, 5]]);
     for (let i = 0; i < 24; i++) {
       this.add.sprite(this.wx(38 + (i % 2) * 56), this.wy(18 + Math.floor(i / 2) * 5), "guest").setDepth(6);
     }
@@ -1634,9 +1748,17 @@ export class QuestScene extends Phaser.Scene {
 
   private spawnGateway(x: number, y: number) {
     if (this.interactables.some((i) => i.kind === "gateway")) return;
-    const it = this.addInteractable(x, y, "gateway", "gateway", "Step through the gateway", {
-      radius: 54,
+    const order = this.zoneOrder();
+    const next = order[Math.min(order.length - 1, order.indexOf(this.save.current_zone) + 1)]!;
+    const it = this.addInteractable(x, y, "portal", "gateway", `Portal — ${ZONES[next].title}`, {
+      radius: 62,
     });
+    this.add
+      .sprite(x, y, "glow")
+      .setDepth(11)
+      .setScale(4)
+      .setAlpha(0.5)
+      .setBlendMode(Phaser.BlendModes.ADD);
     this.tweens.add({
       targets: it.obj,
       alpha: { from: 0.75, to: 1 },
@@ -1737,7 +1859,24 @@ export class QuestScene extends Phaser.Scene {
     if (this.cursors.right.isDown || k["D"]!.isDown) vx += 1;
     if (this.cursors.up.isDown || k["W"]!.isDown) vy -= 1;
     if (this.cursors.down.isDown || k["S"]!.isDown) vy += 1;
-    const len = Math.hypot(vx, vy);
+    let len = Math.hypot(vx, vy);
+    if (len > 0.05) this.cancelAutopilot();
+    if (len < 0.05 && this.autopilot) {
+      const d = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        this.autopilot.x,
+        this.autopilot.y,
+      );
+      if (d < 70) this.cancelAutopilot();
+      else {
+        const a = Math.atan2(this.autopilot.y - this.player.y, this.autopilot.x - this.player.x);
+        vx = Math.cos(a);
+        vy = Math.sin(a);
+        len = 1;
+        if (time - this.lastAura > 120) this.auraTrail(true);
+      }
+    }
     if (len > 1) {
       vx /= len;
       vy /= len;
@@ -1814,6 +1953,8 @@ export class QuestScene extends Phaser.Scene {
         .setText(near ? `E / ACTION — ${near.label}` : "")
         .setVisible(!!near);
     }
+    this.updateCompanion();
+    this.checkCutscene();
     this.updateArrow();
     this.pushHud();
   }
