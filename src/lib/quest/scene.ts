@@ -162,21 +162,22 @@ export class QuestScene extends Phaser.Scene {
     this.cameras.main.setZoom(this.scale.width < 620 ? 1.1 : 1.45);
     this.cameras.main.fadeIn(500, 8, 12, 30);
 
-    // soft ambient vignette overlay
-    const vignette = this.add.rectangle(
+    // warm romantic sunlight wash across the whole scene
+    const sunlight = this.add.rectangle(
       this.cameras.main.centerX,
       this.cameras.main.centerY,
-      this.cameras.main.width * 2,
-      this.cameras.main.height * 2,
-      0x0b1e3d,
-      0,
+      this.cameras.main.width * 3,
+      this.cameras.main.height * 3,
+      0xffe6b0,
+      0.14,
     );
-    vignette.setDepth(100);
-    vignette.setBlendMode(Phaser.BlendModes.MULTIPLY);
+    sunlight.setScrollFactor(0);
+    sunlight.setDepth(90);
+    sunlight.setBlendMode(Phaser.BlendModes.ADD);
     this.tweens.add({
-      targets: vignette,
-      alpha: { from: 0, to: 0.18 },
-      duration: 1200,
+      targets: sunlight,
+      alpha: { from: 0.1, to: 0.2 },
+      duration: 3800,
       yoyo: true,
       repeat: -1,
       ease: "Sine.easeInOut",
