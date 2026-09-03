@@ -11,6 +11,7 @@ export const EV = {
   action: "quest:action",
   dash: "quest:dash",
   interact: "quest:interact",
+  guide: "quest:guide",
 } as const;
 
 export type HudState = {
