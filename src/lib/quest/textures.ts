@@ -38,6 +38,14 @@ import imgGuest from "@/assets/quest/guest.png";
 import imgGuide from "@/assets/quest/guide.png";
 import imgSignpost from "@/assets/quest/signpost.png";
 import imgFountain from "@/assets/quest/fountain.png";
+import imgHouse from "@/assets/quest/house.png";
+import imgCottage from "@/assets/quest/cottage.png";
+import imgTree from "@/assets/quest/tree.png";
+import imgFence from "@/assets/quest/fence.png";
+import imgFlowers from "@/assets/quest/flowers.png";
+import imgLamp from "@/assets/quest/lamp.png";
+import imgBench from "@/assets/quest/bench.png";
+import imgBridge from "@/assets/quest/bridge.png";
 
 export const TILE = 32;
 export const HD = 2;
@@ -104,6 +112,14 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   guide: [imgGuide, 22, 32],
   signpost: [imgSignpost, 24, 32],
   fountain: [imgFountain, 34, 38],
+  house: [imgHouse, 64, 56],
+  cottage: [imgCottage, 56, 50],
+  tree: [imgTree, 40, 46],
+  fence: [imgFence, 40, 18],
+  flowers: [imgFlowers, 22, 16],
+  lamp: [imgLamp, 18, 40],
+  bench: [imgBench, 34, 22],
+  bridge: [imgBridge, 44, 64],
 };
 
 /** Queue every bundled image. Call from the scene's preload(). */
@@ -172,9 +188,11 @@ function walkFrame(
   step: number,
 ) {
   drawTo(scene, key, w, h, (ctx) => {
-    const bob = step === 1 ? 1 : 0;
-    const squash = step === 1 ? 1 : 0;
-    ctx.drawImage(source(scene, `art-${artKey}`), squash / 2, bob, w - squash, h - bob);
+    // step 0 = neutral, 1 = left lift, 2 = right lift (mirrored sway)
+    const bob = step === 0 ? 0 : 1;
+    const squash = step === 0 ? 0 : 2;
+    const lean = step === 1 ? -1 : step === 2 ? 1 : 0;
+    ctx.drawImage(source(scene, `art-${artKey}`), squash / 2 + lean, bob, w - squash, h - bob);
   });
 }
 
@@ -184,6 +202,7 @@ export function buildSprites(scene: Phaser.Scene) {
   for (const dir of ["down", "side", "up"] as const) {
     walkFrame(scene, `maria-${dir}-0`, `maria-${dir}`, 24, 34, 0);
     walkFrame(scene, `maria-${dir}-1`, `maria-${dir}`, 24, 34, 1);
+    walkFrame(scene, `maria-${dir}-2`, `maria-${dir}`, 24, 34, 2);
   }
   // legacy keys kept so existing scene code keeps working
   walkFrame(scene, "maria-0", "maria-down", 24, 34, 0);
@@ -222,6 +241,14 @@ export function buildSprites(scene: Phaser.Scene) {
     ["guide", "guide"],
     ["signpost", "signpost"],
     ["fountain", "fountain"],
+    ["house", "house"],
+    ["cottage", "cottage"],
+    ["tree", "tree"],
+    ["fence", "fence"],
+    ["flowers", "flowers"],
+    ["lamp", "lamp"],
+    ["bench", "bench"],
+    ["bridge", "bridge"],
   ];
   for (const [key, art] of plain) {
     const spec = SPRITE_ART[art]!;
