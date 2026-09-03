@@ -10,6 +10,7 @@ import {
   BellRing,
   ClipboardList,
   CreditCard,
+  Gamepad2,
   Map,
   ShieldCheck,
   Sparkles,
@@ -1156,6 +1157,13 @@ function Index() {
           onSelectDay={selectDevotionalDay}
           onBack={() => goTo(null)}
         />
+      </Page>
+      )}
+
+      {/* MARIA'S QUEST */}
+      {active === "quest" && (
+      <Page id="quest" title="Maria's Quest: Realm of the Golden Ring">
+        <MariasQuest onBack={() => goTo(null)} />
       </Page>
       )}
 
