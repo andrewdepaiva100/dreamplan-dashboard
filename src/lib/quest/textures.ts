@@ -46,6 +46,21 @@ import imgFlowers from "@/assets/quest/flowers.png";
 import imgLamp from "@/assets/quest/lamp.png";
 import imgBench from "@/assets/quest/bench.png";
 import imgBridge from "@/assets/quest/bridge.png";
+import imgAndrewDown from "@/assets/quest/andrew-down.png";
+import imgAndrewSide from "@/assets/quest/andrew-side.png";
+import imgAndrewUp from "@/assets/quest/andrew-up.png";
+import imgLmTemple from "@/assets/quest/landmark-temple.png";
+import imgLmConservatory from "@/assets/quest/landmark-conservatory.png";
+import imgLmTownhall from "@/assets/quest/landmark-townhall.png";
+import imgLmObservatory from "@/assets/quest/landmark-observatory.png";
+import imgLmCathedral from "@/assets/quest/landmark-cathedral.png";
+import imgPortal from "@/assets/quest/portal.png";
+import imgStall from "@/assets/quest/stall.png";
+import imgCat from "@/assets/quest/cat.png";
+import imgDog from "@/assets/quest/dog.png";
+import imgBird from "@/assets/quest/bird.png";
+import imgDeer from "@/assets/quest/deer.png";
+import imgDuck from "@/assets/quest/duck.png";
 
 export const TILE = 32;
 export const HD = 2;
@@ -120,6 +135,21 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   lamp: [imgLamp, 18, 40],
   bench: [imgBench, 34, 22],
   bridge: [imgBridge, 44, 64],
+  "andrew-down": [imgAndrewDown, 24, 34],
+  "andrew-side": [imgAndrewSide, 26, 34],
+  "andrew-up": [imgAndrewUp, 24, 34],
+  "landmark-temple": [imgLmTemple, 200, 222],
+  "landmark-conservatory": [imgLmConservatory, 204, 220],
+  "landmark-townhall": [imgLmTownhall, 210, 230],
+  "landmark-observatory": [imgLmObservatory, 190, 242],
+  "landmark-cathedral": [imgLmCathedral, 196, 278],
+  portal: [imgPortal, 62, 76],
+  stall: [imgStall, 42, 51],
+  cat: [imgCat, 18, 23],
+  dog: [imgDog, 26, 22],
+  bird: [imgBird, 17, 14],
+  deer: [imgDeer, 30, 21],
+  duck: [imgDuck, 19, 20],
 };
 
 /** Queue every bundled image. Call from the scene's preload(). */
@@ -208,8 +238,14 @@ export function buildSprites(scene: Phaser.Scene) {
   walkFrame(scene, "maria-0", "maria-down", 24, 34, 0);
   walkFrame(scene, "maria-1", "maria-down", 24, 34, 1);
 
-  // ---- ANDREW -----------------------------------------------------------
-  scaled(scene, "andrew", "andrew", 24, 34);
+  // ---- ANDREW: 4-directional, three frames each --------------------------
+  for (const dir of ["down", "side", "up"] as const) {
+    const spec = SPRITE_ART[`andrew-${dir}`]!;
+    walkFrame(scene, `andrew-${dir}-0`, `andrew-${dir}`, spec[1], spec[2], 0);
+    walkFrame(scene, `andrew-${dir}-1`, `andrew-${dir}`, spec[1], spec[2], 1);
+    walkFrame(scene, `andrew-${dir}-2`, `andrew-${dir}`, spec[1], spec[2], 2);
+  }
+  scaled(scene, "andrew", "andrew-down", 24, 34);
   scaled(scene, "andrew-ceremony", "andrew-ceremony", 24, 34);
 
   // ---- ENEMIES ----------------------------------------------------------
@@ -249,6 +285,18 @@ export function buildSprites(scene: Phaser.Scene) {
     ["lamp", "lamp"],
     ["bench", "bench"],
     ["bridge", "bridge"],
+    ["landmark-temple", "landmark-temple"],
+    ["landmark-conservatory", "landmark-conservatory"],
+    ["landmark-townhall", "landmark-townhall"],
+    ["landmark-observatory", "landmark-observatory"],
+    ["landmark-cathedral", "landmark-cathedral"],
+    ["portal", "portal"],
+    ["stall", "stall"],
+    ["cat", "cat"],
+    ["dog", "dog"],
+    ["bird", "bird"],
+    ["deer", "deer"],
+    ["duck", "duck"],
   ];
   for (const [key, art] of plain) {
     const spec = SPRITE_ART[art]!;

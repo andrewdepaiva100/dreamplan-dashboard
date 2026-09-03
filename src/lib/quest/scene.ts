@@ -31,8 +31,13 @@ type Interactable = {
   data?: Record<string, unknown>;
 };
 
-const MAP_W = 132;
-const MAP_H = 102;
+/** Layouts are authored on a 132x102 design grid and scaled onto the real map. */
+const DESIGN_W = 132;
+const DESIGN_H = 102;
+const MAP_W = 180;
+const MAP_H = 180;
+const SX = MAP_W / DESIGN_W;
+const SY = MAP_H / DESIGN_H;
 const SPEED = 120;
 const DASH_MS = 170;
 const DASH_COOLDOWN = 2000;
@@ -80,6 +85,12 @@ export class QuestScene extends Phaser.Scene {
   private promptText!: Phaser.GameObjects.Text;
   private arrow!: Phaser.GameObjects.Triangle;
   private boss: Phaser.Physics.Arcade.Sprite | null = null;
+  spawnPoint = new Phaser.Math.Vector2(0, 0);
+  private animals: Phaser.GameObjects.Sprite[] = [];
+  private landmark: { sprite: Phaser.GameObjects.Sprite; title: string; body: string } | null = null;
+  private cutscenePlayed = false;
+  private autopilot: Phaser.Math.Vector2 | null = null;
+  private companion: Phaser.GameObjects.Sprite | null = null;
   private bossPhase = 0;
   private bossHits = 0;
   private bossTimer?: Phaser.Time.TimerEvent;
@@ -107,8 +118,14 @@ export class QuestScene extends Phaser.Scene {
     this.boss = null;
     this.bossPhase = 0;
     this.bossHits = 0;
+    this.animals = [];
+    this.landmark = null;
+    this.cutscenePlayed = false;
+    this.autopilot = null;
+    this.companion = null;
 
     this.buildZone(this.save.current_zone);
+    this.spawnCompanion();
 
     // ---- groups (pooled) -------------------------------------------------
     this.enemies = this.physics.add.group({ maxSize: 60, runChildUpdate: false });
@@ -149,6 +166,8 @@ export class QuestScene extends Phaser.Scene {
     g.on(EV.dash, this.dash, this);
     g.on(EV.interact, this.interact, this);
     g.on(EV.resume, this.onResume, this);
+    g.on(EV.travel, this.travelTo, this);
+    g.on(EV.guideme, this.startAutopilot, this);
 
     this.events.once("shutdown", () => {
       g.off(EV.stick, this.onStick, this);
@@ -156,6 +175,8 @@ export class QuestScene extends Phaser.Scene {
       g.off(EV.dash, this.dash, this);
       g.off(EV.interact, this.interact, this);
       g.off(EV.resume, this.onResume, this);
+      g.off(EV.travel, this.travelTo, this);
+      g.off(EV.guideme, this.startAutopilot, this);
       this.bossTimer?.remove();
     });
 
@@ -216,16 +237,47 @@ export class QuestScene extends Phaser.Scene {
     this.layer.setSkipCull(false);
   }
 
+  /** design-grid tile -> real grid tile */
+  private sx(n: number) {
+    return Math.round(n * SX);
+  }
+  private sy(n: number) {
+    return Math.round(n * SY);
+  }
+  /** design-grid tile -> world pixels */
+  wx(n: number) {
+    return n * SX * TILE;
+  }
+  wy(n: number) {
+    return n * SY * TILE;
+  }
+
   private rect(d: number[][], x: number, y: number, w: number, h: number, t: number) {
-    for (let j = y; j < y + h; j++)
-      for (let i = x; i < x + w; i++)
+    const x0 = this.sx(x);
+    const y0 = this.sy(y);
+    const w0 = Math.max(1, Math.round(w * SX));
+    const h0 = Math.max(1, Math.round(h * SY));
+    for (let j = y0; j < y0 + h0; j++)
+      for (let i = x0; i < x0 + w0; i++)
         if (d[j] && i >= 0 && i < MAP_W && j >= 0 && j < MAP_H) d[j]![i] = t;
   }
 
+  /** Carve a road/trail through the design grid along a waypoint chain. */
+  private road(d: number[][], pts: [number, number][], w = 3, tile = T.PATH) {
+    for (let n = 0; n < pts.length - 1; n++) {
+      const [ax, ay] = pts[n]!;
+      const [bx, by] = pts[n + 1]!;
+      this.rect(d, Math.min(ax, bx), ay, Math.abs(bx - ax) + w, w, tile);
+      this.rect(d, bx, Math.min(ay, by), w, Math.abs(by - ay) + w, tile);
+    }
+  }
+
   private addPlayer(tx: number, ty: number) {
-    const x = Phaser.Math.Clamp(tx, 2, MAP_W - 3) * TILE;
-    const y = Phaser.Math.Clamp(ty, 2, MAP_H - 3) * TILE;
-    this.makeWalkAnims();
+    const x = this.wx(Phaser.Math.Clamp(tx, 2, DESIGN_W - 3));
+    const y = this.wy(Phaser.Math.Clamp(ty, 2, DESIGN_H - 3));
+    this.makeWalkAnims("maria");
+    this.makeWalkAnims("andrew");
+    this.spawnPoint.set(x, y);
     this.player = this.physics.add.sprite(x, y, "maria-down-0");
     this.player.anims.play("maria-idle-down");
     this.player.setScale(1.1);
@@ -256,31 +308,224 @@ export class QuestScene extends Phaser.Scene {
     });
   }
 
-  /** 4-directional walk + idle animations for Maria. */
-  private makeWalkAnims() {
+  /** 4-directional walk + idle animations for a character sheet. */
+  private makeWalkAnims(who: "maria" | "andrew") {
     for (const dir of ["down", "side", "up"] as const) {
-      if (!this.anims.exists(`maria-walk-${dir}`)) {
+      if (!this.anims.exists(`${who}-walk-${dir}`)) {
         this.anims.create({
-          key: `maria-walk-${dir}`,
+          key: `${who}-walk-${dir}`,
           frames: [
-            { key: `maria-${dir}-0` },
-            { key: `maria-${dir}-1` },
-            { key: `maria-${dir}-0` },
-            { key: `maria-${dir}-2` },
+            { key: `${who}-${dir}-0` },
+            { key: `${who}-${dir}-1` },
+            { key: `${who}-${dir}-0` },
+            { key: `${who}-${dir}-2` },
           ],
           frameRate: 9,
           repeat: -1,
         });
       }
-      if (!this.anims.exists(`maria-idle-${dir}`)) {
+      if (!this.anims.exists(`${who}-idle-${dir}`)) {
         this.anims.create({
-          key: `maria-idle-${dir}`,
-          frames: [{ key: `maria-${dir}-0` }],
+          key: `${who}-idle-${dir}`,
+          frames: [{ key: `${who}-${dir}-0` }],
           frameRate: 1,
           repeat: -1,
         });
       }
     }
+  }
+
+  // =======================================================================
+  // LANDMARKS / WILDLIFE / TRAVEL
+  // =======================================================================
+
+  /** Places the act's flagship building with a solid footprint and a cutscene trigger. */
+  private addLandmark(key: string, tx: number, ty: number, title: string, body: string) {
+    const sprite = this.add.sprite(this.wx(tx), this.wy(ty), key).setDepth(11);
+    if (!this.solidDecor) this.solidDecor = this.physics.add.staticGroup();
+    const foot = this.solidDecor.create(
+      sprite.x,
+      sprite.y + sprite.height * 0.32,
+      key,
+    ) as Phaser.Physics.Arcade.Sprite;
+    foot.setVisible(false);
+    const b = foot.body as Phaser.Physics.Arcade.StaticBody;
+    b.setSize(sprite.width * 0.72, Math.max(16, sprite.height * 0.22));
+    b.updateFromGameObject?.();
+    this.landmark = { sprite, title, body };
+    this.tweens.add({
+      targets: sprite,
+      alpha: { from: 0.94, to: 1 },
+      duration: 2600,
+      yoyo: true,
+      repeat: -1,
+    });
+  }
+
+  /** Wandering, non-blocking wildlife that makes the realm feel alive. */
+  private spawnAnimals(seed: number, specs: [string, number, number, number][]) {
+    const rnd = irnd(seed);
+    for (const [key, tx, ty, count] of specs) {
+      for (let i = 0; i < count; i++) {
+        const x = this.wx(tx + (rnd() - 0.5) * 12);
+        const y = this.wy(ty + (rnd() - 0.5) * 8);
+        const a = this.add.sprite(x, y, key).setDepth(9);
+        a.setFlipX(rnd() < 0.5);
+        this.animals.push(a);
+        const roam = () => {
+          const nx = Phaser.Math.Clamp(a.x + (rnd() - 0.5) * 200, 64, MAP_W * TILE - 64);
+          const ny = Phaser.Math.Clamp(a.y + (rnd() - 0.5) * 160, 64, MAP_H * TILE - 64);
+          a.setFlipX(nx < a.x);
+          this.tweens.add({
+            targets: a,
+            x: nx,
+            y: ny,
+            duration: 2600 + rnd() * 3200,
+            ease: "Sine.easeInOut",
+            onComplete: () => this.time.delayedCall(700 + rnd() * 2600, roam),
+          });
+        };
+        this.time.delayedCall(rnd() * 2000, roam);
+      }
+    }
+  }
+
+  /** Andrew walks with Maria once the ceremony is complete (free roam). */
+  private spawnCompanion() {
+    if (!this.save.wedding_completed || this.save.current_zone === "cathedral") return;
+    this.companion = this.add
+      .sprite(this.player.x - 40, this.player.y + 12, "andrew-down-0")
+      .setDepth(19)
+      .setScale(1.1);
+    this.companion.anims.play("andrew-idle-down");
+  }
+
+  private updateCompanion() {
+    const c = this.companion;
+    if (!c) return;
+    const dx = this.player.x - 34 - c.x;
+    const dy = this.player.y + 10 - c.y;
+    const d = Math.hypot(dx, dy);
+    const moving = d > 12;
+    if (moving) {
+      const step = Math.min(SPEED * 1.05, d * 4) / 60;
+      c.x += (dx / d) * step * 4;
+      c.y += (dy / d) * step * 4;
+    }
+    let dir: "down" | "up" | "side" = "down";
+    if (Math.abs(dx) > Math.abs(dy)) {
+      dir = "side";
+      c.setFlipX(dx < 0);
+    } else dir = dy < 0 ? "up" : "down";
+    const key = `andrew-${moving ? "walk" : "idle"}-${dir}`;
+    if (c.anims.currentAnim?.key !== key) c.anims.play(key, true);
+    c.setDepth(c.y > this.player.y ? 21 : 19);
+  }
+
+  /** Which acts the player may fast-travel to (everything reached so far). */
+  zoneOrder(): ZoneId[] {
+    return ["sunlit_shores", "wedding_garden", "the_haven", "starry_ascent", "cathedral"];
+  }
+
+  unlockedZones(): ZoneId[] {
+    const order = this.zoneOrder();
+    if (this.save.wedding_completed) return order;
+    return order.slice(0, order.indexOf(this.save.current_zone) + 1);
+  }
+
+  /** Live minimap data for the React map overlay. */
+  getMapSnapshot() {
+    const step = 3;
+    const rows: string[] = [];
+    for (let y = 0; y < MAP_H; y += step) {
+      let row = "";
+      for (let x = 0; x < MAP_W; x += step) {
+        row += String(this.layer?.getTileAt(x, y)?.index ?? 0);
+      }
+      rows.push(row);
+    }
+    const pins: { x: number; y: number; label: string; kind: string }[] = [];
+    if (this.landmark)
+      pins.push({
+        x: this.landmark.sprite.x / (MAP_W * TILE),
+        y: this.landmark.sprite.y / (MAP_H * TILE),
+        label: this.landmark.title,
+        kind: "landmark",
+      });
+    for (const it of this.interactables) {
+      if (!it.enabled || !it.obj.active) continue;
+      if (!["relic", "gateway", "guide", "vault", "andrew", "andrew-ceremony"].includes(it.kind))
+        continue;
+      pins.push({
+        x: it.obj.x / (MAP_W * TILE),
+        y: it.obj.y / (MAP_H * TILE),
+        label: it.label,
+        kind: it.kind,
+      });
+    }
+    return {
+      rows,
+      player: { x: this.player.x / (MAP_W * TILE), y: this.player.y / (MAP_H * TILE) },
+      pins,
+      zone: this.save.current_zone,
+      unlocked: this.unlockedZones(),
+    };
+  }
+
+  private travelTo(zone: ZoneId) {
+    if (zone === this.save.current_zone) {
+      this.onResume();
+      return;
+    }
+    if (!this.unlockedZones().includes(zone)) {
+      this.emitToast("That realm is still sealed — reach it on foot first.");
+      return;
+    }
+    this.save.current_zone = zone;
+    this.emitSave();
+    this.onResume();
+    this.cameras.main.fadeOut(380, 0, 0, 0);
+    this.time.delayedCall(420, () => this.scene.restart({ save: this.save }));
+  }
+
+  /** "Guide Me": Maria walks herself toward the current objective. */
+  private startAutopilot() {
+    this.onResume();
+    const target = this.objectiveTarget();
+    if (!target) {
+      this.emitToast("No path to trace right now — explore a little further.");
+      return;
+    }
+    this.autopilot = new Phaser.Math.Vector2(target.x, target.y);
+    this.emitToast("A path of petals unfolds toward your goal.");
+  }
+
+  private cancelAutopilot() {
+    this.autopilot = null;
+  }
+
+  /** Fires once when Maria first reaches the act's flagship landmark. */
+  private checkCutscene() {
+    if (this.cutscenePlayed || !this.landmark) return;
+    const l = this.landmark;
+    if (Phaser.Math.Distance.Between(this.player.x, this.player.y, l.sprite.x, l.sprite.y) > 230)
+      return;
+    this.cutscenePlayed = true;
+    this.autopilot = null;
+    this.frozen = true;
+    this.player.setVelocity(0, 0);
+    this.physics.pause();
+    const cam = this.cameras.main;
+    cam.stopFollow();
+    cam.pan(l.sprite.x, l.sprite.y, 900, "Sine.easeInOut");
+    cam.zoomTo(cam.zoom * 1.18, 900);
+    this.game.events.emit(EV.act, { title: l.title });
+    this.time.delayedCall(1500, () => {
+      cam.pan(this.player.x, this.player.y, 600, "Sine.easeInOut");
+      cam.zoomTo(this.scale.width < 620 ? 1.1 : 1.45, 600);
+      cam.startFollow(this.player, true, 0.12, 0.12);
+      this.openModal({ type: "info", title: l.title, body: l.body });
+    });
   }
 
   private addInteractable(
@@ -341,8 +586,8 @@ export class QuestScene extends Phaser.Scene {
 
     const solid = (tx: number, ty: number, key: string, footH = 0.35) => {
       const s = this.solidDecor.create(
-        tx * TILE,
-        ty * TILE,
+        this.wx(tx),
+        this.wy(ty),
         key,
       ) as Phaser.Physics.Arcade.Sprite;
       s.setDepth(10 + ty * 0.01);
@@ -370,25 +615,25 @@ export class QuestScene extends Phaser.Scene {
       for (let i = 0; i < n; i++) solid(x + i * 1.25, y, "fence", 0.6);
     }
     for (const [x, y] of opts.bridges ?? []) {
-      this.add.sprite(x * TILE, y * TILE, "bridge").setDepth(3).setAlpha(0.96);
+      this.add.sprite(this.wx(x), this.wy(y), "bridge").setDepth(3).setAlpha(0.96);
     }
     for (let i = 0; i < (opts.flowers ?? 0); i++) {
-      const tx = 4 + rnd() * (MAP_W - 8);
-      const ty = 4 + rnd() * (MAP_H - 8);
+      const tx = 4 + rnd() * (DESIGN_W - 8);
+      const ty = 4 + rnd() * (DESIGN_H - 8);
       this.add
-        .sprite(tx * TILE, ty * TILE, "flowers")
+        .sprite(this.wx(tx), this.wy(ty), "flowers")
         .setDepth(4)
         .setAlpha(0.9)
         .setScale(0.8 + rnd() * 0.5);
     }
     if (opts.border) {
-      for (let x = 2; x < MAP_W - 2; x += 3) {
+      for (let x = 2; x < DESIGN_W - 2; x += 2) {
         solid(x, 1.4, "tree", 0.28);
-        solid(x + 1, MAP_H - 2.2, "tree", 0.28);
+        solid(x + 1, DESIGN_H - 2.2, "tree", 0.28);
       }
-      for (let y = 3; y < MAP_H - 3; y += 3) {
+      for (let y = 3; y < DESIGN_H - 3; y += 2) {
         solid(1.4, y, "tree", 0.28);
-        solid(MAP_W - 2.2, y + 1, "tree", 0.28);
+        solid(DESIGN_W - 2.2, y + 1, "tree", 0.28);
       }
     }
 
@@ -497,6 +742,14 @@ export class QuestScene extends Phaser.Scene {
       // hidden alcove behind western grove
       this.rect(d, 6, 4, 5, 1, T.WALL);
       this.rect(d, 6, 4, 1, 6, T.WALL);
+      // main road: spawn -> river crossing -> grotto temple
+      this.road(d, [
+        [16, 50],
+        [40, 50],
+        [58, 50],
+        [72, 30],
+        [104, 30],
+      ]);
     });
 
     this.addPlayer(18, 51);
@@ -546,7 +799,7 @@ export class QuestScene extends Phaser.Scene {
       [42, 78],
     ];
     const plates: Phaser.GameObjects.Sprite[] = plateTiles.map(([x, y]) =>
-      this.add.sprite(x! * TILE, y! * TILE, "plate").setDepth(4).setAlpha(0.75),
+      this.add.sprite(this.wx(x!), this.wy(y!), "plate").setDepth(4).setAlpha(0.75),
     );
     const blockTiles: [number, number][] = [
       [24, 22],
@@ -554,7 +807,7 @@ export class QuestScene extends Phaser.Scene {
       [22, 76],
     ];
     for (const [x, y] of blockTiles) {
-      const b = this.blocks.create(x! * TILE, y! * TILE, "block") as Phaser.Physics.Arcade.Sprite;
+      const b = this.blocks.create(this.wx(x!), this.wy(y!), "block") as Phaser.Physics.Arcade.Sprite;
       b.setImmovable(false).setDepth(11);
       b.setDrag(1400, 1400);
       (b.body as Phaser.Physics.Arcade.Body).setMass(6);
@@ -587,12 +840,47 @@ export class QuestScene extends Phaser.Scene {
 
     // waterfall envelope
     if (!this.has(this.save.secret_envelopes_found, "waterfall")) {
-      this.addInteractable(99 * TILE, 28 * TILE, "envelope", "envelope", "Read the letter", {
+      this.addInteractable(this.wx(99), this.wy(28), "envelope", "envelope", "Read the letter", {
         id: "waterfall",
       });
     }
-    this.addInteractable(24 * TILE, 30 * TILE, "rest-stone", "rest", "Rest here");
-    if (this.save.relics_collected.includes("lantern")) this.spawnGateway(108 * TILE, 28 * TILE);
+    this.addInteractable(this.wx(24), this.wy(30), "rest-stone", "rest", "Rest here");
+    this.addLandmark(
+      "landmark-temple",
+      110,
+      24,
+      "The River Gate Temple",
+      "Moss-covered arches mark the old crossing. Torches still burn here for travellers who choose the quiet road.",
+    );
+    this.spawnAnimals(1101, [
+      ["duck", 60, 40, 5],
+      ["duck", 60, 70, 4],
+      ["deer", 20, 76, 3],
+      ["bird", 30, 22, 5],
+      ["cat", 14, 34, 2],
+    ]);
+    this.addStalls([
+      [12, 30],
+      [30, 40],
+    ]);
+    if (this.save.relics_collected.includes("lantern")) this.spawnGateway(this.wx(108), this.wy(28));
+  }
+
+  /** Village market stalls — flat, collidable dressing. */
+  private addStalls(spots: [number, number][]) {
+    if (!this.solidDecor) this.solidDecor = this.physics.add.staticGroup();
+    for (const [x, y] of spots) {
+      const st = this.solidDecor.create(
+        this.wx(x),
+        this.wy(y),
+        "stall",
+      ) as Phaser.Physics.Arcade.Sprite;
+      st.setDepth(10);
+      const b = st.body as Phaser.Physics.Arcade.StaticBody;
+      b.setSize(st.width * 0.8, st.height * 0.4);
+      b.setOffset(st.width * 0.1, st.height * 0.6);
+      b.updateFromGameObject?.();
+    }
   }
 
   private openRiverGates() {
@@ -601,23 +889,27 @@ export class QuestScene extends Phaser.Scene {
     this.objective = "The grotto stairwell is open — claim the Lantern of Quiet Care.";
     this.emitToast("The river parts. The grotto stairwell opens.");
     if (!this.save.relics_collected.includes("lantern"))
-      this.addInteractable(108 * TILE, 28 * TILE, "relic", "relic", "Take the relic", {
+      this.addInteractable(this.wx(108), this.wy(28), "relic", "relic", "Take the relic", {
         id: "lantern",
       });
-    else this.spawnGateway(108 * TILE, 28 * TILE);
+    else this.spawnGateway(this.wx(108), this.wy(28));
   }
 
   private rectLive(x: number, y: number, w: number, h: number, index: number) {
-    for (let j = y; j < y + h; j++)
-      for (let i = x; i < x + w; i++) this.layer.putTileAt(index, i, j);
+    const x0 = this.sx(x);
+    const y0 = this.sy(y);
+    const w0 = Math.max(1, Math.round(w * SX));
+    const h0 = Math.max(1, Math.round(h * SY));
+    for (let j = y0; j < y0 + h0; j++)
+      for (let i = x0; i < x0 + w0; i++) this.layer.putTileAt(index, i, j);
     this.layer.setCollision(SOLID_TILES as unknown as number[]);
   }
 
   private spawnGuideAndSignpost(tx: number, ty: number) {
-    this.addInteractable(tx * TILE, ty * TILE, "guide", "guide", "Read the Realm Map", {
+    this.addInteractable(this.wx(tx), this.wy(ty), "guide", "guide", "Read the Realm Map", {
       radius: 88,
     });
-    this.addInteractable((tx - 4) * TILE, ty * TILE, "signpost", "signpost", "Read the signpost", {
+    this.addInteractable(this.wx(tx - 4), this.wy(ty), "signpost", "signpost", "Read the signpost", {
       radius: 84,
     });
   }
@@ -656,6 +948,14 @@ export class QuestScene extends Phaser.Scene {
       this.rect(d, 53, 62, 26, 1, T.WALL);
       this.rect(d, 53, 46, 1, 16, T.WALL);
       this.rect(d, 79, 46, 1, 16, T.WALL);
+      // garden promenade
+      this.road(d, [
+        [12, 92],
+        [66, 92],
+        [66, 68],
+        [108, 68],
+        [108, 50],
+      ]);
     });
     this.addPlayer(12, 90);
     this.scatterDecor(22, {
@@ -676,6 +976,19 @@ export class QuestScene extends Phaser.Scene {
       flowers: 120,
     });
 
+    this.addLandmark(
+      "landmark-conservatory",
+      121,
+      44,
+      "The Grand Conservatory",
+      "Glass and white iron hold an endless summer inside. Four seasonal keys wake its doors.",
+    );
+    this.spawnAnimals(2202, [
+      ["bird", 40, 30, 6],
+      ["cat", 60, 60, 3],
+      ["deer", 100, 84, 2],
+    ]);
+
     const seasons = ["Spring", "Summer", "Autumn", "Winter"];
     const spots: [number, number][] = [
       [18, 18],
@@ -686,32 +999,32 @@ export class QuestScene extends Phaser.Scene {
     this.zoneState["keysFound"] = 0;
     seasons.forEach((s, i) => {
       const [x, y] = spots[i]!;
-      this.addInteractable(x * TILE, y * TILE, "key", "season-key", `Take the ${s} key`, {
+      this.addInteractable(this.wx(x), this.wy(y), "key", "season-key", `Take the ${s} key`, {
         id: s,
       });
     });
 
     this.addInteractable(
-      121 * TILE,
-      51 * TILE,
+      this.wx(121),
+      this.wy(51),
       "vault-door",
       "conservatory",
       "Open the Conservatory",
     );
-    this.addInteractable(66 * TILE, 54 * TILE, "rest-stone", "rest", "Rest here");
+    this.addInteractable(this.wx(66), this.wy(54), "rest-stone", "rest", "Rest here");
 
     if (!this.has(this.save.secret_envelopes_found, "hedge"))
-      this.addInteractable(102 * TILE, 90 * TILE, "block", "breakable", "Push through the hedge", {
+      this.addInteractable(this.wx(102), this.wy(90), "block", "breakable", "Push through the hedge", {
         id: "hedge",
       });
 
     if (this.save.relics_collected.includes("anchor") && this.save.relics_collected.includes("bloom"))
-      this.spawnGateway(117 * TILE, 51 * TILE);
+      this.spawnGateway(this.wx(117), this.wy(51));
   }
 
   private startBoss() {
-    const cx = 121 * TILE;
-    const cy = 51 * TILE;
+    const cx = this.wx(121);
+    const cy = this.wy(51);
     this.bossPhase = 1;
     this.bossHits = 0;
     this.objective = "The Stress Spectre — Phase 1: dodge the shadow bursts and answer with peace.";
@@ -752,8 +1065,8 @@ export class QuestScene extends Phaser.Scene {
     this.bossTimer?.remove();
     this.boss?.setAlpha(0.4);
     this.objective = "Phase 2: find the one true golden heart among the illusions.";
-    const cx = 121 * TILE;
-    const cy = 51 * TILE;
+    const cx = this.wx(121);
+    const cy = this.wy(51);
     const trueIndex = Phaser.Math.Between(0, 2);
     [-72, 0, 72].forEach((dx, i) => {
       const it = this.addInteractable(cx + dx, cy + 60, "golden-heart", "boss-heart", "Choose this heart", {
@@ -796,16 +1109,16 @@ export class QuestScene extends Phaser.Scene {
     this.emitToast("The Spectre becomes a blooming garden arbor.");
     this.objective = "Claim the Anchor of Comfort and the Bloom of Reflection.";
     if (!this.save.relics_collected.includes("anchor"))
-      this.addInteractable(113 * TILE, 45 * TILE, "relic", "relic", "Take the relic", { id: "anchor" });
+      this.addInteractable(this.wx(113), this.wy(45), "relic", "relic", "Take the relic", { id: "anchor" });
     if (!this.save.relics_collected.includes("bloom"))
-      this.addInteractable(129 * TILE, 45 * TILE, "relic", "relic", "Take the relic", { id: "bloom" });
+      this.addInteractable(this.wx(129), this.wy(45), "relic", "relic", "Take the relic", { id: "bloom" });
   }
 
   // ---------------- ACT III ------------------------------------------------
   private buildAct3() {
     this.cameras.main.setBackgroundColor("#cfe3f7");
     this.makeMap(T.MARBLE, 303, (d) => {
-      this.rect(d, 1, 1, MAP_W - 2, MAP_H - 2, T.MARBLE);
+      this.rect(d, 1, 1, DESIGN_W - 2, DESIGN_H - 2, T.MARBLE);
       // grand central fountain
       this.rect(d, 54, 46, 24, 16, T.WATER);
       this.rect(d, 53, 45, 26, 1, T.WALL);
@@ -825,6 +1138,20 @@ export class QuestScene extends Phaser.Scene {
       this.rect(d, 95, 77, 30, 1, T.WALL);
       this.rect(d, 95, 94, 30, 1, T.WALL);
       this.rect(d, 95, 78, 1, 16, T.WALL);
+      // cobblestone streets of Haven Town
+      this.road(d, [
+        [14, 51],
+        [66, 51],
+        [66, 24],
+      ], 4);
+      this.road(d, [
+        [22, 20],
+        [22, 88],
+      ], 3);
+      this.road(d, [
+        [110, 20],
+        [110, 88],
+      ], 3);
     });
     this.addPlayer(18, 51);
     this.scatterDecor(33, {
@@ -861,6 +1188,26 @@ export class QuestScene extends Phaser.Scene {
       border: true,
     });
 
+    this.addLandmark(
+      "landmark-townhall",
+      66,
+      18,
+      "Haven Town Hall",
+      "The clock above the square keeps a slow, kind time. Neighbours gather here at dusk.",
+    );
+    this.addStalls([
+      [52, 30],
+      [60, 30],
+      [76, 30],
+      [84, 30],
+    ]);
+    this.spawnAnimals(3303, [
+      ["dog", 50, 60, 3],
+      ["cat", 90, 60, 3],
+      ["bird", 66, 40, 6],
+      ["duck", 66, 54, 4],
+    ]);
+
     this.zoneState["sheets"] = 0;
     const sheetSpots: [number, number][] = [
       [18, 18],
@@ -868,33 +1215,33 @@ export class QuestScene extends Phaser.Scene {
       [102, 86],
     ];
     sheetSpots.forEach(([x, y], i) =>
-      this.addInteractable(x * TILE, y * TILE, "sheet", "sheet", "Pick up the music sheet", {
+      this.addInteractable(this.wx(x), this.wy(y), "sheet", "sheet", "Pick up the music sheet", {
         id: String(i),
       }),
     );
 
-    this.addInteractable(66 * TILE, 54 * TILE, "andrew", "andrew", "Talk with Andrew", {
+    this.addInteractable(this.wx(66), this.wy(54), "andrew", "andrew", "Talk with Andrew", {
       radius: 54,
     });
-    this.addInteractable(60 * TILE, 50 * TILE, "stone-memory", "memory", "Touch the Memory Stone");
+    this.addInteractable(this.wx(60), this.wy(50), "stone-memory", "memory", "Touch the Memory Stone");
     if (!this.has(this.save.secret_envelopes_found, "patio"))
-      this.addInteractable(16 * TILE, 18 * TILE, "envelope", "envelope", "Read the letter", {
+      this.addInteractable(this.wx(16), this.wy(18), "envelope", "envelope", "Read the letter", {
         id: "patio",
       });
     if ((this.zoneState["keyTaken"] as boolean) !== true && this.save.vault_keys_count < 3)
-      this.addInteractable(111 * TILE, 16 * TILE, "key", "vault-key", "Take the Golden Vault Key", {
+      this.addInteractable(this.wx(111), this.wy(16), "key", "vault-key", "Take the Golden Vault Key", {
         id: "haven",
       });
-    this.addInteractable(90 * TILE, 54 * TILE, "rest-stone", "rest", "Rest here");
+    this.addInteractable(this.wx(90), this.wy(54), "rest-stone", "rest", "Rest here");
 
-    if (this.save.relics_collected.includes("shield")) this.spawnGateway(66 * TILE, 18 * TILE);
+    if (this.save.relics_collected.includes("shield")) this.spawnGateway(this.wx(66), this.wy(18));
   }
 
   // ---------------- ACT IV -------------------------------------------------
   private buildAct4() {
     this.cameras.main.setBackgroundColor("#0d1226");
     this.makeMap(T.SKY, 404, (d) => {
-      this.rect(d, 0, 0, MAP_W, MAP_H, T.VOID);
+      this.rect(d, 0, 0, DESIGN_W, DESIGN_H, T.VOID);
       const islands: [number, number, number, number][] = [
         [8, 78, 24, 14],
         [42, 72, 20, 12],
@@ -914,12 +1261,20 @@ export class QuestScene extends Phaser.Scene {
       this.rect(d, 56, 30, 18, 3, T.PATH);
       this.rect(d, 42, 42, 8, 5, T.PATH);
       this.rect(d, 94, 20, 8, 5, T.PATH);
-      // scatter grey noise on the islands
+      // full-colour bloom accents on the islands (no grey noise)
       for (const [x, y, w, h] of islands)
-        for (let j = 0; j < h; j++)
-          for (let i = 0; i < w; i++) if ((i * 3 + j * 5) % 4 === 0) d[y + j]![x + i] = T.GREY;
+        for (let j = 0; j < h; j += 3)
+          for (let i = 0; i < w; i += 3) this.rect(d, x + i, y + j, 1, 1, T.BLOOM);
     });
     this.addPlayer(20, 85);
+    this.addLandmark(
+      "landmark-observatory",
+      100,
+      22,
+      "The Starry Observatory",
+      "A crystal dome tuned to the constellations. Align the three pillars and the stairway of stars appears.",
+    );
+    this.spawnAnimals(4404, [["bird", 60, 50, 8]]);
 
     this.zoneState["pillars"] = [0, 0, 0];
     const pillarSpots: [number, number][] = [
@@ -928,27 +1283,27 @@ export class QuestScene extends Phaser.Scene {
       [42, 46],
     ];
     pillarSpots.forEach(([x, y], i) =>
-      this.addInteractable(x! * TILE, y! * TILE, "pillar", "pillar", "Turn the crystal pillar", {
+      this.addInteractable(this.wx(x!), this.wy(y!), "pillar", "pillar", "Turn the crystal pillar", {
         id: String(i),
       }),
     );
 
     if (!this.has(this.save.secret_envelopes_found, "summit"))
-      this.addInteractable(102 * TILE, 68 * TILE, "envelope", "envelope", "Read the letter", {
+      this.addInteractable(this.wx(102), this.wy(68), "envelope", "envelope", "Read the letter", {
         id: "summit",
       });
-    this.addInteractable(60 * TILE, 46 * TILE, "rest-stone", "rest", "Rest here");
+    this.addInteractable(this.wx(60), this.wy(46), "rest-stone", "rest", "Rest here");
     if (this.save.vault_keys_count < 3)
-      this.addInteractable(103 * TILE, 36 * TILE, "key", "vault-key", "Take the Golden Vault Key", {
+      this.addInteractable(this.wx(103), this.wy(36), "key", "vault-key", "Take the Golden Vault Key", {
         id: "ascent",
       });
-    this.addInteractable(115 * TILE, 36 * TILE, "vault-door", "vault", "Open the Vault of Gratitude");
+    this.addInteractable(this.wx(115), this.wy(36), "vault-door", "vault", "Open the Vault of Gratitude");
 
     // moving platform ferry between two islands
-    const ferry = this.add.rectangle(42 * TILE, 58 * TILE, 64, 48, 0xd7e0ff, 0.9).setDepth(3);
+    const ferry = this.add.rectangle(this.wx(42), this.wy(58), 64, 48, 0xd7e0ff, 0.9).setDepth(3);
     this.tweens.add({
       targets: ferry,
-      y: 30 * TILE,
+      y: this.wy(30),
       duration: 5200,
       yoyo: true,
       repeat: -1,
@@ -956,7 +1311,7 @@ export class QuestScene extends Phaser.Scene {
     });
     this.zoneState["ferry"] = ferry;
 
-    if (this.save.relics_collected.includes("seal")) this.spawnGateway(84 * TILE, 16 * TILE);
+    if (this.save.relics_collected.includes("seal")) this.spawnGateway(this.wx(84), this.wy(16));
   }
 
   private openStaircase() {
@@ -964,14 +1319,14 @@ export class QuestScene extends Phaser.Scene {
     this.objective = "The Celestial Staircase forms — reach the Altar of Joy.";
     this.emitToast("Three lights align. A staircase of stars unfolds.");
     if (!this.save.relics_collected.includes("seal"))
-      this.addInteractable(84 * TILE, 16 * TILE, "relic", "relic", "Take the Seal of Perfect Peace", {
+      this.addInteractable(this.wx(84), this.wy(16), "relic", "relic", "Take the Seal of Perfect Peace", {
         id: "seal",
       });
   }
 
   private rect2Live() {
-    for (let j = 8; j < 18; j++)
-      for (let i = 80; i < 88; i++) this.layer.putTileAt(T.MARBLE, i, j);
+    for (let j = this.sy(8); j < this.sy(18); j++)
+      for (let i = this.sx(80); i < this.sx(88); i++) this.layer.putTileAt(T.MARBLE, i, j);
     this.layer.setCollision(SOLID_TILES as unknown as number[]);
     this.cameras.main.flash(400, 215, 224, 255);
   }
@@ -980,7 +1335,7 @@ export class QuestScene extends Phaser.Scene {
   private buildAct5() {
     this.cameras.main.setBackgroundColor("#2a1f38");
     this.makeMap(T.CANDLE, 505, (d) => {
-      this.rect(d, 0, 0, MAP_W, MAP_H, T.CANDLE);
+      this.rect(d, 0, 0, DESIGN_W, DESIGN_H, T.CANDLE);
       // grand nave
       this.rect(d, 36, 12, 60, 78, T.MARBLE);
       this.rect(d, 34, 12, 2, 78, T.WALL);
@@ -1004,18 +1359,26 @@ export class QuestScene extends Phaser.Scene {
       ],
       flowers: 40,
     });
+    this.addLandmark(
+      "landmark-cathedral",
+      66,
+      6,
+      "The Grand Cathedral of Serenity",
+      "Rose glass, candlelight, and every soul you love waiting inside. The long road ends in joy.",
+    );
+    this.spawnAnimals(5505, [["bird", 66, 40, 5]]);
     for (let i = 0; i < 24; i++) {
-      this.add.sprite((38 + (i % 2) * 56) * TILE, (18 + Math.floor(i / 2) * 5) * TILE, "guest").setDepth(6);
+      this.add.sprite(this.wx(38 + (i % 2) * 56), this.wy(18 + Math.floor(i / 2) * 5), "guest").setDepth(6);
     }
     if (!this.has(this.save.secret_envelopes_found, "cathedral"))
-      this.addInteractable(42 * TILE, 82 * TILE, "envelope", "envelope", "Read the letter", {
+      this.addInteractable(this.wx(42), this.wy(82), "envelope", "envelope", "Read the letter", {
         id: "cathedral",
       });
-    this.addInteractable(66 * TILE, 18 * TILE, "andrew-ceremony", "andrew-ceremony", "Meet Andrew", {
+    this.addInteractable(this.wx(66), this.wy(18), "andrew-ceremony", "andrew-ceremony", "Meet Andrew", {
       radius: 60,
     });
     // stained glass glow
-    this.add.rectangle(66 * TILE, 14 * TILE, 280, 56, 0xc9a24b, 0.5).setDepth(2);
+    this.add.rectangle(this.wx(66), this.wy(14), 280, 56, 0xc9a24b, 0.5).setDepth(2);
   }
 
   // =======================================================================
@@ -1167,7 +1530,7 @@ export class QuestScene extends Phaser.Scene {
       this.emitSave();
       this.cameras.main.fadeOut(280, 0, 0, 0);
       this.time.delayedCall(320, () => {
-        this.player.setPosition(6 * TILE, 28 * TILE);
+        this.player.setPosition(this.spawnPoint.x, this.spawnPoint.y);
         this.cameras.main.fadeIn(320, 0, 0, 0);
         this.emitToast("You pause, breathe, and begin again. Hearts restored.");
       });
@@ -1229,7 +1592,7 @@ export class QuestScene extends Phaser.Scene {
         if (sheets >= 3 && !this.save.relics_collected.includes("shield")) {
           this.zoneState["melodyPlayed"] = true;
           this.objective = "Andrew plays the golden harp — take the Shield of Unshakable Faith.";
-          this.addInteractable(66 * TILE, 58 * TILE, "relic", "relic", "Take the relic", {
+          this.addInteractable(this.wx(66), this.wy(58), "relic", "relic", "Take the relic", {
             id: "shield",
           });
           this.openModal({
@@ -1385,9 +1748,17 @@ export class QuestScene extends Phaser.Scene {
 
   private spawnGateway(x: number, y: number) {
     if (this.interactables.some((i) => i.kind === "gateway")) return;
-    const it = this.addInteractable(x, y, "gateway", "gateway", "Step through the gateway", {
-      radius: 54,
+    const order = this.zoneOrder();
+    const next = order[Math.min(order.length - 1, order.indexOf(this.save.current_zone) + 1)]!;
+    const it = this.addInteractable(x, y, "portal", "gateway", `Portal — ${ZONES[next].title}`, {
+      radius: 62,
     });
+    this.add
+      .sprite(x, y, "glow")
+      .setDepth(11)
+      .setScale(4)
+      .setAlpha(0.5)
+      .setBlendMode(Phaser.BlendModes.ADD);
     this.tweens.add({
       targets: it.obj,
       alpha: { from: 0.75, to: 1 },
@@ -1488,7 +1859,24 @@ export class QuestScene extends Phaser.Scene {
     if (this.cursors.right.isDown || k["D"]!.isDown) vx += 1;
     if (this.cursors.up.isDown || k["W"]!.isDown) vy -= 1;
     if (this.cursors.down.isDown || k["S"]!.isDown) vy += 1;
-    const len = Math.hypot(vx, vy);
+    let len = Math.hypot(vx, vy);
+    if (len > 0.05) this.cancelAutopilot();
+    if (len < 0.05 && this.autopilot) {
+      const d = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        this.autopilot.x,
+        this.autopilot.y,
+      );
+      if (d < 70) this.cancelAutopilot();
+      else {
+        const a = Math.atan2(this.autopilot.y - this.player.y, this.autopilot.x - this.player.x);
+        vx = Math.cos(a);
+        vy = Math.sin(a);
+        len = 1;
+        if (time - this.lastAura > 120) this.auraTrail(true);
+      }
+    }
     if (len > 1) {
       vx /= len;
       vy /= len;
@@ -1565,6 +1953,8 @@ export class QuestScene extends Phaser.Scene {
         .setText(near ? `E / ACTION — ${near.label}` : "")
         .setVisible(!!near);
     }
+    this.updateCompanion();
+    this.checkCutscene();
     this.updateArrow();
     this.pushHud();
   }
