@@ -30,6 +30,7 @@ import {
 import { ActivityPanel } from "@/components/plan/activity";
 import { ExpenseTracker } from "@/components/plan/expenses";
 import { Devotionals } from "@/components/plan/devotionals";
+import { Notifications } from "@/components/plan/notifications";
 import { SharedCalendar } from "@/components/plan/calendar";
 import { Donut, SurplusGauge } from "@/components/plan/charts";
 
@@ -82,6 +83,7 @@ const SECTION_LINKS = [
   { id: "s5", label: "Final Goal & Emergency", desc: "$20k buffer fund", Icon: ShieldCheck, tint: "bg-navy/10 text-navy" },
   { id: "calendar", label: "Shared Calendar", desc: "Dates, plans & reminders", Icon: CalendarRange, tint: "bg-sky/20 text-deep-blue" },
   { id: "devotionals", label: "Devotionals", desc: "Daily reading & notes", Icon: BookOpen, tint: "bg-gold/15 text-gold" },
+  { id: "notifications", label: "Notifications", desc: "Phone alerts for both of us", Icon: BellRing, tint: "bg-royal/10 text-royal" },
   { id: "health", label: "Storage & Health", desc: "Database size & alerts", Icon: ActivityIcon, tint: "bg-teal/10 text-teal" },
   { id: "assistant", label: "Plan Assistant", desc: "Ask questions & make changes", Icon: Sparkles, tint: "bg-gold/15 text-gold", href: "/assistant" },
   { id: "activity", label: "Activity & Notes", desc: "History & comments", Icon: ClipboardList, tint: "bg-royal/10 text-royal" },
@@ -1124,6 +1126,13 @@ function Index() {
             "A plan we both understand is worth more than a number either of us guesses at."
           </p>
         </div>
+      </Page>
+      )}
+
+      {/* NOTIFICATIONS */}
+      {active === "notifications" && (
+      <Page id="notifications" title="Notifications">
+        <Notifications />
       </Page>
       )}
 
