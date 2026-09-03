@@ -1163,7 +1163,7 @@ function Index() {
       {/* MARIA'S QUEST */}
       {active === "quest" && (
       <Page id="quest" title="Maria's Quest: Realm of the Golden Ring">
-        <MariasQuest onBack={() => goTo(null)} />
+        <MariasQuest onExit={() => goTo(null)} />
       </Page>
       )}
 
