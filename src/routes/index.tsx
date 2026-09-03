@@ -85,6 +85,7 @@ const SECTION_LINKS = [
   { id: "s5", label: "Final Goal & Emergency", desc: "$20k buffer fund", Icon: ShieldCheck, tint: "bg-navy/10 text-navy" },
   { id: "calendar", label: "Shared Calendar", desc: "Dates, plans & reminders", Icon: CalendarRange, tint: "bg-sky/20 text-deep-blue" },
   { id: "devotionals", label: "Devotionals", desc: "Daily reading & notes", Icon: BookOpen, tint: "bg-gold/15 text-gold" },
+  { id: "quest", label: "Maria's Quest", desc: "Realm of the Golden Ring", Icon: Gamepad2, tint: "bg-royal/10 text-royal" },
   { id: "notifications", label: "Notifications", desc: "Phone alerts for both of us", Icon: BellRing, tint: "bg-royal/10 text-royal" },
   { id: "health", label: "Storage & Health", desc: "Database size & alerts", Icon: ActivityIcon, tint: "bg-teal/10 text-teal" },
   { id: "assistant", label: "Plan Assistant", desc: "Ask questions & make changes", Icon: Sparkles, tint: "bg-gold/15 text-gold", href: "/assistant" },
