@@ -221,15 +221,44 @@ export class QuestScene extends Phaser.Scene {
     this.layer.setSkipCull(false);
   }
 
+  /** design-grid tile -> real grid tile */
+  private sx(n: number) {
+    return Math.round(n * SX);
+  }
+  private sy(n: number) {
+    return Math.round(n * SY);
+  }
+  /** design-grid tile -> world pixels */
+  wx(n: number) {
+    return n * SX * TILE;
+  }
+  wy(n: number) {
+    return n * SY * TILE;
+  }
+
   private rect(d: number[][], x: number, y: number, w: number, h: number, t: number) {
-    for (let j = y; j < y + h; j++)
-      for (let i = x; i < x + w; i++)
+    const x0 = this.sx(x);
+    const y0 = this.sy(y);
+    const w0 = Math.max(1, Math.round(w * SX));
+    const h0 = Math.max(1, Math.round(h * SY));
+    for (let j = y0; j < y0 + h0; j++)
+      for (let i = x0; i < x0 + w0; i++)
         if (d[j] && i >= 0 && i < MAP_W && j >= 0 && j < MAP_H) d[j]![i] = t;
   }
 
+  /** Carve a road/trail through the design grid along a waypoint chain. */
+  private road(d: number[][], pts: [number, number][], w = 3, tile = T.PATH) {
+    for (let n = 0; n < pts.length - 1; n++) {
+      const [ax, ay] = pts[n]!;
+      const [bx, by] = pts[n + 1]!;
+      this.rect(d, Math.min(ax, bx), ay, Math.abs(bx - ax) + w, w, tile);
+      this.rect(d, bx, Math.min(ay, by), w, Math.abs(by - ay) + w, tile);
+    }
+  }
+
   private addPlayer(tx: number, ty: number) {
-    const x = Phaser.Math.Clamp(tx, 2, MAP_W - 3) * TILE;
-    const y = Phaser.Math.Clamp(ty, 2, MAP_H - 3) * TILE;
+    const x = this.wx(Phaser.Math.Clamp(tx, 2, DESIGN_W - 3));
+    const y = this.wy(Phaser.Math.Clamp(ty, 2, DESIGN_H - 3));
     this.makeWalkAnims();
     this.player = this.physics.add.sprite(x, y, "maria-down-0");
     this.player.anims.play("maria-idle-down");
@@ -346,8 +375,8 @@ export class QuestScene extends Phaser.Scene {
 
     const solid = (tx: number, ty: number, key: string, footH = 0.35) => {
       const s = this.solidDecor.create(
-        tx * TILE,
-        ty * TILE,
+        this.wx(tx),
+        this.wy(ty),
         key,
       ) as Phaser.Physics.Arcade.Sprite;
       s.setDepth(10 + ty * 0.01);
@@ -378,8 +407,8 @@ export class QuestScene extends Phaser.Scene {
       this.add.sprite(this.wx(x), this.wy(y), "bridge").setDepth(3).setAlpha(0.96);
     }
     for (let i = 0; i < (opts.flowers ?? 0); i++) {
-      const tx = 4 + rnd() * (MAP_W - 8);
-      const ty = 4 + rnd() * (MAP_H - 8);
+      const tx = 4 + rnd() * (DESIGN_W - 8);
+      const ty = 4 + rnd() * (DESIGN_H - 8);
       this.add
         .sprite(this.wx(tx), this.wy(ty), "flowers")
         .setDepth(4)
@@ -387,13 +416,13 @@ export class QuestScene extends Phaser.Scene {
         .setScale(0.8 + rnd() * 0.5);
     }
     if (opts.border) {
-      for (let x = 2; x < MAP_W - 2; x += 3) {
+      for (let x = 2; x < DESIGN_W - 2; x += 2) {
         solid(x, 1.4, "tree", 0.28);
-        solid(x + 1, MAP_H - 2.2, "tree", 0.28);
+        solid(x + 1, DESIGN_H - 2.2, "tree", 0.28);
       }
-      for (let y = 3; y < MAP_H - 3; y += 3) {
+      for (let y = 3; y < DESIGN_H - 3; y += 2) {
         solid(1.4, y, "tree", 0.28);
-        solid(MAP_W - 2.2, y + 1, "tree", 0.28);
+        solid(DESIGN_W - 2.2, y + 1, "tree", 0.28);
       }
     }
 
@@ -613,8 +642,12 @@ export class QuestScene extends Phaser.Scene {
   }
 
   private rectLive(x: number, y: number, w: number, h: number, index: number) {
-    for (let j = y; j < y + h; j++)
-      for (let i = x; i < x + w; i++) this.layer.putTileAt(index, i, j);
+    const x0 = this.sx(x);
+    const y0 = this.sy(y);
+    const w0 = Math.max(1, Math.round(w * SX));
+    const h0 = Math.max(1, Math.round(h * SY));
+    for (let j = y0; j < y0 + h0; j++)
+      for (let i = x0; i < x0 + w0; i++) this.layer.putTileAt(index, i, j);
     this.layer.setCollision(SOLID_TILES as unknown as number[]);
   }
 
@@ -622,7 +655,7 @@ export class QuestScene extends Phaser.Scene {
     this.addInteractable(this.wx(tx), this.wy(ty), "guide", "guide", "Read the Realm Map", {
       radius: 88,
     });
-    this.addInteractable((tx - 4) * TILE, ty * TILE, "signpost", "signpost", "Read the signpost", {
+    this.addInteractable(this.wx(tx - 4), this.wy(ty), "signpost", "signpost", "Read the signpost", {
       radius: 84,
     });
   }
@@ -697,8 +730,8 @@ export class QuestScene extends Phaser.Scene {
     });
 
     this.addInteractable(
-      121 * TILE,
-      51 * TILE,
+      this.wx(121),
+      this.wy(51),
       "vault-door",
       "conservatory",
       "Open the Conservatory",
@@ -715,8 +748,8 @@ export class QuestScene extends Phaser.Scene {
   }
 
   private startBoss() {
-    const cx = 121 * TILE;
-    const cy = 51 * TILE;
+    const cx = this.wx(121);
+    const cy = this.wy(51);
     this.bossPhase = 1;
     this.bossHits = 0;
     this.objective = "The Stress Spectre — Phase 1: dodge the shadow bursts and answer with peace.";
@@ -757,8 +790,8 @@ export class QuestScene extends Phaser.Scene {
     this.bossTimer?.remove();
     this.boss?.setAlpha(0.4);
     this.objective = "Phase 2: find the one true golden heart among the illusions.";
-    const cx = 121 * TILE;
-    const cy = 51 * TILE;
+    const cx = this.wx(121);
+    const cy = this.wy(51);
     const trueIndex = Phaser.Math.Between(0, 2);
     [-72, 0, 72].forEach((dx, i) => {
       const it = this.addInteractable(cx + dx, cy + 60, "golden-heart", "boss-heart", "Choose this heart", {
@@ -919,10 +952,10 @@ export class QuestScene extends Phaser.Scene {
       this.rect(d, 56, 30, 18, 3, T.PATH);
       this.rect(d, 42, 42, 8, 5, T.PATH);
       this.rect(d, 94, 20, 8, 5, T.PATH);
-      // scatter grey noise on the islands
+      // full-colour bloom accents on the islands (no grey noise)
       for (const [x, y, w, h] of islands)
-        for (let j = 0; j < h; j++)
-          for (let i = 0; i < w; i++) if ((i * 3 + j * 5) % 4 === 0) d[y + j]![x + i] = T.GREY;
+        for (let j = 0; j < h; j += 3)
+          for (let i = 0; i < w; i += 3) this.rect(d, x + i, y + j, 1, 1, T.BLOOM);
     });
     this.addPlayer(20, 85);
 
@@ -975,8 +1008,8 @@ export class QuestScene extends Phaser.Scene {
   }
 
   private rect2Live() {
-    for (let j = 8; j < 18; j++)
-      for (let i = 80; i < 88; i++) this.layer.putTileAt(T.MARBLE, i, j);
+    for (let j = this.sy(8); j < this.sy(18); j++)
+      for (let i = this.sx(80); i < this.sx(88); i++) this.layer.putTileAt(T.MARBLE, i, j);
     this.layer.setCollision(SOLID_TILES as unknown as number[]);
     this.cameras.main.flash(400, 215, 224, 255);
   }
@@ -1172,7 +1205,7 @@ export class QuestScene extends Phaser.Scene {
       this.emitSave();
       this.cameras.main.fadeOut(280, 0, 0, 0);
       this.time.delayedCall(320, () => {
-        this.player.setPosition(this.wx(6), this.wy(28));
+        this.player.setPosition(this.spawnPoint.x, this.spawnPoint.y);
         this.cameras.main.fadeIn(320, 0, 0, 0);
         this.emitToast("You pause, breathe, and begin again. Hearts restored.");
       });
