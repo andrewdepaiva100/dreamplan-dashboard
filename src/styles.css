@@ -70,6 +70,10 @@
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-line: var(--line);
+  --color-rose-gold: var(--rose-gold);
+  --color-blush: var(--blush);
+  --color-petal: var(--petal);
+  --color-gold-glow: var(--gold-glow);
   --font-display: "Playfair Display", serif;
   --font-serif-italic: "Cormorant Garamond", serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
