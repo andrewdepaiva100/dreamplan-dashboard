@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_PLAN, STORAGE_KEY, type PlanState } from "./plan-data";
+import { notifyPartner } from "./push-client";
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
@@ -210,6 +211,7 @@ export function usePlan() {
       label: string,
       format: (v: unknown) => string = (v) => String(v),
     ) => {
+      notifyPartner("money", `${label} → ${format(value)}`);
       setPlan((p) => {
         const current = (p[section] as Record<string, unknown>)[key as string];
         if (current === value) return p;
@@ -234,6 +236,7 @@ export function usePlan() {
 
   const setFurnishing = useCallback(
     (key: string, field: "conservative" | "mid", value: number, format: (v: number) => string) => {
+      notifyPartner("money", `Furnishing (${field === "mid" ? "Mid-Range" : "Conservative"}) → ${format(value)}`);
       setPlan((p) => {
         const row = p.furnishing.find((r) => r.key === key);
         if (!row || row[field] === value) return p;
@@ -265,6 +268,7 @@ export function usePlan() {
       value: string | number,
       format: (v: unknown) => string = (v) => String(v),
     ) => {
+      notifyPartner("money", `Wedding payment ${field} → ${format(value)}`);
       setPlan((p) => {
         const row = p.payments.find((r) => r.key === key);
         if (!row || row[field] === value) return p;
@@ -290,6 +294,7 @@ export function usePlan() {
   );
 
   const togglePayment = useCallback((key: string) => {
+    notifyPartner("money", "A wedding installment was marked paid/unpaid");
     setPlan((p) => {
       const row = p.payments.find((r) => r.key === key);
       if (!row) return p;
@@ -319,6 +324,10 @@ export function usePlan() {
       payer: string;
       amount: number;
     }) => {
+      notifyPartner(
+        "money",
+        `Expense added — ${e.label} ${e.amount.toLocaleString("en-US", { style: "currency", currency: "USD" })}`,
+      );
       setPlan((p) => ({
         ...p,
         expenses: [{ id: uid(), ...e }, ...p.expenses].slice(0, 500),
@@ -338,6 +347,7 @@ export function usePlan() {
   );
 
   const removeExpense = useCallback((id: string) => {
+    notifyPartner("money", "An expense was removed from the ledger");
     setPlan((p) => {
       const row = p.expenses.find((e) => e.id === id);
       if (!row) return p;
@@ -359,6 +369,7 @@ export function usePlan() {
   }, []);
 
   const addComment = useCallback((author: string, text: string) => {
+    notifyPartner("notes", `New note: ${text.slice(0, 90)}`);
 
     setPlan((p) => ({
       ...p,
@@ -404,6 +415,10 @@ export function usePlan() {
   const setDevotionalNote = useCallback(
     (who: "andrew" | "maria", dateKey: string, text: string) => {
       devotionalWritePendingUntil.current = Date.now() + 1_500;
+      notifyPartner(
+        "devotional",
+        `${who === "andrew" ? "Andrew" : "Maria"} saved a devotional reflection`,
+      );
       setPlan((p) => {
         const person = p.devotionals.people[who];
         const day = person.days[dateKey];
