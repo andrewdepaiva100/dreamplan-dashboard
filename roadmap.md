@@ -6,3 +6,4 @@
 - [x] Shared Calendar: cloud-synced events with categories, colors, assignees, month/agenda views
 
 - [x] Maria's Quest: Realm of the Golden Ring (Phaser game module, cloud saves)
+- [x] Maria's Quest world update: 180x180 maps, roads/villages/animals, flagship landmarks + cutscenes, live map + fast travel + Guide Me, Album of Memories, procedural act music & haptics, Andrew companion after the wedding
