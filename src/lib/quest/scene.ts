@@ -7,7 +7,15 @@ import {
   type ZoneId,
 } from "./content";
 import { EMPTY_SAVE, type QuestSave } from "./save";
-import { SOLID_TILES, T, TILE, TILE_COUNT, buildSprites, buildTileset } from "./textures";
+import {
+  SOLID_TILES,
+  T,
+  TILE,
+  TILE_COUNT,
+  buildSprites,
+  buildTileset,
+  preloadQuestArt,
+} from "./textures";
 
 export { EV } from "./events";
 export type { HudState, ModalPayload } from "./events";
@@ -78,6 +86,10 @@ export class QuestScene extends Phaser.Scene {
 
   init(data: { save?: QuestSave }) {
     if (data?.save) this.save = { ...EMPTY_SAVE, ...data.save };
+  }
+
+  preload() {
+    preloadQuestArt(this);
   }
 
   create() {
