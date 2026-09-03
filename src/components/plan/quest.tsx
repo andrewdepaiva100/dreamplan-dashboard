@@ -14,6 +14,7 @@ import {
   RELICS,
   STORY_PREMISE,
   VAULT_JOURNAL,
+  ZONES,
 } from "@/lib/quest/content";
 import {
   EMPTY_SAVE,
@@ -24,6 +25,133 @@ import {
   type QuestSave,
 } from "@/lib/quest/save";
 import { EV, type HudState, type ModalPayload } from "@/lib/quest/events";
+import type { ZoneId } from "@/lib/quest/content";
+
+type MapSnapshot = {
+  rows: string[];
+  player: { x: number; y: number };
+  pins: { x: number; y: number; label: string; kind: string }[];
+  zone: ZoneId;
+  unlocked: ZoneId[];
+};
+
+const MAP_TILE_COLORS = [
+  "#6aa84f",
+  "#8fbc5a",
+  "#4a8fd6",
+  "#6b6257",
+  "#e8e3d6",
+  "#2f6b3a",
+  "#141b30",
+  "#3a2f4a",
+  "#c1a173",
+  "#26406b",
+];
+
+/** Renders the live world snapshot as a small canvas map. */
+function LiveMapCanvas({ snap }: { snap: MapSnapshot }) {
+  const ref = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const c = ref.current;
+    if (!c) return;
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
+    const n = snap.rows.length || 1;
+    const cell = c.width / n;
+    ctx.clearRect(0, 0, c.width, c.height);
+    snap.rows.forEach((row, y) => {
+      for (let x = 0; x < row.length; x++) {
+        ctx.fillStyle = MAP_TILE_COLORS[Number(row[x])] ?? "#6aa84f";
+        ctx.fillRect(x * cell, y * cell, cell + 0.6, cell + 0.6);
+      }
+    });
+    for (const pin of snap.pins) {
+      ctx.beginPath();
+      ctx.arc(pin.x * c.width, pin.y * c.height, 5, 0, Math.PI * 2);
+      ctx.fillStyle = pin.kind === "landmark" ? "#c9a24b" : "#ffffff";
+      ctx.strokeStyle = "#0b1e3d";
+      ctx.lineWidth = 2;
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(snap.player.x * c.width, snap.player.y * c.height, 6, 0, Math.PI * 2);
+    ctx.fillStyle = "#ff6b7a";
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.fill();
+    ctx.stroke();
+  }, [snap]);
+  return <canvas ref={ref} width={420} height={420} className="mx-auto w-full max-w-sm rounded-xl border border-gold/40" />;
+}
+
+/** Gentle procedural score — one warm chord loop per act, no audio files. */
+function useActMusic(zone: ZoneId | undefined, muted: boolean) {
+  const ctxRef = useRef<AudioContext | null>(null);
+  const stopRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    stopRef.current?.();
+    stopRef.current = null;
+    if (!zone || muted) return;
+    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return;
+    const ctx = ctxRef.current ?? new AC();
+    ctxRef.current = ctx;
+    void ctx.resume();
+    const chords: Record<string, number[]> = {
+      sunlit_shores: [261.6, 329.6, 392.0],
+      wedding_garden: [293.7, 370.0, 440.0],
+      the_haven: [349.2, 440.0, 523.3],
+      starry_ascent: [220.0, 277.2, 329.6],
+      cathedral: [261.6, 392.0, 523.3],
+    };
+    const notes = chords[zone] ?? chords["sunlit_shores"]!;
+    const master = ctx.createGain();
+    master.gain.value = 0.0001;
+    master.connect(ctx.destination);
+    master.gain.exponentialRampToValueAtTime(0.05, ctx.currentTime + 2);
+    const oscs = notes.map((f, i) => {
+      const o = ctx.createOscillator();
+      o.type = i === 0 ? "sine" : "triangle";
+      o.frequency.value = f;
+      const g = ctx.createGain();
+      g.gain.value = 0.32 / (i + 1);
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = 0.07 + i * 0.03;
+      const lg = ctx.createGain();
+      lg.gain.value = 0.16;
+      lfo.connect(lg).connect(g.gain);
+      lfo.start();
+      o.connect(g).connect(master);
+      o.start();
+      return [o, lfo] as const;
+    });
+    stopRef.current = () => {
+      master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
+      setTimeout(() => {
+        oscs.forEach(([o, l]) => {
+          try {
+            o.stop();
+            l.stop();
+          } catch {
+            /* already stopped */
+          }
+        });
+        master.disconnect();
+      }, 700);
+    };
+    return () => stopRef.current?.();
+  }, [zone, muted]);
+  useEffect(() => () => void ctxRef.current?.close(), []);
+}
+
+function buzz(ms = 18) {
+  try {
+    navigator.vibrate?.(ms);
+  } catch {
+    /* haptics unsupported */
+  }
+}
 
 type Screen = "title" | "playing";
 type TitleOverlay = null | "story" | "guide";
@@ -197,6 +325,13 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
   }>(null);
   const [overlay, setOverlay] = useState<TitleOverlay>(null);
   const [showControls, setShowControls] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [mapSnap, setMapSnap] = useState<MapSnapshot | null>(null);
+  const [showMemories, setShowMemories] = useState(false);
+  const [actBanner, setActBanner] = useState<string | null>(null);
+  const [muted, setMuted] = useState(false);
+
+  useActMusic(screen === "playing" ? hud?.zone : undefined, muted);
 
   // lock page scroll while the full-screen game is up
   useEffect(() => {
@@ -239,7 +374,15 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
         const game = createQuestGame(host, save);
         gameRef.current = game;
         game.events.on(EV.hud, (s: HudState) => setHud(s));
-        game.events.on(EV.modal, (m: ModalPayload) => setModal(m));
+        game.events.on(EV.modal, (m: ModalPayload) => {
+          buzz(24);
+          setModal(m);
+        });
+        game.events.on(EV.act, (a: { title: string }) => {
+          buzz(40);
+          setActBanner(a.title);
+          setTimeout(() => setActBanner(null), 3600);
+        });
         game.events.on(EV.save, (s: QuestSave) => {
           saveRef.current = s;
           saverRef.current.queue(s);
@@ -272,6 +415,21 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       saverRef.current.flush();
     };
   }, []);
+
+  // live map polling while the overlay is open
+  useEffect(() => {
+    if (!showMap) return;
+    const read = () => {
+      const scene = gameRef.current?.scene.getScene("quest") as
+        | { getMapSnapshot?: () => MapSnapshot }
+        | undefined;
+      const snap = scene?.getMapSnapshot?.();
+      if (snap) setMapSnap(snap);
+    };
+    read();
+    const t = setInterval(read, 400);
+    return () => clearInterval(t);
+  }, [showMap]);
 
   useEffect(() => {
     if (!toast) return;
