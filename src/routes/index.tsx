@@ -30,6 +30,7 @@ import {
 import { ActivityPanel } from "@/components/plan/activity";
 import { ExpenseTracker } from "@/components/plan/expenses";
 import { Devotionals } from "@/components/plan/devotionals";
+import { SharedCalendar } from "@/components/plan/calendar";
 import { Donut, SurplusGauge } from "@/components/plan/charts";
 
 
