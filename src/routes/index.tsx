@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   BookOpen,
   CalendarDays,
+  CalendarRange,
   ClipboardList,
   CreditCard,
   Map,
@@ -29,6 +30,7 @@ import {
 import { ActivityPanel } from "@/components/plan/activity";
 import { ExpenseTracker } from "@/components/plan/expenses";
 import { Devotionals } from "@/components/plan/devotionals";
+import { SharedCalendar } from "@/components/plan/calendar";
 import { Donut, SurplusGauge } from "@/components/plan/charts";
 
 
@@ -78,6 +80,7 @@ const SECTION_LINKS = [
   { id: "s3", label: "Savings Roadmap", desc: "Milestones & countdowns", Icon: Map, tint: "bg-gold/15 text-gold" },
   { id: "s4", label: "Furnishing Budget", desc: "Room-by-room tiers", Icon: Sofa, tint: "bg-teal/10 text-teal" },
   { id: "s5", label: "Final Goal & Emergency", desc: "$20k buffer fund", Icon: ShieldCheck, tint: "bg-navy/10 text-navy" },
+  { id: "calendar", label: "Shared Calendar", desc: "Dates, plans & reminders", Icon: CalendarRange, tint: "bg-sky/20 text-deep-blue" },
   { id: "devotionals", label: "Devotionals", desc: "Daily reading & notes", Icon: BookOpen, tint: "bg-gold/15 text-gold" },
   { id: "health", label: "Storage & Health", desc: "Database size & alerts", Icon: ActivityIcon, tint: "bg-teal/10 text-teal" },
   { id: "assistant", label: "Plan Assistant", desc: "Ask questions & make changes", Icon: Sparkles, tint: "bg-gold/15 text-gold", href: "/assistant" },
@@ -1121,6 +1124,13 @@ function Index() {
             "A plan we both understand is worth more than a number either of us guesses at."
           </p>
         </div>
+      </Page>
+      )}
+
+      {/* SHARED CALENDAR */}
+      {active === "calendar" && (
+      <Page id="calendar" title="Shared Calendar">
+        <SharedCalendar onBack={() => goTo(null)} />
       </Page>
       )}
 
