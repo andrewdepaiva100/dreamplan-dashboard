@@ -76,6 +76,9 @@ export class QuestScene extends Phaser.Scene {
   private objective = "";
   private prompt: string | null = null;
   private zoneState: Record<string, unknown> = {};
+  private solidDecor!: Phaser.Physics.Arcade.StaticGroup;
+  private promptText!: Phaser.GameObjects.Text;
+  private arrow!: Phaser.GameObjects.Triangle;
   private boss: Phaser.Physics.Arcade.Sprite | null = null;
   private bossPhase = 0;
   private bossHits = 0;
@@ -225,9 +228,21 @@ export class QuestScene extends Phaser.Scene {
     this.makeWalkAnims();
     this.player = this.physics.add.sprite(x, y, "maria-down-0");
     this.player.anims.play("maria-idle-down");
-    this.player.setSize(14, 12).setOffset(5, 21);
+    this.player.setScale(1.1);
+    this.player.setSize(13, 11).setOffset(5.5, 21.5);
     this.player.setCollideWorldBounds(true);
     this.player.setDepth(20);
+    this.promptText = this.add
+      .text(this.player.x, this.player.y - 36, "", {
+        fontFamily: "system-ui, sans-serif",
+        fontSize: "11px",
+        color: "#0b1e3d",
+        backgroundColor: "#ffd977",
+        padding: { x: 6, y: 3 },
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(60)
+      .setVisible(false);
     this.aura = this.add
       .circle(this.player.x, this.player.y, 92, 0xfff0bf, 0.13)
       .setDepth(5);
@@ -247,8 +262,13 @@ export class QuestScene extends Phaser.Scene {
       if (!this.anims.exists(`maria-walk-${dir}`)) {
         this.anims.create({
           key: `maria-walk-${dir}`,
-          frames: [{ key: `maria-${dir}-0` }, { key: `maria-${dir}-1` }],
-          frameRate: 6,
+          frames: [
+            { key: `maria-${dir}-0` },
+            { key: `maria-${dir}-1` },
+            { key: `maria-${dir}-0` },
+            { key: `maria-${dir}-2` },
+          ],
+          frameRate: 9,
           repeat: -1,
         });
       }
@@ -297,6 +317,149 @@ export class QuestScene extends Phaser.Scene {
     return list.includes(id);
   }
 
+  /**
+   * Dense, collision-enabled environment decor. Solid props (houses, trees,
+   * fences, lamps, benches) join a static body group Maria collides with;
+   * flowers and bridges are flat ground dressing.
+   */
+  private scatterDecor(
+    seed: number,
+    opts: {
+      village?: [number, number][];
+      groves?: [number, number, number][];
+      lamps?: [number, number][];
+      benches?: [number, number][];
+      fences?: [number, number, number][];
+      bridges?: [number, number][];
+      flowers?: number;
+      border?: boolean;
+    },
+  ) {
+    const rnd = irnd(seed);
+    if (!this.solidDecor) this.solidDecor = this.physics.add.staticGroup();
+
+    const solid = (tx: number, ty: number, key: string, footH = 0.35) => {
+      const s = this.solidDecor.create(
+        tx * TILE,
+        ty * TILE,
+        key,
+      ) as Phaser.Physics.Arcade.Sprite;
+      s.setDepth(10 + ty * 0.01);
+      const b = s.body as Phaser.Physics.Arcade.StaticBody;
+      const h = Math.max(10, s.height * footH);
+      b.setSize(s.width * 0.7, h);
+      b.setOffset(s.width * 0.15, s.height - h);
+      b.updateFromGameObject?.();
+      return s;
+    };
+
+    for (const [x, y] of opts.village ?? []) {
+      solid(x, y, rnd() < 0.5 ? "house" : "cottage", 0.3);
+    }
+    for (const [x, y, n] of opts.groves ?? []) {
+      for (let i = 0; i < n; i++) {
+        const tx = x + Math.round((rnd() - 0.5) * 10);
+        const ty = y + Math.round((rnd() - 0.5) * 8);
+        solid(tx, ty, "tree", 0.28);
+      }
+    }
+    for (const [x, y] of opts.lamps ?? []) solid(x, y, "lamp", 0.22);
+    for (const [x, y] of opts.benches ?? []) solid(x, y, "bench", 0.5);
+    for (const [x, y, n] of opts.fences ?? []) {
+      for (let i = 0; i < n; i++) solid(x + i * 1.25, y, "fence", 0.6);
+    }
+    for (const [x, y] of opts.bridges ?? []) {
+      this.add.sprite(x * TILE, y * TILE, "bridge").setDepth(3).setAlpha(0.96);
+    }
+    for (let i = 0; i < (opts.flowers ?? 0); i++) {
+      const tx = 4 + rnd() * (MAP_W - 8);
+      const ty = 4 + rnd() * (MAP_H - 8);
+      this.add
+        .sprite(tx * TILE, ty * TILE, "flowers")
+        .setDepth(4)
+        .setAlpha(0.9)
+        .setScale(0.8 + rnd() * 0.5);
+    }
+    if (opts.border) {
+      for (let x = 2; x < MAP_W - 2; x += 3) {
+        solid(x, 1.4, "tree", 0.28);
+        solid(x + 1, MAP_H - 2.2, "tree", 0.28);
+      }
+      for (let y = 3; y < MAP_H - 3; y += 3) {
+        solid(1.4, y, "tree", 0.28);
+        solid(MAP_W - 2.2, y + 1, "tree", 0.28);
+      }
+    }
+
+    this.physics.add.collider(this.player, this.solidDecor);
+  }
+
+  /** The current act's guiding target: relic first, then the way onward. */
+  private objectiveTarget(): Phaser.GameObjects.Sprite | null {
+    const order = [
+      "relic",
+      "gateway",
+      "andrew-ceremony",
+      "season-key",
+      "vault-key",
+      "sheet",
+      "pillar",
+      "vault",
+      "andrew",
+      "guide",
+    ];
+    for (const kind of order) {
+      let best: Interactable | null = null;
+      let bestD = Infinity;
+      for (const it of this.interactables) {
+        if (!it.enabled || !it.obj.active || it.kind !== kind) continue;
+        const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, it.obj.x, it.obj.y);
+        if (d < bestD) {
+          best = it;
+          bestD = d;
+        }
+      }
+      if (best) return best.obj;
+    }
+    return null;
+  }
+
+  private updateArrow() {
+    if (!this.arrow) {
+      this.arrow = this.add
+        .triangle(0, 0, 0, 14, 8, -10, -8, -10, 0xffd977, 0.85)
+        .setDepth(95)
+        .setScrollFactor(0)
+        .setVisible(false);
+      this.arrow.setStrokeStyle(2, 0xfff3cf, 0.9);
+    }
+    const target = this.objectiveTarget();
+    if (!target) {
+      this.arrow.setVisible(false);
+      return;
+    }
+    const dist = Phaser.Math.Distance.Between(
+      this.player.x,
+      this.player.y,
+      target.x,
+      target.y,
+    );
+    if (dist < 90) {
+      this.arrow.setVisible(false);
+      return;
+    }
+    const cam = this.cameras.main;
+    const angle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
+    const px = (this.player.x - cam.worldView.x) * cam.zoom;
+    const py = (this.player.y - cam.worldView.y) * cam.zoom;
+    const r = 62;
+    this.arrow
+      .setVisible(true)
+      .setPosition(px + Math.cos(angle) * r, py + Math.sin(angle) * r);
+    this.arrow.setRotation(angle + Math.PI / 2);
+    this.arrow.setAlpha(0.6 + 0.25 * Math.sin(this.time.now / 320));
+  }
+
   private buildZone(zone: ZoneId) {
     this.objective = ZONES[zone].objective;
     if (zone === "sunlit_shores") this.buildAct1();
@@ -337,6 +500,42 @@ export class QuestScene extends Phaser.Scene {
 
     this.addPlayer(18, 51);
     this.spawnGuideAndSignpost(22, 48);
+    this.scatterDecor(11, {
+      village: [
+        [12, 34],
+        [20, 62],
+        [30, 38],
+      ],
+      groves: [
+        [14, 12, 8],
+        [34, 60, 9],
+        [24, 88, 8],
+        [46, 30, 7],
+      ],
+      lamps: [
+        [16, 20],
+        [28, 20],
+        [16, 44],
+        [28, 44],
+        [16, 68],
+        [28, 68],
+      ],
+      benches: [
+        [22, 26],
+        [34, 44],
+      ],
+      fences: [
+        [8, 30, 8],
+        [8, 72, 8],
+      ],
+      bridges: [
+        [60, 20],
+        [60, 51],
+        [60, 82],
+      ],
+      flowers: 90,
+      border: true,
+    });
 
     // river gates puzzle: 3 plates on the west bank, 3 blocks to push
     this.blocks = this.physics.add.group();
@@ -414,11 +613,11 @@ export class QuestScene extends Phaser.Scene {
   }
 
   private spawnGuideAndSignpost(tx: number, ty: number) {
-    this.addInteractable(tx * TILE, ty * TILE, "guide", "guide", "Speak with the Realm Guide", {
-      radius: 60,
+    this.addInteractable(tx * TILE, ty * TILE, "guide", "guide", "Read the Realm Map", {
+      radius: 88,
     });
     this.addInteractable((tx - 4) * TILE, ty * TILE, "signpost", "signpost", "Read the signpost", {
-      radius: 52,
+      radius: 84,
     });
   }
 
@@ -458,6 +657,23 @@ export class QuestScene extends Phaser.Scene {
       this.rect(d, 79, 46, 1, 16, T.WALL);
     });
     this.addPlayer(12, 90);
+    this.scatterDecor(22, {
+      groves: [
+        [16, 30, 6],
+        [60, 24, 6],
+        [100, 74, 6],
+      ],
+      lamps: [
+        [30, 50],
+        [66, 40],
+        [100, 60],
+      ],
+      benches: [
+        [58, 68],
+        [76, 68],
+      ],
+      flowers: 120,
+    });
 
     const seasons = ["Spring", "Summer", "Autumn", "Winter"];
     const spots: [number, number][] = [
@@ -610,6 +826,39 @@ export class QuestScene extends Phaser.Scene {
       this.rect(d, 95, 78, 1, 16, T.WALL);
     });
     this.addPlayer(18, 51);
+    this.scatterDecor(33, {
+      village: [
+        [16, 40],
+        [26, 68],
+        [40, 34],
+        [88, 30],
+        [100, 62],
+        [46, 74],
+      ],
+      groves: [
+        [70, 88, 7],
+        [22, 92, 6],
+        [116, 46, 6],
+      ],
+      lamps: [
+        [48, 42],
+        [84, 42],
+        [48, 66],
+        [84, 66],
+        [66, 34],
+      ],
+      benches: [
+        [50, 56],
+        [82, 56],
+        [66, 70],
+      ],
+      fences: [
+        [12, 46, 6],
+        [96, 70, 6],
+      ],
+      flowers: 100,
+      border: true,
+    });
 
     this.zoneState["sheets"] = 0;
     const sheetSpots: [number, number][] = [
@@ -745,6 +994,15 @@ export class QuestScene extends Phaser.Scene {
       this.rect(d, 24, 46, 84, 10, T.MARBLE);
     });
     this.addPlayer(66, 88);
+    this.scatterDecor(55, {
+      lamps: [
+        [40, 30],
+        [92, 30],
+        [40, 70],
+        [92, 70],
+      ],
+      flowers: 40,
+    });
     for (let i = 0; i < 24; i++) {
       this.add.sprite((38 + (i % 2) * 56) * TILE, (18 + Math.floor(i / 2) * 5) * TILE, "guest").setDepth(6);
     }
@@ -1300,6 +1558,13 @@ export class QuestScene extends Phaser.Scene {
 
     const near = this.nearest();
     this.prompt = near ? near.label : null;
+    if (this.promptText) {
+      this.promptText
+        .setPosition(this.player.x, this.player.y - 30)
+        .setText(near ? `E / ACTION — ${near.label}` : "")
+        .setVisible(!!near);
+    }
+    this.updateArrow();
     this.pushHud();
   }
 
