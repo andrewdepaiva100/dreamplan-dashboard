@@ -7,6 +7,7 @@ import {
   BookOpen,
   CalendarDays,
   CalendarRange,
+  BellRing,
   ClipboardList,
   CreditCard,
   Map,
