@@ -217,3 +217,33 @@ export const ZONE_ORDER: ZoneId[] = [
   "starry_ascent",
   "cathedral",
 ];
+
+export const STORY_PREMISE =
+  "Step into Maria's journey as the Bringer of Peace. Transform the grey noise of the realm into blooming color, collect 5 sacred Relics of Devotion, and uncover hidden love notes along your path to the Grand Cathedral.";
+
+export const HOW_TO_PLAY = [
+  {
+    title: "Move",
+    body: "Use the virtual touch joystick, WASD, or arrow keys to walk through the realm. Maria's pace is gentle and deliberate — take your time.",
+  },
+  {
+    title: "Peace Burst",
+    body: "Tap PEACE (or SPACE / J) to send a ring of rose petals. Enemies touched by peace are transformed, not destroyed. Each burst costs a little stamina.",
+  },
+  {
+    title: "Dash",
+    body: "Tap DASH (or SHIFT / K) for a quick burst of movement. Use it to cross gaps or escape a crowd. It recharges after a few seconds.",
+  },
+  {
+    title: "Interact",
+    body: "Walk near glowing people, stones, doors, or letters and tap TALK (or E / ENTER) to read, rest, collect relics, and open new paths.",
+  },
+];
+
+export const REALM_LANDMARKS: { direction: string; name: string; act: string; zone: ZoneId }[] = [
+  { direction: "West", name: "The River Gates & Sunken Grotto", act: "Act I", zone: "sunlit_shores" },
+  { direction: "North", name: "The Labyrinth of the Wedding Garden", act: "Act II", zone: "wedding_garden" },
+  { direction: "Center", name: "The Haven Town Square & Fountain", act: "Act III", zone: "the_haven" },
+  { direction: "East", name: "The Starry Ascent Mountain", act: "Act IV", zone: "starry_ascent" },
+  { direction: "Summit", name: "The Grand Cathedral of Serenity", act: "Act V", zone: "cathedral" },
+];
