@@ -219,7 +219,7 @@ export const ZONE_ORDER: ZoneId[] = [
 ];
 
 export const STORY_PREMISE =
-  "Step into Maria's journey as the Bringer of Peace. Transform the grey noise of the realm into blooming color, collect 5 sacred Relics of Devotion, and uncover hidden love notes along your path to the Grand Cathedral.";
+  "Step into Maria's journey as the Bringer of Peace. Walk a world in full bloom, trailing golden light and rose petals wherever you go, calm every worry you meet, collect 5 sacred Relics of Devotion, and uncover hidden love notes along your path to the Grand Cathedral.";
 
 export const HOW_TO_PLAY = [
   {

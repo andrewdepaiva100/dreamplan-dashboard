@@ -7,7 +7,15 @@ import {
   type ZoneId,
 } from "./content";
 import { EMPTY_SAVE, type QuestSave } from "./save";
-import { SOLID_TILES, T, TILE, TILE_COUNT, buildSprites, buildTileset } from "./textures";
+import {
+  SOLID_TILES,
+  T,
+  TILE,
+  TILE_COUNT,
+  buildSprites,
+  buildTileset,
+  preloadQuestArt,
+} from "./textures";
 
 export { EV } from "./events";
 export type { HudState, ModalPayload } from "./events";
@@ -63,6 +71,7 @@ export class QuestScene extends Phaser.Scene {
   private animStep = 0;
   private lastStepAt = 0;
   private facing = 1;
+  private lastDir: "down" | "up" | "side" = "down";
   private frozen = false;
   private objective = "";
   private prompt: string | null = null;
@@ -78,6 +87,10 @@ export class QuestScene extends Phaser.Scene {
 
   init(data: { save?: QuestSave }) {
     if (data?.save) this.save = { ...EMPTY_SAVE, ...data.save };
+  }
+
+  preload() {
+    preloadQuestArt(this);
   }
 
   create() {
@@ -150,21 +163,22 @@ export class QuestScene extends Phaser.Scene {
     this.cameras.main.setZoom(this.scale.width < 620 ? 1.1 : 1.45);
     this.cameras.main.fadeIn(500, 8, 12, 30);
 
-    // soft ambient vignette overlay
-    const vignette = this.add.rectangle(
+    // warm romantic sunlight wash across the whole scene
+    const sunlight = this.add.rectangle(
       this.cameras.main.centerX,
       this.cameras.main.centerY,
-      this.cameras.main.width * 2,
-      this.cameras.main.height * 2,
-      0x0b1e3d,
-      0,
+      this.cameras.main.width * 3,
+      this.cameras.main.height * 3,
+      0xffe6b0,
+      0.14,
     );
-    vignette.setDepth(100);
-    vignette.setBlendMode(Phaser.BlendModes.MULTIPLY);
+    sunlight.setScrollFactor(0);
+    sunlight.setDepth(90);
+    sunlight.setBlendMode(Phaser.BlendModes.ADD);
     this.tweens.add({
-      targets: vignette,
-      alpha: { from: 0, to: 0.18 },
-      duration: 1200,
+      targets: sunlight,
+      alpha: { from: 0.1, to: 0.2 },
+      duration: 3800,
       yoyo: true,
       repeat: -1,
       ease: "Sine.easeInOut",
@@ -185,7 +199,8 @@ export class QuestScene extends Phaser.Scene {
       const row: number[] = [];
       for (let x = 0; x < MAP_W; x++) {
         const edge = x === 0 || y === 0 || x === MAP_W - 1 || y === MAP_H - 1;
-        row.push(edge ? T.WALL : rnd() < 0.58 ? T.GREY : base);
+        // full-colour ground: lush meadow mixed with the zone's own base tile
+        row.push(edge ? T.WALL : rnd() < 0.5 ? T.MEADOW : base);
       }
       data.push(row);
     }
@@ -207,7 +222,9 @@ export class QuestScene extends Phaser.Scene {
   private addPlayer(tx: number, ty: number) {
     const x = Phaser.Math.Clamp(tx, 2, MAP_W - 3) * TILE;
     const y = Phaser.Math.Clamp(ty, 2, MAP_H - 3) * TILE;
-    this.player = this.physics.add.sprite(x, y, "maria-0");
+    this.makeWalkAnims();
+    this.player = this.physics.add.sprite(x, y, "maria-down-0");
+    this.player.anims.play("maria-idle-down");
     this.player.setSize(14, 12).setOffset(5, 21);
     this.player.setCollideWorldBounds(true);
     this.player.setDepth(20);
@@ -222,6 +239,28 @@ export class QuestScene extends Phaser.Scene {
       yoyo: true,
       repeat: -1,
     });
+  }
+
+  /** 4-directional walk + idle animations for Maria. */
+  private makeWalkAnims() {
+    for (const dir of ["down", "side", "up"] as const) {
+      if (!this.anims.exists(`maria-walk-${dir}`)) {
+        this.anims.create({
+          key: `maria-walk-${dir}`,
+          frames: [{ key: `maria-${dir}-0` }, { key: `maria-${dir}-1` }],
+          frameRate: 6,
+          repeat: -1,
+        });
+      }
+      if (!this.anims.exists(`maria-idle-${dir}`)) {
+        this.anims.create({
+          key: `maria-idle-${dir}`,
+          frames: [{ key: `maria-${dir}-0` }],
+          frameRate: 1,
+          repeat: -1,
+        });
+      }
+    }
   }
 
   private addInteractable(
@@ -1199,26 +1238,34 @@ export class QuestScene extends Phaser.Scene {
     const speed = SPEED * (dashing ? 3 : 1);
     this.player.setVelocity(vx * speed, vy * speed);
 
-    if (vx !== 0) {
-      this.facing = vx > 0 ? 1 : -1;
-      this.player.setFlipX(this.facing < 0);
+    // 4-directional animation
+    const moving = len > 0.05;
+    let dir: "down" | "up" | "side" = "down";
+    if (moving) {
+      if (Math.abs(vx) > Math.abs(vy)) {
+        dir = "side";
+        this.facing = vx > 0 ? 1 : -1;
+      } else {
+        dir = vy < 0 ? "up" : "down";
+      }
+      this.lastDir = dir;
+    } else {
+      dir = this.lastDir;
     }
-    if (len > 0.05 && time - this.lastStepAt > 180) {
-      this.lastStepAt = time;
-      this.animStep = this.animStep === 0 ? 1 : 0;
-      this.player.setTexture(`maria-${this.animStep}`);
-    } else if (len <= 0.05) {
-      this.player.setTexture("maria-0");
-    }
+    this.player.setFlipX(dir === "side" && this.facing < 0);
+    const animKey = `maria-${moving ? "walk" : "idle"}-${dir}`;
+    if (this.player.anims.currentAnim?.key !== animKey) this.player.anims.play(animKey, true);
+    this.animStep = moving ? 1 : 0;
+    this.lastStepAt = time;
 
     // stamina
     this.stamina = Math.min(100, this.stamina + (len > 0.05 ? 0.012 : 0.03) * delta);
 
-    // aura position + tile transformation (throttled)
+    // aura position + radiant petal / sparkle trail (throttled)
     this.aura.setPosition(this.player.x, this.player.y);
     if (time - this.lastAura > 90) {
       this.lastAura = time;
-      this.transformTiles();
+      this.auraTrail(moving);
     }
 
     // enemies chase
@@ -1256,32 +1303,30 @@ export class QuestScene extends Phaser.Scene {
     this.pushHud();
   }
 
-  private transformTiles() {
-    const cx = Math.floor(this.player.x / TILE);
-    const cy = Math.floor(this.player.y / TILE);
-    const r = 3;
-    const bloom = this.save.current_zone === "starry_ascent" ? T.SKY : T.BLOOM;
-    for (let y = cy - r; y <= cy + r; y++) {
-      for (let x = cx - r; x <= cx + r; x++) {
-        const tile = this.layer.getTileAt(x, y);
-        if (!tile || tile.index !== T.GREY) continue;
-        if (Phaser.Math.Distance.Between(x * TILE, y * TILE, this.player.x, this.player.y) > 92)
-          continue;
-        this.layer.putTileAt(bloom, x, y);
-        if (Phaser.Math.Between(0, 100) > 88) {
-          const s = this.add
-            .sprite(x * TILE + 16, y * TILE + 16, "spark")
-            .setTint(0xffd7e5)
-            .setDepth(8);
-          this.tweens.add({
-            targets: s,
-            y: s.y - 24,
-            alpha: 0,
-            duration: 900,
-            onComplete: () => s.destroy(),
-          });
-        }
-      }
+  /** Maria's aura leaves a golden light trail of blooming petals and sparkles. */
+  private auraTrail(moving: boolean) {
+    const count = moving ? 2 : 1;
+    for (let i = 0; i < count; i++) {
+      const ox = Phaser.Math.Between(-22, 22);
+      const oy = Phaser.Math.Between(-6, 20);
+      const isPetal = Phaser.Math.Between(0, 100) > 45;
+      const s = this.add
+        .sprite(this.player.x + ox, this.player.y + oy, isPetal ? "petal" : "spark")
+        .setDepth(8)
+        .setAlpha(0.95)
+        .setScale(isPetal ? Phaser.Math.FloatBetween(0.7, 1.2) : Phaser.Math.FloatBetween(1, 1.8));
+      if (!isPetal) s.setTint(0xffe9a8);
+      this.tweens.add({
+        targets: s,
+        y: s.y - Phaser.Math.Between(14, 30),
+        x: s.x + Phaser.Math.Between(-10, 10),
+        angle: isPetal ? Phaser.Math.Between(-140, 140) : 0,
+        alpha: 0,
+        scale: 0.2,
+        duration: Phaser.Math.Between(700, 1200),
+        ease: "Sine.easeOut",
+        onComplete: () => s.destroy(),
+      });
     }
   }
 }
