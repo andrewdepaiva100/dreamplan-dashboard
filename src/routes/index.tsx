@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   BookOpen,
   CalendarDays,
+  CalendarRange,
   ClipboardList,
   CreditCard,
   Map,
