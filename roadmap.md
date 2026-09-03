@@ -4,3 +4,5 @@
 - [x] Storage: health dashboard limit raised to 1 GB
 - [ ] Storage: confirm database disk resized to 1 GB (approval card)
 - [x] Shared Calendar: cloud-synced events with categories, colors, assignees, month/agenda views
+
+- [x] Maria's Quest: Realm of the Golden Ring (Phaser game module, cloud saves)
