@@ -36,4 +36,5 @@ export type ModalPayload =
   | { type: "memory" }
   | { type: "andrew"; line: string }
   | { type: "vault" }
-  | { type: "info"; title: string; body: string };
+  | { type: "info"; title: string; body: string }
+  | { type: "guide" };
