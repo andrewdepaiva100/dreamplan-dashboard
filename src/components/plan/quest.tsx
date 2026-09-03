@@ -606,15 +606,49 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowControls(true)}
-            className="pointer-events-auto flex h-11 w-11 flex-col items-center justify-center rounded-xl border border-sky/50 bg-[rgba(11,30,61,0.78)] text-[9px] font-bold uppercase tracking-wider text-sky backdrop-blur"
-            aria-label="Controls"
-          >
-            <span className="text-base leading-none">🎮</span>
-            <span>Help</span>
-          </button>
+          <div className="pointer-events-auto flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => setShowControls(true)}
+              className="flex h-11 w-11 flex-col items-center justify-center rounded-xl border border-sky/50 bg-[rgba(11,30,61,0.78)] text-[9px] font-bold uppercase tracking-wider text-sky backdrop-blur"
+              aria-label="Controls"
+            >
+              <span className="text-base leading-none">🎮</span>
+              <span>Help</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                buzz();
+                setShowMap(true);
+              }}
+              className="flex h-11 w-11 flex-col items-center justify-center rounded-xl border border-gold/50 bg-[rgba(11,30,61,0.78)] text-[9px] font-bold uppercase tracking-wider text-gold backdrop-blur"
+              aria-label="Realm map"
+            >
+              <span className="text-base leading-none">🗺️</span>
+              <span>Map</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                buzz();
+                setShowMemories(true);
+              }}
+              className="flex h-11 w-11 flex-col items-center justify-center rounded-xl border border-blush/50 bg-[rgba(11,30,61,0.78)] text-[9px] font-bold uppercase tracking-wider text-blush backdrop-blur"
+              aria-label="Memories"
+            >
+              <span className="text-base leading-none">💛</span>
+              <span>Album</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMuted((m) => !m)}
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/30 bg-[rgba(11,30,61,0.78)] text-base text-white backdrop-blur"
+              aria-label={muted ? "Unmute music" : "Mute music"}
+            >
+              {muted ? "🔇" : "🔊"}
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -774,6 +808,122 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                 <p className="mt-1 text-xs leading-relaxed text-navy/80">{c.body}</p>
               </div>
             ))}
+          </div>
+        </GlassPanel>
+      ) : null}
+
+      {actBanner ? (
+        <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
+          <div className="animate-fade-in rounded-2xl border border-gold/60 bg-[rgba(11,30,61,0.86)] px-8 py-6 text-center backdrop-blur">
+            <p className="text-[11px] uppercase tracking-[0.35em] text-gold">
+              {hud?.act ?? "Your journey"}
+            </p>
+            <p className="mt-2 font-display text-2xl font-bold text-white">{actBanner}</p>
+          </div>
+        </div>
+      ) : null}
+
+      {showMap ? (
+        <GlassPanel title="Realm Map" onClose={() => setShowMap(false)} wide>
+          {mapSnap ? (
+            <>
+              <LiveMapCanvas snap={mapSnap} />
+              <p className="text-center text-xs text-navy/70">
+                Rose marker: you. Gold marker: this act&apos;s landmark. White markers: relics,
+                guides and portals.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  buzz();
+                  emit(EV.guideme);
+                  setShowMap(false);
+                }}
+                className="w-full rounded-xl bg-gradient-to-r from-gold to-gold-glow px-4 py-3 text-sm font-bold text-navy"
+              >
+                ✨ Guide Me to my objective
+              </button>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-gold">
+                  Fast travel
+                </p>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  {REALM_LANDMARKS.map((lm) => {
+                    const unlocked = mapSnap.unlocked.includes(lm.zone as ZoneId);
+                    const here = mapSnap.zone === lm.zone;
+                    return (
+                      <button
+                        key={lm.zone}
+                        type="button"
+                        disabled={!unlocked || here}
+                        onClick={() => {
+                          buzz();
+                          emit(EV.travel, lm.zone);
+                          setShowMap(false);
+                        }}
+                        className="rounded-xl border border-gold/30 bg-white/70 p-3 text-left disabled:opacity-45"
+                      >
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-gold">
+                          {lm.direction} · {lm.act}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-navy">{lm.name}</p>
+                        <p className="mt-0.5 text-[11px] text-navy/60">
+                          {here ? "You are here" : unlocked ? "Travel here" : "Sealed"}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-navy/70">Charting the realm…</p>
+          )}
+        </GlassPanel>
+      ) : null}
+
+      {showMemories ? (
+        <GlassPanel title="Album of Memories" onClose={() => setShowMemories(false)} wide>
+          <img
+            src={PHOTO_SRC}
+            alt="Andrew and Maria together"
+            className="mx-auto max-h-56 rounded-xl object-cover"
+          />
+          <p className="text-[11px] font-bold uppercase tracking-wider text-gold">
+            Relics of devotion ({hud?.relics.length ?? 0}/5)
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {RELICS.map((r) => {
+              const found = hud?.relics.includes(r.id);
+              return (
+                <div
+                  key={r.id}
+                  className={`rounded-xl border p-3 ${found ? "border-gold/40 bg-white/75" : "border-navy/10 bg-white/40"}`}
+                >
+                  <p className="text-sm font-semibold text-navy">{found ? r.name : "Not yet found"}</p>
+                  <p className="mt-1 text-xs text-navy/75">
+                    {found ? r.card : `Hidden in ${ZONES[r.zone].title}.`}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-gold">
+            Love letters ({hud?.envelopes.length ?? 0}/5)
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {ENVELOPES.map((e) => {
+              const found = hud?.envelopes.includes(e.id);
+              return (
+                <div
+                  key={e.id}
+                  className={`rounded-xl border p-3 ${found ? "border-blush/50 bg-white/75" : "border-navy/10 bg-white/40"}`}
+                >
+                  <p className="text-sm font-semibold text-navy">{found ? e.title : "Sealed letter"}</p>
+                  {found ? <p className="mt-1 text-xs text-navy/75">{e.letter}</p> : null}
+                </div>
+              );
+            })}
           </div>
         </GlassPanel>
       ) : null}
