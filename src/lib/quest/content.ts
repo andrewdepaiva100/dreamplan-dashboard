@@ -247,3 +247,27 @@ export const REALM_LANDMARKS: { direction: string; name: string; act: string; zo
   { direction: "East", name: "The Starry Ascent Mountain", act: "Act IV", zone: "starry_ascent" },
   { direction: "Summit", name: "The Grand Cathedral of Serenity", act: "Act V", zone: "cathedral" },
 ];
+
+/** Controls reference shown by the HUD "Controls" button. */
+export const CONTROLS_HELP: { title: string; body: string }[] = [
+  {
+    title: "Move",
+    body: "Drag the joystick in the bottom-left, or use WASD / the arrow keys on a keyboard.",
+  },
+  {
+    title: "Interact",
+    body: "Walk close to a person, stone or letter until the gold bubble appears above Maria, then tap TALK (or press E).",
+  },
+  {
+    title: "Peace Burst",
+    body: "Tap PEACE (or press Space) to send out blossoms that calm any worry they touch — nothing is ever harmed.",
+  },
+  {
+    title: "Dash",
+    body: "Tap DASH (or press Shift) for a quick burst of speed. The gold bar under your hearts shows when it is ready again.",
+  },
+  {
+    title: "Objective Arrow",
+    body: "The glowing gold arrow circling Maria points toward the current act's goal. It fades once you are close.",
+  },
+];

@@ -4,6 +4,7 @@ import {
   ANDREW_AFFIRMATIONS,
   CEREMONY_CHOICES,
   CEREMONY_OPENING,
+  CONTROLS_HELP,
   ENVELOPES,
   FINAL_PROPOSAL,
   HOW_TO_PLAY,
@@ -195,6 +196,17 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
     choice?: string;
   }>(null);
   const [overlay, setOverlay] = useState<TitleOverlay>(null);
+  const [showControls, setShowControls] = useState(false);
+
+  // lock page scroll while the full-screen game is up
+  useEffect(() => {
+    if (screen !== "playing") return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [screen]);
 
   useEffect(() => {
     let alive = true;
@@ -400,42 +412,57 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
 
   // ---------------- playing ---------------------------------------------
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-gold/40 bg-[#0b1e3d]">
-      <div ref={hostRef} className="h-[70vh] min-h-[420px] w-full touch-none" />
+    <div className="fixed inset-0 z-[100] h-[100dvh] w-screen overflow-hidden bg-[#0b1e3d]">
+      <div ref={hostRef} className="absolute inset-0 h-full w-full touch-none" />
 
       {/* HUD */}
       {hud ? (
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-wrap items-start justify-between gap-2 p-3 text-white">
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-2 p-3 text-white"
+          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+        >
           <div className="rounded-xl bg-[rgba(11,30,61,0.72)] px-3 py-2 backdrop-blur">
             <div className="text-lg leading-none tracking-widest text-[#ff6b7a]">
               {HEART.repeat(hud.health)}
               <span className="text-white/25">{HEART.repeat(hud.maxHealth - hud.health)}</span>
             </div>
-            <div className="mt-2 h-1.5 w-28 overflow-hidden rounded-full bg-white/20">
+            <div className="mt-2 h-1.5 w-24 overflow-hidden rounded-full bg-white/20">
               <div className="h-full bg-teal" style={{ width: `${hud.stamina}%` }} />
             </div>
-            <div className="mt-1 h-1.5 w-28 overflow-hidden rounded-full bg-white/20">
+            <div className="mt-1 h-1.5 w-24 overflow-hidden rounded-full bg-white/20">
               <div
                 className="h-full bg-gold"
                 style={{ width: `${Math.round(hud.dashProgress * 100)}%` }}
               />
             </div>
           </div>
-          <div className="max-w-[52%] rounded-xl bg-[rgba(11,30,61,0.72)] px-3 py-2 text-right backdrop-blur">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-sky">
+
+          {/* objective tracker — top centre */}
+          <div className="max-w-[46%] rounded-xl border border-gold/40 bg-[rgba(11,30,61,0.78)] px-3 py-2 text-center backdrop-blur">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-gold">
               {hud.act} · {hud.zoneTitle}
             </p>
-            <p className="text-xs text-white/90">{hud.objective}</p>
-            <p className="mt-1 text-[11px] text-gold">
+            <p className="mt-0.5 text-xs leading-snug text-white/95">{hud.objective}</p>
+            <p className="mt-1 text-[11px] text-sky">
               Relics {hud.relics.length}/5 · Letters {hud.envelopes.length}/5 · Keys {hud.keys}/3
             </p>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShowControls(true)}
+            className="pointer-events-auto flex h-11 w-11 flex-col items-center justify-center rounded-xl border border-sky/50 bg-[rgba(11,30,61,0.78)] text-[9px] font-bold uppercase tracking-wider text-sky backdrop-blur"
+            aria-label="Controls"
+          >
+            <span className="text-base leading-none">🎮</span>
+            <span>Help</span>
+          </button>
         </div>
       ) : null}
 
       {/* prompt */}
       {hud?.prompt ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-40 z-20 flex justify-center">
+        <div className="pointer-events-none absolute inset-x-0 bottom-48 z-20 flex justify-center">
           <span className="rounded-full bg-gold px-4 py-1.5 text-xs font-bold text-navy">
             {hud.prompt}
           </span>
@@ -451,7 +478,10 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       ) : null}
 
       {/* touch controls */}
-      <div className="absolute inset-x-0 bottom-0 z-20 flex select-none items-end justify-between p-4">
+      <div
+        className="absolute inset-x-0 bottom-0 z-20 flex select-none items-end justify-between p-4"
+        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+      >
         <div
           ref={stickRef}
           className="relative h-32 w-32 rounded-full border border-white/25 bg-white/10 backdrop-blur"
@@ -571,6 +601,19 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                   {lm.direction} · {lm.act}
                 </p>
                 <p className="mt-1 text-sm font-semibold text-navy">{lm.name}</p>
+              </div>
+            ))}
+          </div>
+        </GlassPanel>
+      ) : null}
+
+      {showControls ? (
+        <GlassPanel title="How to play" onClose={() => setShowControls(false)} wide>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {CONTROLS_HELP.map((c) => (
+              <div key={c.title} className="rounded-xl border border-gold/25 bg-white/70 p-3">
+                <p className="text-sm font-bold text-navy">{c.title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-navy/80">{c.body}</p>
               </div>
             ))}
           </div>
