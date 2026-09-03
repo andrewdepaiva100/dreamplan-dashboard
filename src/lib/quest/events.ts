@@ -11,6 +11,7 @@ export const EV = {
   action: "quest:action",
   dash: "quest:dash",
   interact: "quest:interact",
+  guide: "quest:guide",
 } as const;
 
 export type HudState = {
@@ -35,4 +36,5 @@ export type ModalPayload =
   | { type: "memory" }
   | { type: "andrew"; line: string }
   | { type: "vault" }
-  | { type: "info"; title: string; body: string };
+  | { type: "info"; title: string; body: string }
+  | { type: "guide" };

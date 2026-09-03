@@ -6,9 +6,12 @@ import {
   CEREMONY_OPENING,
   ENVELOPES,
   FINAL_PROPOSAL,
+  HOW_TO_PLAY,
   MEMORY_STONE_TEXT,
   PHOTO_SRC,
+  REALM_LANDMARKS,
   RELICS,
+  STORY_PREMISE,
   VAULT_JOURNAL,
 } from "@/lib/quest/content";
 import {
@@ -22,10 +25,11 @@ import {
 import { EV, type HudState, type ModalPayload } from "@/lib/quest/events";
 
 type Screen = "title" | "playing";
+type TitleOverlay = null | "story" | "guide";
 
 const HEART = "♥";
 
-function Panel({
+function GlassPanel({
   children,
   onClose,
   title,
@@ -37,9 +41,9 @@ function Panel({
   wide?: boolean;
 }) {
   return (
-    <div className="absolute inset-0 z-40 flex items-center justify-center bg-[rgba(6,10,24,0.78)] p-4">
+    <div className="absolute inset-0 z-40 flex items-center justify-center bg-[rgba(6,10,24,0.72)] p-4 backdrop-blur-sm">
       <div
-        className={`w-full ${wide ? "max-w-2xl" : "max-w-md"} max-h-full overflow-y-auto rounded-2xl border border-gold/50 bg-[#fdfaf3] p-6 shadow-2xl`}
+        className={`w-full ${wide ? "max-w-2xl" : "max-w-md"} max-h-full overflow-y-auto rounded-2xl border border-rose-gold/40 bg-[rgba(253,250,243,0.92)] p-6 shadow-2xl`}
       >
         <h3 className="font-display text-xl font-bold text-navy">{title}</h3>
         <div className="mt-3 space-y-3 text-sm leading-relaxed text-navy/85">{children}</div>
@@ -55,6 +59,122 @@ function Panel({
       </div>
     </div>
   );
+}
+
+/** Ambient background canvas: drifting gold motes and falling rose petals. */
+function AmbientCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let raf = 0;
+    let w = canvas.clientWidth;
+    let h = canvas.clientHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.scale(dpr, dpr);
+
+    const resize = () => {
+      w = canvas.clientWidth;
+      h = canvas.clientHeight;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    window.addEventListener("resize", resize);
+
+    const motes: { x: number; y: number; r: number; s: number; a: number }[] = [];
+    for (let i = 0; i < 36; i++) {
+      motes.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: Math.random() * 2 + 1,
+        s: Math.random() * 0.4 + 0.2,
+        a: Math.random() * Math.PI * 2,
+      });
+    }
+
+    const petals: { x: number; y: number; r: number; dx: number; dy: number; rot: number; drot: number }[] = [];
+    for (let i = 0; i < 18; i++) {
+      petals.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: Math.random() * 4 + 3,
+        dx: Math.random() * 0.6 - 0.3,
+        dy: Math.random() * 0.5 + 0.3,
+        rot: Math.random() * Math.PI * 2,
+        drot: (Math.random() - 0.5) * 0.03,
+      });
+    }
+
+    let last = performance.now();
+    const loop = (now: number) => {
+      const dt = Math.min((now - last) / 16, 2);
+      last = now;
+      ctx.clearRect(0, 0, w, h);
+
+      // soft rose-gold vignette gradient
+      const g = ctx.createRadialGradient(w / 2, h / 2, h * 0.2, w / 2, h / 2, h * 0.9);
+      g.addColorStop(0, "rgba(255, 230, 235, 0.08)");
+      g.addColorStop(0.5, "rgba(201, 162, 75, 0.04)");
+      g.addColorStop(1, "rgba(11, 30, 61, 0.22)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      // gold motes
+      for (const m of motes) {
+        m.a += 0.02 * dt;
+        m.x += Math.cos(m.a) * m.s * dt;
+        m.y -= m.s * 0.4 * dt;
+        if (m.y < -10) {
+          m.y = h + 10;
+          m.x = Math.random() * w;
+        }
+        if (m.x < -10) m.x = w + 10;
+        if (m.x > w + 10) m.x = -10;
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 240, 191, ${0.35 + Math.sin(m.a) * 0.15})`;
+        ctx.fill();
+      }
+
+      // rose petals
+      for (const p of petals) {
+        p.x += p.dx * dt;
+        p.y += p.dy * dt;
+        p.rot += p.drot * dt;
+        if (p.y > h + 10) {
+          p.y = -10;
+          p.x = Math.random() * w;
+        }
+        if (p.x < -10) p.x = w + 10;
+        if (p.x > w + 10) p.x = -10;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, p.r, p.r * 0.7, 0, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255, 200, 210, 0.55)";
+        ctx.fill();
+        ctx.restore();
+      }
+
+      raf = requestAnimationFrame(loop);
+    };
+
+    raf = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />;
 }
 
 export function MariasQuest({ onExit }: { onExit: () => void }) {
@@ -74,6 +194,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
     step: "opening" | "reply" | "proposal" | "vows" | "finale";
     choice?: string;
   }>(null);
+  const [overlay, setOverlay] = useState<TitleOverlay>(null);
 
   useEffect(() => {
     let alive = true;
@@ -100,7 +221,6 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       if (fresh) await persistSave(save);
       setScreen("playing");
       const { createQuestGame } = await import("@/lib/quest/scene");
-      // host element mounts with the "playing" screen
       requestAnimationFrame(() => {
         const host = hostRef.current;
         if (!host || gameRef.current) return;
@@ -202,43 +322,78 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
   // ---------------- title screen ----------------------------------------
   if (screen === "title") {
     return (
-      <div className="relative overflow-hidden rounded-2xl border border-gold/40 bg-[image:var(--gradient-cover)] px-6 py-14 text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky">
-          A gift for Maria
-        </p>
-        <h2 className="mt-3 font-display text-[2.2rem] font-extrabold leading-tight text-white">
-          Maria&apos;s Quest
-        </h2>
-        <p className="font-serif-italic text-lg italic text-gold">Realm of the Golden Ring</p>
-        <p className="mx-auto mt-4 max-w-md text-sm text-sky">
-          Walk five realms, turn worry into blossoms, gather five relics of love, and find Andrew
-          waiting at the cathedral.
-        </p>
-        <div className="mx-auto mt-8 flex max-w-xs flex-col gap-3">
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => void startGame(true)}
-            className="rounded-xl bg-gold px-5 py-3 text-sm font-bold text-navy disabled:opacity-60"
-          >
-            New Game
-          </button>
-          <button
-            type="button"
-            disabled={loading || !canContinue}
-            onClick={() => void startGame(false)}
-            className="rounded-xl border border-sky/60 px-5 py-3 text-sm font-semibold text-white disabled:opacity-40"
-          >
-            {canContinue ? "Continue Your Journey" : "No saved journey yet"}
-          </button>
-          <button
-            type="button"
-            onClick={onExit}
-            className="rounded-xl px-5 py-3 text-sm font-semibold text-sky underline"
-          >
-            Back to Dashboard
-          </button>
+      <div className="relative overflow-hidden rounded-2xl border border-rose-gold/30 bg-[image:var(--gradient-cover)] px-6 py-12 text-center">
+        <AmbientCanvas />
+        <div className="relative z-10 mx-auto flex max-w-md flex-col items-center">
+          <div className="w-full rounded-3xl border border-rose-gold/40 bg-[rgba(255,255,255,0.12)] p-8 shadow-[0_0_60px_-20px_rgba(201,162,75,0.45)] backdrop-blur-xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-gold-glow">
+              A gift for Maria
+            </p>
+            <h2 className="mt-4 font-display text-[2.6rem] font-extrabold leading-tight text-white">
+              Maria&apos;s Quest
+            </h2>
+            <p className="mt-1 font-serif-italic text-xl italic text-blush">Realm of the Golden Ring</p>
+            <p className="mx-auto mt-5 max-w-xs text-sm leading-relaxed text-sky">
+              Walk five realms, turn worry into blossoms, gather five relics of love, and find Andrew
+              waiting at the cathedral.
+            </p>
+
+            <div className="mx-auto mt-8 flex max-w-xs flex-col gap-3">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => void startGame(true)}
+                className="rounded-xl bg-gradient-to-r from-gold to-gold-glow px-5 py-3 text-sm font-bold text-navy shadow-lg shadow-gold/20 transition-transform active:scale-[0.98] disabled:opacity-60"
+              >
+                New Game
+              </button>
+              <button
+                type="button"
+                disabled={loading || !canContinue}
+                onClick={() => void startGame(false)}
+                className="rounded-xl border border-sky/60 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-transform active:scale-[0.98] disabled:opacity-40"
+              >
+                {canContinue ? "Continue Your Journey" : "No saved journey yet"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setOverlay("story")}
+                className="rounded-xl border border-rose-gold/40 bg-white/10 px-5 py-3 text-sm font-semibold text-blush backdrop-blur-sm transition-transform active:scale-[0.98]"
+              >
+                How to Play &amp; Story
+              </button>
+              <button
+                type="button"
+                onClick={onExit}
+                className="rounded-xl px-5 py-3 text-sm font-semibold text-sky underline underline-offset-4 transition-transform active:scale-[0.98]"
+              >
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
         </div>
+
+        {overlay === "story" ? (
+          <GlassPanel title="How to Play & Story" onClose={() => setOverlay(null)} wide>
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-gold/30 bg-gradient-to-br from-rose-gold/10 to-transparent p-4">
+                <p className="text-sm font-semibold text-navy">The Premise</p>
+                <p className="mt-1 text-sm leading-relaxed text-navy/85">{STORY_PREMISE}</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {HOW_TO_PLAY.map((h) => (
+                  <div
+                    key={h.title}
+                    className="rounded-xl border border-gold/20 bg-white/70 p-3 text-left"
+                  >
+                    <p className="text-sm font-bold text-navy">{h.title}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-navy/80">{h.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </GlassPanel>
+        ) : null}
       </div>
     );
   }
@@ -352,53 +507,74 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
 
       {/* modals */}
       {modal?.type === "relic" && relic ? (
-        <Panel title={relic.name} onClose={closeModal}>
+        <GlassPanel title={relic.name} onClose={closeModal}>
           <p className="text-[11px] uppercase tracking-[0.2em] text-gold">{relic.note}</p>
           <p className="font-serif-italic italic">“{relic.card}”</p>
-        </Panel>
+        </GlassPanel>
       ) : null}
 
       {modal?.type === "envelope" && envelope ? (
-        <Panel title={envelope.title} onClose={closeModal}>
+        <GlassPanel title={envelope.title} onClose={closeModal}>
           <p>{envelope.letter}</p>
-        </Panel>
+        </GlassPanel>
       ) : null}
 
       {modal?.type === "memory" ? (
-        <Panel title="Memory Stone" onClose={closeModal} wide>
+        <GlassPanel title="Memory Stone" onClose={closeModal} wide>
           <img
             src={PHOTO_SRC}
             alt="Andrew and Maria together"
             className="mx-auto max-h-72 rounded-xl object-cover"
           />
           <p>{MEMORY_STONE_TEXT}</p>
-        </Panel>
+        </GlassPanel>
       ) : null}
 
       {modal?.type === "andrew" ? (
-        <Panel title="Andrew" onClose={closeModal}>
+        <GlassPanel title="Andrew" onClose={closeModal}>
           <p className="font-serif-italic italic">“{modal.line}”</p>
           <p className="text-xs text-navy/60">
             {ANDREW_AFFIRMATIONS[Math.floor(Math.random() * ANDREW_AFFIRMATIONS.length)]}
           </p>
-        </Panel>
+        </GlassPanel>
       ) : null}
 
       {modal?.type === "vault" ? (
-        <Panel title="The Vault of Gratitude" onClose={closeModal} wide>
+        <GlassPanel title="The Vault of Gratitude" onClose={closeModal} wide>
           {VAULT_JOURNAL.map((entry) => (
             <div key={entry.title} className="rounded-xl border border-gold/30 bg-white/70 p-3">
               <p className="text-sm font-bold text-navy">{entry.title}</p>
               <p className="mt-1 text-sm text-navy/80">{entry.body}</p>
             </div>
           ))}
-        </Panel>
+        </GlassPanel>
       ) : null}
 
       {modal?.type === "info" ? (
-        <Panel title={modal.title} onClose={closeModal}>
+        <GlassPanel title={modal.title} onClose={closeModal}>
           <p>{modal.body}</p>
-        </Panel>
+        </GlassPanel>
+      ) : null}
+
+      {modal?.type === "guide" ? (
+        <GlassPanel title="Realm Map" onClose={closeModal} wide>
+          <p className="text-sm text-navy/80">
+            The Realm Guide points toward the five landmarks that lead to the Grand Cathedral.
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {REALM_LANDMARKS.map((lm) => (
+              <div
+                key={lm.zone}
+                className="rounded-xl border border-gold/30 bg-white/70 p-3 text-left"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gold">
+                  {lm.direction} · {lm.act}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-navy">{lm.name}</p>
+              </div>
+            ))}
+          </div>
+        </GlassPanel>
       ) : null}
 
       {/* ceremony */}
