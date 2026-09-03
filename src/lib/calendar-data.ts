@@ -82,7 +82,7 @@ export const todayKey = () => toKey(new Date());
 
 export const parseKey = (key: string) => {
   const [y, m, d] = key.split("-").map(Number);
-  return new Date(y, (m ?? 1) - 1, d ?? 1);
+  return new Date(y ?? 2026, (m ?? 1) - 1, d ?? 1);
 };
 
 export const MONTH_NAMES = [
@@ -147,7 +147,8 @@ export function formatShortDay(key: string) {
 
 export function formatTime(time: string | null) {
   if (!time) return "";
-  const [h, m] = time.split(":").map(Number);
+  const [rawH, m] = time.split(":").map(Number);
+  const h = rawH ?? NaN;
   if (!Number.isFinite(h)) return "";
   const ampm = h >= 12 ? "PM" : "AM";
   const hour = h % 12 === 0 ? 12 : h % 12;
