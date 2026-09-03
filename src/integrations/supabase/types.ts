@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_events: {
+        Row: {
+          assigned_to: string
+          category: string
+          color: string
+          completed: boolean
+          created_at: string
+          event_date: string
+          event_time: string | null
+          id: string
+          notes: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string
+          category: string
+          color: string
+          completed?: boolean
+          created_at?: string
+          event_date: string
+          event_time?: string | null
+          id?: string
+          notes?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string
+          category?: string
+          color?: string
+          completed?: boolean
+          created_at?: string
+          event_date?: string
+          event_time?: string | null
+          id?: string
+          notes?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           client_id: string | null
