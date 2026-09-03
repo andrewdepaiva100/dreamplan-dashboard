@@ -71,6 +71,7 @@ export class QuestScene extends Phaser.Scene {
   private animStep = 0;
   private lastStepAt = 0;
   private facing = 1;
+  private lastDir: "down" | "up" | "side" = "down";
   private frozen = false;
   private objective = "";
   private prompt: string | null = null;
