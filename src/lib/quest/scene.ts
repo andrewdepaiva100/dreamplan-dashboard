@@ -240,6 +240,28 @@ export class QuestScene extends Phaser.Scene {
     });
   }
 
+  /** 4-directional walk + idle animations for Maria. */
+  private makeWalkAnims() {
+    for (const dir of ["down", "side", "up"] as const) {
+      if (!this.anims.exists(`maria-walk-${dir}`)) {
+        this.anims.create({
+          key: `maria-walk-${dir}`,
+          frames: [{ key: `maria-${dir}-0` }, { key: `maria-${dir}-1` }],
+          frameRate: 6,
+          repeat: -1,
+        });
+      }
+      if (!this.anims.exists(`maria-idle-${dir}`)) {
+        this.anims.create({
+          key: `maria-idle-${dir}`,
+          frames: [{ key: `maria-${dir}-0` }],
+          frameRate: 1,
+          repeat: -1,
+        });
+      }
+    }
+  }
+
   private addInteractable(
     x: number,
     y: number,
