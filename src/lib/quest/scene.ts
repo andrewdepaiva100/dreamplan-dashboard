@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 import {
   ENVELOPES,
   RELICS,
@@ -9,42 +9,9 @@ import {
 import { EMPTY_SAVE, type QuestSave } from "./save";
 import { SOLID_TILES, T, TILE, TILE_COUNT, buildSprites, buildTileset } from "./textures";
 
-export const EV = {
-  hud: "quest:hud",
-  modal: "quest:modal",
-  toast: "quest:toast",
-  save: "quest:save",
-  ceremony: "quest:ceremony",
-  resume: "quest:resume",
-  stick: "quest:stick",
-  action: "quest:action",
-  dash: "quest:dash",
-  interact: "quest:interact",
-} as const;
-
-export type HudState = {
-  health: number;
-  maxHealth: number;
-  stamina: number;
-  dashProgress: number;
-  zone: ZoneId;
-  zoneTitle: string;
-  act: string;
-  objective: string;
-  relics: string[];
-  envelopes: string[];
-  keys: number;
-  prompt: string | null;
-  weddingCompleted: boolean;
-};
-
-export type ModalPayload =
-  | { type: "relic"; relicId: string }
-  | { type: "envelope"; envelopeId: string }
-  | { type: "memory" }
-  | { type: "andrew"; line: string }
-  | { type: "vault" }
-  | { type: "info"; title: string; body: string };
+export { EV } from "./events";
+export type { HudState, ModalPayload } from "./events";
+import { EV, type HudState, type ModalPayload } from "./events";
 
 type Interactable = {
   obj: Phaser.GameObjects.Sprite;
