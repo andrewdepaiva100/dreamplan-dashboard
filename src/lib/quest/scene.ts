@@ -1237,26 +1237,34 @@ export class QuestScene extends Phaser.Scene {
     const speed = SPEED * (dashing ? 3 : 1);
     this.player.setVelocity(vx * speed, vy * speed);
 
-    if (vx !== 0) {
-      this.facing = vx > 0 ? 1 : -1;
-      this.player.setFlipX(this.facing < 0);
+    // 4-directional animation
+    const moving = len > 0.05;
+    let dir: "down" | "up" | "side" = "down";
+    if (moving) {
+      if (Math.abs(vx) > Math.abs(vy)) {
+        dir = "side";
+        this.facing = vx > 0 ? 1 : -1;
+      } else {
+        dir = vy < 0 ? "up" : "down";
+      }
+      this.lastDir = dir;
+    } else {
+      dir = this.lastDir;
     }
-    if (len > 0.05 && time - this.lastStepAt > 180) {
-      this.lastStepAt = time;
-      this.animStep = this.animStep === 0 ? 1 : 0;
-      this.player.setTexture(`maria-${this.animStep}`);
-    } else if (len <= 0.05) {
-      this.player.setTexture("maria-0");
-    }
+    this.player.setFlipX(dir === "side" && this.facing < 0);
+    const animKey = `maria-${moving ? "walk" : "idle"}-${dir}`;
+    if (this.player.anims.currentAnim?.key !== animKey) this.player.anims.play(animKey, true);
+    this.animStep = moving ? 1 : 0;
+    this.lastStepAt = time;
 
     // stamina
     this.stamina = Math.min(100, this.stamina + (len > 0.05 ? 0.012 : 0.03) * delta);
 
-    // aura position + tile transformation (throttled)
+    // aura position + radiant petal / sparkle trail (throttled)
     this.aura.setPosition(this.player.x, this.player.y);
     if (time - this.lastAura > 90) {
       this.lastAura = time;
-      this.transformTiles();
+      this.auraTrail(moving);
     }
 
     // enemies chase
