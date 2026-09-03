@@ -19,7 +19,7 @@ import {
   persistSave,
   type QuestSave,
 } from "@/lib/quest/save";
-import { EV, type HudState, type ModalPayload } from "@/lib/quest/scene";
+import { EV, type HudState, type ModalPayload } from "@/lib/quest/events";
 
 type Screen = "title" | "playing";
 
