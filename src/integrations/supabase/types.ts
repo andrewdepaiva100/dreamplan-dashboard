@@ -142,6 +142,48 @@ export type Database = {
         }
         Relationships: []
       }
+      maria_quest_saves: {
+        Row: {
+          created_at: string
+          current_zone: string
+          id: string
+          player_health: number
+          relics_collected: Json
+          secret_envelopes_found: Json
+          slot: string
+          updated_at: string
+          user_id: string | null
+          vault_keys_count: number
+          wedding_completed: boolean
+        }
+        Insert: {
+          created_at?: string
+          current_zone?: string
+          id?: string
+          player_health?: number
+          relics_collected?: Json
+          secret_envelopes_found?: Json
+          slot?: string
+          updated_at?: string
+          user_id?: string | null
+          vault_keys_count?: number
+          wedding_completed?: boolean
+        }
+        Update: {
+          created_at?: string
+          current_zone?: string
+          id?: string
+          player_health?: number
+          relics_collected?: Json
+          secret_envelopes_found?: Json
+          slot?: string
+          updated_at?: string
+          user_id?: string | null
+          vault_keys_count?: number
+          wedding_completed?: boolean
+        }
+        Relationships: []
+      }
       plan_state: {
         Row: {
           id: string
