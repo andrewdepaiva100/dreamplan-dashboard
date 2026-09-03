@@ -6,6 +6,7 @@ import {
   sortEvents,
   type CalendarEvent,
 } from "@/lib/calendar-data";
+import { notifyPartner } from "@/lib/push-client";
 
 export type NewEvent = Omit<CalendarEvent, "id" | "created_at" | "updated_at">;
 
@@ -66,6 +67,7 @@ export function useCalendar() {
   }, []);
 
   const addEvent = useCallback(async (input: NewEvent) => {
+    notifyPartner("calendar", `New event: ${input.title} on ${input.event_date}`, "/");
     const { data, error: err } = await supabase
       .from("calendar_events")
       .insert(input)
@@ -84,6 +86,7 @@ export function useCalendar() {
 
   const updateEvent = useCallback(
     async (id: string, patch: Partial<NewEvent>) => {
+      notifyPartner("calendar", "A calendar event was updated");
       setEvents((prev) =>
         prev
           .map((e) => (e.id === id ? { ...e, ...patch } : e))
@@ -104,6 +107,7 @@ export function useCalendar() {
 
   const removeEvent = useCallback(
     async (id: string) => {
+      notifyPartner("calendar", "A calendar event was deleted");
       setEvents((prev) => prev.filter((e) => e.id !== id));
       const { error: err } = await supabase.from("calendar_events").delete().eq("id", id);
       if (err) {
