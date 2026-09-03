@@ -351,9 +351,9 @@ function Index() {
       </div>
       )}
 
-      {/* PERSISTENT METRIC STRIP (hidden in the Devotionals reading view) */}
-      {active !== "devotionals" && (
-      <div className="sticky top-0 z-20 mt-6 grid grid-cols-2 gap-3.5 px-2 pt-2 md:grid-cols-4">
+      {/* METRIC STRIP — dashboard-only; hidden inside sub-views so it never overlaps */}
+      {(active === null || active === "activity" || active === "health" || active === "s1" || active === "payments" || active === "s2" || active === "s3" || active === "s4" || active === "s5") && (
+      <div className="relative mt-6 grid grid-cols-2 gap-3.5 px-2 pt-2 md:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="card-surface rounded-2xl px-4 py-4">
             <div className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
