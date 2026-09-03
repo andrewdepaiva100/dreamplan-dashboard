@@ -198,7 +198,8 @@ export class QuestScene extends Phaser.Scene {
       const row: number[] = [];
       for (let x = 0; x < MAP_W; x++) {
         const edge = x === 0 || y === 0 || x === MAP_W - 1 || y === MAP_H - 1;
-        row.push(edge ? T.WALL : rnd() < 0.58 ? T.GREY : base);
+        // full-colour ground: lush meadow mixed with the zone's own base tile
+        row.push(edge ? T.WALL : rnd() < 0.5 ? T.MEADOW : base);
       }
       data.push(row);
     }
@@ -220,7 +221,9 @@ export class QuestScene extends Phaser.Scene {
   private addPlayer(tx: number, ty: number) {
     const x = Phaser.Math.Clamp(tx, 2, MAP_W - 3) * TILE;
     const y = Phaser.Math.Clamp(ty, 2, MAP_H - 3) * TILE;
-    this.player = this.physics.add.sprite(x, y, "maria-0");
+    this.makeWalkAnims();
+    this.player = this.physics.add.sprite(x, y, "maria-down-0");
+    this.player.anims.play("maria-idle-down");
     this.player.setSize(14, 12).setOffset(5, 21);
     this.player.setCollideWorldBounds(true);
     this.player.setDepth(20);
