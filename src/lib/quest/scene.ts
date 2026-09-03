@@ -292,6 +292,7 @@ export class QuestScene extends Phaser.Scene {
     opts: { id?: string; radius?: number; data?: Record<string, unknown>; depth?: number } = {},
   ) {
     const obj = this.add.sprite(x, y, texture).setDepth(opts.depth ?? 12);
+    if (texture.startsWith("andrew")) obj.setScale(1.1);
     this.tweens.add({
       targets: obj,
       y: y - 3,
