@@ -23,9 +23,9 @@ type Interactable = {
   data?: Record<string, unknown>;
 };
 
-const MAP_W = 44;
-const MAP_H = 34;
-const SPEED = 165;
+const MAP_W = 132;
+const MAP_H = 102;
+const SPEED = 120;
 const DASH_MS = 170;
 const DASH_COOLDOWN = 2000;
 
@@ -95,13 +95,13 @@ export class QuestScene extends Phaser.Scene {
     this.buildZone(this.save.current_zone);
 
     // ---- groups (pooled) -------------------------------------------------
-    this.enemies = this.physics.add.group({ maxSize: 40, runChildUpdate: false });
+    this.enemies = this.physics.add.group({ maxSize: 60, runChildUpdate: false });
     this.petals = this.physics.add.group({
-      maxSize: 60,
+      maxSize: 80,
       defaultKey: "petal",
       runChildUpdate: false,
     });
-    this.decor = this.add.group({ maxSize: 60 });
+    this.decor = this.add.group({ maxSize: 80 });
 
     this.spawnEnemiesForZone(this.save.current_zone);
 
@@ -147,8 +147,28 @@ export class QuestScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
     this.physics.world.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
-    this.cameras.main.setZoom(this.scale.width < 620 ? 1.6 : 2);
+    this.cameras.main.setZoom(this.scale.width < 620 ? 1.1 : 1.45);
     this.cameras.main.fadeIn(500, 8, 12, 30);
+
+    // soft ambient vignette overlay
+    const vignette = this.add.rectangle(
+      this.cameras.main.centerX,
+      this.cameras.main.centerY,
+      this.cameras.main.width * 2,
+      this.cameras.main.height * 2,
+      0x0b1e3d,
+      0,
+    );
+    vignette.setDepth(100);
+    vignette.setBlendMode(Phaser.BlendModes.MULTIPLY);
+    this.tweens.add({
+      targets: vignette,
+      alpha: { from: 0, to: 0.18 },
+      duration: 1200,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
 
     this.pushHud(true);
     this.emitSave();
@@ -165,7 +185,7 @@ export class QuestScene extends Phaser.Scene {
       const row: number[] = [];
       for (let x = 0; x < MAP_W; x++) {
         const edge = x === 0 || y === 0 || x === MAP_W - 1 || y === MAP_H - 1;
-        row.push(edge ? T.WALL : rnd() < 0.62 ? T.GREY : base);
+        row.push(edge ? T.WALL : rnd() < 0.58 ? T.GREY : base);
       }
       data.push(row);
     }
@@ -174,7 +194,7 @@ export class QuestScene extends Phaser.Scene {
     const tiles = this.map.addTilesetImage("quest-tiles", "quest-tiles", TILE, TILE, 0, 0)!;
     this.layer = this.map.createLayer(0, tiles, 0, 0)!;
     this.layer.setCollision(SOLID_TILES as unknown as number[]);
-    this.layer.setCullPadding(2, 2);
+    this.layer.setCullPadding(3, 3);
     this.layer.setSkipCull(false);
   }
 
@@ -185,7 +205,9 @@ export class QuestScene extends Phaser.Scene {
   }
 
   private addPlayer(tx: number, ty: number) {
-    this.player = this.physics.add.sprite(tx * TILE, ty * TILE, "maria-0");
+    const x = Phaser.Math.Clamp(tx, 2, MAP_W - 3) * TILE;
+    const y = Phaser.Math.Clamp(ty, 2, MAP_H - 3) * TILE;
+    this.player = this.physics.add.sprite(x, y, "maria-0");
     this.player.setSize(14, 12).setOffset(5, 21);
     this.player.setCollideWorldBounds(true);
     this.player.setDepth(20);
@@ -249,33 +271,48 @@ export class QuestScene extends Phaser.Scene {
   private buildAct1() {
     this.cameras.main.setBackgroundColor("#6fb0e0");
     this.makeMap(T.BLOOM, 101, (d) => {
-      this.rect(d, 20, 1, 3, 32, T.WATER); // river
-      this.rect(d, 34, 1, 2, 32, T.WATER); // eastern waterfall
-      this.rect(d, 36, 12, 6, 8, T.PATH); // hidden cave floor
-      this.rect(d, 36, 11, 6, 1, T.WALL);
-      this.rect(d, 36, 20, 6, 1, T.WALL);
-      this.rect(d, 4, 4, 5, 1, T.WALL);
-      this.rect(d, 4, 4, 1, 6, T.WALL);
-      this.rect(d, 26, 24, 10, 1, T.WALL);
-      this.rect(d, 24, 4, 8, 8, T.MARBLE); // grotto landing
-      this.rect(d, 24, 3, 8, 1, T.WALL);
+      // wide river running north-south through the realm
+      this.rect(d, 54, 2, 12, 98, T.WATER);
+      // western waterfall at the northern river mouth
+      this.rect(d, 54, 2, 12, 10, T.WATER);
+      // eastern sunken grotto — expansive cave system
+      this.rect(d, 92, 12, 34, 46, T.PATH);
+      this.rect(d, 90, 10, 38, 1, T.WALL);
+      this.rect(d, 90, 59, 38, 1, T.WALL);
+      this.rect(d, 90, 11, 2, 48, T.WALL);
+      this.rect(d, 126, 11, 2, 48, T.WALL);
+      // grotto inner chamber wall accents
+      this.rect(d, 100, 25, 8, 1, T.WALL);
+      this.rect(d, 116, 40, 8, 1, T.WALL);
+      // western meadows with a winding trail
+      this.rect(d, 8, 18, 38, 4, T.PATH);
+      this.rect(d, 8, 42, 38, 4, T.PATH);
+      this.rect(d, 8, 66, 38, 4, T.PATH);
+      // small ponds and groves
+      this.rect(d, 12, 8, 10, 6, T.WATER);
+      this.rect(d, 34, 78, 12, 8, T.WATER);
+      // hidden alcove behind western grove
+      this.rect(d, 6, 4, 5, 1, T.WALL);
+      this.rect(d, 6, 4, 1, 6, T.WALL);
     });
-    this.addPlayer(6, 17);
 
-    // river gates puzzle
+    this.addPlayer(18, 51);
+    this.spawnGuideAndSignpost(22, 48);
+
+    // river gates puzzle: 3 plates on the west bank, 3 blocks to push
     this.blocks = this.physics.add.group();
-    const plateTiles = [
-      [17, 8],
-      [17, 16],
-      [17, 24],
+    const plateTiles: [number, number][] = [
+      [42, 24],
+      [42, 51],
+      [42, 78],
     ];
     const plates: Phaser.GameObjects.Sprite[] = plateTiles.map(([x, y]) =>
       this.add.sprite(x! * TILE, y! * TILE, "plate").setDepth(4).setAlpha(0.75),
     );
-    const blockTiles = [
-      [10, 7],
-      [11, 17],
-      [9, 25],
+    const blockTiles: [number, number][] = [
+      [24, 22],
+      [26, 51],
+      [22, 76],
     ];
     for (const [x, y] of blockTiles) {
       const b = this.blocks.create(x! * TILE, y! * TILE, "block") as Phaser.Physics.Arcade.Sprite;
@@ -311,24 +348,24 @@ export class QuestScene extends Phaser.Scene {
 
     // waterfall envelope
     if (!this.has(this.save.secret_envelopes_found, "waterfall")) {
-      this.addInteractable(38.5 * TILE, 16 * TILE, "envelope", "envelope", "Read the letter", {
+      this.addInteractable(99 * TILE, 28 * TILE, "envelope", "envelope", "Read the letter", {
         id: "waterfall",
       });
     }
-    this.addInteractable(8 * TILE, 10 * TILE, "rest-stone", "rest", "Rest here");
-    if (this.save.relics_collected.includes("lantern")) this.spawnGateway(28 * TILE, 6 * TILE);
+    this.addInteractable(24 * TILE, 30 * TILE, "rest-stone", "rest", "Rest here");
+    if (this.save.relics_collected.includes("lantern")) this.spawnGateway(108 * TILE, 28 * TILE);
   }
 
   private openRiverGates() {
-    this.rectLive(24, 3, 8, 1, T.MARBLE);
+    this.rectLive(90, 10, 38, 1, T.MARBLE);
     this.cameras.main.flash(400, 255, 240, 191);
     this.objective = "The grotto stairwell is open — claim the Lantern of Quiet Care.";
     this.emitToast("The river parts. The grotto stairwell opens.");
     if (!this.save.relics_collected.includes("lantern"))
-      this.addInteractable(28 * TILE, 7 * TILE, "relic", "relic", "Take the relic", {
+      this.addInteractable(108 * TILE, 28 * TILE, "relic", "relic", "Take the relic", {
         id: "lantern",
       });
-    else this.spawnGateway(28 * TILE, 6 * TILE);
+    else this.spawnGateway(108 * TILE, 28 * TILE);
   }
 
   private rectLive(x: number, y: number, w: number, h: number, index: number) {
@@ -337,30 +374,58 @@ export class QuestScene extends Phaser.Scene {
     this.layer.setCollision(SOLID_TILES as unknown as number[]);
   }
 
+  private spawnGuideAndSignpost(tx: number, ty: number) {
+    this.addInteractable(tx * TILE, ty * TILE, "guide", "guide", "Speak with the Realm Guide", {
+      radius: 60,
+    });
+    this.addInteractable((tx - 4) * TILE, ty * TILE, "signpost", "signpost", "Read the signpost", {
+      radius: 52,
+    });
+  }
+
   // ---------------- ACT II -------------------------------------------------
   private buildAct2() {
     this.cameras.main.setBackgroundColor("#7fc08f");
     this.makeMap(T.BLOOM, 202, (d) => {
-      for (let y = 3; y < MAP_H - 3; y += 4)
-        this.rect(d, 3, y, MAP_W - 12, 1, T.HEDGE);
-      for (let y = 3; y < MAP_H - 3; y += 4) {
-        const gap = 4 + ((y * 7) % (MAP_W - 16));
-        this.rect(d, gap, y, 3, 1, T.BLOOM);
+      // outer hedge boundary
+      this.rect(d, 3, 3, 1, 96, T.HEDGE);
+      this.rect(d, 128, 3, 1, 96, T.HEDGE);
+      this.rect(d, 3, 3, 126, 1, T.HEDGE);
+      this.rect(d, 3, 98, 126, 1, T.HEDGE);
+      // labyrinth rows
+      for (let y = 10; y < 96; y += 10) {
+        this.rect(d, 8, y, 110, 1, T.HEDGE);
+        const gap = 12 + ((y * 7) % 86);
+        this.rect(d, gap, y, 8, 1, T.BLOOM);
       }
-      this.rect(d, 3, 3, 1, MAP_H - 6, T.HEDGE);
-      this.rect(d, MAP_W - 10, 3, 1, MAP_H - 6, T.HEDGE);
-      this.rect(d, MAP_W - 9, 12, 8, 10, T.MARBLE); // conservatory / boss arena
-      this.rect(d, MAP_W - 10, 16, 1, 2, T.HEDGE);
-      this.rect(d, 14, 15, 4, 4, T.WATER); // fountain court
+      // vertical hedge dividers
+      for (let x = 24; x < 120; x += 24) {
+        this.rect(d, x, 8, 1, 86, T.HEDGE);
+        const gap = 18 + ((x * 5) % 62);
+        this.rect(d, x, gap, 1, 8, T.BLOOM);
+      }
+      // grand conservatory on the eastern edge
+      this.rect(d, 112, 36, 18, 30, T.MARBLE);
+      this.rect(d, 111, 36, 1, 30, T.HEDGE);
+      this.rect(d, 130, 36, 2, 30, T.HEDGE);
+      this.rect(d, 112, 35, 18, 1, T.HEDGE);
+      this.rect(d, 112, 66, 18, 1, T.HEDGE);
+      this.rect(d, 111, 50, 1, 2, T.HEDGE); // sealed door
+      // central fountain court
+      this.rect(d, 54, 46, 24, 16, T.WATER);
+      this.rect(d, 53, 45, 26, 1, T.WALL);
+      this.rect(d, 53, 62, 26, 1, T.WALL);
+      this.rect(d, 53, 46, 1, 16, T.WALL);
+      this.rect(d, 79, 46, 1, 16, T.WALL);
     });
-    this.addPlayer(6, 30);
+    this.addPlayer(12, 90);
 
     const seasons = ["Spring", "Summer", "Autumn", "Winter"];
     const spots: [number, number][] = [
-      [8, 5],
-      [26, 9],
-      [10, 21],
-      [28, 27],
+      [18, 18],
+      [96, 18],
+      [18, 82],
+      [96, 82],
     ];
     this.zoneState["keysFound"] = 0;
     seasons.forEach((s, i) => {
@@ -371,26 +436,26 @@ export class QuestScene extends Phaser.Scene {
     });
 
     this.addInteractable(
-      (MAP_W - 10.5) * TILE,
-      17 * TILE,
+      121 * TILE,
+      51 * TILE,
       "vault-door",
       "conservatory",
       "Open the Conservatory",
     );
-    this.addInteractable(12 * TILE, 11 * TILE, "rest-stone", "rest", "Rest here");
+    this.addInteractable(66 * TILE, 54 * TILE, "rest-stone", "rest", "Rest here");
 
     if (!this.has(this.save.secret_envelopes_found, "hedge"))
-      this.addInteractable(MAP_W - 6 * 1 - 30, 30 * TILE, "block", "breakable", "Push through the hedge", {
+      this.addInteractable(102 * TILE, 90 * TILE, "block", "breakable", "Push through the hedge", {
         id: "hedge",
       });
 
     if (this.save.relics_collected.includes("anchor") && this.save.relics_collected.includes("bloom"))
-      this.spawnGateway((MAP_W - 5) * TILE, 14 * TILE);
+      this.spawnGateway(117 * TILE, 51 * TILE);
   }
 
   private startBoss() {
-    const cx = (MAP_W - 5) * TILE;
-    const cy = 17 * TILE;
+    const cx = 121 * TILE;
+    const cy = 51 * TILE;
     this.bossPhase = 1;
     this.bossHits = 0;
     this.objective = "The Stress Spectre — Phase 1: dodge the shadow bursts and answer with peace.";
@@ -431,8 +496,8 @@ export class QuestScene extends Phaser.Scene {
     this.bossTimer?.remove();
     this.boss?.setAlpha(0.4);
     this.objective = "Phase 2: find the one true golden heart among the illusions.";
-    const cx = (MAP_W - 5) * TILE;
-    const cy = 17 * TILE;
+    const cx = 121 * TILE;
+    const cy = 51 * TILE;
     const trueIndex = Phaser.Math.Between(0, 2);
     [-72, 0, 72].forEach((dx, i) => {
       const it = this.addInteractable(cx + dx, cy + 60, "golden-heart", "boss-heart", "Choose this heart", {
@@ -474,11 +539,10 @@ export class QuestScene extends Phaser.Scene {
     this.cameras.main.flash(500, 255, 215, 229);
     this.emitToast("The Spectre becomes a blooming garden arbor.");
     this.objective = "Claim the Anchor of Comfort and the Bloom of Reflection.";
-    const cx = (MAP_W - 5) * TILE;
     if (!this.save.relics_collected.includes("anchor"))
-      this.addInteractable(cx - 40, 14 * TILE, "relic", "relic", "Take the relic", { id: "anchor" });
+      this.addInteractable(113 * TILE, 45 * TILE, "relic", "relic", "Take the relic", { id: "anchor" });
     if (!this.save.relics_collected.includes("bloom"))
-      this.addInteractable(cx + 40, 14 * TILE, "relic", "relic", "Take the relic", { id: "bloom" });
+      this.addInteractable(129 * TILE, 45 * TILE, "relic", "relic", "Take the relic", { id: "bloom" });
   }
 
   // ---------------- ACT III ------------------------------------------------
@@ -486,22 +550,33 @@ export class QuestScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("#cfe3f7");
     this.makeMap(T.MARBLE, 303, (d) => {
       this.rect(d, 1, 1, MAP_W - 2, MAP_H - 2, T.MARBLE);
-      this.rect(d, 18, 13, 8, 8, T.WATER); // grand fountain
-      this.rect(d, 17, 12, 10, 1, T.WALL);
-      this.rect(d, 17, 21, 10, 1, T.WALL);
-      this.rect(d, 17, 13, 1, 8, T.WALL);
-      this.rect(d, 26, 13, 1, 8, T.WALL);
-      this.rect(d, 4, 4, 8, 5, T.PATH); // coffee patio
-      this.rect(d, 32, 24, 8, 6, T.PATH);
-      this.rect(d, 4, 26, 6, 4, T.BLOOM);
+      // grand central fountain
+      this.rect(d, 54, 46, 24, 16, T.WATER);
+      this.rect(d, 53, 45, 26, 1, T.WALL);
+      this.rect(d, 53, 62, 26, 1, T.WALL);
+      this.rect(d, 53, 46, 1, 16, T.WALL);
+      this.rect(d, 79, 46, 1, 16, T.WALL);
+      // coffee patio southwest
+      this.rect(d, 8, 12, 28, 18, T.PATH);
+      this.rect(d, 7, 11, 30, 1, T.WALL);
+      this.rect(d, 7, 30, 30, 1, T.WALL);
+      this.rect(d, 7, 12, 1, 18, T.WALL);
+      this.rect(d, 37, 12, 1, 18, T.WALL);
+      // flower beds along the north
+      this.rect(d, 12, 8, 108, 4, T.BLOOM);
+      // quiet chapel corner southeast
+      this.rect(d, 96, 78, 28, 16, T.PATH);
+      this.rect(d, 95, 77, 30, 1, T.WALL);
+      this.rect(d, 95, 94, 30, 1, T.WALL);
+      this.rect(d, 95, 78, 1, 16, T.WALL);
     });
-    this.addPlayer(8, 18);
+    this.addPlayer(18, 51);
 
     this.zoneState["sheets"] = 0;
     const sheetSpots: [number, number][] = [
-      [6, 7],
-      [35, 8],
-      [34, 27],
+      [18, 18],
+      [105, 22],
+      [102, 86],
     ];
     sheetSpots.forEach(([x, y], i) =>
       this.addInteractable(x * TILE, y * TILE, "sheet", "sheet", "Pick up the music sheet", {
@@ -509,21 +584,21 @@ export class QuestScene extends Phaser.Scene {
       }),
     );
 
-    this.addInteractable(22 * TILE, 24 * TILE, "andrew", "andrew", "Talk with Andrew", {
+    this.addInteractable(66 * TILE, 54 * TILE, "andrew", "andrew", "Talk with Andrew", {
       radius: 54,
     });
-    this.addInteractable(12 * TILE, 16 * TILE, "stone-memory", "memory", "Touch the Memory Stone");
+    this.addInteractable(60 * TILE, 50 * TILE, "stone-memory", "memory", "Touch the Memory Stone");
     if (!this.has(this.save.secret_envelopes_found, "patio"))
-      this.addInteractable(5 * TILE, 5 * TILE, "envelope", "envelope", "Read the letter", {
+      this.addInteractable(16 * TILE, 18 * TILE, "envelope", "envelope", "Read the letter", {
         id: "patio",
       });
     if ((this.zoneState["keyTaken"] as boolean) !== true && this.save.vault_keys_count < 3)
-      this.addInteractable(37 * TILE, 5 * TILE, "key", "vault-key", "Take the Golden Vault Key", {
+      this.addInteractable(111 * TILE, 16 * TILE, "key", "vault-key", "Take the Golden Vault Key", {
         id: "haven",
       });
-    this.addInteractable(30 * TILE, 16 * TILE, "rest-stone", "rest", "Rest here");
+    this.addInteractable(90 * TILE, 54 * TILE, "rest-stone", "rest", "Rest here");
 
-    if (this.save.relics_collected.includes("shield")) this.spawnGateway(22 * TILE, 5 * TILE);
+    if (this.save.relics_collected.includes("shield")) this.spawnGateway(66 * TILE, 18 * TILE);
   }
 
   // ---------------- ACT IV -------------------------------------------------
@@ -532,35 +607,36 @@ export class QuestScene extends Phaser.Scene {
     this.makeMap(T.SKY, 404, (d) => {
       this.rect(d, 0, 0, MAP_W, MAP_H, T.VOID);
       const islands: [number, number, number, number][] = [
-        [4, 26, 10, 6],
-        [16, 24, 8, 5],
-        [26, 20, 8, 6],
-        [6, 16, 9, 5],
-        [18, 12, 10, 6],
-        [30, 8, 10, 7],
-        [12, 4, 10, 6],
+        [8, 78, 24, 14],
+        [42, 72, 20, 12],
+        [78, 62, 20, 12],
+        [14, 52, 24, 12],
+        [48, 40, 24, 14],
+        [92, 30, 24, 14],
+        [30, 18, 24, 12],
+        [72, 10, 24, 12],
       ];
       for (const [x, y, w, h] of islands) this.rect(d, x, y, w, h, T.MARBLE);
       // bridges
-      this.rect(d, 13, 28, 4, 2, T.PATH);
-      this.rect(d, 23, 25, 4, 2, T.PATH);
-      this.rect(d, 12, 18, 7, 2, T.PATH);
-      this.rect(d, 26, 15, 5, 2, T.PATH);
-      this.rect(d, 21, 9, 3, 4, T.PATH);
-      this.rect(d, 14, 20, 3, 5, T.PATH);
-      this.rect(d, 27, 12, 4, 3, T.PATH);
+      this.rect(d, 30, 84, 14, 3, T.PATH);
+      this.rect(d, 60, 76, 20, 3, T.PATH);
+      this.rect(d, 36, 58, 14, 3, T.PATH);
+      this.rect(d, 70, 50, 24, 3, T.PATH);
+      this.rect(d, 56, 30, 18, 3, T.PATH);
+      this.rect(d, 42, 42, 8, 5, T.PATH);
+      this.rect(d, 94, 20, 8, 5, T.PATH);
       // scatter grey noise on the islands
       for (const [x, y, w, h] of islands)
         for (let j = 0; j < h; j++)
           for (let i = 0; i < w; i++) if ((i * 3 + j * 5) % 4 === 0) d[y + j]![x + i] = T.GREY;
     });
-    this.addPlayer(8, 28);
+    this.addPlayer(20, 85);
 
     this.zoneState["pillars"] = [0, 0, 0];
     const pillarSpots: [number, number][] = [
-      [18, 26],
-      [29, 22],
-      [9, 18],
+      [54, 78],
+      [88, 68],
+      [42, 46],
     ];
     pillarSpots.forEach(([x, y], i) =>
       this.addInteractable(x! * TILE, y! * TILE, "pillar", "pillar", "Turn the crystal pillar", {
@@ -569,29 +645,29 @@ export class QuestScene extends Phaser.Scene {
     );
 
     if (!this.has(this.save.secret_envelopes_found, "summit"))
-      this.addInteractable(33 * TILE, 21 * TILE, "envelope", "envelope", "Read the letter", {
+      this.addInteractable(102 * TILE, 68 * TILE, "envelope", "envelope", "Read the letter", {
         id: "summit",
       });
-    this.addInteractable(20 * TILE, 14 * TILE, "rest-stone", "rest", "Rest here");
+    this.addInteractable(60 * TILE, 46 * TILE, "rest-stone", "rest", "Rest here");
     if (this.save.vault_keys_count < 3)
-      this.addInteractable(31 * TILE, 10 * TILE, "key", "vault-key", "Take the Golden Vault Key", {
+      this.addInteractable(103 * TILE, 36 * TILE, "key", "vault-key", "Take the Golden Vault Key", {
         id: "ascent",
       });
-    this.addInteractable(35 * TILE, 11 * TILE, "vault-door", "vault", "Open the Vault of Gratitude");
+    this.addInteractable(115 * TILE, 36 * TILE, "vault-door", "vault", "Open the Vault of Gratitude");
 
-    // moving platform hazard-free ferry between two islands
-    const ferry = this.add.rectangle(15 * TILE, 22 * TILE, 64, 48, 0xd7e0ff, 0.9).setDepth(3);
+    // moving platform ferry between two islands
+    const ferry = this.add.rectangle(42 * TILE, 58 * TILE, 64, 48, 0xd7e0ff, 0.9).setDepth(3);
     this.tweens.add({
       targets: ferry,
-      y: 12 * TILE,
-      duration: 4200,
+      y: 30 * TILE,
+      duration: 5200,
       yoyo: true,
       repeat: -1,
       ease: "Sine.easeInOut",
     });
     this.zoneState["ferry"] = ferry;
 
-    if (this.save.relics_collected.includes("seal")) this.spawnGateway(17 * TILE, 6 * TILE);
+    if (this.save.relics_collected.includes("seal")) this.spawnGateway(84 * TILE, 16 * TILE);
   }
 
   private openStaircase() {
@@ -599,14 +675,14 @@ export class QuestScene extends Phaser.Scene {
     this.objective = "The Celestial Staircase forms — reach the Altar of Joy.";
     this.emitToast("Three lights align. A staircase of stars unfolds.");
     if (!this.save.relics_collected.includes("seal"))
-      this.addInteractable(17 * TILE, 6 * TILE, "relic", "relic", "Take the Seal of Perfect Peace", {
+      this.addInteractable(84 * TILE, 16 * TILE, "relic", "relic", "Take the Seal of Perfect Peace", {
         id: "seal",
       });
   }
 
   private rect2Live() {
-    for (let j = 4; j < 12; j++)
-      for (let i = 16; i < 20; i++) this.layer.putTileAt(T.MARBLE, i, j);
+    for (let j = 8; j < 18; j++)
+      for (let i = 80; i < 88; i++) this.layer.putTileAt(T.MARBLE, i, j);
     this.layer.setCollision(SOLID_TILES as unknown as number[]);
     this.cameras.main.flash(400, 215, 224, 255);
   }
@@ -616,24 +692,32 @@ export class QuestScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("#2a1f38");
     this.makeMap(T.CANDLE, 505, (d) => {
       this.rect(d, 0, 0, MAP_W, MAP_H, T.CANDLE);
-      this.rect(d, 14, 4, 16, 26, T.MARBLE);
-      this.rect(d, 13, 4, 1, 26, T.WALL);
-      this.rect(d, 30, 4, 1, 26, T.WALL);
-      this.rect(d, 14, 3, 16, 1, T.WALL);
+      // grand nave
+      this.rect(d, 36, 12, 60, 78, T.MARBLE);
+      this.rect(d, 34, 12, 2, 78, T.WALL);
+      this.rect(d, 96, 12, 2, 78, T.WALL);
+      this.rect(d, 36, 10, 60, 2, T.WALL);
+      // side chapels
+      this.rect(d, 14, 24, 20, 20, T.MARBLE);
+      this.rect(d, 98, 24, 20, 20, T.MARBLE);
+      this.rect(d, 14, 58, 20, 20, T.MARBLE);
+      this.rect(d, 98, 58, 20, 20, T.MARBLE);
+      // transept crossing
+      this.rect(d, 24, 46, 84, 10, T.MARBLE);
     });
-    this.addPlayer(22, 28);
-    for (let i = 0; i < 12; i++) {
-      this.add.sprite((15 + (i % 2) * 13) * TILE, (8 + Math.floor(i / 2) * 3) * TILE, "guest").setDepth(6);
+    this.addPlayer(66, 88);
+    for (let i = 0; i < 24; i++) {
+      this.add.sprite((38 + (i % 2) * 56) * TILE, (18 + Math.floor(i / 2) * 5) * TILE, "guest").setDepth(6);
     }
     if (!this.has(this.save.secret_envelopes_found, "cathedral"))
-      this.addInteractable(16 * TILE, 26 * TILE, "envelope", "envelope", "Read the letter", {
+      this.addInteractable(42 * TILE, 82 * TILE, "envelope", "envelope", "Read the letter", {
         id: "cathedral",
       });
-    this.addInteractable(22 * TILE, 6 * TILE, "andrew-ceremony", "andrew-ceremony", "Meet Andrew", {
+    this.addInteractable(66 * TILE, 18 * TILE, "andrew-ceremony", "andrew-ceremony", "Meet Andrew", {
       radius: 60,
     });
     // stained glass glow
-    this.add.rectangle(22 * TILE, 4 * TILE, 200, 40, 0xc9a24b, 0.5).setDepth(2);
+    this.add.rectangle(66 * TILE, 14 * TILE, 280, 56, 0xc9a24b, 0.5).setDepth(2);
   }
 
   // =======================================================================
@@ -643,20 +727,20 @@ export class QuestScene extends Phaser.Scene {
   private spawnEnemiesForZone(zone: ZoneId) {
     if (zone === "the_haven" || zone === "cathedral") return;
     const config: Record<string, { key: string; count: number; speed: number }> = {
-      sunlit_shores: { key: "enemy-distraction", count: 8, speed: 55 },
-      wedding_garden: { key: "enemy-rush", count: 10, speed: 80 },
-      starry_ascent: { key: "enemy-weariness", count: 8, speed: 50 },
+      sunlit_shores: { key: "enemy-distraction", count: 18, speed: 48 },
+      wedding_garden: { key: "enemy-rush", count: 22, speed: 68 },
+      starry_ascent: { key: "enemy-weariness", count: 18, speed: 42 },
     };
     const c = config[zone]!;
     const rnd = irnd(zone.length * 37 + 11);
     let placed = 0;
     let guard = 0;
-    while (placed < c.count && guard++ < 400) {
-      const x = Math.floor(rnd() * (MAP_W - 6)) + 3;
-      const y = Math.floor(rnd() * (MAP_H - 6)) + 3;
+    while (placed < c.count && guard++ < 1200) {
+      const x = Math.floor(rnd() * (MAP_W - 8)) + 4;
+      const y = Math.floor(rnd() * (MAP_H - 8)) + 4;
       const tile = this.layer.getTileAt(x, y);
       if (!tile || SOLID_TILES.includes(tile.index as (typeof SOLID_TILES)[number])) continue;
-      if (Phaser.Math.Distance.Between(x * TILE, y * TILE, this.player.x, this.player.y) < 200)
+      if (Phaser.Math.Distance.Between(x * TILE, y * TILE, this.player.x, this.player.y) < 220)
         continue;
       this.spawnEnemy(x * TILE, y * TILE, c.key, c.speed, false);
       placed++;
@@ -847,7 +931,7 @@ export class QuestScene extends Phaser.Scene {
         if (sheets >= 3 && !this.save.relics_collected.includes("shield")) {
           this.zoneState["melodyPlayed"] = true;
           this.objective = "Andrew plays the golden harp — take the Shield of Unshakable Faith.";
-          this.addInteractable(22 * TILE, 21 * TILE, "relic", "relic", "Take the relic", {
+          this.addInteractable(66 * TILE, 58 * TILE, "relic", "relic", "Take the relic", {
             id: "shield",
           });
           this.openModal({
@@ -897,7 +981,7 @@ export class QuestScene extends Phaser.Scene {
           return;
         }
         this.removeInteractable(it);
-        this.rectLive(MAP_W - 10, 16, 1, 2, T.MARBLE);
+        this.rectLive(111, 50, 1, 2, T.MARBLE);
         this.startBoss();
         break;
       }
@@ -957,6 +1041,10 @@ export class QuestScene extends Phaser.Scene {
         }
         break;
       }
+      case "guide":
+      case "signpost":
+        this.openModal({ type: "guide" });
+        break;
       case "gateway":
         this.advanceZone();
         break;
@@ -1115,7 +1203,7 @@ export class QuestScene extends Phaser.Scene {
       this.facing = vx > 0 ? 1 : -1;
       this.player.setFlipX(this.facing < 0);
     }
-    if (len > 0.05 && time - this.lastStepAt > 160) {
+    if (len > 0.05 && time - this.lastStepAt > 180) {
       this.lastStepAt = time;
       this.animStep = this.animStep === 0 ? 1 : 0;
       this.player.setTexture(`maria-${this.animStep}`);
@@ -1205,9 +1293,9 @@ export function createQuestGame(parent: HTMLElement, save: QuestSave) {
     width: parent.clientWidth || 800,
     height: parent.clientHeight || 600,
     backgroundColor: "#0b1e3d",
-    pixelArt: true,
+    pixelArt: false,
     roundPixels: true,
-    antialias: false,
+    antialias: true,
     fps: { target: 60, forceSetTimeOut: false },
     physics: { default: "arcade", arcade: { gravity: { x: 0, y: 0 }, debug: false } },
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
