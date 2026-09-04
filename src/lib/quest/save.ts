@@ -17,6 +17,10 @@ export type QuestSave = {
   inventory: Record<string, number>;
   /** Home chest contents: item id -> count. */
   chest: Record<string, number>;
+  /** Last house visited — Maria respawns outside it after a game over. */
+  checkpoint_zone: ZoneId | null;
+  checkpoint_x: number | null;
+  checkpoint_y: number | null;
 };
 
 export const SLOT = "maria";
@@ -34,6 +38,9 @@ export const EMPTY_SAVE: QuestSave = {
   time_of_day: 0.38,
   inventory: {},
   chest: {},
+  checkpoint_zone: null,
+  checkpoint_x: null,
+  checkpoint_y: null,
 };
 
 const LOCAL_KEY = "marias-quest-save-v1";
@@ -110,6 +117,9 @@ export async function loadSave(): Promise<QuestSave | null> {
       time_of_day: typeof data.time_of_day === "number" ? data.time_of_day : 0.38,
       inventory: asCounts(data.inventory),
       chest: asCounts(data.chest),
+      checkpoint_zone: (data.checkpoint_zone as ZoneId | null) ?? null,
+      checkpoint_x: typeof data.checkpoint_x === "number" ? data.checkpoint_x : null,
+      checkpoint_y: typeof data.checkpoint_y === "number" ? data.checkpoint_y : null,
     };
     const migrated = migrateWeapons(remote);
     writeLocal(migrated);
@@ -140,6 +150,9 @@ export async function persistSave(save: QuestSave): Promise<void> {
           time_of_day: save.time_of_day,
           inventory: save.inventory,
           chest: save.chest,
+          checkpoint_zone: save.checkpoint_zone,
+          checkpoint_x: save.checkpoint_x,
+          checkpoint_y: save.checkpoint_y,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "slot" },
