@@ -144,6 +144,11 @@ export class QuestScene extends Phaser.Scene {
   private bossDialogueDone = false;
   private bossHalo: Phaser.GameObjects.Arc | null = null;
   private bossSlow = 1;
+  /** 2.5D: grounded contact shadows that follow moving actors. */
+  private shadows: { s: Phaser.GameObjects.Ellipse; t: Phaser.GameObjects.Sprite }[] = [];
+  /** 2.5D: smoothed walk velocity (acceleration + glide, no snap-stops). */
+  private vel = { x: 0, y: 0 };
+  private bobPhase = 0;
 
   constructor() {
     super("quest");
