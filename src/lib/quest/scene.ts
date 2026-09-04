@@ -2115,16 +2115,8 @@ export class QuestScene extends Phaser.Scene {
       this.rect(d, 102, 26, 6, 66, T.PATH);
     });
     this.addPlayer(66, 86);
-    this.scatterDecor(55, {
-      lamps: [
-        [30, 30],
-        [102, 30],
-        [30, 78],
-        [102, 78],
-        [66, 44],
-      ],
-      flowers: 0,
-    });
+    // No lamps in the cathedral — Act V is always full daylight.
+    this.scatterDecor(55, { flowers: 0 });
 
     // arcaded side walls: tall stained-glass windows between stone columns
     for (let r = 0; r < 5; r++) {
