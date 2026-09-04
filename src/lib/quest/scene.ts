@@ -202,6 +202,7 @@ export class QuestScene extends Phaser.Scene {
     g.on(EV.travel, this.travelTo, this);
     g.on(EV.guideme, this.startAutopilot, this);
     g.on(EV.equip, this.equipWeapon, this);
+    g.on(EV.bosschoice, this.onBossChoice, this);
 
     this.events.once("shutdown", () => {
       g.off(EV.stick, this.onStick, this);
@@ -212,6 +213,7 @@ export class QuestScene extends Phaser.Scene {
       g.off(EV.travel, this.travelTo, this);
       g.off(EV.guideme, this.startAutopilot, this);
       g.off(EV.equip, this.equipWeapon, this);
+      g.off(EV.bosschoice, this.onBossChoice, this);
       this.bossTimer?.remove();
     });
 
@@ -761,6 +763,91 @@ export class QuestScene extends Phaser.Scene {
     else if (zone === "the_haven") this.buildAct3();
     else if (zone === "starry_ascent") this.buildAct4();
     else this.buildAct5();
+    this.spawnHearts();
+    this.ensureGateway();
+    this.refreshHand();
+  }
+
+  // ---------------- PICKUPS ------------------------------------------------
+  /**
+   * Scatters restoring hearts across walkable ground: plain hearts refill one
+   * heart, rare golden hearts refill everything.
+   */
+  private spawnHearts() {
+    this.hearts = this.physics.add.group();
+    const rnd = irnd(7717 + this.mapW);
+    const place = (key: string, count: number) => {
+      let made = 0;
+      let tries = 0;
+      while (made < count && tries < count * 60) {
+        tries++;
+        const tx = Math.floor(rnd() * (this.mapW - 8)) + 4;
+        const ty = Math.floor(rnd() * (this.mapH - 8)) + 4;
+        const idx = this.layer?.getTileAt(tx, ty)?.index ?? -1;
+        if (idx < 0 || (SOLID_TILES as unknown as number[]).includes(idx) || idx === T.WATER) continue;
+        const h = this.hearts.create(
+          tx * TILE + TILE / 2,
+          ty * TILE + TILE / 2,
+          key,
+        ) as Phaser.Physics.Arcade.Sprite;
+        h.setDepth(9).setData("golden", key === "golden-heart");
+        (h.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+        this.tweens.add({
+          targets: h,
+          y: h.y - 5,
+          duration: 1100,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut",
+        });
+        made++;
+      }
+    };
+    place("heart-pickup", 14);
+    place("golden-heart", 3);
+    this.physics.add.overlap(this.player, this.hearts, (_p, obj) =>
+      this.takeHeart(obj as Phaser.Physics.Arcade.Sprite),
+    );
+  }
+
+  private takeHeart(h: Phaser.Physics.Arcade.Sprite) {
+    if (!h.active) return;
+    const golden = h.getData("golden") === true;
+    if (this.save.player_health >= 5) return;
+    h.destroy();
+    this.save.player_health = golden ? 5 : Math.min(5, this.save.player_health + 1);
+    this.emitSave();
+    this.pushHud(true);
+    this.spawnSparkle(this.player.x, this.player.y, golden ? 0xffd977 : 0xff9aa5, golden ? 24 : 12);
+    this.emitToast(golden ? GOLDEN_HEART_TEXT : HEART_PICKUP_TEXT);
+  }
+
+  // ---------------- WEAPON IN HAND ----------------------------------------
+  /** Shows the equipped weapon in Maria's hand (nothing before the forge). */
+  private refreshHand() {
+    const id = this.save.equipped_weapon;
+    const owned = !!id && this.save.weapons.includes(id);
+    if (!owned) {
+      this.hand?.destroy();
+      this.hand = null;
+      return;
+    }
+    const key = `hand-${id}`;
+    if (!this.textures.exists(key)) return;
+    if (!this.hand) this.hand = this.add.sprite(this.player.x, this.player.y, key).setDepth(21);
+    else this.hand.setTexture(key);
+  }
+
+  private updateHand(dir: "down" | "up" | "side") {
+    if (!this.hand) return;
+    const side = dir === "side" ? this.facing : 1;
+    const ox = dir === "up" ? -7 * side : dir === "down" ? 9 * side : 9 * side;
+    this.hand
+      .setPosition(this.player.x + ox, this.player.y + (dir === "up" ? -2 : 2))
+      .setFlipX(side < 0)
+      .setDepth(dir === "up" ? 19 : 21)
+      .setVisible(this.player.visible)
+      .setAlpha(this.player.alpha);
   }
 
   // ---------------- ACT I --------------------------------------------------
@@ -1585,6 +1672,15 @@ export class QuestScene extends Phaser.Scene {
       duration: 240,
       onComplete: () => arc.destroy(),
     });
+    if (this.hand) {
+      this.tweens.add({
+        targets: this.hand,
+        angle: { from: -35, to: 45 },
+        duration: 200,
+        yoyo: true,
+        onComplete: () => this.hand?.setAngle(0),
+      });
+    }
     this.spawnSparkle(
       this.player.x + Math.cos(dir) * w.reach * 0.6,
       this.player.y + Math.sin(dir) * w.reach * 0.6,
@@ -1960,6 +2056,7 @@ export class QuestScene extends Phaser.Scene {
     this.save.equipped_weapon = id;
     this.emitSave();
     this.pushHud(true);
+    this.refreshHand();
     this.emitToast(`${WEAPON_BY_ID[id]?.name ?? "Weapon"} equipped.`);
   }
 
@@ -1973,6 +2070,7 @@ export class QuestScene extends Phaser.Scene {
     if (!cur || w.damage >= cur.damage) this.save.equipped_weapon = id;
     this.emitSave();
     this.pushHud(true);
+    this.refreshHand();
     this.spawnSparkle(this.player.x, this.player.y, w.color, 22);
     this.cameras.main.flash(300, 255, 240, 191);
     return true;
@@ -2019,6 +2117,9 @@ export class QuestScene extends Phaser.Scene {
       weddingCompleted: this.save.wedding_completed,
       weapons: this.save.weapons,
       equipped: this.save.equipped_weapon,
+      shield: this.save.relics_collected.includes(AEGIS.id)
+        ? { owned: true, ready: now > this.shieldReadyAt }
+        : null,
       boss:
         this.boss?.active &&
         this.bossPhase === 1 &&
@@ -2154,6 +2255,9 @@ export class QuestScene extends Phaser.Scene {
         .setText(near ? `E / ACTION — ${near.label}` : "")
         .setVisible(!!near);
     }
+    this.updateHand(dir);
+    this.checkPortal();
+    this.checkBossEncounter();
     this.updateCompanion();
     this.checkCutscene();
     this.updateArrow();
