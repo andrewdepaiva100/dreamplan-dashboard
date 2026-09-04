@@ -70,7 +70,7 @@ const SPEED = 120;
 /** 2.5D floor tilt: vertical camera squash. 1 = flat top-down, lower = more perspective. */
 const SQUASH = 0.8;
 /** One full sunrise-to-sunrise cycle, in milliseconds. */
-const DAY_MS = 300000;
+const DAY_MS = 375000;
 const DASH_MS = 170;
 const DASH_COOLDOWN = 2000;
 
@@ -991,7 +991,7 @@ export class QuestScene extends Phaser.Scene {
 
     for (const [x, y] of opts.lamps ?? []) {
       const lamp = solid(x, y, "lamp", 0.22);
-      this.addLight(lamp.x, lamp.y - 16, 1.1);
+      this.addLight(lamp.x, lamp.y - 16, 0.55);
     }
     for (const [x, y] of opts.benches ?? []) solid(x, y, "bench", 0.5);
     for (const [x, y, n] of opts.fences ?? []) {
@@ -2357,9 +2357,13 @@ export class QuestScene extends Phaser.Scene {
     return l;
   }
 
-  /** 0 at noon, 1 at deep midnight. */
+  /** Day runs 7:00 AM to 7:00 PM; night is everything else. 0 = day, 1 = night. */
   private nightFactor() {
-    return Phaser.Math.Clamp((1 - Math.cos(this.dayT * Math.PI * 2)) / 2, 0, 1);
+    const h = this.dayT * 24;
+    if (h >= 7.5 && h <= 18.5) return 0;
+    if (h > 18.5 && h < 19.5) return Phaser.Math.Clamp((h - 18.5) / 1, 0, 1);
+    if (h > 6.5 && h < 7.5) return Phaser.Math.Clamp((7.5 - h) / 1, 0, 1);
+    return 1;
   }
 
   private updateDayNight(delta: number) {
@@ -2372,14 +2376,14 @@ export class QuestScene extends Phaser.Scene {
       this.nightVeil
         .setPosition(v.centerX, v.centerY)
         .setSize(v.width + 16, v.height + 16)
-        .setAlpha(0.78 * n);
+        .setAlpha(0.42 * n);
       // dawn/dusk lean warm, midnight leans deep blue
       const dusk = Math.abs(Math.sin(this.dayT * Math.PI * 2));
-      this.nightVeil.setFillStyle(n > 0.72 ? 0x0a1233 : dusk > 0.6 ? 0x5a3a68 : 0x2c3a72);
+      this.nightVeil.setFillStyle(n > 0.85 ? 0x3a4a7e : dusk > 0.6 ? 0x7a5a80 : 0x4a5a90);
     }
     const la = Phaser.Math.Clamp((n - 0.18) / 0.6, 0, 1);
     for (const l of this.warmLights) {
-      l.setAlpha(la * (0.55 + 0.12 * Math.sin(this.time.now / 320 + l.x)));
+      l.setAlpha(la * (0.26 + 0.04 * Math.sin(this.time.now / 900 + l.x)));
       l.setVisible(la > 0.02);
     }
   }
@@ -2496,7 +2500,7 @@ export class QuestScene extends Phaser.Scene {
     const y = this.wy(spot[1]);
     const home = this.add.sprite(x, y, "cottage").setDepth(this.dsort(y + 14));
     this.bakeShadow(x, y + home.displayHeight * 0.34, home.displayWidth * 0.7, 0.2);
-    this.addLight(x, y + 6, 0.9);
+    this.addLight(x, y + 6, 0.5);
     this.addInteractable(x, y + 26, "plate", "house", HOUSE.prompt, { radius: 58, depth: 6 })
       ?.obj.setAlpha(0.001);
   }
