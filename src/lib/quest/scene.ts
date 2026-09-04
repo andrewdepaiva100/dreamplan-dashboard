@@ -1100,6 +1100,7 @@ export class QuestScene extends Phaser.Scene {
     this.addPlayer(18, 51);
     this.spawnGuideAndSignpost(22, 48);
     this.spawnActGuide(24, 56);
+    if (WEDDING_GUESTS.sunlit_shores) this.addGuest(WEDDING_GUESTS.sunlit_shores, 26, 44);
     this.scatterDecor(11, {
       village: [
         [12, 34],
