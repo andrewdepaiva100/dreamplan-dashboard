@@ -30,7 +30,14 @@ The patchy two-tone checkerboard becomes one clean, even meadow green across eve
 ## 6. The wedding pastor
 The Act V officiant becomes "Pastor Alcir" — Andrew's grandpa, a white man with grey hair. New pixel sprite and portrait to match, and every ceremony line is re-attributed to him (replacing "Father Elias"), with one warm grandfather touch in his opening words.
 
+## 7. Sprite polish pass
+Regenerate the character and prop pixel art at higher fidelity — cleaner outlines, better shading and readable faces — for Maria, Andrew, the guides, guests, animals, bosses and key props, keeping the same art style and sizes so nothing shifts in the world. Andrew is drawn a further 15% taller than Maria so he clearly reads as taller beside her.
+
+## 8. More beautiful envelopes
+The five themed love letters get a richer presentation: an ornate letter card with a wax-seal header, gold rule lines, the theme word set as a display flourish, aged-paper texture and a soft entrance animation, instead of the plain cream box.
+
 ## Technical notes
+
 - `src/lib/quest/content.ts`: boss HP values, three new `WEAPONS` entries + pickup definitions, `FAMILY_GUESTS` names/lines, new Act V guest records, ceremony speaker rename.
 - `src/lib/quest/scene.ts`: `makeMap` stops sprinkling `T.BLOOM` (uniform `T.MEADOW`) in all acts, flower counts reduced 25% everywhere, `flowerTints` limited to purple/red/white/pink, new legendary weapon pickup interactables with beacons, boss speed tuning.
 - `src/lib/quest/textures.ts`: register the four new guest sprites and the new pastor art.
