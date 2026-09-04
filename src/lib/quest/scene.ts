@@ -2872,7 +2872,9 @@ export class QuestScene extends Phaser.Scene {
             line:
               sheets >= 3
                 ? "The melody is ours now. Whenever the world gets loud, hum it and remember I'm right here."
-                : `Three pages of our song blew across the plaza — I've found ${sheets}/3 so far. Help me gather them and I'll play it for you.`,
+                : sheets === 0
+                  ? "Three pages of our wedding song are lost somewhere in this town — hidden well, not lying in the road. They matter, Maria: a marriage is played the way a song is played, every note kept in tune, nothing rushed, nothing skipped. Find all three and our marriage will be as beautiful as the music we'll dance to. Until then I can't walk with you — I'll be here, waiting on the melody."
+                  : `${sheets}/3 pages so far. Keep looking — behind things, off the roads. Every page you bring back is a promise that our life together stays in tune, and the moment the song is whole I'm walking beside you the rest of the way.`,
           });
         }
         break;
@@ -2890,9 +2892,12 @@ export class QuestScene extends Phaser.Scene {
         this.removeInteractable(it);
         const n = ((this.zoneState["sheets"] as number) ?? 0) + 1;
         this.zoneState["sheets"] = n;
-        this.objective = `The Missing Melody — ${n}/3 music sheets gathered.`;
-        this.emitToast(`Music sheet ${n}/3 recovered.`);
-        if (n >= 3) this.objective = "Bring the melody back to Andrew by the fountain.";
+        this.objective = `The Missing Melody — ${n}/3 hidden music sheets found.`;
+        this.emitToast(`Music sheet ${n}/3 recovered — the song of your marriage.`);
+        if (n >= 3) {
+          this.objective = "Bring the melody back to Andrew by the fountain.";
+          if (!this.companion) this.spawnCompanion();
+        }
         break;
       }
       case "season-key": {
