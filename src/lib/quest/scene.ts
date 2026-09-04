@@ -371,6 +371,28 @@ export class QuestScene extends Phaser.Scene {
       ease: "Sine.easeInOut",
     });
 
+    // ---- 2.5D atmosphere: distance haze + vignette -----------------------
+    {
+      const w = this.scale.width;
+      const h = this.scale.height;
+      const haze = this.add.graphics().setScrollFactor(0).setDepth(88);
+      haze.fillGradientStyle(0xbfd8f2, 0xbfd8f2, 0xbfd8f2, 0xbfd8f2, 0.34, 0.34, 0, 0);
+      haze.fillRect(0, 0, w, h * 0.42);
+      const vig = this.add.graphics().setScrollFactor(0).setDepth(89);
+      vig.fillGradientStyle(0x0a1226, 0x0a1226, 0x0a1226, 0x0a1226, 0, 0, 0.42, 0.42);
+      vig.fillRect(0, h * 0.55, w, h * 0.45);
+      this.scale.on("resize", () => {
+        const nw = this.scale.width;
+        const nh = this.scale.height;
+        haze.clear();
+        haze.fillGradientStyle(0xbfd8f2, 0xbfd8f2, 0xbfd8f2, 0xbfd8f2, 0.34, 0.34, 0, 0);
+        haze.fillRect(0, 0, nw, nh * 0.42);
+        vig.clear();
+        vig.fillGradientStyle(0x0a1226, 0x0a1226, 0x0a1226, 0x0a1226, 0, 0, 0.42, 0.42);
+        vig.fillRect(0, nh * 0.55, nw, nh * 0.45);
+      });
+    }
+
     this.pushHud(true);
     this.emitSave();
   }
