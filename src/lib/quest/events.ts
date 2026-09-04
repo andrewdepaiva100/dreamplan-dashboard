@@ -56,8 +56,13 @@ export type ModalPayload =
       type: "boss";
       name: string;
       art: string;
+      role?: string;
       intro: string;
       demon: string;
       mariaLine: string;
-      choices: { id: string; text: string }[];
+      slides: {
+        boss: string;
+        replies: { id: string; text: string; answer: string }[];
+      }[];
     };
+
