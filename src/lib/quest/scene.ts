@@ -63,6 +63,8 @@ const MAP_H = 180;
 const SX = MAP_W / DESIGN_W;
 const SY = MAP_H / DESIGN_H;
 const SPEED = 120;
+/** 2.5D floor tilt: vertical camera squash. 1 = flat top-down, lower = more perspective. */
+const SQUASH = 0.8;
 const DASH_MS = 170;
 const DASH_COOLDOWN = 2000;
 
@@ -210,6 +212,7 @@ export class QuestScene extends Phaser.Scene {
     this.cameras.main.resetFX();
     this.cameras.main.setAlpha(1);
     this.cameras.main.fadeIn(500, 8, 12, 30);
+    this.installProjection();
 
     buildTileset(this);
     buildSprites(this);
@@ -340,9 +343,11 @@ export class QuestScene extends Phaser.Scene {
       const base = this.scale.width < 620 ? 1.1 : 1.45;
       const fill = Math.max(
         this.scale.width / (this.mapW * TILE),
-        this.scale.height / (this.mapH * TILE),
+        this.scale.height / (this.mapH * TILE * SQUASH),
       );
-      this.cameras.main.setZoom(Math.max(base, fill));
+      const z = Math.max(base, fill);
+      // squashed vertical zoom = the tilted ground plane of the 2.5D view
+      this.cameras.main.setZoom(z, z * SQUASH);
     }
 
     // warm romantic sunlight wash across the whole scene
@@ -447,17 +452,17 @@ export class QuestScene extends Phaser.Scene {
   private bakeShadow(x: number, y: number, w: number, alpha = 0.2) {
     if (!this.shadowGfx) this.shadowGfx = this.add.graphics().setDepth(7);
     this.shadowGfx.fillStyle(0x0a1226, alpha);
-    this.shadowGfx.fillEllipse(x, y, w, w * 0.42);
+    this.shadowGfx.fillEllipse(x + w * 0.14, y + 2, w * 1.06, w * 0.5);
   }
 
   /** Soft contact shadow that grounds a moving actor in the 2.5D world. */
   private groundShadow(x: number, y: number, w: number, alpha = 0.24) {
-    return this.add.ellipse(x, y, w, w * 0.42, 0x0a1226, alpha).setDepth(7);
+    return this.add.ellipse(x, y, w * 1.06, w * 0.5, 0x0a1226, alpha).setDepth(7);
   }
 
   /** Attaches a contact shadow that tracks a moving actor every frame. */
   private attachShadow(t: Phaser.GameObjects.Sprite, w: number, alpha = 0.24) {
-    const s = this.groundShadow(t.x, t.y + t.displayHeight * 0.36, w, alpha);
+    const s = this.groundShadow(t.x + w * 0.14, t.y + t.displayHeight * 0.3, w, alpha);
     this.shadows.push({ s, t });
     return s;
   }
@@ -471,7 +476,7 @@ export class QuestScene extends Phaser.Scene {
     this.player = this.physics.add.sprite(x, y, "maria-down-0");
     this.player.anims.play("maria-idle-down");
     this.player.setScale(1.1);
-    this.player.setSize(13, 11).setOffset(5.5, 21.5);
+    this.player.setSize(13, 11 * SQUASH).setOffset(5.5, 22.5);
     this.player.setCollideWorldBounds(true);
     this.player.setDepth(this.dsort(y));
     this.attachShadow(this.player, 22, 0.28);
@@ -2940,7 +2945,7 @@ export class QuestScene extends Phaser.Scene {
       }
       const lift = pair.t === this.player ? Math.abs(bob) : 0;
       pair.s
-        .setPosition(pair.t.x, pair.t.y + pair.t.displayHeight * 0.36)
+        .setPosition(pair.t.x + pair.t.displayWidth * 0.12, pair.t.y + pair.t.displayHeight * 0.3)
         .setVisible(pair.t.visible)
         .setScale(1 - lift * 0.05)
         .setAlpha(pair.t.alpha * 0.9);
