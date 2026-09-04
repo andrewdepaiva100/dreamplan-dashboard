@@ -10,6 +10,7 @@ export type QuestSave = {
   wedding_completed: boolean;
   weapons: string[];
   equipped_weapon: string | null;
+  swift_boots: boolean;
 };
 
 export const SLOT = "maria";
@@ -23,6 +24,7 @@ export const EMPTY_SAVE: QuestSave = {
   wedding_completed: false,
   weapons: [],
   equipped_weapon: null,
+  swift_boots: false,
 };
 
 const LOCAL_KEY = "marias-quest-save-v1";
@@ -66,7 +68,7 @@ export async function loadSave(): Promise<QuestSave | null> {
     const { data, error } = await supabase
       .from("maria_quest_saves")
       .select(
-        "current_zone, player_health, relics_collected, secret_envelopes_found, vault_keys_count, wedding_completed, weapons, equipped_weapon",
+        "current_zone, player_health, relics_collected, secret_envelopes_found, vault_keys_count, wedding_completed, weapons, equipped_weapon, swift_boots",
       )
       .eq("slot", SLOT)
       .maybeSingle();
@@ -85,6 +87,7 @@ export async function loadSave(): Promise<QuestSave | null> {
       wedding_completed: Boolean(data.wedding_completed),
       weapons: Array.isArray(data.weapons) ? (data.weapons as string[]) : [],
       equipped_weapon: (data.equipped_weapon as string | null) ?? null,
+      swift_boots: Boolean(data.swift_boots),
     };
     const migrated = migrateWeapons(remote);
     writeLocal(migrated);
@@ -111,6 +114,7 @@ export async function persistSave(save: QuestSave): Promise<void> {
           wedding_completed: save.wedding_completed,
           weapons: save.weapons,
           equipped_weapon: save.equipped_weapon,
+          swift_boots: save.swift_boots,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "slot" },
