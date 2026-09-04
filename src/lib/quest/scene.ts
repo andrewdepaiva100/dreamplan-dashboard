@@ -189,6 +189,9 @@ export class QuestScene extends Phaser.Scene {
     this.bossDialogueDone = false;
     this.bossSlow = 1;
     this.bossHalo = null;
+    this.shadows = [];
+    this.vel = { x: 0, y: 0 };
+    this.bobPhase = 0;
     if (this.save.weapons.length === 0) this.save.weapons = [];
     this.animals = [];
     this.keyBeacons = new Map();
