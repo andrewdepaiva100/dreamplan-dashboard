@@ -2179,11 +2179,29 @@ export class QuestScene extends Phaser.Scene {
   private openStaircase() {
     this.rect2Live();
     this.objective = "The Celestial Staircase forms — reach the Altar of Joy.";
-    this.emitToast("Three lights align. A staircase of stars unfolds.");
+    this.emitToast("Five lights align. A staircase of stars unfolds.");
+    // rising star burst along the new staircase
+    for (let i = 0; i < 30; i++) {
+      this.time.delayedCall(i * 60, () =>
+        this.spawnSparkle(this.wx(60 + (Math.random() - 0.5) * 40), this.wy(18 + Math.random() * 8), 0xffe6a8, 5),
+      );
+    }
     if (!this.save.relics_collected.includes("seal"))
       this.addInteractable(this.wx(84), this.wy(16), "relic", "relic", "Take the Seal of Perfect Peace", {
         id: "seal",
       });
+    // The wedding-hour letter appears where Maria stands.
+    if (!this.has(this.save.secret_envelopes_found, "wedding-hour")) {
+      this.zoneState["weddingLetter"] = true;
+      const ex = this.player?.x ?? this.wx(60);
+      const ey = (this.player?.y ?? this.wy(52)) + 26;
+      this.addInteractable(ex, ey, "envelope", "envelope", "Open the Secret Envelope", {
+        id: "wedding-hour",
+      });
+      this.time.delayedCall(1200, () =>
+        this.emitToast("A sealed envelope drifts down out of the starlight."),
+      );
+    }
   }
 
   private rect2Live() {
