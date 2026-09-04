@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
@@ -85,7 +85,9 @@ export default function Quest3D({ onExit }: { onExit: () => void }) {
         </Environment>
 
         <Meadow />
-        <Player input={input} playerRef={playerRef} />
+        <Suspense fallback={null}>
+          <Player input={input} playerRef={playerRef} />
+        </Suspense>
         <FollowCamera target={playerRef} />
       </Canvas>
 
