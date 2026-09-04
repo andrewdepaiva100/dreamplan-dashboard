@@ -33,6 +33,7 @@ import portraitAlicia from "@/assets/quest/portrait-alicia.jpg";
 import portraitPedro from "@/assets/quest/portrait-pedro.jpg";
 import portraitGianluca from "@/assets/quest/portrait-gianluca.jpg";
 import portraitAdriel from "@/assets/quest/portrait-adriel.jpg";
+import portraitAndrew from "@/assets/quest/portrait-andrew.jpg";
 import portraitRaquel from "@/assets/quest/portrait-raquel.jpg";
 import portraitMarcos from "@/assets/quest/portrait-marcos.jpg";
 import portraitSilvia from "@/assets/quest/portrait-silvia.jpg";
@@ -49,6 +50,7 @@ const GUEST_PORTRAITS: Record<string, string> = {
   pedro: portraitPedro,
   gianluca: portraitGianluca,
   adriel: portraitAdriel,
+  andrew: portraitAndrew,
   raquel: portraitRaquel,
   marcos: portraitMarcos,
   silvia: portraitSilvia,
@@ -803,12 +805,12 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
           </div>
 
           {/* objective tracker — top centre */}
-          <div className="max-w-[46%] rounded-xl border border-gold/40 bg-[rgba(11,30,61,0.78)] px-3 py-2 text-center backdrop-blur">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-gold">
+          <div className="max-w-[37%] rounded-lg border border-gold/40 bg-[rgba(11,30,61,0.78)] px-2 py-1.5 text-center backdrop-blur">
+            <p className="text-[8px] uppercase tracking-[0.18em] text-gold">
               {hud.act} · {hud.zoneTitle}
             </p>
-            <p className="mt-0.5 text-xs leading-snug text-white/95">{hud.objective}</p>
-            <p className="mt-1 text-[11px] text-sky">
+            <p className="mt-0.5 text-[10px] leading-snug text-white/95">{hud.objective}</p>
+            <p className="mt-0.5 text-[9px] text-sky">
               Relics {hud.relics.length}/5 · Letters {hud.envelopes.length}/5 · Keys {hud.keys}/3
             </p>
             <button
@@ -817,7 +819,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                 buzz();
                 emit(EV.ping);
               }}
-              className="pointer-events-auto mt-2 w-full rounded-lg border border-gold/60 bg-gold/20 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-gold"
+              className="pointer-events-auto mt-1.5 w-full rounded-md border border-gold/60 bg-gold/20 px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.15em] text-gold"
             >
               📡 Ping objective
             </button>
@@ -1049,13 +1051,17 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       ) : null}
 
       {modal?.type === "andrew" ? (
-        <GlassPanel title="Andrew" onClose={closeModal}>
-          <MariaPortrait caption="Maria listens" />
-          <p className="font-serif-italic italic">“{modal.line}”</p>
-          <p className="text-xs text-navy/60">
-            {ANDREW_AFFIRMATIONS[Math.floor(Math.random() * ANDREW_AFFIRMATIONS.length)]}
-          </p>
-        </GlassPanel>
+        <GuestDialogue
+          key={modal.line}
+          id="andrew"
+          name="Andrew"
+          role="Your fiancé"
+          lines={[
+            modal.line,
+            ANDREW_AFFIRMATIONS[Math.floor(Math.random() * ANDREW_AFFIRMATIONS.length)] ?? "",
+          ].filter(Boolean)}
+          onClose={closeModal}
+        />
       ) : null}
 
       {modal?.type === "vault" ? (
@@ -1169,10 +1175,14 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
             }
           }}
         >
-          <p className="font-serif-italic italic text-navy">“{modal.intro}”</p>
+          <p className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-navy/80">
+            {modal.demon}
+          </p>
+          <p className="mt-3 font-serif-italic italic text-navy">“{modal.intro}”</p>
           <div className="mt-3">
             <MariaPortrait caption="Maria stands her ground" />
           </div>
+          <p className="mt-3 font-serif-italic italic text-navy/85">“{modal.mariaLine}”</p>
           <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-gold">
             How does Maria answer?
           </p>
