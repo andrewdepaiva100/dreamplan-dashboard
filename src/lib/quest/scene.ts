@@ -483,7 +483,7 @@ export class QuestScene extends Phaser.Scene {
     const allied = this.save.weapons.includes("love-sword");
     if ((!this.save.wedding_completed && !allied) || this.save.current_zone === "cathedral") return;
     this.companion = this.add
-      .sprite(this.player.x - 40, this.player.y + 12, "andrew-down-0")
+      .sprite(this.player.x - 24, this.player.y + 8, "andrew-down-0")
       .setDepth(19)
       .setScale(1.1);
     this.companion.anims.play("andrew-idle-down");
@@ -936,7 +936,7 @@ export class QuestScene extends Phaser.Scene {
           : zone === "the_haven"
             ? 95
             : zone === "starry_ascent"
-              ? 56
+              ? 18
               : MAP_W;
     this.mapW = dims;
     this.mapH = dims;
@@ -987,8 +987,9 @@ export class QuestScene extends Phaser.Scene {
         made++;
       }
     };
-    place("heart-pickup", 14);
-    place("golden-heart", 3);
+    const tiny = this.mapW < 30;
+    place("heart-pickup", tiny ? 5 : 14);
+    place("golden-heart", tiny ? 1 : 3);
     this.physics.add.overlap(this.player, this.hearts, (_p, obj) =>
       this.takeHeart(obj as Phaser.Physics.Arcade.Sprite),
     );
@@ -1876,7 +1877,7 @@ export class QuestScene extends Phaser.Scene {
     const config: Record<string, { key: string; count: number; speed: number }> = {
       sunlit_shores: { key: "enemy-distraction", count: 18, speed: 48 },
       wedding_garden: { key: "enemy-rush", count: 22, speed: 68 },
-      starry_ascent: { key: "enemy-weariness", count: 18, speed: 42 },
+      starry_ascent: { key: "enemy-weariness", count: 6, speed: 28 },
     };
     const c = config[zone]!;
     const rnd = irnd(zone.length * 37 + 11);
