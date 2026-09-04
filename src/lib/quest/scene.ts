@@ -1708,6 +1708,58 @@ export class QuestScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * A tall pillar of seasonal light marking an unclaimed key — visible from
+   * far across the garden. Destroyed the moment its key is taken.
+   */
+  private addKeyBeacon(x: number, y: number, id: string, tint: number) {
+    const c = this.add.container(x, y).setDepth(8);
+    const glow = this.add.ellipse(0, 0, 72, 28, tint, 0.32).setBlendMode(Phaser.BlendModes.ADD);
+    const pillar = this.add.rectangle(0, -130, 26, 270, tint, 0.22).setBlendMode(Phaser.BlendModes.ADD);
+    const core = this.add.rectangle(0, -130, 8, 270, tint, 0.42).setBlendMode(Phaser.BlendModes.ADD);
+    c.add([glow, pillar, core]);
+    this.tweens.add({
+      targets: [pillar, core, glow],
+      alpha: "+=0.14",
+      scaleY: "+=0.06",
+      duration: 1100,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+    const timer = this.time.addEvent({
+      delay: 650,
+      loop: true,
+      callback: () => {
+        if (!c.active) {
+          timer.destroy();
+          return;
+        }
+        const s = this.add
+          .sprite(x + Phaser.Math.Between(-16, 16), y, "spark")
+          .setTint(tint)
+          .setDepth(17)
+          .setAlpha(0.9);
+        this.tweens.add({
+          targets: s,
+          y: y - 170,
+          alpha: 0,
+          duration: 1150,
+          onComplete: () => s.destroy(),
+        });
+      },
+    });
+    this.keyBeacons.set(id, c);
+  }
+
+  private removeKeyBeacon(id: string) {
+    const c = this.keyBeacons.get(id);
+    if (!c) return;
+    this.keyBeacons.delete(id);
+    for (const child of c.list) this.tweens.killTweensOf(child);
+    c.destroy();
+  }
+
   private equippedWeapon() {
     return WEAPON_BY_ID[this.save.equipped_weapon ?? DEFAULT_WEAPON] ?? WEAPON_BY_ID[DEFAULT_WEAPON]!;
   }
@@ -1920,10 +1972,12 @@ export class QuestScene extends Phaser.Scene {
       }
       case "season-key": {
         this.removeInteractable(it);
+        this.removeKeyBeacon(it.id ?? "");
         const n = ((this.zoneState["keysFound"] as number) ?? 0) + 1;
         this.zoneState["keysFound"] = n;
         this.objective = `The Seasons Tile Lock — ${n}/4 seasonal keys.`;
         this.emitToast(`${it.id} key collected (${n}/4).`);
+        if (n < 4) this.emitToast("Follow the remaining pillars of light.");
         break;
       }
       case "conservatory": {
