@@ -401,7 +401,7 @@ const REPLY_BOONS: Record<BossReply["boon"], string> = {
 export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   sunlit_shores: {
     name: "Warden of Rushing Water",
-    hp: 10,
+    hp: 6,
     taunt: "The Warden of Rushing Water rises from the river. Steady — you have crossed worse.",
     art: "boss-water",
     color: 0x4ec9d6,
@@ -434,7 +434,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   wedding_garden: {
     name: "The Stress Spectre",
-    hp: 14,
+    hp: 7,
     taunt: "The Stress Spectre unfurls above the glass roof. Breathe. Swing.",
     art: "boss-garden",
     color: 0xb79cf0,
@@ -467,7 +467,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   the_haven: {
     name: "The Clamour of Doubt",
-    hp: 16,
+    hp: 8,
     taunt: "The Clamour of Doubt clatters across the square. Answer it with your blade of light.",
     art: "boss-haven",
     color: 0xd9a441,
@@ -500,7 +500,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   starry_ascent: {
     name: "The Weight of Weariness",
-    hp: 18,
+    hp: 9,
     taunt: "The Weight of Weariness settles over the summit. Show it what rest looks like.",
     art: "boss-star",
     color: 0x8f9bff,
