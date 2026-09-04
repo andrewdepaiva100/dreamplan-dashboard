@@ -749,6 +749,7 @@ export class QuestScene extends Phaser.Scene {
     const target = this.objectiveTarget();
     if (!target) {
       this.arrow.setVisible(false);
+      this.pingMarker?.setVisible(false);
       return;
     }
     const dist = Phaser.Math.Distance.Between(
@@ -759,6 +760,7 @@ export class QuestScene extends Phaser.Scene {
     );
     if (dist < 90) {
       this.arrow.setVisible(false);
+      this.pingMarker?.setVisible(false);
       return;
     }
     const cam = this.cameras.main;
