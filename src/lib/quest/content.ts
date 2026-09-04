@@ -227,8 +227,8 @@ export const HOW_TO_PLAY = [
     body: "Use the virtual touch joystick, WASD, or arrow keys to walk through the realm. Maria's pace is gentle and deliberate — take your time.",
   },
   {
-    title: "Peace Burst",
-    body: "Tap PEACE (or SPACE / J) to send a ring of rose petals. Enemies touched by peace are transformed, not destroyed. Each burst costs a little stamina.",
+    title: "Attack",
+    body: "Tap ATTACK (or SPACE / J) to swing your weapon. Anything you strike is transformed into butterflies, never harmed. Stronger weapons swing wider.",
   },
   {
     title: "Dash",
@@ -259,7 +259,7 @@ export const CONTROLS_HELP: { title: string; body: string }[] = [
     body: "Walk close to a person, stone or letter until the gold bubble appears above Maria, then tap TALK (or press E).",
   },
   {
-    title: "Peace Burst",
+    title: "Attack",
     body: "Tap PEACE (or press Space) to send out blossoms that calm any worry they touch — nothing is ever harmed.",
   },
   {
@@ -271,3 +271,139 @@ export const CONTROLS_HELP: { title: string; body: string }[] = [
     body: "The glowing gold arrow circling Maria points toward the current act's goal. It fades once you are close.",
   },
 ];
+
+// =========================================================================
+// WEAPONS, BLACKSMITH, ACT GUIDES & BOSSES
+// =========================================================================
+
+export type Weapon = {
+  id: string;
+  name: string;
+  icon: string;
+  damage: number;
+  reach: number;
+  color: number;
+  blurb: string;
+};
+
+export const WEAPONS: Weapon[] = [
+  {
+    id: "wooden-sword",
+    name: "Wooden Sword",
+    icon: "🗡️",
+    damage: 1,
+    reach: 54,
+    color: 0xc99a5b,
+    blurb: "A practice blade from the village forge. Light, honest, and always enough to start.",
+  },
+  {
+    id: "spark-wand",
+    name: "Radiant Spark Wand",
+    icon: "✨",
+    damage: 2,
+    reach: 72,
+    color: 0xffd977,
+    blurb: "Carved from grotto driftwood. Its light scatters worry before it can settle.",
+  },
+  {
+    id: "floral-bow",
+    name: "Floral Bow",
+    icon: "🏹",
+    damage: 3,
+    reach: 90,
+    color: 0xff9ec4,
+    blurb: "Strung with garden vine. Every arrow blooms where it lands.",
+  },
+  {
+    id: "lightblade",
+    name: "Lightblade",
+    icon: "⚔️",
+    damage: 4,
+    reach: 78,
+    color: 0xbfe3ff,
+    blurb: "Forged in Haven's clocktower. It cuts through noise, never through people.",
+  },
+  {
+    id: "starlight-censer",
+    name: "Starlight Censer",
+    icon: "🌟",
+    damage: 5,
+    reach: 96,
+    color: 0xa9b6ff,
+    blurb: "Swings a slow arc of constellations that calms whatever it touches.",
+  },
+  {
+    id: "ring-of-dawn",
+    name: "Ring of Dawn",
+    icon: "💍",
+    damage: 6,
+    reach: 104,
+    color: 0xffe6a8,
+    blurb: "The first light of forever, worn on your hand.",
+  },
+];
+
+export const WEAPON_BY_ID: Record<string, Weapon> = Object.fromEntries(
+  WEAPONS.map((w) => [w.id, w]),
+);
+
+export const DEFAULT_WEAPON = "wooden-sword";
+
+export const BLACKSMITH = {
+  name: "Tobias the Blacksmith",
+  weapon: DEFAULT_WEAPON,
+  line: "Maria! You can't walk the realm empty-handed. Here — a wooden sword from my own bench. Swing it with the ATTACK button; nothing here truly dies, it just remembers how to be gentle again.",
+  repeat: "The forge is always warm if your blade needs tending. Go on — the road is waiting.",
+};
+
+export const ACT_GUIDES: Record<ZoneId, { name: string; weapon: string; line: string }> = {
+  sunlit_shores: {
+    name: "Wren of the Shores",
+    weapon: "spark-wand",
+    line: "Welcome, Bringer of Peace. Follow the road east to the River Gate Temple — the Warden of Rushing Water guards the Lantern there. Take my Radiant Spark Wand; its light is louder than any worry.",
+  },
+  wedding_garden: {
+    name: "Ivy the Gardener",
+    weapon: "floral-bow",
+    line: "The hedges shift, but the promenade always leads to the Conservatory. The Stress Spectre waits inside. Take my Floral Bow — draw it and every arrow blooms.",
+  },
+  the_haven: {
+    name: "Marlowe the Bellkeeper",
+    weapon: "lightblade",
+    line: "Haven is loud today. The Clamour of Doubt paces the town hall steps and Andrew waits by the fountain. Take the Lightblade — it cuts through noise, never through hearts.",
+  },
+  starry_ascent: {
+    name: "Astra the Stargazer",
+    weapon: "starlight-censer",
+    line: "Climb the islands to the Observatory at the peak. The Weight of Weariness circles it. Swing this Starlight Censer and it will remember how to rest.",
+  },
+  cathedral: {
+    name: "Sister Lumen",
+    weapon: "ring-of-dawn",
+    line: "There is nothing left to fight here, only a door to walk through. Take the Ring of Dawn, and go meet him by the stained glass.",
+  },
+};
+
+export const ACT_BOSSES: Record<ZoneId, { name: string; hp: number; taunt: string } | null> = {
+  sunlit_shores: {
+    name: "Warden of Rushing Water",
+    hp: 10,
+    taunt: "The Warden of Rushing Water rises from the river. Steady — you have crossed worse.",
+  },
+  wedding_garden: {
+    name: "The Stress Spectre",
+    hp: 14,
+    taunt: "The Stress Spectre unfurls above the glass roof. Breathe. Swing.",
+  },
+  the_haven: {
+    name: "The Clamour of Doubt",
+    hp: 16,
+    taunt: "The Clamour of Doubt clatters across the square. Answer it with your blade of light.",
+  },
+  starry_ascent: {
+    name: "The Weight of Weariness",
+    hp: 18,
+    taunt: "The Weight of Weariness settles over the summit. Show it what rest looks like.",
+  },
+  cathedral: null,
+};
