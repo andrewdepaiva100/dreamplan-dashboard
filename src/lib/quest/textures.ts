@@ -109,7 +109,7 @@ export const T = {
   SKY: 9,
 } as const;
 
-export const SOLID_TILES = [T.WALL, T.HEDGE, T.VOID];
+export const SOLID_TILES = [T.WALL, T.HEDGE, T.VOID, T.WATER];
 export const TILE_COUNT = 10;
 
 /** Raw art loaded in preload(), keyed by `art-*` so composed textures keep clean names. */
