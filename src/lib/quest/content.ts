@@ -98,6 +98,13 @@ export const ENVELOPES: Envelope[] = [
     letter:
       "LOYALTY. Last one. Nothing left to hide, only a door to walk through together. I choose you today and every day after, in the loud seasons and the quiet ones, for as long as I have breath. Come find me by the stained glass. — Andrew",
   },
+  {
+    id: "wedding-hour",
+    title: "Secret Envelope — The Hour Has Come",
+    zone: "starry_ascent",
+    letter:
+      "IT'S TIME. Five pillars, all gold — which means the sky just told you what I've been holding in all morning: the wedding is about to start. The doors are open, the seats are filling, and every person who loves us is already whispering your name. The musicians are tuning; the first notes of our melody are minutes away. Pastor Alcir is smoothing his robe and pretending his knees don't creak. And I am standing at the end of the aisle in a suit I have straightened forty times, watching that door, waiting for it to open on you. Take one breath here under the stars. Then come down the staircase, Maria. I'll be right there. — Andrew",
+  },
 ];
 
 
