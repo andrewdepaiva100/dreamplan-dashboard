@@ -165,8 +165,8 @@ export type CeremonyBeat =
 /** The full wedding inside the little church — priest, vows, rings, kiss. */
 export const CEREMONY_SCRIPT: CeremonyBeat[] = [
   {
-    speaker: "Father Elias",
-    text: "Dearly beloved, we are gathered here in the sight of God and in the presence of these witnesses, to join together Andrew and Maria in holy matrimony. Please, come forward and take each other's hands.",
+    speaker: "Pastor Alcir",
+    text: "Family — and I get to say that word twice today, as your pastor and as Andrew’s grandfather. Dearly beloved, we are gathered here in the sight of God and in the presence of these witnesses, to join together Andrew and Maria in holy matrimony. Please, come forward and take each other's hands.",
   },
   {
     speaker: "Andrew",
@@ -174,21 +174,21 @@ export const CEREMONY_SCRIPT: CeremonyBeat[] = [
   },
   { choices: CEREMONY_CHOICES },
   {
-    speaker: "Father Elias",
+    speaker: "Pastor Alcir",
     text: "Love is patient, love is kind. It does not envy, it does not boast, it is not proud. It always protects, always trusts, always hopes, always perseveres. Love never fails. This is the covenant you enter today — not a feeling, but a promise renewed every morning.",
   },
   {
-    speaker: "Father Elias",
+    speaker: "Pastor Alcir",
     text: "Andrew, will you have this woman to be your wedded wife — to love her, comfort her, honour and keep her, in sickness and in health, in plenty and in want, and forsaking all others be faithful to her as long as you both shall live?",
   },
   { speaker: "Andrew", text: "I will. With everything I am, I will." },
   {
-    speaker: "Father Elias",
+    speaker: "Pastor Alcir",
     text: "Maria, will you have this man to be your wedded husband — to love him, comfort him, honour and keep him, in sickness and in health, in plenty and in want, and forsaking all others be faithful to him as long as you both shall live?",
   },
   { speaker: "Maria", text: "I will. Today, tomorrow, and every day after." },
   {
-    speaker: "Father Elias",
+    speaker: "Pastor Alcir",
     text: "Then speak now the vows you have written for one another.",
   },
   {
@@ -200,16 +200,16 @@ export const CEREMONY_SCRIPT: CeremonyBeat[] = [
     text: "Andrew — I promise to walk beside you, not behind you and not ahead. I promise to be gentle with your heart, honest with my own, and faithful when the road is long. I promise laughter in our kitchen, grace in our arguments, and God at the centre of everything we build. You are my home. I take you as my husband.",
   },
   {
-    speaker: "Father Elias",
+    speaker: "Pastor Alcir",
     text: "The rings, please. A circle without beginning and without end — as your love is to be. Andrew, place the ring on her finger and say: with this ring, I thee wed.",
   },
   { speaker: "Andrew", text: "With this ring, I thee wed. All that I have is yours." },
   { speaker: "Maria", text: "With this ring, I thee wed. All that I am is yours." },
   {
-    speaker: "Father Elias",
+    speaker: "Pastor Alcir",
     text: "Inasmuch as Andrew and Maria have consented together in holy wedlock and have witnessed the same before God and this company, by the authority entrusted to me, I pronounce them husband and wife. What God has joined together, let no one separate.",
   },
-  { speaker: "Father Elias", text: "Andrew — you may kiss your bride." },
+  { speaker: "Pastor Alcir", text: "Andrew — you may kiss your bride." },
   {
     speaker: "The Church",
     text: "The whole church rises. Bells ring out over the golden realm, petals fall from the rafters, and every friend you have ever loved is on their feet.",
@@ -429,7 +429,7 @@ export const LOVE_SWORD = {
 export const SECOND_BOSSES: Partial<Record<ZoneId, BossConfig>> = {
   starry_ascent: {
     name: "The Hollow of Doubtful Nights",
-    hp: 6,
+    hp: 8,
     taunt: "The stars go cold. A second shadow rises — The Hollow of Doubtful Nights.",
     art: "boss-hollow",
     color: 0x27336e,
@@ -545,7 +545,7 @@ const REPLY_BOONS: Record<BossReply["boon"], string> = {
 export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   sunlit_shores: {
     name: "Warden of Rushing Water",
-    hp: 6,
+    hp: 8,
     taunt: "The river swells and darkens. The Warden of Rushing Water rises to block the crossing — it has never let anyone through.",
     art: "boss-water",
     color: 0x4ec9d6,
@@ -578,7 +578,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   wedding_garden: {
     name: "The Stress Spectre",
-    hp: 7,
+    hp: 9,
     taunt: "The glass above you darkens. The Stress Spectre descends — it has been waiting for you.",
     art: "boss-garden",
     color: 0xb79cf0,
@@ -611,7 +611,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   the_haven: {
     name: "The Clamour of Doubt",
-    hp: 16,
+    hp: 21,
     taunt: "The square falls silent. The Clamour of Doubt turns toward you — this one will not fall quickly.",
     art: "boss-haven",
     color: 0xd9a441,
@@ -644,7 +644,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   starry_ascent: {
     name: "The Weight of Weariness",
-    hp: 5,
+    hp: 7,
     taunt: "The summit dims. The Weight of Weariness presses down — it wants you to stop climbing, forever.",
     art: "boss-star",
     color: 0x8f9bff,
@@ -827,19 +827,19 @@ export const FAMILY_GUESTS: GuestInfo[] = [
   },
   {
     id: "silvia",
-    name: "Her Mom (Silvia)",
+    name: "Mom (Silvia)",
     art: "silvia",
     role: "Maria\u2019s mother",
     prompt: "Hug Silvia",
     lines: [
-      "Maria, mija — you are glowing. A mother knows when her daughter found the right one.",
+      "Maria, my daughter — you are glowing. A mother knows when her girl has found the right one.",
       "Andrew, welcome to the family, officially. You were already ours the day she brought you home.",
       "I am so excited I have not slept properly in a week. Worth it.",
     ],
   },
   {
     id: "gustavo",
-    name: "Her Dad (Gustavo)",
+    name: "Dad (Gustavo)",
     art: "gustavo",
     role: "Maria\u2019s father",
     prompt: "Hug Gustavo",
