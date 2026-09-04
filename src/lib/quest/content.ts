@@ -593,13 +593,19 @@ export const ACT_GUIDES: Record<ZoneId, { name: string; weapon: string; line: st
   },
 };
 
+export type ReplyFlavor = "bold" | "gentle" | "faith";
+
 export type BossReply = {
-  id: string;
+  id: ReplyFlavor;
   text: string;
+  /** What the boss spits back after this reply. */
   answer: string;
-  /** Opening advantage granted by this reply. */
-  boon: "stamina" | "slow" | "heart";
-  boonText: string;
+};
+
+/** One beat of the confrontation: the boss speaks, Maria answers. */
+export type BossSlide = {
+  boss: string;
+  replies: BossReply[];
 };
 
 export type BossConfig = {
@@ -617,59 +623,155 @@ export type BossConfig = {
   demon: string;
   /** Maria's quiet recognition, spoken before she answers. */
   mariaLine: string;
-  /** Line the boss speaks before the fight begins. */
+  /** Line the boss speaks before the fight begins (first slide). */
   intro: string;
-  replies: BossReply[];
+  /** Five-beat confrontation. */
+  slides: BossSlide[];
   /** When true the boss fights immediately — no intro dialogue. */
   silent?: boolean;
 };
 
-const REPLY_BOONS: Record<BossReply["boon"], string> = {
-  stamina: "Your breath steadies — full stamina and a quicker dash.",
-  slow: "The air thickens around it — your foe moves slower.",
-  heart: "Courage warms you — one heart restored.",
+/** Opening advantage earned by whichever tone Maria used most. */
+export const BOON_BY_FLAVOR: Record<
+  ReplyFlavor,
+  { boon: "stamina" | "slow" | "heart"; boonText: string }
+> = {
+  bold: {
+    boon: "stamina",
+    boonText: "You answered with steel — full stamina and a quicker dash.",
+  },
+  gentle: {
+    boon: "slow",
+    boonText: "You answered with mercy — the thing before you moves slower.",
+  },
+  faith: {
+    boon: "heart",
+    boonText: "You answered with faith — one heart restored.",
+  },
 };
 
 export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   sunlit_shores: {
     name: "Warden of Rushing Water",
+    role: "Andrew's fear of not providing",
     demon:
       "This is Andrew's fear of not being enough to provide — the current he wakes up fighting.",
     mariaLine:
-      "I know this one. This is what he carries when he thinks he has to hold the whole river back alone. He doesn't. Not anymore.",
+      "I know this one. This is what he carries when he thinks he has to hold the whole river back alone.",
     hp: 2000,
-    taunt: "The river swells and darkens. The Warden of Rushing Water rises to block the crossing — it has never let anyone through.",
+    taunt:
+      "The river swells and darkens. The Warden of Rushing Water rises to block the crossing — it has never let anyone through.",
     art: "boss-water",
     color: 0x4ec9d6,
     scale: 1.15,
     intro:
-      "Turn back. Every soul that has stepped into my current has been swept under and forgotten. I will not make an exception for a bride.",
-    replies: [
+      "Turn back. Every soul that stepped into my current was swept under and forgotten. I will not make an exception for a bride.",
+    slides: [
       {
-        id: "bold",
-        text: "Then I will be the first to cross. Stand aside.",
-        answer: "Bold words. The water will test them. Come — and do not expect mercy.",
-        boon: "stamina",
-        boonText: REPLY_BOONS.stamina,
+        boss: "Turn back. Every soul that stepped into my current was swept under and forgotten. I will not make an exception for a bride.",
+        replies: [
+          {
+            id: "bold",
+            text: "Then I will be the first to cross. Stand aside.",
+            answer: "They all say that at the bank. None of them say it in the water.",
+          },
+          {
+            id: "gentle",
+            text: "You have held this river a long time. You look tired of it.",
+            answer: "Tired. Yes. And I will make him just as tired as I am.",
+          },
+          {
+            id: "faith",
+            text: "I fear no flood. The One who calmed the sea walks with me.",
+            answer: "Then let us find out how deep your water goes before He answers.",
+          },
+        ],
       },
       {
-        id: "gentle",
-        text: "You have held this river alone for a very long time. Let me ease your watch.",
-        answer: "…No one has ever offered to ease anything. Perhaps the water can run gentler for you. Perhaps.",
-        boon: "slow",
-        boonText: REPLY_BOONS.slow,
+        boss: "You should know what I am. I am the number he checks at two in the morning. I am the month he cannot see the end of. I live in Andrew's chest and I never sleep.",
+        replies: [
+          {
+            id: "bold",
+            text: "I know exactly what you are. That's why I came looking for you.",
+            answer: "Looking for me. How brave. How useless.",
+          },
+          {
+            id: "gentle",
+            text: "I've seen him check it. I've watched his face in that blue light.",
+            answer: "Then you have seen my work. I am very good at it.",
+          },
+          {
+            id: "faith",
+            text: "You are a worry. You were never a verdict.",
+            answer: "I have been a verdict to better men than him.",
+          },
+        ],
       },
       {
-        id: "faith",
-        text: "I fear no flood. The one who calmed the sea walks with me.",
-        answer: "Then your footing will hold where others' failed. Cross, if your faith runs as deep as you say.",
-        boon: "heart",
-        boonText: REPLY_BOONS.heart,
+        boss: "Here is my plan, since you asked for it. I will make him believe providing is love, and that failing to provide is the end of being loved. Then I will let him fail once. Just once.",
+        replies: [
+          {
+            id: "bold",
+            text: "You will not get your once. I'll be standing in front of him.",
+            answer: "You cannot stand in front of a man's own thoughts, girl.",
+          },
+          {
+            id: "gentle",
+            text: "He already failed at things. I stayed. That's the part you never counted.",
+            answer: "You stayed while it was small. I am patient. I will make it large.",
+          },
+          {
+            id: "faith",
+            text: "Our house isn't built on his paycheck. It never was.",
+            answer: "Everyone says that until the account runs dry.",
+          },
+        ],
+      },
+      {
+        boss: "And when he is quiet at dinner, you will think he has stopped loving you. That is the current I want. Not the money. The silence between you two.",
+        replies: [
+          {
+            id: "bold",
+            text: "Then I'll break the silence first. Every time. Watch me.",
+            answer: "…You would speak first. Every time. That is inconvenient.",
+          },
+          {
+            id: "gentle",
+            text: "When he goes quiet I'll sit closer, not further. That's the whole trick.",
+            answer: "Closer. No one has ever answered me with closer.",
+          },
+          {
+            id: "faith",
+            text: "We were told to carry each other's burdens. I intend to.",
+            answer: "Carried burdens weigh half. You are stealing my weight.",
+          },
+        ],
+      },
+      {
+        boss: "Then cross, bride. But know this — I do not die today. I only lose this crossing. I will be waiting at every hard month for the rest of your life.",
+        replies: [
+          {
+            id: "bold",
+            text: "Then I'll meet you at every one of them. Come on.",
+            answer: "So be it. The river remembers your name now.",
+          },
+          {
+            id: "gentle",
+            text: "Wait if you like. You'll be waiting on two of us, not one.",
+            answer: "Two. That is the number I was built to avoid.",
+          },
+          {
+            id: "faith",
+            text: "Wait all you want. Morning always comes for us.",
+            answer: "Then let me take what I can from you before it does.",
+          },
+        ],
       },
     ],
   },
   wedding_garden: {
     name: "The Stress Spectre",
+    role: "the pressure Andrew carries alone",
     demon:
       "This is the pressure Andrew lives under — every plan, every bill, every thing he thinks depends on him.",
     mariaLine:
@@ -680,33 +782,113 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
     color: 0xb79cf0,
     scale: 1.2,
     intro:
-      "I know everything you have left undone. I know what it costs. I know exactly how it falls apart — I have come to make sure that it does.",
-    replies: [
+      "I know everything you have left undone. I know exactly how it falls apart — I have come to make sure that it does.",
+    slides: [
       {
-        id: "bold",
-        text: "You are only worry given a shape. You do not decide how this ends.",
-        answer: "Defiance. I have broken defiance before. Show me that yours is different.",
-        boon: "stamina",
-        boonText: REPLY_BOONS.stamina,
+        boss: "I know everything you have left undone. I know exactly how it falls apart — I have come to make sure that it does.",
+        replies: [
+          {
+            id: "bold",
+            text: "You're a list with a face. You don't get to decide the ending.",
+            answer: "I have ended better days than yours with less.",
+          },
+          {
+            id: "gentle",
+            text: "You grew out of how much we care about this day.",
+            answer: "Care, yes. I am what care becomes when no one helps carry it.",
+          },
+          {
+            id: "faith",
+            text: "This day was never mine to hold up alone.",
+            answer: "Then watch who ends up holding it. It will be him. It always is.",
+          },
+        ],
       },
       {
-        id: "gentle",
-        text: "You grew out of my care for this day. But you do not get to rule it.",
-        answer: "Care… twisted into me. Then cut me down and take your joy back.",
-        boon: "slow",
-        boonText: REPLY_BOONS.slow,
+        boss: "He does not tell you how loud I am. He hands you the calm version and keeps the noise for himself. That is the crack I widen.",
+        replies: [
+          {
+            id: "bold",
+            text: "Then I'll ask him harder questions. He'll tell me.",
+            answer: "Men like him have practiced the word 'fine' their whole lives.",
+          },
+          {
+            id: "gentle",
+            text: "I know. I hear it in how carefully he says he's okay.",
+            answer: "You hear too much. I preferred the ones who did not listen.",
+          },
+          {
+            id: "faith",
+            text: "Nothing hidden stays hidden between us. We decided that.",
+            answer: "Decisions. Sweet, small, breakable things.",
+          },
+        ],
       },
       {
-        id: "faith",
-        text: "Cast all your anxiety on Him. I am not carrying you anymore.",
-        answer: "Then you leave me nothing to feed on. Very well — finish it.",
-        boon: "heart",
-        boonText: REPLY_BOONS.heart,
+        boss: "My plan is simple. I make him strong in public and hollow in private. Then I make you believe the hollow version is the real one.",
+        replies: [
+          {
+            id: "bold",
+            text: "I've already seen the real one. You're not casting doubt on him.",
+            answer: "Not yet. I am not finished.",
+          },
+          {
+            id: "gentle",
+            text: "The hollow version is the one I love most. That's your problem.",
+            answer: "…Loved hollow. That should not be possible.",
+          },
+          {
+            id: "faith",
+            text: "Love keeps no record of his worst days. Neither do I.",
+            answer: "No record. Then I have nothing to read back to you.",
+          },
+        ],
+      },
+      {
+        boss: "And a marriage does not end in a fight. It ends in two exhausted people who stop reaching for each other. That is all I need from you both.",
+        replies: [
+          {
+            id: "bold",
+            text: "Then I will reach first, even angry. Especially angry.",
+            answer: "Angry and still reaching. That combination undoes me.",
+          },
+          {
+            id: "gentle",
+            text: "Then we rest before we get there. That's a choice too.",
+            answer: "Rest. My oldest enemy.",
+          },
+          {
+            id: "faith",
+            text: "We were not given a spirit of fear. We don't run on empty alone.",
+            answer: "Then be filled. And come, while I still have shape.",
+          },
+        ],
+      },
+      {
+        boss: "Fine. Cut me down here, in the garden, in your white dress. But every wedding I have ruined began with someone who thought they were stronger than me.",
+        replies: [
+          {
+            id: "bold",
+            text: "I'm not stronger. I'm just not leaving. Raise your hands.",
+            answer: "Not leaving. That is worse than strong.",
+          },
+          {
+            id: "gentle",
+            text: "I'm not here to beat you. I'm here to take him back.",
+            answer: "Take him, then — if your arms are steadier than mine.",
+          },
+          {
+            id: "faith",
+            text: "Cast your cares. I'm done carrying you.",
+            answer: "Then I have nothing left to feed on. Finish it.",
+          },
+        ],
       },
     ],
   },
   the_haven: {
     name: "The Clamour of Doubt",
+    role: "Andrew's doubt about himself",
     demon:
       "This is Andrew's doubt about himself — the voice telling him he won't be the husband he promised to be.",
     mariaLine:
@@ -717,70 +899,230 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
     color: 0xd9a441,
     scale: 1.2,
     intro:
-      "A whole life, promised in a single day. You are not ready, Maria. I have counted every reason why, and I will carve every one of them into you.",
-    replies: [
+      "A whole life, promised in a single day. He is not ready, Maria. I have counted every reason why.",
+    slides: [
       {
-        id: "bold",
-        text: "No one is ever ready. We choose each other anyway — every single day.",
-        answer: "A choice renewed daily… that is the one thing I cannot count against. Raise your blade.",
-        boon: "stamina",
-        boonText: REPLY_BOONS.stamina,
+        boss: "A whole life, promised in a single day. He is not ready, Maria. I have counted every reason why.",
+        replies: [
+          {
+            id: "bold",
+            text: "Count them out loud, then. I'll answer every one.",
+            answer: "You would not survive the list. I have been writing it for years.",
+          },
+          {
+            id: "gentle",
+            text: "Nobody is ready. We choose each other anyway.",
+            answer: "Choice. Repeated daily. Exhausting to erode — but not impossible.",
+          },
+          {
+            id: "faith",
+            text: "He was called to this before he was ready for it.",
+            answer: "Called men fail publicly. Those are my favourites.",
+          },
+        ],
       },
       {
-        id: "gentle",
-        text: "You are only fear trying to protect me. I hear you — and I release you.",
-        answer: "Release… no one has ever offered me that. My gears grind slower already.",
-        boon: "slow",
-        boonText: REPLY_BOONS.slow,
+        boss: "I speak in his own voice. That is my craft. He cannot tell me apart from himself, so every accusation lands like a confession.",
+        replies: [
+          {
+            id: "bold",
+            text: "Then I'll be the second voice. Louder than you.",
+            answer: "You cannot follow him into his own head.",
+          },
+          {
+            id: "gentle",
+            text: "I'll keep telling him who he actually is until it drowns you out.",
+            answer: "Repetition. Tedious. Effective. I hate it.",
+          },
+          {
+            id: "faith",
+            text: "He is not who you say. He's who he was made to be.",
+            answer: "Words. He believes mine more often than he believes yours.",
+          },
+        ],
       },
       {
-        id: "faith",
-        text: "Perfect love casts out fear — and this love is bigger than me.",
-        answer: "Then there is nothing left for me here but to fall. Come.",
-        boon: "heart",
-        boonText: REPLY_BOONS.heart,
+        boss: "My plan for your marriage is patience. I will not attack it. I will convince him he is a disappointment, and let him withdraw from you inch by inch until the bed is cold.",
+        replies: [
+          {
+            id: "bold",
+            text: "Then I'll close every inch you open. Every single one.",
+            answer: "You cannot chase a man forever.",
+          },
+          {
+            id: "gentle",
+            text: "He can withdraw. I'll still be there when he turns back around.",
+            answer: "…Still there. That ruins the entire design.",
+          },
+          {
+            id: "faith",
+            text: "There is no condemnation for him. Not from God. Not from me.",
+            answer: "Then my only weapon is his own ear. I will keep it.",
+          },
+        ],
+      },
+      {
+        boss: "And on the hardest night, I will tell him you would have been better off with someone else. He will believe it. He always half believes it.",
+        replies: [
+          {
+            id: "bold",
+            text: "Say it to me instead. Look at me and say it.",
+            answer: "…I do not perform well in front of witnesses.",
+          },
+          {
+            id: "gentle",
+            text: "I chose him at his worst. That was not an accident.",
+            answer: "Chosen at his worst. That is the one thing I cannot argue with.",
+          },
+          {
+            id: "faith",
+            text: "God gave him to me on purpose. Take it up with Him.",
+            answer: "I do not have that appointment. So I will settle for you.",
+          },
+        ],
+      },
+      {
+        boss: "Then come. I am louder than the others, and I do not tire. Strike me and I will only speak from further away.",
+        replies: [
+          {
+            id: "bold",
+            text: "Then I'll keep swinging until distance is all you have.",
+            answer: "Distance is survival. Fine. Take the square.",
+          },
+          {
+            id: "gentle",
+            text: "Speak from as far as you like. He won't be alone to hear it.",
+            answer: "Not alone. That word keeps ruining my work.",
+          },
+          {
+            id: "faith",
+            text: "Perfect love casts out fear. Yours included.",
+            answer: "Then there is nothing left for me here but to fall. Come.",
+          },
+        ],
       },
     ],
   },
   starry_ascent: {
     name: "The Weight of Weariness",
+    role: "Andrew's burnout",
     demon:
       "This is Andrew's exhaustion — the burnout he pushes through and never complains about.",
     mariaLine:
-      "He's been tired for so long. Let me carry it for a while — that's what I'm walking up this mountain to say.",
+      "He's been tired for so long. Let me carry it for a while — that's what I climbed this mountain to say.",
     hp: 3200,
     taunt: "The summit dims. The Weight of Weariness presses down — it wants you to stop climbing, forever.",
     art: "boss-star",
     color: 0x8f9bff,
     scale: 1.25,
     intro:
-      "Stop. You have carried so much, for so long. Lie down here among the stars and let it all go. No one would blame you for ending the climb.",
-    replies: [
+      "Stop. You have carried so much, for so long. Lie down among the stars and let it all go.",
+    slides: [
       {
-        id: "bold",
-        text: "I did not come this far to lie down. Get off my back.",
-        answer: "Then carry me the rest of the way, if you can. Few ever have.",
-        boon: "stamina",
-        boonText: REPLY_BOONS.stamina,
+        boss: "Stop. You have carried so much, for so long. Lie down among the stars and let it all go. No one would blame you for ending the climb.",
+        replies: [
+          {
+            id: "bold",
+            text: "I didn't come this far to lie down. Get off my back.",
+            answer: "They all stand up first. Then they sit down for years.",
+          },
+          {
+            id: "gentle",
+            text: "You're not wrong that I'm tired. You're wrong about what I'll do with it.",
+            answer: "Honesty. Unpleasant. Continue, then.",
+          },
+          {
+            id: "faith",
+            text: "He gives strength to the weary. I'm claiming that tonight.",
+            answer: "Claim it. I will still be heavy in the morning.",
+          },
+        ],
       },
       {
-        id: "gentle",
-        text: "You are right that I am weary. But rest waits at the top — not here.",
-        answer: "Honest weariness… I cannot anchor to honesty. You are already slipping from me.",
-        boon: "slow",
-        boonText: REPLY_BOONS.slow,
+        boss: "I have sat on him for years. He calls it discipline. He calls it being a man. He does not know my name, which is exactly how I like it.",
+        replies: [
+          {
+            id: "bold",
+            text: "I'll name you out loud for him. Tonight.",
+            answer: "Named things lose their weight. Do not do that.",
+          },
+          {
+            id: "gentle",
+            text: "He's allowed to be tired with me. I'll keep telling him.",
+            answer: "Permission. That is the poison you keep handing him.",
+          },
+          {
+            id: "faith",
+            text: "Rest isn't weakness. It was commanded before it was needed.",
+            answer: "Commanded rest. He has ignored it for years already.",
+          },
+        ],
       },
       {
-        id: "faith",
-        text: "He gives strength to the weary — and I am claiming that tonight.",
-        answer: "Claimed, and believed. Then climb — by morning I will be nothing but a memory.",
-        boon: "heart",
-        boonText: REPLY_BOONS.heart,
+        boss: "My plan is not dramatic. I will take his evenings. Then his patience. Then his laugh. You will marry a good man and slowly live with a tired one.",
+        replies: [
+          {
+            id: "bold",
+            text: "Then I'll fight for his evenings like they're mine. They are.",
+            answer: "Fight all you want. Time is on my side.",
+          },
+          {
+            id: "gentle",
+            text: "Then I'll make his rest my job, the way he makes mine his.",
+            answer: "Shared. Everything shared. You keep halving me.",
+          },
+          {
+            id: "faith",
+            text: "We'll keep a sabbath, even when it's inconvenient.",
+            answer: "Stubborn people with a rhythm. My worst outcome.",
+          },
+        ],
+      },
+      {
+        boss: "And a tired man stops reaching. He stops asking. He becomes polite with his own wife. That is how I end marriages — quietly, with good manners.",
+        replies: [
+          {
+            id: "bold",
+            text: "There'll be nothing polite about us. I'll make sure.",
+            answer: "…Loud houses are hard for me to live in.",
+          },
+          {
+            id: "gentle",
+            text: "Then I'll ask, on the nights he can't. That's a fair trade.",
+            answer: "Trade. I did not account for two people taking turns.",
+          },
+          {
+            id: "faith",
+            text: "We'll carry each other's burdens. That's the whole instruction.",
+            answer: "Carried weight is halved weight. You are dismantling me.",
+          },
+        ],
+      },
+      {
+        boss: "Then climb. But I am not slain, bride — I am only set down. I will be here on every long week of your life together.",
+        replies: [
+          {
+            id: "bold",
+            text: "Set down is enough for tonight. Get up and fight.",
+            answer: "As you wish. Let us see who is standing at dawn.",
+          },
+          {
+            id: "gentle",
+            text: "Then we'll set you down again. As many times as it takes.",
+            answer: "Again and again. That is a very long war.",
+          },
+          {
+            id: "faith",
+            text: "Joy comes in the morning. We'll be there for it.",
+            answer: "Then take your morning — if you can reach the summit first.",
+          },
+        ],
       },
     ],
   },
   cathedral: null,
 };
+
 
 // =========================================================================
 // SHIELD, SIGNPOST & PICKUPS
