@@ -27,6 +27,20 @@ export const EMPTY_SAVE: QuestSave = {
 
 const LOCAL_KEY = "marias-quest-save-v1";
 
+/** The blacksmith's practice blade is gone — older saves inherit the Act I wand. */
+export function migrateWeapons(save: QuestSave): QuestSave {
+  if (!save.weapons.includes("wooden-sword") && save.equipped_weapon !== "wooden-sword") {
+    return save;
+  }
+  const weapons = save.weapons.filter((w) => w !== "wooden-sword");
+  if (!weapons.includes("spark-wand")) weapons.push("spark-wand");
+  const equipped =
+    save.equipped_weapon && save.equipped_weapon !== "wooden-sword"
+      ? save.equipped_weapon
+      : "spark-wand";
+  return { ...save, weapons, equipped_weapon: equipped };
+}
+
 function readLocal(): QuestSave | null {
   if (typeof window === "undefined") return null;
   try {
