@@ -781,6 +781,8 @@ export class QuestScene extends Phaser.Scene {
 
     this.addPlayer(18, 51);
     this.spawnGuideAndSignpost(22, 48);
+    this.spawnBlacksmith(28, 40);
+    this.spawnActGuide(24, 56);
     this.scatterDecor(11, {
       village: [
         [12, 34],
@@ -891,6 +893,7 @@ export class QuestScene extends Phaser.Scene {
       [30, 40],
     ]);
     if (this.save.relics_collected.includes("lantern")) this.spawnGateway(this.wx(108), this.wy(28));
+    else this.spawnActBoss(108, 36);
   }
 
   /** Village market stalls — flat, collidable dressing. */
@@ -941,6 +944,38 @@ export class QuestScene extends Phaser.Scene {
     });
   }
 
+  /** Friendly guide for the current act — hands over that act's permanent weapon. */
+  private spawnActGuide(tx: number, ty: number) {
+    const g = ACT_GUIDES[this.save.current_zone];
+    const it = this.addInteractable(this.wx(tx), this.wy(ty), "guide-act", "act-guide", `Talk to ${g.name}`, {
+      radius: 92,
+    });
+    this.tweens.add({ targets: it.obj, y: it.obj.y - 3, duration: 1400, yoyo: true, repeat: -1 });
+  }
+
+  /** Act I forge: a large blacksmith building with a smith who gifts the wooden sword. */
+  private spawnBlacksmith(tx: number, ty: number) {
+    if (!this.solidDecor) this.solidDecor = this.physics.add.staticGroup();
+    const b = this.solidDecor.create(this.wx(tx), this.wy(ty), "blacksmith") as Phaser.Physics.Arcade.Sprite;
+    b.setDepth(12);
+    const body = b.body as Phaser.Physics.Arcade.StaticBody;
+    body.setSize(b.width * 0.82, b.height * 0.42);
+    body.setOffset(b.width * 0.09, b.height * 0.55);
+    body.updateFromGameObject?.();
+    const glow = this.add.sprite(b.x - 14, b.y + 18, "glow").setDepth(11).setScale(2).setAlpha(0.4);
+    glow.setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: glow, alpha: { from: 0.25, to: 0.55 }, duration: 900, yoyo: true, repeat: -1 });
+    const it = this.addInteractable(
+      b.x + 44,
+      b.y + 58,
+      "blacksmith-npc",
+      "blacksmith",
+      `Talk to ${BLACKSMITH.name}`,
+      { radius: 96 },
+    );
+    this.tweens.add({ targets: it.obj, y: it.obj.y - 3, duration: 1200, yoyo: true, repeat: -1 });
+  }
+
   // ---------------- ACT II -------------------------------------------------
   private buildAct2() {
     this.cameras.main.setBackgroundColor("#7fc08f");
@@ -985,6 +1020,7 @@ export class QuestScene extends Phaser.Scene {
       ]);
     });
     this.addPlayer(12, 90);
+    this.spawnActGuide(18, 88);
     this.scatterDecor(22, {
       groves: [
         [16, 30, 6],
@@ -1236,6 +1272,7 @@ export class QuestScene extends Phaser.Scene {
       [76, 30],
       [84, 30],
     ]);
+    this.spawnActBoss(66, 28);
     this.spawnAnimals(3303, [
       ["dog", 50, 60, 3],
       ["cat", 90, 60, 3],
@@ -1302,6 +1339,7 @@ export class QuestScene extends Phaser.Scene {
           for (let i = 0; i < w; i += 3) this.rect(d, x + i, y + j, 1, 1, T.BLOOM);
     });
     this.addPlayer(20, 85);
+    this.spawnActGuide(26, 82);
     this.addLandmark(
       "landmark-observatory",
       100,
@@ -1309,6 +1347,7 @@ export class QuestScene extends Phaser.Scene {
       "The Starry Observatory",
       "A crystal dome tuned to the constellations. Align the three pillars and the stairway of stars appears.",
     );
+    this.spawnActBoss(100, 32);
     this.spawnAnimals(4404, [["bird", 60, 50, 8]]);
 
     this.zoneState["pillars"] = [0, 0, 0];
@@ -1385,6 +1424,7 @@ export class QuestScene extends Phaser.Scene {
       this.rect(d, 24, 46, 84, 10, T.MARBLE);
     });
     this.addPlayer(66, 88);
+    this.spawnActGuide(60, 84);
     this.scatterDecor(55, {
       lamps: [
         [40, 30],
@@ -2033,6 +2073,16 @@ export class QuestScene extends Phaser.Scene {
       }
       // enemies within the aura slowly surrender to peace
       if (d < 70 && Phaser.Math.Between(0, 100) > 97) this.transformEnemy(e);
+    }
+
+    // boss drifts toward Maria at a fair, readable pace
+    if (this.boss?.active && this.bossPhase === 1) {
+      const bd = Phaser.Math.Distance.Between(this.boss.x, this.boss.y, this.player.x, this.player.y);
+      if (bd < 420 && time > this.bossHitAt) {
+        const ba = Math.atan2(this.player.y - this.boss.y, this.player.x - this.boss.x);
+        this.boss.setVelocity(Math.cos(ba) * 46, Math.sin(ba) * 46);
+      } else if (bd >= 420) this.boss.setVelocity(0, 0);
+      this.boss.setAlpha(0.85 + 0.15 * Math.sin(time / 300));
     }
 
     // ferry ride in Act IV
