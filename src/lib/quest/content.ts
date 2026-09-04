@@ -730,3 +730,110 @@ export const MAX_DOG = {
   no: "Max wags anyway. He'll be right here by the forge whenever you change your mind.",
   already: "Max looks up at you, tail going wild. He's yours as long as you'll have him.",
 };
+
+// =========================================================================
+// WEDDING GUESTS — one excited visitor per act, family in the Cathedral
+// =========================================================================
+
+export type GuestInfo = {
+  id: string;
+  name: string;
+  /** Sprite key registered in textures.ts */
+  art: string;
+  prompt: string;
+  lines: string[];
+};
+
+export const WEDDING_GUESTS: Partial<Record<ZoneId, GuestInfo>> = {
+  sunlit_shores: {
+    id: "lorena",
+    name: "Lorena",
+    art: "lorena",
+    prompt: "Say hello to Lorena",
+    lines: [
+      "Maria! I still cannot believe it is really happening — you and Andrew, married!",
+      "I have had the date circled on my calendar in about six different colors.",
+      "I am SO excited for the wedding. Do not let any river monster keep you from that aisle.",
+    ],
+  },
+  wedding_garden: {
+    id: "alicia",
+    name: "Alicia",
+    art: "alicia",
+    prompt: "Say hello to Alicia",
+    lines: [
+      "Look at all these flowers — it is like the whole garden got the invitation!",
+      "I am so excited for the wedding, Maria. I have already cried twice and it is not even the day yet.",
+      "Tell Andrew I expect a very dramatic first dance.",
+    ],
+  },
+  haven_town: {
+    id: "pedro",
+    name: "Pedro",
+    art: "pedro",
+    prompt: "Say hello to Pedro",
+    lines: [
+      "MARI! Are you getting married for REAL for real?!",
+      "I am SO excited. Mom said I have to wear nice shoes and I said fine, but only this once.",
+      "You are the best sister. Tell Andrew he is almost as cool as me. Almost.",
+    ],
+  },
+  starry_ascent: {
+    id: "gianluca",
+    name: "Gianluca",
+    art: "gianluca",
+    prompt: "Say hello to Gianluca",
+    lines: [
+      "All the way up this mountain, and still all anyone can talk about is the wedding.",
+      "I am excited, Maria. Genuinely. You two make it look easy.",
+      "Get to the top, grab that star, and get to the church. I am saving you a seat.",
+    ],
+  },
+};
+
+export const FAMILY_GUESTS: GuestInfo[] = [
+  {
+    id: "raquel",
+    name: "Mom (Raquel)",
+    art: "raquel",
+    prompt: "Hug Mom",
+    lines: [
+      "My baby boy. Getting married. I have been dreaming about this day since before you could walk.",
+      "Maria is everything I ever prayed for you to find, Andrew.",
+      "I am not going to cry. ...I am absolutely going to cry. I am so excited.",
+    ],
+  },
+  {
+    id: "marcos",
+    name: "Dad (Marcos)",
+    art: "marcos",
+    prompt: "Hug Dad",
+    lines: [
+      "Son. You look sharp. Your old man is proud — I mean that.",
+      "You chose well, and more importantly, she chose you. Never stop earning that.",
+      "I am so excited for this wedding. Best day this family has ever had.",
+    ],
+  },
+  {
+    id: "silvia",
+    name: "Her Mom (Silvia)",
+    art: "silvia",
+    prompt: "Hug Silvia",
+    lines: [
+      "Maria, mija — you are glowing. A mother knows when her daughter found the right one.",
+      "Andrew, welcome to the family, officially. You were already ours the day she brought you home.",
+      "I am so excited I have not slept properly in a week. Worth it.",
+    ],
+  },
+  {
+    id: "gustavo",
+    name: "Her Dad (Gustavo)",
+    art: "gustavo",
+    prompt: "Hug Gustavo",
+    lines: [
+      "There is my girl. And the young man brave enough to marry her.",
+      "Andrew — take care of my daughter. I can see in your face that you will.",
+      "I could not be more excited. Today our two families become one big, loud, wonderful one.",
+    ],
+  },
+];
