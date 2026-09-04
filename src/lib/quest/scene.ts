@@ -2,6 +2,7 @@ import * as Phaser from "phaser";
 import {
   ACT_BOSSES,
   ACT_GUIDES,
+  BLACKSMITH,
   DEFAULT_WEAPON,
   ENVELOPES,
   RELICS,
@@ -858,9 +859,9 @@ export class QuestScene extends Phaser.Scene {
 
   private buildZone(zone: ZoneId) {
     this.objective = ZONES[zone].objective;
-    // Act I is a compact, welcoming realm; Act II is a mid-size garden so the
+    // Act I is a compact, welcoming realm; Act II is a small open garden so the
     // four seasonal keys stay findable; later acts sprawl at full size.
-    const dims = zone === "sunlit_shores" ? 62 : zone === "wedding_garden" ? 100 : MAP_W;
+    const dims = zone === "sunlit_shores" ? 62 : zone === "wedding_garden" ? 70 : MAP_W;
     this.mapW = dims;
     this.mapH = dims;
     this.sxF = this.mapW / DESIGN_W;
@@ -1088,6 +1089,7 @@ export class QuestScene extends Phaser.Scene {
       });
     }
     this.addInteractable(this.wx(24), this.wy(30), "rest-stone", "rest", "Rest here");
+    this.addBlacksmith(34, 68);
     this.addLandmark(
       "landmark-temple",
       110,
@@ -1108,6 +1110,30 @@ export class QuestScene extends Phaser.Scene {
     ]);
     if (this.save.relics_collected.includes("lantern")) this.spawnGateway(this.wx(108), this.wy(28));
     else this.spawnActBoss(108, 36);
+  }
+
+  /** The forge and its smith — hands Maria the Act II weapon before she leaves Act I. */
+  private addBlacksmith(tx: number, ty: number) {
+    if (!this.solidDecor) this.solidDecor = this.physics.add.staticGroup();
+    const forge = this.solidDecor.create(
+      this.wx(tx),
+      this.wy(ty),
+      "blacksmith",
+    ) as Phaser.Physics.Arcade.Sprite;
+    forge.setDepth(10);
+    const b = forge.body as Phaser.Physics.Arcade.StaticBody;
+    b.setSize(forge.width * 0.8, forge.height * 0.45);
+    b.setOffset(forge.width * 0.1, forge.height * 0.55);
+    b.updateFromGameObject?.();
+    const it = this.addInteractable(
+      this.wx(tx + 3),
+      this.wy(ty + 4),
+      "smith",
+      "smith",
+      `Talk to ${BLACKSMITH.name}`,
+      { radius: 92 },
+    );
+    this.tweens.add({ targets: it.obj, y: it.obj.y - 3, duration: 1500, yoyo: true, repeat: -1 });
   }
 
   /** Village market stalls — flat, collidable dressing. */
@@ -1176,17 +1202,21 @@ export class QuestScene extends Phaser.Scene {
       this.rect(d, 128, 3, 1, 96, T.HEDGE);
       this.rect(d, 3, 3, 126, 1, T.HEDGE);
       this.rect(d, 3, 98, 126, 1, T.HEDGE);
-      // labyrinth rows
-      for (let y = 10; y < 96; y += 10) {
-        this.rect(d, 8, y, 110, 1, T.HEDGE);
-        const gap = 12 + ((y * 7) % 86);
-        this.rect(d, gap, y, 8, 1, T.BLOOM);
-      }
-      // vertical hedge dividers
-      for (let x = 24; x < 120; x += 24) {
-        this.rect(d, x, 8, 1, 86, T.HEDGE);
-        const gap = 18 + ((x * 5) % 62);
-        this.rect(d, x, gap, 1, 8, T.BLOOM);
+      // open garden beds — low decorative hedge borders, never a maze
+      const beds: [number, number, number, number][] = [
+        [14, 12, 20, 8],
+        [92, 12, 20, 8],
+        [14, 76, 20, 8],
+        [92, 76, 20, 8],
+        [56, 20, 20, 6],
+      ];
+      for (const [bx, by, bw, bh] of beds) {
+        this.rect(d, bx, by, bw, 1, T.HEDGE);
+        this.rect(d, bx, by + bh, bw, 1, T.HEDGE);
+        this.rect(d, bx, by, 1, bh, T.HEDGE);
+        this.rect(d, bx + bw, by, 1, bh + 1, T.HEDGE);
+        this.rect(d, bx + Math.floor(bw / 2) - 1, by + bh, 3, 1, T.BLOOM);
+        this.rect(d, bx + 1, by + 1, bw - 1, bh - 1, T.BLOOM);
       }
       // grand conservatory on the eastern edge
       this.rect(d, 112, 36, 18, 30, T.MARBLE);
@@ -2084,6 +2114,21 @@ export class QuestScene extends Phaser.Scene {
             ? { weaponId: g.weapon, speaker: g.name, line: g.line }
             : { title: g.name, body: g.line }),
         } as ModalPayload);
+        break;
+      }
+      case "smith": {
+        const fresh = this.grantWeapon(BLACKSMITH.weapon);
+        if (fresh) {
+          this.spawnSparkle(this.player.x, this.player.y, 0xff9ec4, 20);
+          this.openModal({
+            type: "weapon",
+            weaponId: BLACKSMITH.weapon,
+            speaker: BLACKSMITH.name,
+            line: BLACKSMITH.line,
+          });
+        } else {
+          this.openModal({ type: "info", title: BLACKSMITH.name, body: BLACKSMITH.repeat });
+        }
         break;
       }
       case "guide":
