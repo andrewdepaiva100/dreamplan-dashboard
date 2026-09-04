@@ -384,26 +384,214 @@ export const ACT_GUIDES: Record<ZoneId, { name: string; weapon: string; line: st
   },
 };
 
-export const ACT_BOSSES: Record<ZoneId, { name: string; hp: number; taunt: string } | null> = {
+export type BossReply = {
+  id: string;
+  text: string;
+  answer: string;
+  /** Opening advantage granted by this reply. */
+  boon: "stamina" | "slow" | "heart";
+  boonText: string;
+};
+
+export type BossConfig = {
+  name: string;
+  hp: number;
+  taunt: string;
+  /** Sprite key registered in textures.ts */
+  art: string;
+  /** Aura colour for the boss glow. */
+  color: number;
+  scale: number;
+  /** Line the boss speaks before the fight begins. */
+  intro: string;
+  replies: BossReply[];
+};
+
+const REPLY_BOONS: Record<BossReply["boon"], string> = {
+  stamina: "Your breath steadies — full stamina and a quicker dash.",
+  slow: "The air thickens around it — your foe moves slower.",
+  heart: "Courage warms you — one heart restored.",
+};
+
+export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   sunlit_shores: {
     name: "Warden of Rushing Water",
     hp: 10,
     taunt: "The Warden of Rushing Water rises from the river. Steady — you have crossed worse.",
+    art: "boss-water",
+    color: 0x4ec9d6,
+    scale: 1.15,
+    intro:
+      "I am the current that never lets anyone cross. Everyone who has stood here turned back. Why should you be different?",
+    replies: [
+      {
+        id: "bold",
+        text: "Because I am not turning back today.",
+        answer: "Then wade in, small one. Let us see what stubborn love is made of.",
+        boon: "stamina",
+        boonText: REPLY_BOONS.stamina,
+      },
+      {
+        id: "gentle",
+        text: "You sound tired of holding this river alone.",
+        answer: "…No one has ever said that to me. Come then. Perhaps I can be put down.",
+        boon: "slow",
+        boonText: REPLY_BOONS.slow,
+      },
+      {
+        id: "faith",
+        text: "He walked on water once. I only have to cross it.",
+        answer: "Faith. Always the thing that undoes me. Very well — cross, if you can.",
+        boon: "heart",
+        boonText: REPLY_BOONS.heart,
+      },
+    ],
   },
   wedding_garden: {
     name: "The Stress Spectre",
     hp: 14,
     taunt: "The Stress Spectre unfurls above the glass roof. Breathe. Swing.",
+    art: "boss-garden",
+    color: 0xb79cf0,
+    scale: 1.2,
+    intro:
+      "Seating charts. Deposits. Rain on the day. I am every list you have not finished. Shall I read them all aloud?",
+    replies: [
+      {
+        id: "bold",
+        text: "Read them. I will still be standing at the end.",
+        answer: "How rude of you to be calm. Fine — let us do this properly.",
+        boon: "stamina",
+        boonText: REPLY_BOONS.stamina,
+      },
+      {
+        id: "gentle",
+        text: "You are only trying to keep me safe. Rest now.",
+        answer: "Rest? I have never been offered that. My thorns feel heavier already.",
+        boon: "slow",
+        boonText: REPLY_BOONS.slow,
+      },
+      {
+        id: "faith",
+        text: "Not one flower in this garden worries, and they are dressed better than me.",
+        answer: "…That is annoyingly true. Come on then, gardener's girl.",
+        boon: "heart",
+        boonText: REPLY_BOONS.heart,
+      },
+    ],
   },
   the_haven: {
     name: "The Clamour of Doubt",
     hp: 16,
     taunt: "The Clamour of Doubt clatters across the square. Answer it with your blade of light.",
+    art: "boss-haven",
+    color: 0xd9a441,
+    scale: 1.2,
+    intro:
+      "Tick. Tick. Are you ready for a whole life with him? Truly ready? I can list the reasons you are not.",
+    replies: [
+      {
+        id: "bold",
+        text: "Nobody is ready. We are going anyway.",
+        answer: "Bold. My gears do not like bold. Very well.",
+        boon: "stamina",
+        boonText: REPLY_BOONS.stamina,
+      },
+      {
+        id: "gentle",
+        text: "You are just fear wearing a clock. I hear you, and I am still choosing him.",
+        answer: "Heard, and still chosen against. My hands slow at that.",
+        boon: "slow",
+        boonText: REPLY_BOONS.slow,
+      },
+      {
+        id: "faith",
+        text: "Perfect love casts out fear — and this love is not mine alone.",
+        answer: "That name again. It always stops my ringing. Fight, then.",
+        boon: "heart",
+        boonText: REPLY_BOONS.heart,
+      },
+    ],
   },
   starry_ascent: {
     name: "The Weight of Weariness",
     hp: 18,
     taunt: "The Weight of Weariness settles over the summit. Show it what rest looks like.",
+    art: "boss-star",
+    color: 0x8f9bff,
+    scale: 1.25,
+    intro:
+      "You are so tired, Maria. Lie down. The stars will still be here tomorrow, and so will the climb.",
+    replies: [
+      {
+        id: "bold",
+        text: "Tired is not the same as finished.",
+        answer: "Everyone says that. Few mean it. Prove it.",
+        boon: "stamina",
+        boonText: REPLY_BOONS.stamina,
+      },
+      {
+        id: "gentle",
+        text: "You are right — I am tired. I will rest after, not instead.",
+        answer: "Honest. That is heavier for me to carry than defiance.",
+        boon: "slow",
+        boonText: REPLY_BOONS.slow,
+      },
+      {
+        id: "faith",
+        text: "He gives strength to the weary. I am counting on that tonight.",
+        answer: "Then climb, weary one. I will not stop you long.",
+        boon: "heart",
+        boonText: REPLY_BOONS.heart,
+      },
+    ],
   },
   cathedral: null,
+};
+
+// =========================================================================
+// SHIELD, SIGNPOST & PICKUPS
+// =========================================================================
+
+/** The Act I guide's very special gift — auto-guards Maria at one heart. */
+export const AEGIS = {
+  id: "aegis",
+  name: "Aegis of Unshakable Faith",
+  line: "One more thing, and this one is very special. The Aegis of Unshakable Faith. Keep it close — when you are down to your last heart, it will wake on its own, push back everything near you, and hold you safe for a moment. It only rests a little while between guards.",
+  trigger: "The Aegis wakes — a ring of gold pushes the worry back.",
+};
+
+export const HEART_PICKUP_TEXT = "A heart restored.";
+export const GOLDEN_HEART_TEXT = "A golden heart — full health!";
+
+/** Short written directions shown by the wooden signpost (not the realm map). */
+export const SIGNPOST_HEADER = "Weathered Signpost";
+
+
+export const SIGNPOST_DIRECTIONS: Record<ZoneId, string[]> = {
+  sunlit_shores: [
+    "NORTH-WEST — The Blacksmith's forge. Ask for a blade; he never sends anyone away empty-handed.",
+    "SOUTH — Your guide waits by the meadow trail with a gift for the road.",
+    "EAST — The River Gates. Push the three stones onto the three plates to open the water.",
+    "FAR EAST — The Grotto Temple and the shining gateway onward.",
+  ],
+  wedding_garden: [
+    "NORTH — The glass conservatory and the seating puzzle.",
+    "WEST — Rose walks; letters are often tucked between the hedges.",
+    "EAST — The garden gateway, once the relic is yours.",
+  ],
+  the_haven: [
+    "CENTRE — The town square and its clock.",
+    "NORTH — The vault; three keys open it.",
+    "EAST — The road to the Starry Ascent.",
+  ],
+  starry_ascent: [
+    "UP — The switchbacks to the summit lantern.",
+    "WEST — A quiet ferry across the still water.",
+    "EAST — The last gateway, to the cathedral doors.",
+  ],
+  cathedral: [
+    "AHEAD — The aisle. He is waiting by the stained glass.",
+    "ASIDE — Side chapels, where a few last letters are hidden.",
+  ],
 };

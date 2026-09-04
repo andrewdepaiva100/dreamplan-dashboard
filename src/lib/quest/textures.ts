@@ -64,6 +64,10 @@ import imgDuck from "@/assets/quest/duck.png";
 import imgBlacksmith from "@/assets/quest/blacksmith.png";
 import imgBlacksmithNpc from "@/assets/quest/blacksmith-npc.png";
 import imgGuideAct from "@/assets/quest/guide-act.png";
+import imgBossWater from "@/assets/quest/boss-water.png";
+import imgBossGarden from "@/assets/quest/boss-garden.png";
+import imgBossHaven from "@/assets/quest/boss-haven.png";
+import imgBossStar from "@/assets/quest/boss-star.png";
 
 export const TILE = 32;
 export const HD = 2;
@@ -110,6 +114,10 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   "andrew-ceremony": [imgAndrewCeremony, 24, 34],
   enemy: [imgEnemy, 22, 22],
   spectre: [imgSpectre, 48, 48],
+  "boss-water": [imgBossWater, 54, 66],
+  "boss-garden": [imgBossGarden, 58, 66],
+  "boss-haven": [imgBossHaven, 62, 64],
+  "boss-star": [imgBossStar, 60, 64],
   petal: [imgPetal, 10, 10],
   butterfly: [imgButterfly, 16, 12],
   relic: [imgRelic, 22, 26],
@@ -306,6 +314,10 @@ export function buildSprites(scene: Phaser.Scene) {
     ["bird", "bird"],
     ["deer", "deer"],
     ["duck", "duck"],
+    ["boss-water", "boss-water"],
+    ["boss-garden", "boss-garden"],
+    ["boss-haven", "boss-haven"],
+    ["boss-star", "boss-star"],
   ];
   for (const [key, art] of plain) {
     const spec = SPRITE_ART[art]!;
@@ -326,5 +338,96 @@ export function buildSprites(scene: Phaser.Scene) {
     g.addColorStop(1, "rgba(255,214,120,0)");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, 24, 24);
+  });
+
+  // ---- WEAPON-IN-HAND overlays (procedural, tinted per weapon) -----------
+  const HAND: Record<string, { blade: string; grip: string; kind: "sword" | "wand" | "bow" | "ring" }> = {
+    "wooden-sword": { blade: "#c79a5e", grip: "#7a5230", kind: "sword" },
+    "blade-of-vows": { blade: "#f2f0e4", grip: "#c8a24a", kind: "sword" },
+    "lantern-wand": { blade: "#ffd977", grip: "#8a6a34", kind: "wand" },
+    "bow-of-patience": { blade: "#e6cfa4", grip: "#6d4d2c", kind: "bow" },
+    "censer-of-calm": { blade: "#dfe7ff", grip: "#9aa4c4", kind: "wand" },
+    "ring-of-dawn": { blade: "#ffe6a8", grip: "#c9a24a", kind: "ring" },
+  };
+  for (const [id, spec] of Object.entries(HAND)) {
+    drawTo(scene, `hand-${id}`, 12, 26, (ctx) => {
+      ctx.lineCap = "round";
+      if (spec.kind === "ring") {
+        ctx.strokeStyle = spec.blade;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(6, 16, 5, 0, Math.PI * 2);
+        ctx.stroke();
+        return;
+      }
+      if (spec.kind === "bow") {
+        ctx.strokeStyle = spec.grip;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(4, 13, 9, -Math.PI / 2.2, Math.PI / 2.2);
+        ctx.stroke();
+        ctx.strokeStyle = spec.blade;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(6, 4);
+        ctx.lineTo(6, 22);
+        ctx.stroke();
+        return;
+      }
+      // sword / wand: grip + blade
+      ctx.strokeStyle = spec.grip;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(6, 24);
+      ctx.lineTo(6, 19);
+      ctx.stroke();
+      ctx.strokeStyle = spec.grip;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(1.5, 18);
+      ctx.lineTo(10.5, 18);
+      ctx.stroke();
+      ctx.strokeStyle = spec.blade;
+      ctx.lineWidth = spec.kind === "wand" ? 3 : 4;
+      ctx.beginPath();
+      ctx.moveTo(6, 17);
+      ctx.lineTo(6, 2);
+      ctx.stroke();
+      if (spec.kind === "wand") {
+        ctx.fillStyle = spec.blade;
+        ctx.beginPath();
+        ctx.arc(6, 2.5, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+  }
+
+  // ---- AEGIS shield ------------------------------------------------------
+  drawTo(scene, "aegis", 26, 30, (ctx) => {
+    ctx.beginPath();
+    ctx.moveTo(13, 1);
+    ctx.lineTo(25, 7);
+    ctx.lineTo(25, 17);
+    ctx.quadraticCurveTo(25, 26, 13, 29);
+    ctx.quadraticCurveTo(1, 26, 1, 17);
+    ctx.lineTo(1, 7);
+    ctx.closePath();
+    const g = ctx.createLinearGradient(0, 0, 0, 30);
+    g.addColorStop(0, "#ffe9b0");
+    g.addColorStop(1, "#d5a34a");
+    ctx.fillStyle = "#f3d489";
+    ctx.fill();
+    ctx.strokeStyle = "#a8783a";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.strokeStyle = "#fffaf0";
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(13, 6);
+    ctx.lineTo(13, 23);
+    ctx.moveTo(7, 12);
+    ctx.lineTo(19, 12);
+    ctx.stroke();
+    void g;
   });
 }

@@ -8,6 +8,11 @@ import {
   RELICS,
   WEAPON_BY_ID,
   REST_STONE_LINES,
+  AEGIS,
+  SIGNPOST_DIRECTIONS,
+  SIGNPOST_HEADER,
+  HEART_PICKUP_TEXT,
+  GOLDEN_HEART_TEXT,
   ZONES,
   type ZoneId,
 } from "./content";
@@ -109,6 +114,13 @@ export class QuestScene extends Phaser.Scene {
   private bossName = "";
   private bossHitAt = 0;
   private swingAt = 0;
+  private gatewayObj: Phaser.GameObjects.Sprite | null = null;
+  private traveling = false;
+  private hearts!: Phaser.Physics.Arcade.Group;
+  private hand: Phaser.GameObjects.Sprite | null = null;
+  private bossDialogueDone = false;
+  private bossHalo: Phaser.GameObjects.Arc | null = null;
+  private bossSlow = 1;
 
   constructor() {
     super("quest");
@@ -136,6 +148,12 @@ export class QuestScene extends Phaser.Scene {
     this.bossHp = 0;
     this.bossMax = 0;
     this.bossName = "";
+    this.gatewayObj = null;
+    this.traveling = false;
+    this.hand = null;
+    this.bossDialogueDone = false;
+    this.bossSlow = 1;
+    this.bossHalo = null;
     if (this.save.weapons.length === 0) this.save.weapons = [];
     this.animals = [];
     this.landmark = null;
@@ -188,6 +206,7 @@ export class QuestScene extends Phaser.Scene {
     g.on(EV.travel, this.travelTo, this);
     g.on(EV.guideme, this.startAutopilot, this);
     g.on(EV.equip, this.equipWeapon, this);
+    g.on(EV.bosschoice, this.onBossChoice, this);
 
     this.events.once("shutdown", () => {
       g.off(EV.stick, this.onStick, this);
@@ -198,6 +217,7 @@ export class QuestScene extends Phaser.Scene {
       g.off(EV.travel, this.travelTo, this);
       g.off(EV.guideme, this.startAutopilot, this);
       g.off(EV.equip, this.equipWeapon, this);
+      g.off(EV.bosschoice, this.onBossChoice, this);
       this.bossTimer?.remove();
     });
 
@@ -451,7 +471,14 @@ export class QuestScene extends Phaser.Scene {
   unlockedZones(): ZoneId[] {
     const order = this.zoneOrder();
     if (this.save.wedding_completed) return order;
-    return order.slice(0, order.indexOf(this.save.current_zone) + 1);
+    // A realm stays unlocked forever once its relics are gathered, so walking
+    // back through an old portal never re-seals the road ahead.
+    let reached = order.indexOf(this.save.current_zone);
+    for (let i = 0; i < order.length - 1; i++) {
+      if (this.zoneRelicsDone(order[i]!)) reached = Math.max(reached, i + 1);
+      else break;
+    }
+    return order.slice(0, reached + 1);
   }
 
   /** Live minimap data for the React map overlay. */
@@ -740,6 +767,91 @@ export class QuestScene extends Phaser.Scene {
     else if (zone === "the_haven") this.buildAct3();
     else if (zone === "starry_ascent") this.buildAct4();
     else this.buildAct5();
+    this.spawnHearts();
+    this.ensureGateway();
+    this.refreshHand();
+  }
+
+  // ---------------- PICKUPS ------------------------------------------------
+  /**
+   * Scatters restoring hearts across walkable ground: plain hearts refill one
+   * heart, rare golden hearts refill everything.
+   */
+  private spawnHearts() {
+    this.hearts = this.physics.add.group();
+    const rnd = irnd(7717 + this.mapW);
+    const place = (key: string, count: number) => {
+      let made = 0;
+      let tries = 0;
+      while (made < count && tries < count * 60) {
+        tries++;
+        const tx = Math.floor(rnd() * (this.mapW - 8)) + 4;
+        const ty = Math.floor(rnd() * (this.mapH - 8)) + 4;
+        const idx = this.layer?.getTileAt(tx, ty)?.index ?? -1;
+        if (idx < 0 || (SOLID_TILES as unknown as number[]).includes(idx) || idx === T.WATER) continue;
+        const h = this.hearts.create(
+          tx * TILE + TILE / 2,
+          ty * TILE + TILE / 2,
+          key,
+        ) as Phaser.Physics.Arcade.Sprite;
+        h.setDepth(9).setData("golden", key === "golden-heart");
+        (h.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+        this.tweens.add({
+          targets: h,
+          y: h.y - 5,
+          duration: 1100,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut",
+        });
+        made++;
+      }
+    };
+    place("heart-pickup", 14);
+    place("golden-heart", 3);
+    this.physics.add.overlap(this.player, this.hearts, (_p, obj) =>
+      this.takeHeart(obj as Phaser.Physics.Arcade.Sprite),
+    );
+  }
+
+  private takeHeart(h: Phaser.Physics.Arcade.Sprite) {
+    if (!h.active) return;
+    const golden = h.getData("golden") === true;
+    if (this.save.player_health >= 5) return;
+    h.destroy();
+    this.save.player_health = golden ? 5 : Math.min(5, this.save.player_health + 1);
+    this.emitSave();
+    this.pushHud(true);
+    this.spawnSparkle(this.player.x, this.player.y, golden ? 0xffd977 : 0xff9aa5, golden ? 24 : 12);
+    this.emitToast(golden ? GOLDEN_HEART_TEXT : HEART_PICKUP_TEXT);
+  }
+
+  // ---------------- WEAPON IN HAND ----------------------------------------
+  /** Shows the equipped weapon in Maria's hand (nothing before the forge). */
+  private refreshHand() {
+    const id = this.save.equipped_weapon;
+    const owned = !!id && this.save.weapons.includes(id);
+    if (!owned) {
+      this.hand?.destroy();
+      this.hand = null;
+      return;
+    }
+    const key = `hand-${id}`;
+    if (!this.textures.exists(key)) return;
+    if (!this.hand) this.hand = this.add.sprite(this.player.x, this.player.y, key).setDepth(21);
+    else this.hand.setTexture(key);
+  }
+
+  private updateHand(dir: "down" | "up" | "side") {
+    if (!this.hand) return;
+    const side = dir === "side" ? this.facing : 1;
+    const ox = dir === "up" ? -7 * side : dir === "down" ? 9 * side : 9 * side;
+    this.hand
+      .setPosition(this.player.x + ox, this.player.y + (dir === "up" ? -2 : 2))
+      .setFlipX(side < 0)
+      .setDepth(dir === "up" ? 19 : 21)
+      .setVisible(this.player.visible)
+      .setAlpha(this.player.alpha);
   }
 
   // ---------------- ACT I --------------------------------------------------
@@ -939,7 +1051,7 @@ export class QuestScene extends Phaser.Scene {
     this.addInteractable(this.wx(tx), this.wy(ty), "guide", "guide", "Read the Realm Map", {
       radius: 88,
     });
-    this.addInteractable(this.wx(tx - 4), this.wy(ty), "signpost", "signpost", "Read the signpost", {
+    this.addInteractable(this.wx(tx - 4), this.wy(ty), "signpost", "signpost", "Read the directions", {
       radius: 84,
     });
   }
@@ -1100,19 +1212,33 @@ export class QuestScene extends Phaser.Scene {
     if (!cfg || this.boss || this.zoneRelicsDone(zone)) return;
     const x = this.wx(tx);
     const y = this.wy(ty);
-    this.boss = this.physics.add.sprite(x, y, "spectre").setDepth(18).setScale(1.5);
+    const artKey = this.textures.exists(cfg.art) ? cfg.art : "spectre";
+    this.boss = this.physics.add.sprite(x, y, artKey).setDepth(18).setScale(cfg.scale);
+    const halo = this.add.circle(x, y, 54, cfg.color, 0.18).setDepth(17);
+    this.tweens.add({
+      targets: halo,
+      alpha: { from: 0.1, to: 0.28 },
+      scale: { from: 0.92, to: 1.1 },
+      duration: 1400,
+      yoyo: true,
+      repeat: -1,
+    });
+    this.bossHalo = halo;
     const bb = this.boss.body as Phaser.Physics.Arcade.Body;
     bb.setAllowGravity(false);
     this.boss.setCollideWorldBounds(true);
     this.boss.setCircle(20, 4, 4);
     this.bossHits = 0;
-    this.bossPhase = 1;
+    // Phase 0 = dormant: the boss waits, speaks, and only fights after Maria answers.
+    this.bossPhase = 0;
+    this.bossDialogueDone = false;
     this.bossHp = cfg.hp;
     this.bossMax = cfg.hp;
     this.bossName = cfg.name;
-    this.physics.add.overlap(this.player, this.boss, () => this.hurtPlayerDirect());
-    this.objective = `${cfg.name} — swing your weapon until its worry lifts.`;
-    this.emitToast(cfg.taunt);
+    this.physics.add.overlap(this.player, this.boss, () => {
+      if (this.bossPhase === 1) this.hurtPlayerDirect();
+    });
+    this.objective = `${cfg.name} waits ahead — walk up and hear it out.`;
     // gentle waves of minions; never overwhelming
     this.bossTimer = this.time.addEvent({
       delay: 5200,
@@ -1164,6 +1290,8 @@ export class QuestScene extends Phaser.Scene {
       this.spawnSparkle(bx, by, 0xffd7e5, 30);
       this.boss.destroy();
       this.boss = null;
+      this.bossHalo?.destroy();
+      this.bossHalo = null;
       this.add.sprite(bx, by, "arbor").setDepth(6);
     }
     (this.enemies.getChildren() as Phaser.Physics.Arcade.Sprite[]).forEach((e) => {
@@ -1564,6 +1692,15 @@ export class QuestScene extends Phaser.Scene {
       duration: 240,
       onComplete: () => arc.destroy(),
     });
+    if (this.hand) {
+      this.tweens.add({
+        targets: this.hand,
+        angle: { from: -35, to: 45 },
+        duration: 200,
+        yoyo: true,
+        onComplete: () => this.hand?.setAngle(0),
+      });
+    }
     this.spawnSparkle(
       this.player.x + Math.cos(dir) * w.reach * 0.6,
       this.player.y + Math.sin(dir) * w.reach * 0.6,
@@ -1606,9 +1743,9 @@ export class QuestScene extends Phaser.Scene {
     this.time.delayedCall(300, () => this.player.clearTint());
     this.emitSave();
 
-    if (this.save.player_health <= 1 && this.save.relics_collected.includes("shield")) {
+    if (this.save.player_health <= 1 && this.save.relics_collected.includes(AEGIS.id)) {
       if (now > this.shieldReadyAt) {
-        this.shieldReadyAt = now + 8000;
+        this.shieldReadyAt = now + 12000;
         const ring = this.add.circle(this.player.x, this.player.y, 30, 0xc9a24b, 0.3).setDepth(9);
         this.tweens.add({
           targets: ring,
@@ -1621,7 +1758,8 @@ export class QuestScene extends Phaser.Scene {
           if (en.active && Phaser.Math.Distance.Between(en.x, en.y, this.player.x, this.player.y) < 150)
             this.transformEnemy(en);
         });
-        this.emitToast("The Shield of Unshakable Faith pulses — faith holds you steady.");
+        this.invulnUntil = Math.max(this.invulnUntil, now + 2200);
+        this.emitToast(AEGIS.trigger);
       }
     }
 
@@ -1806,6 +1944,15 @@ export class QuestScene extends Phaser.Scene {
       case "act-guide": {
         const g = ACT_GUIDES[this.save.current_zone];
         const fresh = this.grantWeapon(g.weapon);
+        if (!fresh && !this.save.relics_collected.includes(AEGIS.id)) {
+          this.save.relics_collected = [...this.save.relics_collected, AEGIS.id];
+          this.emitSave();
+          this.pushHud(true);
+          this.spawnSparkle(this.player.x, this.player.y, 0xf3d489, 24);
+          this.cameras.main.flash(300, 255, 240, 191);
+          this.openModal({ type: "info", title: AEGIS.name, body: `${g.name}: "${AEGIS.line}"` });
+          break;
+        }
         this.openModal({
           type: fresh ? "weapon" : "info",
           ...(fresh
@@ -1815,8 +1962,14 @@ export class QuestScene extends Phaser.Scene {
         break;
       }
       case "guide":
-      case "signpost":
         this.openModal({ type: "guide" });
+        break;
+      case "signpost":
+        this.openModal({
+          type: "directions",
+          title: SIGNPOST_HEADER,
+          lines: SIGNPOST_DIRECTIONS[this.save.current_zone],
+        });
         break;
       case "gateway":
         this.advanceZone();
@@ -1824,6 +1977,68 @@ export class QuestScene extends Phaser.Scene {
       default:
         break;
     }
+  }
+
+  /** Portals now work by walking into them — no button press required. */
+  private checkPortal() {
+    if (this.traveling || this.frozen) return;
+    const g = this.gatewayObj;
+    if (!g?.active) return;
+    if (Phaser.Math.Distance.Between(this.player.x, this.player.y, g.x, g.y) > 34) return;
+    this.traveling = true;
+    this.cameras.main.flash(240, 255, 240, 191);
+    this.advanceZone();
+  }
+
+  /** Walking up to a dormant boss starts its dialogue. */
+  private checkBossEncounter() {
+    if (!this.boss?.active || this.bossPhase !== 0 || this.bossDialogueDone || this.frozen) return;
+    if (Phaser.Math.Distance.Between(this.boss.x, this.boss.y, this.player.x, this.player.y) > 210)
+      return;
+    const cfg = ACT_BOSSES[this.save.current_zone];
+    if (!cfg) return;
+    this.bossDialogueDone = true;
+    this.boss.setVelocity(0, 0);
+    this.openModal({
+      type: "boss",
+      name: cfg.name,
+      art: cfg.art,
+      intro: cfg.intro,
+      choices: cfg.replies.map((r) => ({ id: r.id, text: r.text })),
+    });
+  }
+
+  /** Maria's answer decides how the fight opens. */
+  private onBossChoice(id: string) {
+    const cfg = ACT_BOSSES[this.save.current_zone];
+    this.onResume();
+    if (!cfg || !this.boss) return;
+    const reply = cfg.replies.find((r) => r.id === id) ?? cfg.replies[0]!;
+    try {
+      const raw = localStorage.getItem("quest-boss-choices");
+      const all = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+      all[this.save.current_zone] = reply.id;
+      localStorage.setItem("quest-boss-choices", JSON.stringify(all));
+    } catch {
+      /* storage is optional */
+    }
+    this.bossPhase = 1;
+    this.objective = `${cfg.name} — swing your weapon until its worry lifts.`;
+    this.emitToast(`${cfg.name}: "${reply.answer}"`);
+    this.time.delayedCall(2600, () => this.emitToast(reply.boonText));
+    if (reply.boon === "stamina") {
+      this.stamina = 100;
+      this.dashReadyAt = 0;
+    } else if (reply.boon === "slow") {
+      this.bossSlow = 0.55;
+    } else {
+      this.save.player_health = Math.min(5, this.save.player_health + 1);
+      this.emitSave();
+    }
+    this.cameras.main.flash(320, 255, 240, 191);
+    this.spawnSparkle(this.player.x, this.player.y, cfg.color, 20);
+    this.emitToast(cfg.taunt);
+    this.pushHud(true);
   }
 
   private hurtPlayerDirect() {
@@ -1878,6 +2093,17 @@ export class QuestScene extends Phaser.Scene {
       yoyo: true,
       repeat: -1,
     });
+    it.obj.setScale(1.15);
+    this.gatewayObj = it.obj;
+  }
+
+  /** Every realm always offers a way onward once its relics are gathered. */
+  private ensureGateway() {
+    if (this.save.current_zone === "cathedral") return;
+    if (this.interactables.some((i) => i.kind === "gateway")) return;
+    if (!this.zoneRelicsDone(this.save.current_zone)) return;
+    const spot = this.landmark?.sprite;
+    this.spawnGateway(spot ? spot.x : this.player.x + 140, spot ? spot.y + 90 : this.player.y);
   }
 
   private advanceZone() {
@@ -1912,6 +2138,7 @@ export class QuestScene extends Phaser.Scene {
     this.save.equipped_weapon = id;
     this.emitSave();
     this.pushHud(true);
+    this.refreshHand();
     this.emitToast(`${WEAPON_BY_ID[id]?.name ?? "Weapon"} equipped.`);
   }
 
@@ -1925,6 +2152,7 @@ export class QuestScene extends Phaser.Scene {
     if (!cur || w.damage >= cur.damage) this.save.equipped_weapon = id;
     this.emitSave();
     this.pushHud(true);
+    this.refreshHand();
     this.spawnSparkle(this.player.x, this.player.y, w.color, 22);
     this.cameras.main.flash(300, 255, 240, 191);
     return true;
@@ -1971,6 +2199,9 @@ export class QuestScene extends Phaser.Scene {
       weddingCompleted: this.save.wedding_completed,
       weapons: this.save.weapons,
       equipped: this.save.equipped_weapon,
+      shield: this.save.relics_collected.includes(AEGIS.id)
+        ? { owned: true, ready: now > this.shieldReadyAt }
+        : null,
       boss:
         this.boss?.active &&
         this.bossPhase === 1 &&
@@ -2078,11 +2309,12 @@ export class QuestScene extends Phaser.Scene {
     }
 
     // boss drifts toward Maria at a fair, readable pace
+    if (this.boss?.active) this.bossHalo?.setPosition(this.boss.x, this.boss.y);
     if (this.boss?.active && this.bossPhase === 1) {
       const bd = Phaser.Math.Distance.Between(this.boss.x, this.boss.y, this.player.x, this.player.y);
       if (bd < 420 && time > this.bossHitAt) {
         const ba = Math.atan2(this.player.y - this.boss.y, this.player.x - this.boss.x);
-        this.boss.setVelocity(Math.cos(ba) * 46, Math.sin(ba) * 46);
+        this.boss.setVelocity(Math.cos(ba) * 46 * this.bossSlow, Math.sin(ba) * 46 * this.bossSlow);
       } else if (bd >= 420) this.boss.setVelocity(0, 0);
       this.boss.setAlpha(0.85 + 0.15 * Math.sin(time / 300));
     }
@@ -2106,6 +2338,9 @@ export class QuestScene extends Phaser.Scene {
         .setText(near ? `E / ACTION — ${near.label}` : "")
         .setVisible(!!near);
     }
+    this.updateHand(dir);
+    this.checkPortal();
+    this.checkBossEncounter();
     this.updateCompanion();
     this.checkCutscene();
     this.updateArrow();
