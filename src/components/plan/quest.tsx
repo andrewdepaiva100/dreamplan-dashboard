@@ -14,6 +14,7 @@ import {
   RELICS,
   STORY_PREMISE,
   VAULT_JOURNAL,
+  WEAPON_BY_ID,
   ZONES,
 } from "@/lib/quest/content";
 import {
@@ -485,6 +486,8 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
     emit(EV.stick, { x: 0, y: 0 });
   };
 
+  const equippedWeapon = hud?.equipped ? WEAPON_BY_ID[hud.equipped] : undefined;
+
   const relic = useMemo(
     () => (modal?.type === "relic" ? RELICS.find((r) => r.id === modal.relicId) : undefined),
     [modal],
@@ -655,6 +658,53 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
               {muted ? "🔇" : "🔊"}
             </button>
           </div>
+        </div>
+      ) : null}
+
+      {/* boss health bar */}
+      {hud?.boss ? (
+        <div className="pointer-events-none absolute inset-x-0 top-28 z-20 flex justify-center px-6">
+          <div className="w-full max-w-sm rounded-xl border border-[#ff6b7a]/50 bg-[rgba(11,30,61,0.8)] px-4 py-2 backdrop-blur">
+            <p className="text-center text-[11px] font-bold uppercase tracking-[0.2em] text-[#ff9aa5]">
+              {hud.boss.name}
+            </p>
+            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/20">
+              <div
+                className="h-full bg-gradient-to-r from-[#ff6b7a] to-[#ffd977] transition-all duration-200"
+                style={{ width: `${Math.round((hud.boss.hp / hud.boss.max) * 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* weapon belt */}
+      {hud && hud.weapons.length > 0 ? (
+        <div className="pointer-events-auto absolute bottom-44 right-4 z-20 flex flex-col gap-1.5">
+          {hud.weapons.map((id) => {
+            const w = WEAPON_BY_ID[id];
+            if (!w) return null;
+            const on = hud.equipped === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  buzz();
+                  emit(EV.equip, id);
+                }}
+                title={w.name}
+                aria-label={`Equip ${w.name}`}
+                className={`flex h-10 w-10 items-center justify-center rounded-xl border text-lg backdrop-blur ${
+                  on
+                    ? "border-gold bg-gold/30 shadow-[0_0_12px_rgba(201,162,75,0.6)]"
+                    : "border-white/25 bg-[rgba(11,30,61,0.7)]"
+                }`}
+              >
+                {w.icon}
+              </button>
+            );
+          })}
         </div>
       ) : null}
 
