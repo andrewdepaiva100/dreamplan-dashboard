@@ -1826,55 +1826,56 @@ export class QuestScene extends Phaser.Scene {
   }
 
   // ---------------- ACT V --------------------------------------------------
+  /** A tiny, intimate church interior: one aisle, pews, altar, priest, Andrew. */
   private buildAct5() {
     this.cameras.main.setBackgroundColor("#2a1f38");
     this.makeMap(T.CANDLE, 505, (d) => {
-      this.rect(d, 0, 0, DESIGN_W, DESIGN_H, T.CANDLE);
-      // grand nave
-      this.rect(d, 36, 12, 60, 78, T.MARBLE);
-      this.rect(d, 34, 12, 2, 78, T.WALL);
-      this.rect(d, 96, 12, 2, 78, T.WALL);
-      this.rect(d, 36, 10, 60, 2, T.WALL);
-      // side chapels
-      this.rect(d, 14, 24, 20, 20, T.MARBLE);
-      this.rect(d, 98, 24, 20, 20, T.MARBLE);
-      this.rect(d, 14, 58, 20, 20, T.MARBLE);
-      this.rect(d, 98, 58, 20, 20, T.MARBLE);
-      // transept crossing
-      this.rect(d, 24, 46, 84, 10, T.MARBLE);
+      this.rect(d, 0, 0, DESIGN_W, DESIGN_H, T.WALL);
+      // the whole interior is marble
+      this.rect(d, 20, 14, 92, 76, T.MARBLE);
+      // sanctuary step, a touch brighter
+      this.rect(d, 40, 14, 52, 12, T.CANDLE);
+      // centre aisle runner
+      this.rect(d, 58, 26, 16, 64, T.CANDLE);
     });
-    this.addPlayer(66, 88);
-    this.spawnActGuide(60, 84);
+    this.addPlayer(66, 84);
     this.scatterDecor(55, {
       lamps: [
-        [40, 30],
-        [92, 30],
-        [40, 70],
-        [92, 70],
+        [26, 30],
+        [104, 30],
+        [26, 74],
+        [104, 74],
       ],
-      flowers: 140,
+      flowers: 0,
     });
-    this.addLandmark(
-      "landmark-cathedral",
-      66,
-      6,
-      "The Grand Cathedral of Serenity",
-      "Rose glass, candlelight, and every soul you love waiting inside. The long road ends in joy.",
-    );
-    this.spawnAnimals(5505, [["bird", 66, 40, 5]]);
-    for (let i = 0; i < 24; i++) {
-      this.add.sprite(this.wx(38 + (i % 2) * 56), this.wy(18 + Math.floor(i / 2) * 5), "guest").setDepth(6);
+
+    // altar, priest and Andrew waiting at the front
+    this.add.sprite(this.wx(66), this.wy(20), "altar").setDepth(6);
+    this.add.sprite(this.wx(54), this.wy(30), "priest").setDepth(7);
+    this.addInteractable(this.wx(66), this.wy(32), "andrew-ceremony", "andrew-ceremony", "Say your vows", {
+      radius: 70,
+    });
+
+    // pews flanking the aisle, with a few guests seated
+    for (let r = 0; r < 5; r++) {
+      const y = 40 + r * 11;
+      this.add.sprite(this.wx(40), this.wy(y), "pew").setDepth(5);
+      this.add.sprite(this.wx(92), this.wy(y), "pew").setDepth(5);
+      if (r % 2 === 0) {
+        this.add.sprite(this.wx(40), this.wy(y - 4), "guest").setDepth(6);
+        this.add.sprite(this.wx(92), this.wy(y - 4), "guest").setDepth(6);
+      }
     }
+
     if (!this.has(this.save.secret_envelopes_found, "cathedral"))
-      this.addInteractable(this.wx(42), this.wy(82), "envelope", "envelope", "Read the letter", {
+      this.addInteractable(this.wx(30), this.wy(84), "envelope", "envelope", "Read the letter", {
         id: "cathedral",
       });
-    this.addInteractable(this.wx(66), this.wy(18), "andrew-ceremony", "andrew-ceremony", "Meet Andrew", {
-      radius: 60,
-    });
-    // stained glass glow
-    this.add.rectangle(this.wx(66), this.wy(14), 280, 56, 0xc9a24b, 0.5).setDepth(2);
+
+    // stained glass glow over the sanctuary
+    this.add.rectangle(this.wx(66), this.wy(16), 200, 44, 0xc9a24b, 0.45).setDepth(2);
   }
+
 
   // =======================================================================
   // ENEMIES / COMBAT
