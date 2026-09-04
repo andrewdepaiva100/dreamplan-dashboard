@@ -2188,6 +2188,17 @@ export class QuestScene extends Phaser.Scene {
       case "andrew": {
         this.save.player_health = 5;
         this.stamina = 100;
+        if (!this.save.weapons.includes(LOVE_SWORD.id)) {
+          this.save.weapons = [...this.save.weapons, LOVE_SWORD.id];
+          this.save.equipped_weapon = LOVE_SWORD.id;
+          this.emitSave();
+          this.refreshHand();
+          this.pushHud(true);
+          if (!this.companion) this.spawnCompanion();
+          this.spawnSparkle(this.player.x, this.player.y, 0xff6fae, 24);
+          this.openModal({ type: "andrew", line: LOVE_SWORD.line });
+          break;
+        }
         this.emitSave();
         const sheets = this.zoneState["sheets"] as number;
         if (sheets >= 3 && !this.save.relics_collected.includes("shield")) {
@@ -2706,6 +2717,7 @@ export class QuestScene extends Phaser.Scene {
     this.checkPortal();
     this.checkBossEncounter();
     this.updateCompanion();
+    this.updateAlly(time);
     this.checkCutscene();
     this.updateArrow();
     this.pushHud();
