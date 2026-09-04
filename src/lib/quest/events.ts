@@ -57,5 +57,7 @@ export type ModalPayload =
       name: string;
       art: string;
       intro: string;
+      demon: string;
+      mariaLine: string;
       choices: { id: string; text: string }[];
     };

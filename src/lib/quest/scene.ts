@@ -1538,6 +1538,7 @@ export class QuestScene extends Phaser.Scene {
     // Phase 0 = dormant: the boss waits, speaks, and only fights after Maria answers.
     this.bossPhase = cfg.silent ? 1 : 0;
     this.bossDialogueDone = Boolean(cfg.silent);
+    if (cfg.silent) this.toast(cfg.demon);
     this.bossHp = cfg.hp;
     this.bossMax = cfg.hp;
     this.bossName = cfg.name;
@@ -2454,6 +2455,8 @@ export class QuestScene extends Phaser.Scene {
       name: cfg.name,
       art: cfg.art,
       intro: cfg.intro,
+      demon: cfg.demon,
+      mariaLine: cfg.mariaLine,
       choices: cfg.replies.map((r) => ({ id: r.id, text: r.text })),
     });
   }
