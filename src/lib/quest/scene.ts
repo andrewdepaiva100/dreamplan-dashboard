@@ -663,6 +663,13 @@ export class QuestScene extends Phaser.Scene {
   private spawnCompanion() {
     const allied = this.save.weapons.includes("love-sword");
     if ((!this.save.wedding_completed && !allied) || this.save.current_zone === "cathedral") return;
+    // In Act III Andrew stays put until the three music sheets are recovered.
+    if (
+      this.save.current_zone === "the_haven" &&
+      !this.save.relics_collected.includes("shield") &&
+      (((this.zoneState["sheets"] as number) ?? 0) < 3)
+    )
+      return;
     this.companion = this.add
       .sprite(this.player.x - 24, this.player.y + 8, "andrew-down-0")
       .setDepth(this.dsort(this.player.y))
