@@ -865,6 +865,20 @@ export const WEDDING_GUESTS: Partial<Record<ZoneId, GuestInfo>> = {
   },
 };
 
+/** Pastor Adriel — a supportive pastor cheering on Maria & Andrew in Act IV. */
+export const PASTOR_ADRIEL: GuestInfo = {
+  id: "adriel",
+  name: "Pastor Adriel",
+  art: "adriel",
+  role: "A pastor who has prayed for your love story",
+  prompt: "Speak with Pastor Adriel",
+  lines: [
+    "Maria, I have watched the two of you grow together, and I want you to know — your love has always pointed toward something bigger than yourselves.",
+    "Marriage is not the finish line; it is the threshold. There will be hard days, but the same faith that brought you here will carry you through them.",
+    "Andrew is a good man, and you are a strong woman. Together you will be a light. I am honored to celebrate with you both.",
+  ],
+};
+
 export const FAMILY_GUESTS: GuestInfo[] = [
   {
     id: "raquel",

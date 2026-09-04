@@ -20,6 +20,7 @@ import {
   WEDDING_GUESTS,
   FAMILY_GUESTS,
   CATHEDRAL_FRIENDS,
+  PASTOR_ADRIEL,
   LEGENDARY_PICKUPS,
   type GuestInfo,
   type BossConfig,
@@ -1786,6 +1787,7 @@ export class QuestScene extends Phaser.Scene {
     this.addPlayer(20, 85);
     this.spawnActGuide(26, 82);
     if (WEDDING_GUESTS.starry_ascent) this.addGuest(WEDDING_GUESTS.starry_ascent, 31, 86);
+    this.addGuest(PASTOR_ADRIEL, 74, 86);
     this.addLandmark(
       "landmark-observatory",
       100,
@@ -2389,7 +2391,8 @@ export class QuestScene extends Phaser.Scene {
         const guest =
           Object.values(WEDDING_GUESTS).find((g) => g?.id === it.id) ??
           FAMILY_GUESTS.find((g) => g.id === it.id) ??
-          CATHEDRAL_FRIENDS.find((g) => g.id === it.id);
+          CATHEDRAL_FRIENDS.find((g) => g.id === it.id) ??
+          (PASTOR_ADRIEL.id === it.id ? PASTOR_ADRIEL : undefined);
         if (!guest) break;
         this.openModal({
           type: "guest",
