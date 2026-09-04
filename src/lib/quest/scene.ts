@@ -1972,7 +1972,9 @@ export class QuestScene extends Phaser.Scene {
       weapons: this.save.weapons,
       equipped: this.save.equipped_weapon,
       boss:
-        this.boss?.active && this.bossPhase === 1
+        this.boss?.active &&
+        this.bossPhase === 1 &&
+        Phaser.Math.Distance.Between(this.boss.x, this.boss.y, this.player.x, this.player.y) < 640
           ? { name: this.bossName, hp: this.bossHp, max: this.bossMax }
           : null,
     };
