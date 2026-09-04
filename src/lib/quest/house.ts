@@ -115,7 +115,9 @@ export class QuestHouseScene extends Phaser.Scene {
         g.fillStyle(0x000000, 0.16);
         g.fillRect(bx - (side < 0 ? -14 : 20), oy + 20, 6, 76);
       }
-      g.fillStyle(0x c9a44c, 1);
+      // brass curtain rod
+      g.fillStyle(0xc9a44c, 1);
+      g.fillRect(wx - 58, oy + 16, 116, 5);
       // soft square of daylight on the boards below
       const pool = this.add.graphics().setDepth(3);
       pool.fillStyle(0xffe9b8, 0.16);
