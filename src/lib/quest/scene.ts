@@ -1779,9 +1779,9 @@ export class QuestScene extends Phaser.Scene {
         [16, 20],
         [104, 20],
       ], 5);
-      // soft bloom accents scattered across the plateau
-      for (let j = 6; j < DESIGN_H - 6; j += 9)
-        for (let i = 6; i < DESIGN_W - 6; i += 9) this.rect(d, i, j, 2, 2, T.BLOOM);
+      // one clean, symmetrical bloom court at the heart of the plateau
+      this.rect(d, 52, 44, 28, 20, T.BLOOM);
+      this.rect(d, 56, 48, 20, 12, T.MARBLE);
     });
     this.addPlayer(20, 85);
     this.spawnActGuide(26, 82);
@@ -1803,7 +1803,7 @@ export class QuestScene extends Phaser.Scene {
       [42, 46],
     ];
     pillarSpots.forEach(([x, y], i) =>
-      this.addInteractable(this.wx(x!), this.wy(y!), "pillar", "pillar", "Turn the crystal pillar", {
+      this.addInteractable(this.wx(x!), this.wy(y!), "pillar", "pillar", "Turn the crystal pillar (blue \u2192 gold \u2192 rose)", {
         id: String(i),
       }),
     );
@@ -1855,7 +1855,7 @@ export class QuestScene extends Phaser.Scene {
         [26, 74],
         [104, 74],
       ],
-      flowers: 90,
+      flowers: 0,
     });
 
     // altar, priest and Andrew waiting at the front
@@ -2336,6 +2336,11 @@ export class QuestScene extends Phaser.Scene {
         it.obj.setTint([0x8fa6ff, 0xfff0bf, 0xffd7e5][arr[i]!]!);
         this.spawnSparkle(it.obj.x, it.obj.y, 0xd7e0ff, 8);
         const aligned = arr.every((v) => v === 1);
+        this.emitToast(
+          aligned
+            ? "All three pillars burn gold — the staircase forms."
+            : "Each pillar cycles blue \u2192 gold \u2192 rose. All three must be gold at once.",
+        );
         this.objective = aligned
           ? "The pillars align."
           : `The Celestial Staircase — align all three pillars to warm gold (${arr.filter((v) => v === 1).length}/3).`;
