@@ -1118,7 +1118,7 @@ export const CATHEDRAL_FRIENDS: GuestInfo[] = [
     id: "andre",
     name: "Andre",
     art: "andre",
-    role: undefined,
+    
     prompt: "Greet Andre",
     lines: [
       "There he is. Suit and everything, and somehow the calmest man in the building.",
@@ -1142,7 +1142,7 @@ export const CATHEDRAL_FRIENDS: GuestInfo[] = [
     id: "italo",
     name: "Italo",
     art: "italo",
-    role: undefined,
+    
     prompt: "Greet Italo",
     lines: [
       "Today is finally here. I have been counting down to this one for months.",
