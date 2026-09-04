@@ -785,11 +785,23 @@ export class QuestScene extends Phaser.Scene {
     for (const [x, y] of opts.village ?? []) {
       solid(x, y, rnd() < 0.5 ? "house" : "cottage", 0.3);
     }
+    // Trees are placed with a strict minimum distance so no two ever touch
+    // or clump into a grove — a scattered park, never a forest wall.
+    const trees: [number, number][] = [];
+    const MIN_TREE_GAP = 7;
+    const farFromTrees = (tx: number, ty: number) =>
+      trees.every(([ax, ay]) => Math.hypot(ax - tx, ay - ty) >= MIN_TREE_GAP);
     for (const [x, y, n] of opts.groves ?? []) {
-      for (let i = 0; i < n; i++) {
-        const tx = x + Math.round((rnd() - 0.5) * 10);
-        const ty = y + Math.round((rnd() - 0.5) * 8);
+      let placed = 0;
+      let guard = 0;
+      while (placed < n && guard++ < 400) {
+        const tx = Math.round(x + (rnd() - 0.5) * 24);
+        const ty = Math.round(y + (rnd() - 0.5) * 20);
+        if (tx < 4 || ty < 4 || tx > DESIGN_W - 4 || ty > DESIGN_H - 4) continue;
+        if (!farFromTrees(tx, ty)) continue;
+        trees.push([tx, ty]);
         solid(tx, ty, "tree", 0.28);
+        placed++;
       }
     }
     for (const [x, y] of opts.lamps ?? []) solid(x, y, "lamp", 0.22);
@@ -812,13 +824,14 @@ export class QuestScene extends Phaser.Scene {
         .setScale(0.8 + rnd() * 0.6);
     }
     if (opts.border) {
-      for (let x = 2; x < DESIGN_W - 2; x += 2) {
+      // Sparse, evenly spaced border trees — one every 6 design units.
+      for (let x = 2; x < DESIGN_W - 2; x += 6) {
         solid(x, 1.4, "tree", 0.28);
-        solid(x + 1, DESIGN_H - 2.2, "tree", 0.28);
+        solid(x + 3, DESIGN_H - 2.2, "tree", 0.28);
       }
-      for (let y = 3; y < DESIGN_H - 3; y += 2) {
+      for (let y = 5; y < DESIGN_H - 3; y += 6) {
         solid(1.4, y, "tree", 0.28);
-        solid(DESIGN_W - 2.2, y + 1, "tree", 0.28);
+        solid(DESIGN_W - 2.2, y + 3, "tree", 0.28);
       }
     }
 
