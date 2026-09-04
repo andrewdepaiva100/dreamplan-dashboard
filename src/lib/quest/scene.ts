@@ -17,6 +17,9 @@ import {
   SWIFT_SANDALS,
   LOVE_SWORD,
   SECOND_BOSSES,
+  WEDDING_GUESTS,
+  FAMILY_GUESTS,
+  type GuestInfo,
   type BossConfig,
   ZONES,
   type ZoneId,
@@ -81,7 +84,7 @@ export class QuestScene extends Phaser.Scene {
   private enemies!: Phaser.Physics.Arcade.Group;
   private petals!: Phaser.Physics.Arcade.Group;
   private decor!: Phaser.GameObjects.Group;
-  private blocks!: Phaser.Physics.Arcade.Group;
+  
   private interactables: Interactable[] = [];
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -782,11 +785,23 @@ export class QuestScene extends Phaser.Scene {
     for (const [x, y] of opts.village ?? []) {
       solid(x, y, rnd() < 0.5 ? "house" : "cottage", 0.3);
     }
+    // Trees are placed with a strict minimum distance so no two ever touch
+    // or clump into a grove — a scattered park, never a forest wall.
+    const trees: [number, number][] = [];
+    const MIN_TREE_GAP = 7;
+    const farFromTrees = (tx: number, ty: number) =>
+      trees.every(([ax, ay]) => Math.hypot(ax - tx, ay - ty) >= MIN_TREE_GAP);
     for (const [x, y, n] of opts.groves ?? []) {
-      for (let i = 0; i < n; i++) {
-        const tx = x + Math.round((rnd() - 0.5) * 10);
-        const ty = y + Math.round((rnd() - 0.5) * 8);
+      let placed = 0;
+      let guard = 0;
+      while (placed < n && guard++ < 400) {
+        const tx = Math.round(x + (rnd() - 0.5) * 24);
+        const ty = Math.round(y + (rnd() - 0.5) * 20);
+        if (tx < 4 || ty < 4 || tx > DESIGN_W - 4 || ty > DESIGN_H - 4) continue;
+        if (!farFromTrees(tx, ty)) continue;
+        trees.push([tx, ty]);
         solid(tx, ty, "tree", 0.28);
+        placed++;
       }
     }
     for (const [x, y] of opts.lamps ?? []) solid(x, y, "lamp", 0.22);
@@ -809,13 +824,14 @@ export class QuestScene extends Phaser.Scene {
         .setScale(0.8 + rnd() * 0.6);
     }
     if (opts.border) {
-      for (let x = 2; x < DESIGN_W - 2; x += 2) {
+      // Sparse, evenly spaced border trees — one every 6 design units.
+      for (let x = 2; x < DESIGN_W - 2; x += 6) {
         solid(x, 1.4, "tree", 0.28);
-        solid(x + 1, DESIGN_H - 2.2, "tree", 0.28);
+        solid(x + 3, DESIGN_H - 2.2, "tree", 0.28);
       }
-      for (let y = 3; y < DESIGN_H - 3; y += 2) {
+      for (let y = 5; y < DESIGN_H - 3; y += 6) {
         solid(1.4, y, "tree", 0.28);
-        solid(DESIGN_W - 2.2, y + 1, "tree", 0.28);
+        solid(DESIGN_W - 2.2, y + 3, "tree", 0.28);
       }
     }
 
@@ -939,13 +955,13 @@ export class QuestScene extends Phaser.Scene {
     // three music sheets are never far from the fountain.
     const dims =
       zone === "sunlit_shores"
-        ? 62
+        ? 50
         : zone === "wedding_garden"
-          ? 70
+          ? 56
           : zone === "the_haven"
-            ? 62
+            ? 50
             : zone === "starry_ascent"
-              ? 44
+              ? 35
               : 30;
     this.mapW = dims;
     this.mapH = dims;
@@ -1084,6 +1100,7 @@ export class QuestScene extends Phaser.Scene {
     this.addPlayer(18, 51);
     this.spawnGuideAndSignpost(22, 48);
     this.spawnActGuide(24, 56);
+    if (WEDDING_GUESTS.sunlit_shores) this.addGuest(WEDDING_GUESTS.sunlit_shores, 26, 44);
     this.scatterDecor(11, {
       village: [
         [12, 34],
@@ -1121,52 +1138,8 @@ export class QuestScene extends Phaser.Scene {
       border: true,
     });
 
-    // river gates puzzle: 3 plates on the west bank, 3 blocks to push
-    this.blocks = this.physics.add.group();
-    const plateTiles: [number, number][] = [
-      [42, 24],
-      [42, 51],
-      [42, 78],
-    ];
-    const plates: Phaser.GameObjects.Sprite[] = plateTiles.map(([x, y]) =>
-      this.add.sprite(this.wx(x!), this.wy(y!), "plate").setDepth(4).setAlpha(0.75),
-    );
-    const blockTiles: [number, number][] = [
-      [24, 22],
-      [26, 51],
-      [22, 76],
-    ];
-    for (const [x, y] of blockTiles) {
-      const b = this.blocks.create(this.wx(x!), this.wy(y!), "block") as Phaser.Physics.Arcade.Sprite;
-      b.setImmovable(false).setDepth(11);
-      b.setDrag(1400, 1400);
-      (b.body as Phaser.Physics.Arcade.Body).setMass(6);
-      b.setCollideWorldBounds(true);
-    }
-    this.physics.add.collider(this.blocks, this.layer);
-    this.physics.add.collider(this.blocks, this.blocks);
-    this.time.addEvent({
-      delay: 220,
-      loop: true,
-      callback: () => {
-        if (this.zoneState["gatesOpen"]) return;
-        let solved = 0;
-        plates.forEach((p, i) => {
-          const near = (this.blocks.getChildren() as Phaser.Physics.Arcade.Sprite[]).some(
-            (b) => Phaser.Math.Distance.Between(b.x, b.y, p.x, p.y) < 24,
-          );
-          p.setAlpha(near ? 1 : 0.75);
-          p.setTint(near ? 0xfff0bf : 0xffffff);
-          if (near) solved++;
-          void i;
-        });
-        this.objective = `The River Gates — ${solved}/3 stones on the plates.`;
-        if (solved === 3) {
-          this.zoneState["gatesOpen"] = true;
-          this.openRiverGates();
-        }
-      },
-    });
+    // Act I is intentionally straightforward: follow the road east to the
+    // grotto, calm the Warden, and take the Lantern onward.
 
     // waterfall envelope
     if (!this.has(this.save.secret_envelopes_found, "waterfall")) {
@@ -1219,6 +1192,20 @@ export class QuestScene extends Phaser.Scene {
       { radius: 92 },
     );
     this.tweens.add({ targets: it.obj, y: it.obj.y - 3, duration: 1500, yoyo: true, repeat: -1 });
+  }
+
+  /** A wedding guest with a short, purely celebratory dialogue. */
+  private addGuest(guest: GuestInfo, tx: number, ty: number) {
+    const it = this.addInteractable(
+      this.wx(tx),
+      this.wy(ty),
+      guest.art,
+      "guest",
+      guest.prompt,
+      { id: guest.id, radius: 80 },
+    );
+    it.obj.setDepth(11);
+    this.tweens.add({ targets: it.obj, y: it.obj.y - 2, duration: 1600, yoyo: true, repeat: -1 });
   }
 
   /** Max the dog — an optional companion Maria can adopt beside the forge. */
@@ -1339,17 +1326,6 @@ export class QuestScene extends Phaser.Scene {
     }
   }
 
-  private openRiverGates() {
-    this.rectLive(90, 10, 38, 1, T.MARBLE);
-    this.cameras.main.flash(400, 255, 240, 191);
-    this.objective = "The grotto stairwell is open — claim the Lantern of Quiet Care.";
-    this.emitToast("The river parts. The grotto stairwell opens.");
-    if (!this.save.relics_collected.includes("lantern"))
-      this.addInteractable(this.wx(108), this.wy(28), "relic", "relic", "Take the relic", {
-        id: "lantern",
-      });
-    else this.spawnGateway(this.wx(108), this.wy(28));
-  }
 
   private rectLive(x: number, y: number, w: number, h: number, index: number) {
     const x0 = this.sx(x);
@@ -1431,6 +1407,7 @@ export class QuestScene extends Phaser.Scene {
     this.spawnActGuide(96, 58);
     this.addBlacksmith(96, 40);
     this.addDogOffer(102, 46);
+    if (WEDDING_GUESTS.wedding_garden) this.addGuest(WEDDING_GUESTS.wedding_garden, 105, 58);
     this.scatterDecor(22, {
       groves: [
         [16, 30, 6],
@@ -1530,15 +1507,17 @@ export class QuestScene extends Phaser.Scene {
     this.boss.setCircle(20, 4, 4);
     this.bossHits = 0;
     // Phase 0 = dormant: the boss waits, speaks, and only fights after Maria answers.
-    this.bossPhase = 0;
-    this.bossDialogueDone = false;
+    this.bossPhase = cfg.silent ? 1 : 0;
+    this.bossDialogueDone = Boolean(cfg.silent);
     this.bossHp = cfg.hp;
     this.bossMax = cfg.hp;
     this.bossName = cfg.name;
     this.physics.add.overlap(this.player, this.boss, () => {
       if (this.bossPhase === 1) this.hurtPlayerDirect();
     });
-    this.objective = `${cfg.name} waits ahead — walk up and hear it out.`;
+    this.objective = cfg.silent
+      ? `${cfg.name} attacks — swing your weapon until it lifts.`
+      : `${cfg.name} waits ahead — walk up and hear it out.`;
     // gentle waves of minions; never overwhelming
     this.bossTimer = this.time.addEvent({
       delay: zone === "the_haven" ? 3200 : 5200,
@@ -1664,6 +1643,7 @@ export class QuestScene extends Phaser.Scene {
       ], 3);
     });
     this.addPlayer(18, 51);
+    if (WEDDING_GUESTS.the_haven) this.addGuest(WEDDING_GUESTS.the_haven, 26, 46);
     this.scatterDecor(33, {
       village: [
         [16, 40],
@@ -1777,6 +1757,7 @@ export class QuestScene extends Phaser.Scene {
     });
     this.addPlayer(20, 85);
     this.spawnActGuide(26, 82);
+    if (WEDDING_GUESTS.starry_ascent) this.addGuest(WEDDING_GUESTS.starry_ascent, 31, 86);
     this.addLandmark(
       "landmark-observatory",
       100,
@@ -1852,6 +1833,17 @@ export class QuestScene extends Phaser.Scene {
     // altar, priest and Andrew waiting at the front
     this.add.sprite(this.wx(66), this.wy(20), "altar").setDepth(6);
     this.add.sprite(this.wx(54), this.wy(30), "priest").setDepth(7);
+    // both families standing together near the front pews
+    const famSpots: [number, number][] = [
+      [48, 46],
+      [84, 46],
+      [48, 58],
+      [84, 58],
+    ];
+    FAMILY_GUESTS.forEach((g, i) => {
+      const spot = famSpots[i];
+      if (spot) this.addGuest(g, spot[0], spot[1]);
+    });
     this.addInteractable(this.wx(66), this.wy(32), "andrew-ceremony", "andrew-ceremony", "Say your vows", {
       radius: 70,
     });
@@ -2333,6 +2325,14 @@ export class QuestScene extends Phaser.Scene {
         } else {
           this.openModal({ type: "info", title: BLACKSMITH.name, body: BLACKSMITH.repeat });
         }
+        break;
+      }
+      case "guest": {
+        const guest =
+          Object.values(WEDDING_GUESTS).find((g) => g?.id === it.id) ??
+          FAMILY_GUESTS.find((g) => g.id === it.id);
+        if (!guest) break;
+        this.openModal({ type: "guest", name: guest.name, lines: guest.lines });
         break;
       }
       case "dog":
