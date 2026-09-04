@@ -520,30 +520,9 @@ export const SECOND_BOSSES: Partial<Record<ZoneId, BossConfig>> = {
     scale: 1.2,
     silent: true,
     intro:
-      "Weariness was the kind one. I am what comes at three in the morning — the question with no answer. What if it all goes wrong?",
-    replies: [
-      {
-        id: "bold",
-        text: "Then it goes wrong with him beside me. Still worth it.",
-        answer: "Two against the dark. That is not a fight I can hold for long.",
-        boon: "stamina",
-        boonText: "Your breath steadies — full stamina and a quicker dash.",
-      },
-      {
-        id: "gentle",
-        text: "You only visit because I love deeply. I would never trade that away.",
-        answer: "No. You would not. And that is exactly why I cannot keep you.",
-        boon: "slow",
-        boonText: "The air thickens around it — your foe moves slower.",
-      },
-      {
-        id: "faith",
-        text: "Joy comes with the morning. I have already read the ending.",
-        answer: "Then there is nothing of me in your ending. Go and live it.",
-        boon: "heart",
-        boonText: "Courage warms you — one heart restored.",
-      },
-    ],
+      "Weariness was the kind one. I am what comes at three in the morning — the question with no answer.",
+    slides: [],
+
   },
 };
 
