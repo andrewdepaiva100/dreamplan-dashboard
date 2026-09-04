@@ -1298,17 +1298,6 @@ export class QuestScene extends Phaser.Scene {
     }
   }
 
-  private openRiverGates() {
-    this.rectLive(90, 10, 38, 1, T.MARBLE);
-    this.cameras.main.flash(400, 255, 240, 191);
-    this.objective = "The grotto stairwell is open — claim the Lantern of Quiet Care.";
-    this.emitToast("The river parts. The grotto stairwell opens.");
-    if (!this.save.relics_collected.includes("lantern"))
-      this.addInteractable(this.wx(108), this.wy(28), "relic", "relic", "Take the relic", {
-        id: "lantern",
-      });
-    else this.spawnGateway(this.wx(108), this.wy(28));
-  }
 
   private rectLive(x: number, y: number, w: number, h: number, index: number) {
     const x0 = this.sx(x);
