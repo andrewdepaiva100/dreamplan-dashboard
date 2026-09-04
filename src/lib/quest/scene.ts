@@ -163,6 +163,47 @@ export class QuestScene extends Phaser.Scene {
     preloadQuestArt(this);
   }
 
+  /**
+   * TRUE 2.5D PROJECTION.
+   *
+   * The camera is squashed vertically (zoomY = zoomX * SQUASH) so the ground
+   * plane reads as a surface receding away from the viewer instead of a flat
+   * sheet of paper. Everything that *stands up* in that world — characters,
+   * trees, buildings, text — gets its vertical scale pre-multiplied by 1/SQUASH
+   * so it renders upright and full height on top of the tilted floor. Flat
+   * things (shadow ellipses, ground washes, the tile floor) are deliberately
+   * left squashed, which is exactly what sells the perspective.
+   *
+   * The compensation is installed on the scaleY property itself, so tweens and
+   * any later setScale() call stay correct without touching call sites.
+   */
+  private installProjection() {
+    const K = 1 / SQUASH;
+    this.events.on(Phaser.Scenes.Events.ADDED_TO_SCENE, (go: Phaser.GameObjects.GameObject) => {
+      const upright =
+        go instanceof Phaser.GameObjects.Sprite ||
+        go instanceof Phaser.GameObjects.Image ||
+        go instanceof Phaser.GameObjects.Text;
+      if (!upright) return;
+      const o = go as unknown as { _scaleY: number; renderFlags: number };
+      if (Object.getOwnPropertyDescriptor(go, "scaleY")) return;
+      Object.defineProperty(go, "scaleY", {
+        configurable: true,
+        get() {
+          return o._scaleY;
+        },
+        set(v: number) {
+          const s = v * K;
+          o._scaleY = s;
+          if (s === 0) o.renderFlags &= ~4;
+          else o.renderFlags |= 4;
+        },
+      });
+      // re-run through the new setter so the object starts upright
+      (go as unknown as { scaleY: number }).scaleY = o._scaleY;
+    });
+  }
+
   create() {
     // Clear any leftover fade from the previous realm FIRST — a black screen
     // must never survive into a new scene, even if setup below hiccups.
