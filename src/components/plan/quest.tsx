@@ -1349,42 +1349,20 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       ) : null}
 
       {modal?.type === "boss" ? (
-        <GlassPanel
-          title={modal.name}
-          onClose={() => {
-            const first = modal.choices[0];
-            if (first) {
-              setModal(null);
-              emit(EV.bosschoice, first.id);
-            }
+        <BossDialogue
+          name={modal.name}
+          role={modal.role}
+          art={modal.art}
+          demon={modal.demon}
+          mariaLine={modal.mariaLine}
+          slides={modal.slides.length ? modal.slides : [{ boss: modal.intro, replies: [] }]}
+          onDone={(flavor) => {
+            setModal(null);
+            emit(EV.bosschoice, flavor);
           }}
-        >
-          <p className="font-serif-italic italic text-navy">“{modal.intro}”</p>
-          <div className="mt-3">
-            <MariaPortrait caption="Maria stands her ground" />
-          </div>
-          <p className="mt-3 font-serif-italic italic text-navy/85">“{modal.mariaLine}”</p>
-          <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-gold">
-            How does Maria answer?
-          </p>
-          <div className="mt-2 grid gap-2">
-            {modal.choices.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => {
-                  buzz();
-                  setModal(null);
-                  emit(EV.bosschoice, c.id);
-                }}
-                className="rounded-xl border border-gold/40 bg-white/80 p-3 text-left text-sm font-medium text-navy transition hover:border-gold hover:bg-gold/15"
-              >
-                “{c.text}”
-              </button>
-            ))}
-          </div>
-        </GlassPanel>
+        />
       ) : null}
+
 
       {modal?.type === "guide" ? (
         <GlassPanel title="Realm Map" onClose={closeModal} wide>
