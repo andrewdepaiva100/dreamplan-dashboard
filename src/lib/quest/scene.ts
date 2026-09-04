@@ -3095,9 +3095,11 @@ export class QuestScene extends Phaser.Scene {
     const now = this.time.now;
     if (now < this.invulnUntil) return;
     this.invulnUntil = now + 900;
-    this.save.player_health = Math.max(1, this.save.player_health - 1);
+    this.save.player_health = Math.max(0, this.save.player_health - 1);
     this.cameras.main.shake(140, 0.005);
     this.emitSave();
+    this.pushHud();
+    if (this.save.player_health <= 0) this.openModal({ type: "gameover" });
   }
 
   private collectRelic(it: Interactable) {
