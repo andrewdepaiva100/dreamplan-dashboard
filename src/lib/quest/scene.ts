@@ -1978,19 +1978,17 @@ export class QuestScene extends Phaser.Scene {
     ]);
 
     this.zoneState["sheets"] = 0;
-    // Three music sheets placed right along the main roads and fountain so
-    // Maria spots them naturally while exploring the square.
+    // Genuinely hidden: behind the stalls, tucked behind the town hall, and
+    // off-road in the far east corner. No beacons — she has to search.
     const sheetSpots: [number, number][] = [
-      [20, 52], // near spawn on the main road
-      [66, 64], // beside the fountain
-      [92, 50], // along the eastern road
+      [58, 24], // back alley behind the market stalls
+      [72, 12], // tucked behind the town hall
+      [104, 76], // far south-east corner, off every road
     ];
     sheetSpots.forEach(([x, y], i) => {
-      const it = this.addInteractable(this.wx(x), this.wy(y), "sheet", "sheet", "Pick up the music sheet", {
+      this.addInteractable(this.wx(x), this.wy(y), "sheet", "sheet", "Pick up the music sheet", {
         id: String(i),
       });
-      // tall golden beacon so each sheet is visible from across the square
-      this.addKeyBeacon(it.obj.x, it.obj.y, `sheet-${i}`, 0xffe6a8);
     });
 
     this.addInteractable(this.wx(26), this.wy(55), "andrew", "andrew", "Talk with Andrew", {
