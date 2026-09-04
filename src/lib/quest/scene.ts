@@ -2644,6 +2644,10 @@ export class QuestScene extends Phaser.Scene {
 
   private enterHouse() {
     this.save.time_of_day = this.dayT;
+    // stepping into her home sets the checkpoint for this act
+    this.save.checkpoint_zone = this.save.current_zone;
+    this.save.checkpoint_x = this.player.x;
+    this.save.checkpoint_y = this.player.y;
     this.emitSave();
     this.frozen = true;
     this.cameras.main.fadeOut(280, 0, 0, 0);
