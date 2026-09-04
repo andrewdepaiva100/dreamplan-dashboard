@@ -1170,12 +1170,12 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
           </div>
 
           {/* objective tracker — top centre */}
-          <div className="max-w-[37%] rounded-lg border border-gold/40 bg-[rgba(11,30,61,0.78)] px-2 py-1.5 text-center backdrop-blur">
-            <p className="text-[8px] uppercase tracking-[0.18em] text-gold">
+          <div className="max-w-[28%] rounded-md border border-gold/40 bg-[rgba(11,30,61,0.78)] px-1.5 py-1 text-center backdrop-blur">
+            <p className="text-[6px] uppercase tracking-[0.16em] text-gold">
               {hud.act} · {hud.zoneTitle}
             </p>
-            <p className="mt-0.5 text-[10px] leading-snug text-white/95">{hud.objective}</p>
-            <p className="mt-0.5 text-[9px] text-sky">
+            <p className="mt-0.5 text-[8px] leading-snug text-white/95">{hud.objective}</p>
+            <p className="mt-0.5 text-[7px] text-sky">
               Relics {hud.relics.length}/5 · Letters {hud.envelopes.length}/5 · Keys {hud.keys}/3
             </p>
             <button
@@ -1184,7 +1184,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                 buzz();
                 emit(EV.ping);
               }}
-              className="pointer-events-auto mt-1.5 w-full rounded-md border border-gold/60 bg-gold/20 px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.15em] text-gold"
+              className="pointer-events-auto mt-1 w-full rounded-md border border-gold/60 bg-gold/20 px-1 py-0.5 text-[6px] font-bold uppercase tracking-[0.12em] text-gold"
             >
               📡 Ping objective
             </button>

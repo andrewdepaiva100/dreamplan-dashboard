@@ -5,7 +5,7 @@ import { FOOD_BY_ID, HOUSE, ZONES } from "./content";
 import type { QuestSave } from "./save";
 import { buildHomeSprites } from "./textures";
 
-type Parent = Phaser.Scene & { resumeFromHouse: () => void };
+type Parent = Phaser.Scene & { resumeFromHouse: () => void; save: QuestSave };
 
 const ROOM_W = 860;
 const ROOM_H = 560;
@@ -105,6 +105,19 @@ export class QuestHouseScene extends Phaser.Scene {
       g.fillRect(wx - 38, oy + 55, 76, 5);
       g.fillStyle(0x6b4a2c, 1);
       g.fillRect(wx - 54, oy + 90, 108, 9);
+      // linen curtains with a folded edge
+      for (const side of [-1, 1]) {
+        const bx = wx + side * 46;
+        g.fillStyle(0x8e4a63, 1);
+        g.fillRect(bx - (side < 0 ? 0 : 20), oy + 20, 20, 76);
+        g.fillStyle(0xa85d78, 0.85);
+        g.fillRect(bx - (side < 0 ? 0 : 14), oy + 20, 7, 76);
+        g.fillStyle(0x000000, 0.16);
+        g.fillRect(bx - (side < 0 ? -14 : 20), oy + 20, 6, 76);
+      }
+      // brass curtain rod
+      g.fillStyle(0xc9a44c, 1);
+      g.fillRect(wx - 58, oy + 16, 116, 5);
       // soft square of daylight on the boards below
       const pool = this.add.graphics().setDepth(3);
       pool.fillStyle(0xffe9b8, 0.16);
@@ -241,12 +254,31 @@ export class QuestHouseScene extends Phaser.Scene {
       });
     }
 
+    // ---- lighting pass: warm hearth glow, floor sheen, deep corners --------
+    const glow = this.add.graphics().setDepth(31).setBlendMode(Phaser.BlendModes.ADD);
+    for (let i = 12; i > 0; i--) {
+      glow.fillStyle(0xff9a3c, 0.018);
+      glow.fillEllipse(cx, fy + 30, i * 62, i * 40);
+    }
+    const sheen = this.add.graphics().setDepth(30);
+    for (let i = 8; i > 0; i--) {
+      sheen.fillStyle(0xffe6bb, 0.012);
+      sheen.fillEllipse(cx, fy + fh * 0.55, i * 90, i * 34);
+    }
     // gentle vignette so the room edges fall away
     const vig = this.add.graphics().setDepth(33);
-    for (let i = 0; i < 10; i++) {
-      vig.fillStyle(0x1a0f08, 0.045);
+    for (let i = 0; i < 16; i++) {
+      vig.fillStyle(0x140b06, 0.04);
       vig.fillRect(ox + i * 4, oy + i * 4, ROOM_W - i * 8, ROOM_H - i * 8);
     }
+    // picture-rail trim + ceiling shade for a finished, built room
+    const trim = this.add.graphics().setDepth(4);
+    trim.fillStyle(0x3d2917, 1);
+    trim.fillRect(ox, oy + WALL_H - 34, ROOM_W, 6);
+    trim.fillStyle(0xd9bd96, 0.5);
+    trim.fillRect(ox, oy + WALL_H - 28, ROOM_W, 3);
+    trim.fillStyle(0x000000, 0.18);
+    trim.fillRect(ox, oy, ROOM_W, 30);
 
     // ---- door back outside ------------------------------------------------
     const dw = 104;
@@ -420,9 +452,12 @@ export class QuestHouseScene extends Phaser.Scene {
       this.save.inventory = inv;
       this.game.events.emit(EV.toast, `${food.name} cooked into ${FOOD_BY_ID[food.cookedId]?.name}.`);
     } else if (msg.action === "sleep") {
-      this.save.time_of_day = 0.12;
+      // Always wake at 7:00 AM, whatever hour Maria lay down.
+      this.save.time_of_day = 7 / 24;
       this.save.player_health = 5;
-      this.game.events.emit(EV.toast, "You slept through the night. Full hearts, new morning.");
+      this.parentScene.save.time_of_day = 7 / 24;
+      this.parentScene.save.player_health = 5;
+      this.game.events.emit(EV.toast, "You slept until morning. Full hearts, 7:00 AM.");
     } else {
       return;
     }

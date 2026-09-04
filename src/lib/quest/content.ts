@@ -555,17 +555,15 @@ export const ACT_GUIDES: Record<
     weapon: "spark-wand",
     line: "Welcome, Bringer of Peace. Follow the road east to the River Gate Temple — the Warden of Rushing Water guards the Lantern there. Take my Radiant Spark Wand; its light is louder than any worry.",
     pages: [
-      "Oh — you're awake. Steady now, don't rush to your feet. I'm Wren, keeper of these shores. I've been sitting on this rock since before sunrise waiting for you, because the sea told me someone was coming today, and the sea has never once lied to me.",
-      "Your name is Maria. You'll want to hold on to that, because this realm has a habit of asking you who you are. This is the Realm of the Golden Ring — five lands laid end to end like beads on a chain, and every one of them was built out of something Andrew feels about you.",
-      "Andrew. Yes. He's the reason all this exists. He's waiting at the far end of the chain, in a little stone cathedral under a stained-glass window, and he cannot come to you — that's the rule of this place. The road only runs one way, and it has to be walked by you.",
-      "Here's what you're gathering. Five Relics, one hidden in each land. They aren't treasure, they're truths — the Lantern of Quiet Care, the Anchor of Comfort, the Bloom of Reflection, the Shield of Unshakable Faith, the Seal of Perfect Peace. Each one holds something Andrew has been trying to tell you.",
-      "There are also five sealed Envelopes tucked away where the world gets quiet — behind waterfalls, inside hedges, on a patio table, at the summit, and one last one in the cathedral itself. They're letters. Love, peace, patience, kindness, loyalty. Find them and read them slowly. That's not a side quest, that's the whole point.",
-      "Now the hard part. Each land is guarded. Sorrow here takes shape and walks around — the Warden of Rushing Water in this one, and worse further on: doubt, stress, weariness. They are not evil, Maria. They are the things that try to convince you that you are too much or not enough. You will beat them by refusing to believe them.",
-      "That's why I have this for you. The Radiant Spark Wand. Swing it and it throws light, not blades — every creature it touches remembers it was gentle once and turns back into petals. You'll find better weapons from the guides ahead and from the blacksmith. Keep them all; you can swap any time in your Armory.",
-      "Watch your hearts in the top corner. Take five hits and you'll wake back at the start of the land — nothing lost but time. Rest stones hum when you stand near them and give the hearts back. So does your house: there's a home in every land with a hearth to cook on, a chest to store what you gather and a bed to sleep the night away.",
-      "Speaking of night — the sun here runs a real day. Seven in the morning to seven at night is daylight; after that the lamps come on and the world goes quiet and a little braver. Animals wander the grass; hunt them if you need food, cook the meat at your hearth, eat it when your hearts run low.",
-      "Your road today: follow the coastal path east, past the fishing stones, until you reach the River Gate Temple. Go inside. The Warden is in there with the Lantern of Quiet Care. Don't be frightened by how loud it is — loud things are usually the most afraid.",
-      "One more thing, and then I'll let you go. Every land has a signpost if you lose your bearings, and the map button in the corner opens the whole realm at once. You are not lost, Maria. You're expected. Go on — he's been waiting a long time.",
+      "Oh — you're awake. Steady now. I'm Wren, keeper of these shores, and I've been waiting on this rock since before sunrise, because the sea told me someone was coming today.",
+      "Your name is Maria. Hold on to that. This is the Realm of the Golden Ring — five lands laid end to end like beads on a chain, and every one of them was built out of something Andrew feels about you.",
+      "Andrew is the reason all this exists. He's waiting at the far end of the chain and he cannot come to you — that's the rule here. The road only runs one way, and it has to be walked by you.",
+      "You're gathering five Relics, one hidden in each land. They aren't treasure, they're truths — things Andrew has been trying to tell you. There are sealed Envelopes too, tucked away where the world goes quiet. Letters. Read them slowly; that's not a side quest, that's the point.",
+      "Each land is guarded. Sorrow here takes shape and walks around. Whatever you meet, it isn't evil — it only tries to convince you that you are too much or not enough. You beat it by refusing to believe it.",
+      "So take this. The Radiant Spark Wand. Swing it and it throws light, not blades — what it touches remembers it was gentle once and turns back into petals. Better weapons come later; keep them all and swap in your Armory.",
+      "Watch your hearts in the corner. Five hits and you wake back at the start of the land — nothing lost but time. Rest stones give the hearts back, and so does your house: a hearth to cook on, a chest for what you gather, a bed for the night.",
+      "The sun here runs a real day — seven in the morning to seven at night, then the lamps come on. Animals wander the grass; hunt them if you need food, cook the meat, eat when your hearts run low.",
+      "Your road today: follow the coastal path east until you reach the River Gate Temple, and go inside. If you lose your bearings there's a signpost in every land and a map button in the corner. You're not lost, Maria. You're expected.",
     ],
   },
   wedding_garden: {
@@ -912,7 +910,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
 export const AEGIS = {
   id: "aegis",
   name: "Aegis of Unshakable Faith",
-  line: "One more thing, and this one is very special. The Aegis of Unshakable Faith. Keep it close — when you are down to your last heart, it will wake on its own, push back everything near you, and hold you safe for a moment. It only rests a little while between guards.",
+  line: "One more thing, and this one is special. The Aegis of Unshakable Faith. You never have to use it — the moment you're down to your last heart it wakes on its own, throws a ring of gold out around you, knocks back everything standing close and holds you safe for a few seconds so you can breathe and get clear. Then it sleeps for a short while before it can guard you again. Remember that when the Conservatory doors open: the Stress Spectre inside is fast, and she counts on you panicking at your last heart. You won't be alone at that moment.",
   trigger: "The Aegis wakes — a ring of gold pushes the worry back.",
 };
 

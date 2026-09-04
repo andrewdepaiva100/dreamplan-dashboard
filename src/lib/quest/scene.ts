@@ -292,6 +292,8 @@ export class QuestScene extends Phaser.Scene {
         throw err;
       }
     }
+    // Bridges may have carved new walkable tiles — refresh collision.
+    this.layer.setCollision(SOLID_TILES as unknown as number[]);
     this.spawnCompanion();
     this.spawnLegendaries();
 
@@ -1001,6 +1003,16 @@ export class QuestScene extends Phaser.Scene {
       for (let i = 0; i < n; i++) solid(x + i * 1.25, y, "fence", 0.6);
     }
     for (const [x, y] of opts.bridges ?? []) {
+      // Carve a walkable stone crossing under the bridge so the now-solid
+      // water still has a way over it.
+      const tx = Math.round((x * this.sxF * TILE) / TILE);
+      const ty = Math.round((y * this.syF * TILE) / TILE);
+      for (let i = -12; i <= 12; i++) {
+        for (let j = -1; j <= 1; j++) {
+          const t = this.layer.getTileAt(tx + i, ty + j);
+          if (t && t.index === T.WATER) this.layer.putTileAt(T.PATH, tx + i, ty + j);
+        }
+      }
       this.add.sprite(this.wx(x), this.wy(y), "bridge").setDepth(3).setAlpha(0.96);
     }
     // purple, red, white and pink only
@@ -2504,25 +2516,42 @@ export class QuestScene extends Phaser.Scene {
   private addHouse() {
     const spot = this.houseSpot();
     if (!spot) return;
-    const x = this.wx(spot[0]);
-    const y = this.wy(spot[1]);
+    const [x, y] = spot;
     const home = this.add.sprite(x, y, "cottage").setDepth(this.dsort(y + 14));
+    home.setScale(1.2);
+    home.setTint(0x9d6fd6);
     this.bakeShadow(x, y + home.displayHeight * 0.34, home.displayWidth * 0.7, 0.2);
     this.addLight(x, y + 6, 0.5);
-    this.addInteractable(x, y + 26, "plate", "house", HOUSE.prompt, { radius: 58, depth: 6 })
+    this.addInteractable(x, y + 30, "plate", "house", HOUSE.prompt, { radius: 62, depth: 6 })
       ?.obj.setAlpha(0.001);
   }
 
-  /** Every act has a home within a short walk of where Maria arrives. */
+  /** Maria's home sits a few steps from wherever she arrives in each act. */
   private houseSpot(): [number, number] | null {
-    const spots: Record<ZoneId, [number, number]> = {
-      sunlit_shores: [40, 58],
-      wedding_garden: [24, 56],
-      the_haven: [46, 30],
-      starry_ascent: [26, 60],
-      cathedral: [30, 70],
+    const offsets: [number, number][] = [
+      [-130, -30],
+      [130, -30],
+      [-130, 70],
+      [130, 70],
+      [0, -140],
+      [0, 140],
+      [-190, 20],
+      [190, 20],
+    ];
+    const free = (px: number, py: number) => {
+      const t = this.layer.getTileAtWorldXY(px, py);
+      if (!t) return false;
+      const i = t.index as number;
+      return !(SOLID_TILES as unknown as number[]).includes(i) && i !== T.WATER;
     };
-    return spots[this.save.current_zone] ?? null;
+    for (const [dx, dy] of offsets) {
+      const px = this.spawnPoint.x + dx;
+      const py = this.spawnPoint.y + dy;
+      if (free(px, py) && free(px, py + 26) && free(px - 24, py) && free(px + 24, py)) {
+        return [px, py];
+      }
+    }
+    return null;
   }
 
   private enterHouse() {
