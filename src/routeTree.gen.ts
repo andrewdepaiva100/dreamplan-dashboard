@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as QuestDebugRouteImport } from './routes/quest-debug'
 import { Route as UnlockRouteImport } from './routes/unlock'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AssistantIndexRouteImport } from './routes/assistant.index'
@@ -20,11 +19,6 @@ import { Route as ApiPublicHealthSnapRouteImport } from './routes/api/public/hea
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuestDebugRoute = QuestDebugRouteImport.update({
-  id: '/quest-debug',
-  path: '/quest-debug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UnlockRoute = UnlockRouteImport.update({
@@ -55,7 +49,6 @@ const ApiPublicHealthSnapRoute = ApiPublicHealthSnapRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/quest-debug': typeof QuestDebugRoute
   '/unlock': typeof UnlockRoute
   '/api/chat': typeof ApiChatRoute
   '/assistant/$threadId': typeof AssistantThreadIdRoute
@@ -64,7 +57,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/quest-debug': typeof QuestDebugRoute
   '/unlock': typeof UnlockRoute
   '/api/chat': typeof ApiChatRoute
   '/assistant/$threadId': typeof AssistantThreadIdRoute
@@ -74,7 +66,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/quest-debug': typeof QuestDebugRoute
   '/unlock': typeof UnlockRoute
   '/api/chat': typeof ApiChatRoute
   '/assistant/$threadId': typeof AssistantThreadIdRoute
@@ -85,7 +76,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/quest-debug'
     | '/unlock'
     | '/api/chat'
     | '/assistant/$threadId'
@@ -94,7 +84,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/quest-debug'
     | '/unlock'
     | '/api/chat'
     | '/assistant/$threadId'
@@ -103,7 +92,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/quest-debug'
     | '/unlock'
     | '/api/chat'
     | '/assistant/$threadId'
@@ -113,7 +101,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  QuestDebugRoute: typeof QuestDebugRoute
   UnlockRoute: typeof UnlockRoute
   ApiChatRoute: typeof ApiChatRoute
   AssistantThreadIdRoute: typeof AssistantThreadIdRoute
@@ -128,13 +115,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quest-debug': {
-      id: '/quest-debug'
-      path: '/quest-debug'
-      fullPath: '/quest-debug'
-      preLoaderRoute: typeof QuestDebugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/unlock': {
@@ -177,7 +157,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  QuestDebugRoute: QuestDebugRoute,
   UnlockRoute: UnlockRoute,
   ApiChatRoute: ApiChatRoute,
   AssistantThreadIdRoute: AssistantThreadIdRoute,
