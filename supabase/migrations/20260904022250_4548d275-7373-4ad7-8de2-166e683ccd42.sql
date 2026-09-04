@@ -1,0 +1,1 @@
+ALTER TABLE public.maria_quest_saves ADD COLUMN IF NOT EXISTS swift_boots boolean NOT NULL DEFAULT false;

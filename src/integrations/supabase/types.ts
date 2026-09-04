@@ -152,6 +152,7 @@ export type Database = {
           relics_collected: Json
           secret_envelopes_found: Json
           slot: string
+          swift_boots: boolean
           updated_at: string
           user_id: string | null
           vault_keys_count: number
@@ -167,6 +168,7 @@ export type Database = {
           relics_collected?: Json
           secret_envelopes_found?: Json
           slot?: string
+          swift_boots?: boolean
           updated_at?: string
           user_id?: string | null
           vault_keys_count?: number
@@ -182,6 +184,7 @@ export type Database = {
           relics_collected?: Json
           secret_envelopes_found?: Json
           slot?: string
+          swift_boots?: boolean
           updated_at?: string
           user_id?: string | null
           vault_keys_count?: number
