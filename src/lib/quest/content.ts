@@ -372,13 +372,22 @@ export type Weapon = {
 
 export const WEAPONS: Weapon[] = [
   {
+    id: "ember-blade",
+    name: "Ember Blade",
+    icon: "\u{1F525}",
+    damage: 200,
+    reach: 80,
+    color: 0xffa14a,
+    blurb: "Forged in Bram's own fire, still warm at the edge. Deals 200 damage.",
+  },
+  {
     id: "spark-wand",
     name: "Radiant Spark Wand",
     icon: "✨",
     damage: 100,
     reach: 72,
     color: 0xffd977,
-    blurb: "Carved from grotto driftwood. Its light scatters worry before it can settle.",
+    blurb: "Carved from grotto driftwood. Its light scatters worry before it can settle. Deals 100 damage.",
   },
   {
     id: "floral-bow",
@@ -387,7 +396,7 @@ export const WEAPONS: Weapon[] = [
     damage: 180,
     reach: 90,
     color: 0xff9ec4,
-    blurb: "Strung with garden vine. Every arrow blooms where it lands.",
+    blurb: "Strung with garden vine. Every arrow blooms where it lands. Deals 180 damage.",
   },
   {
     id: "lightblade",
@@ -396,7 +405,7 @@ export const WEAPONS: Weapon[] = [
     damage: 280,
     reach: 78,
     color: 0xbfe3ff,
-    blurb: "Forged in Haven's clocktower. It cuts through noise, never through people.",
+    blurb: "Forged in Haven's clocktower. It cuts through noise, never through people. Deals 280 damage.",
   },
   {
     id: "love-sword",
@@ -405,7 +414,7 @@ export const WEAPONS: Weapon[] = [
     damage: 380,
     reach: 88,
     color: 0xff6fae,
-    blurb: "Andrew's own blade, forged rose-pink. He carries its blue twin and fights at your side wherever you go.",
+    blurb: "Andrew's own blade, forged rose-pink. He carries its blue twin and fights at your side wherever you go. Deals 380 damage.",
   },
   {
     id: "starlight-censer",
@@ -414,7 +423,7 @@ export const WEAPONS: Weapon[] = [
     damage: 420,
     reach: 96,
     color: 0xa9b6ff,
-    blurb: "Swings a slow arc of constellations that calms whatever it touches.",
+    blurb: "Swings a slow arc of constellations that calms whatever it touches. Deals 420 damage.",
   },
   {
     id: "ring-of-dawn",
@@ -423,7 +432,7 @@ export const WEAPONS: Weapon[] = [
     damage: 520,
     reach: 104,
     color: 0xffe6a8,
-    blurb: "A shield that guards the promise and a blade that never needs to be drawn in anger.",
+    blurb: "A shield that guards the promise and a blade that never needs to be drawn in anger. Deals 520 damage.",
   },
   {
     id: "eternal-vow",
@@ -432,7 +441,7 @@ export const WEAPONS: Weapon[] = [
     damage: 720,
     reach: 116,
     color: 0xffd977,
-    blurb: "A vow made metal. Legendary — it ends most arguments in a single swing.",
+    blurb: "A vow made metal. Legendary — it ends most arguments in a single swing. Deals 720 damage.",
   },
   {
     id: "seraph-edge",
@@ -441,7 +450,7 @@ export const WEAPONS: Weapon[] = [
     damage: 650,
     reach: 132,
     color: 0xbfe3ff,
-    blurb: "Feather-light and impossibly fast. Legendary — it sweeps wide enough to clear a crowd.",
+    blurb: "Feather-light and impossibly fast. Legendary — it sweeps wide enough to clear a crowd. Deals 650 damage.",
   },
   {
     id: "golden-crown",
@@ -450,7 +459,7 @@ export const WEAPONS: Weapon[] = [
     damage: 1000,
     reach: 150,
     color: 0xffb347,
-    blurb: "The realm's own crown. Legendary — nothing that stands against love survives two strikes of it.",
+    blurb: "The realm's own crown. Legendary — nothing that stands against love survives two strikes of it. Deals 1000 damage.",
   },
 ];
 
@@ -541,9 +550,9 @@ export const SWIFT_SANDALS = {
 /** The forge on the Sunlit Shores — Bram hands over the Act II weapon early. */
 export const BLACKSMITH = {
   name: "Bram the Smith",
-  weapon: "floral-bow",
-  line: "Heard you're headed north to the garden. Rough hedges up there. I strung this Floral Bow from garden vine this morning — take it before you go, and every arrow you loose will bloom where it lands.",
-  repeat: "The forge stays lit for you. That bow of yours will hold — vine never snaps when it's strung with care.",
+  weapon: "ember-blade",
+  line: "Heard you're headed north to the garden. Rough hedges up there. I forged this Ember Blade in my own fire this morning — two hundred weight of hurt in every swing. Take it before you go, and let it keep the dark off you.",
+  repeat: "The forge stays lit for you. That Ember Blade will hold — two hundred in every swing, and it never dulls when it's swung for someone you love.",
 };
 
 export const ACT_GUIDES: Record<
@@ -568,7 +577,7 @@ export const ACT_GUIDES: Record<
   },
   wedding_garden: {
     name: "Ivy the Gardener",
-    weapon: "floral-bow",
+    weapon: "ember-blade",
     line: "The promenade runs straight to the Conservatory — no mazes here, just open beds and light. Four seasonal keys wake its doors, and the Stress Spectre waits inside.",
     pages: [
       "Mind the beds, love — mind the beds. There. I'm Ivy, and everything you can see growing here I put in the ground myself. Welcome to the Wedding Garden, the second land of the chain.",
@@ -745,8 +754,8 @@ export const BOON_BY_FLAVOR: Record<
 export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   sunlit_shores: {
     name: "Warden of Rushing Water",
-    role: "Andrew's fear of not providing",
-    demon: "This is Andrew's fear of not providing.",
+    role: "a fear that rises",
+    demon: "This is fear.",
     mariaLine: "I know this one. He carries it at 2 a.m.",
     hp: 2600,
     taunt: "The river darkens. The Warden rises to block the crossing.",
@@ -796,8 +805,8 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   wedding_garden: {
     name: "The Stress Spectre",
-    role: "the pressure Andrew carries alone",
-    demon: "This is the pressure Andrew lives under.",
+    role: "a fear that gathers",
+    demon: "This is fear.",
     mariaLine: "He never says it out loud. Tonight it answers to me.",
     hp: 3640,
     taunt: "The glass darkens. The Stress Spectre descends.",
@@ -835,8 +844,8 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   the_haven: {
     name: "The Clamour of Doubt",
-    role: "Andrew's doubt about himself",
-    demon: "This is Andrew's doubt that he'll be enough of a husband.",
+    role: "a fear that whispers",
+    demon: "This is fear.",
     mariaLine: "I've heard this voice through his silence. Not tonight.",
     hp: 7800,
     taunt: "The square falls silent. The Clamour turns toward you.",
@@ -874,8 +883,8 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   starry_ascent: {
     name: "The Weight of Weariness",
-    role: "the tiredness Andrew hides",
-    demon: "This is the tiredness Andrew never admits to.",
+    role: "a fear that settles",
+    demon: "This is fear.",
     mariaLine: "He calls it discipline. I know what it really is.",
     hp: 4160,
     taunt: "The stars dim. The Weight of Weariness settles over the plateau.",
@@ -1009,7 +1018,7 @@ export const WEDDING_GUESTS: Partial<Record<ZoneId, GuestInfo>> = {
     lines: [
       "Look at all these flowers — it is like the whole garden got the invitation!",
       "I am so excited for the wedding, Maria. I have already cried twice and it is not even the day yet.",
-      "Tell Andrew I expect a very dramatic first dance.",
+      "You have been my person since before I can remember. Seeing you this loved is the best thing I have ever watched.",
     ],
   },
   the_haven: {
@@ -1028,7 +1037,7 @@ export const WEDDING_GUESTS: Partial<Record<ZoneId, GuestInfo>> = {
     id: "gianluca",
     name: "Gianluca",
     art: "gianluca",
-    role: "Groomsman & old friend",
+    role: "Best Man",
     prompt: "Say hello to Gianluca",
     lines: [
       "All the way up this mountain, and still all anyone can talk about is the wedding.",
@@ -1109,7 +1118,7 @@ export const CATHEDRAL_FRIENDS: GuestInfo[] = [
     id: "andre",
     name: "Andre",
     art: "andre",
-    role: "Andrew\u2019s best friend",
+    role: undefined,
     prompt: "Greet Andre",
     lines: [
       "There he is. Suit and everything, and somehow the calmest man in the building.",
@@ -1121,7 +1130,7 @@ export const CATHEDRAL_FRIENDS: GuestInfo[] = [
     id: "phillip",
     name: "Phillip",
     art: "phillip",
-    role: "Andrew’s friend since childhood",
+    role: "Lifelong Friend",
     prompt: "Greet Phillip",
     lines: [
       "Andrew and I have known each other since we were kids — scraped knees, bad haircuts, all of it. And now this.",
@@ -1133,7 +1142,7 @@ export const CATHEDRAL_FRIENDS: GuestInfo[] = [
     id: "italo",
     name: "Italo",
     art: "italo",
-    role: "Groomsman",
+    role: undefined,
     prompt: "Greet Italo",
     lines: [
       "Today is finally here. I have been counting down to this one for months.",
@@ -1145,7 +1154,7 @@ export const CATHEDRAL_FRIENDS: GuestInfo[] = [
     id: "gabe",
     name: "Gabe",
     art: "gabe",
-    role: "Andrew’s friend of six years",
+    role: "Closest Friend",
     prompt: "Greet Gabe",
     lines: [
       "Six years I have known this guy, and today is easily the best day of them. I have the rings, checked four times, we are fine.",
