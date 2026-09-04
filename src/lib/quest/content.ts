@@ -323,6 +323,15 @@ export const WEAPONS: Weapon[] = [
     blurb: "Forged in Haven's clocktower. It cuts through noise, never through people.",
   },
   {
+    id: "love-sword",
+    name: "The Love Sword",
+    icon: "💗",
+    damage: 5,
+    reach: 88,
+    color: 0xff6fae,
+    blurb: "Andrew's own blade, forged rose-pink. He carries its blue twin and fights at your side wherever you go.",
+  },
+  {
     id: "starlight-censer",
     name: "Celestial Stave",
     icon: "🌟",
@@ -348,6 +357,49 @@ export const WEAPON_BY_ID: Record<string, Weapon> = Object.fromEntries(
 
 /** Act I's guide hands this over — there is no forge and no practice blade. */
 export const DEFAULT_WEAPON = "spark-wand";
+
+/** Andrew's gift in Act III — the pink Love Sword, and he joins the fight. */
+export const LOVE_SWORD = {
+  id: "love-sword",
+  line: "I made two. This one is yours — rose-pink, because that is what you are to me. I'll carry the blue one. From here on you don't walk into anything alone; wherever you go, I'm swinging right beside you.",
+};
+
+/** Act IV's second boss — appears the moment the first one softens. */
+export const SECOND_BOSSES: Partial<Record<ZoneId, BossConfig>> = {
+  starry_ascent: {
+    name: "The Hollow of Doubtful Nights",
+    hp: 12,
+    taunt: "A second shadow peels off the stars — The Hollow of Doubtful Nights.",
+    art: "boss-star",
+    color: 0x6f8bff,
+    scale: 1.15,
+    intro:
+      "Weariness was only the first of us. I am every three-in-the-morning thought you have ever had. Still climbing?",
+    replies: [
+      {
+        id: "bold",
+        text: "Still climbing. With him beside me.",
+        answer: "Two of you. That is unfair, and I hate it.",
+        boon: "stamina",
+        boonText: "Your breath steadies — full stamina and a quicker dash.",
+      },
+      {
+        id: "gentle",
+        text: "You are only the dark before morning. Morning always comes.",
+        answer: "It does. It always does. Get on with it, then.",
+        boon: "slow",
+        boonText: "The air thickens around it — your foe moves slower.",
+      },
+      {
+        id: "faith",
+        text: "Joy comes with the morning. I have read the ending.",
+        answer: "Then let us hurry to it, little light.",
+        boon: "heart",
+        boonText: "Courage warms you — one heart restored.",
+      },
+    ],
+  },
+};
 
 /** Post-Act II speed collectible found near the Haven spawn. */
 export const SWIFT_SANDALS = {
@@ -493,7 +545,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   the_haven: {
     name: "The Clamour of Doubt",
-    hp: 8,
+    hp: 16,
     taunt: "The Clamour of Doubt clatters across the square. Answer it with your blade of light.",
     art: "boss-haven",
     color: 0xd9a441,
