@@ -577,7 +577,7 @@ export const ACT_GUIDES: Record<
   },
   wedding_garden: {
     name: "Ivy the Gardener",
-    weapon: "ember-blade",
+    weapon: "floral-bow",
     line: "The promenade runs straight to the Conservatory — no mazes here, just open beds and light. Four seasonal keys wake its doors, and the Stress Spectre waits inside.",
     pages: [
       "Mind the beds, love — mind the beds. There. I'm Ivy, and everything you can see growing here I put in the ground myself. Welcome to the Wedding Garden, the second land of the chain.",
