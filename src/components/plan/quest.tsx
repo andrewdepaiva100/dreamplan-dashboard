@@ -918,6 +918,10 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
         </GlassPanel>
       ) : null}
 
+      {modal?.type === "guest" ? (
+        <GuestDialogue key={modal.name} name={modal.name} lines={modal.lines} onClose={closeModal} />
+      ) : null}
+
       {modal?.type === "companion" ? (
         <GlassPanel
           title={modal.name}
