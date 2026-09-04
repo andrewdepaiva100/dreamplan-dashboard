@@ -2652,8 +2652,8 @@ export class QuestScene extends Phaser.Scene {
     if (!spot) return;
     const [x, y] = spot;
     const home = this.add.sprite(x, y, "cottage").setDepth(this.dsort(y + 14));
-    home.setScale(1.2);
-    home.setTint(0x9d6fd6);
+    home.setScale(1.38);
+    home.setTint(0xf49ac2);
     this.bakeShadow(x, y + home.displayHeight * 0.34, home.displayWidth * 0.7, 0.2);
     this.addLight(x, y + 6, 0.5);
     this.addInteractable(x, y + 30, "plate", "house", HOUSE.prompt, { radius: 62, depth: 6 })

@@ -390,7 +390,19 @@ function GlassPanel({
             : `w-full ${wide ? "max-w-2xl" : "max-w-md"} max-h-full p-6`
         } overflow-y-auto rounded-2xl border border-rose-gold/40 bg-[rgba(253,250,243,0.92)] shadow-2xl`}
       >
-        <h3 className="font-display text-xl font-bold text-navy">{title}</h3>
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="font-display text-xl font-bold text-navy">{title}</h3>
+          {onClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Skip"
+              className="-mr-1 -mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-navy/20 bg-white/80 text-base font-bold text-navy/70 transition hover:bg-white"
+            >
+              ✕
+            </button>
+          ) : null}
+        </div>
         <div className="mt-3 space-y-3 text-sm leading-relaxed text-navy/85">{children}</div>
         {onClose ? (
           <button
@@ -643,10 +655,19 @@ function GuestDialogue({
 
   return (
     <div className="absolute inset-0 z-40 flex items-end justify-center bg-[rgba(6,10,24,0.6)] p-3 backdrop-blur-[3px] sm:items-center">
+      <div className="relative w-full max-w-3xl">
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Skip dialogue"
+        className="absolute -top-3 right-1 z-50 flex h-9 w-9 items-center justify-center rounded-full border border-gold/60 bg-[rgba(10,16,34,0.95)] text-sm font-bold text-gold shadow-lg transition hover:bg-[rgba(30,24,10,0.95)]"
+      >
+        ✕
+      </button>
       <button
         type="button"
         onClick={advance}
-        className="w-full max-w-3xl cursor-pointer text-left"
+        className="w-full cursor-pointer text-left"
         aria-label="Continue conversation"
       >
         <div className="flex items-end gap-0 sm:gap-3">
@@ -702,6 +723,7 @@ function GuestDialogue({
           </div>
         </div>
       </button>
+      </div>
     </div>
   );
 }
@@ -787,7 +809,15 @@ function BossDialogue({
 
   return (
     <div className="absolute inset-0 z-40 flex items-end justify-center bg-[rgba(2,3,10,0.86)] p-3 backdrop-blur-[3px] sm:items-center">
-      <div className="w-full max-w-3xl overflow-hidden rounded-2xl border-2 border-[#7d1b2b] bg-[rgba(8,7,14,0.97)] shadow-[0_0_60px_rgba(160,20,40,0.35)]">
+      <div className="relative w-full max-w-3xl overflow-hidden rounded-2xl border-2 border-[#7d1b2b] bg-[rgba(8,7,14,0.97)] shadow-[0_0_60px_rgba(160,20,40,0.35)]">
+        <button
+          type="button"
+          onClick={finish}
+          aria-label="Skip dialogue"
+          className="absolute right-2 top-2 z-50 flex h-9 w-9 items-center justify-center rounded-full border border-[#a8253c] bg-black/70 text-sm font-bold text-[#ffb3c0] transition hover:bg-black/90"
+        >
+          ✕
+        </button>
         <div className="flex items-start gap-3 border-b border-[#7d1b2b]/60 bg-[rgba(30,6,12,0.75)] p-3">
           {portrait ? (
             <img
@@ -1573,6 +1603,14 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
               }}
             >
               <div className="pointer-events-none absolute inset-2 rounded-[16px] border border-[#d9c49a]/70" />
+              <button
+                type="button"
+                onClick={closeModal}
+                aria-label="Skip"
+                className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-[#c9a94f] bg-white/70 text-sm font-bold text-[#7a5a1e]"
+              >
+                ✕
+              </button>
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[#c9a94f] bg-[radial-gradient(circle_at_35%_30%,#fff3cf,#e3c478)] text-2xl shadow-md">
                 ✦
               </div>
@@ -1627,6 +1665,14 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                 "radial-gradient(120% 90% at 20% 0%, #fffaf0 0%, #f7ecd6 55%, #efdfc2 100%)",
             }}
           >
+            <button
+              type="button"
+              onClick={closeModal}
+              aria-label="Skip"
+              className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-[#c9a94f] bg-white/70 text-sm font-bold text-[#7a5a1e]"
+            >
+              ✕
+            </button>
             <div
               className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full text-[10px] font-semibold uppercase tracking-[0.15em] text-white shadow-md"
               style={{ background: ENVELOPE_THEMES[envelope.id]?.seal ?? "#b8912f" }}
