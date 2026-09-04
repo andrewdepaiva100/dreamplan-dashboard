@@ -72,8 +72,9 @@ export async function loadSave(): Promise<QuestSave | null> {
       weapons: Array.isArray(data.weapons) ? (data.weapons as string[]) : [],
       equipped_weapon: (data.equipped_weapon as string | null) ?? null,
     };
-    writeLocal(remote);
-    return remote;
+    const migrated = migrateWeapons(remote);
+    writeLocal(migrated);
+    return migrated;
   } catch (e) {
     console.error("[quest] load failed, using local save", e);
     return readLocal();
