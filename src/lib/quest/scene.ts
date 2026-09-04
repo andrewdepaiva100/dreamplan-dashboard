@@ -84,7 +84,7 @@ export class QuestScene extends Phaser.Scene {
   private enemies!: Phaser.Physics.Arcade.Group;
   private petals!: Phaser.Physics.Arcade.Group;
   private decor!: Phaser.GameObjects.Group;
-  private blocks!: Phaser.Physics.Arcade.Group;
+  
   private interactables: Interactable[] = [];
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
