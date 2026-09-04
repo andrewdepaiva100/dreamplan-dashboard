@@ -36,6 +36,10 @@ import imgGoldenHeart from "@/assets/quest/golden-heart.png";
 import imgSwiftSandals from "@/assets/quest/swift-sandals.png";
 import imgArbor from "@/assets/quest/arbor.png";
 import imgPriest from "@/assets/quest/priest.png";
+import imgAndre from "@/assets/quest/andre.png";
+import imgPhillip from "@/assets/quest/phillip.png";
+import imgItalo from "@/assets/quest/italo.png";
+import imgGabe from "@/assets/quest/gabe.png";
 import imgPew from "@/assets/quest/pew.png";
 import imgAltar from "@/assets/quest/altar.png";
 import imgLorena from "@/assets/quest/lorena.png";
@@ -123,8 +127,8 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   "maria-down": [imgMariaDown, 24, 34],
   "maria-side": [imgMariaSide, 24, 34],
   "maria-up": [imgMariaUp, 24, 34],
-  andrew: [imgAndrew, 24, 34],
-  "andrew-ceremony": [imgAndrewCeremony, 24, 34],
+  andrew: [imgAndrew, 25, 39],
+  "andrew-ceremony": [imgAndrewCeremony, 25, 39],
   enemy: [imgEnemy, 22, 22],
   spectre: [imgSpectre, 48, 48],
   "boss-water": [imgBossWater, 54, 66],
@@ -148,7 +152,11 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   "golden-heart": [imgGoldenHeart, 26, 24],
   "swift-sandals": [imgSwiftSandals, 26, 22],
   arbor: [imgArbor, 40, 44],
-  priest: [imgPriest, 24, 34],
+  priest: [imgPriest, 26, 37],
+  andre: [imgAndre, 24, 35],
+  phillip: [imgPhillip, 24, 35],
+  italo: [imgItalo, 24, 35],
+  gabe: [imgGabe, 24, 35],
   pew: [imgPew, 40, 22],
   altar: [imgAltar, 46, 34],
   lorena: [imgLorena, 24, 35],
@@ -173,9 +181,9 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   lamp: [imgLamp, 18, 40],
   bench: [imgBench, 34, 22],
   bridge: [imgBridge, 44, 64],
-  "andrew-down": [imgAndrewDown, 24, 34],
-  "andrew-side": [imgAndrewSide, 26, 34],
-  "andrew-up": [imgAndrewUp, 24, 34],
+  "andrew-down": [imgAndrewDown, 25, 39],
+  "andrew-side": [imgAndrewSide, 27, 39],
+  "andrew-up": [imgAndrewUp, 25, 39],
   "landmark-temple": [imgLmTemple, 200, 222],
   "landmark-conservatory": [imgLmConservatory, 204, 220],
   "landmark-townhall": [imgLmTownhall, 210, 230],
@@ -285,8 +293,8 @@ export function buildSprites(scene: Phaser.Scene) {
     walkFrame(scene, `andrew-${dir}-1`, `andrew-${dir}`, spec[1], spec[2], 1);
     walkFrame(scene, `andrew-${dir}-2`, `andrew-${dir}`, spec[1], spec[2], 2);
   }
-  scaled(scene, "andrew", "andrew-down", 24, 34);
-  scaled(scene, "andrew-ceremony", "andrew-ceremony", 24, 34);
+  scaled(scene, "andrew", "andrew-down", 25, 39);
+  scaled(scene, "andrew-ceremony", "andrew-ceremony", 25, 39);
 
   // ---- ENEMIES ----------------------------------------------------------
   tinted(scene, "enemy-distraction", "enemy", 22, 22, "#9ba0ad");
@@ -315,6 +323,10 @@ export function buildSprites(scene: Phaser.Scene) {
     ["swift-sandals", "swift-sandals"],
     ["arbor", "arbor"],
     ["priest", "priest"],
+    ["andre", "andre"],
+    ["phillip", "phillip"],
+    ["italo", "italo"],
+    ["gabe", "gabe"],
     ["pew", "pew"],
     ["altar", "altar"],
     ["lorena", "lorena"],

@@ -19,6 +19,8 @@ import {
   SECOND_BOSSES,
   WEDDING_GUESTS,
   FAMILY_GUESTS,
+  CATHEDRAL_FRIENDS,
+  LEGENDARY_PICKUPS,
   type GuestInfo,
   type BossConfig,
   ZONES,
@@ -210,6 +212,7 @@ export class QuestScene extends Phaser.Scene {
       }
     }
     this.spawnCompanion();
+    this.spawnLegendaries();
 
 
     // ---- groups (pooled) -------------------------------------------------
@@ -323,7 +326,7 @@ export class QuestScene extends Phaser.Scene {
         const edge = x === 0 || y === 0 || x === this.mapW - 1 || y === this.mapH - 1;
         // one continuous lush meadow across the whole realm, flecked with
         // blooming grass so every act shares the same green
-        row.push(edge ? T.WALL : rnd() < 0.14 ? T.BLOOM : T.MEADOW);
+        row.push(edge ? T.WALL : T.MEADOW);
       }
       data.push(row);
     }
@@ -705,6 +708,22 @@ export class QuestScene extends Phaser.Scene {
     });
   }
 
+  /** Hidden legendary weapons — one each in Acts I, III and IV. */
+  private spawnLegendaries() {
+    for (const l of LEGENDARY_PICKUPS) {
+      if (l.zone !== this.save.current_zone) continue;
+      if (this.save.weapons.includes(l.weapon)) continue;
+      const x = this.wx(l.x);
+      const y = this.wy(l.y);
+      const it = this.addInteractable(x, y, "relic", "legendary", l.prompt, {
+        id: l.weapon,
+        radius: 84,
+      });
+      it?.obj.setTint(0xffd977).setScale(1.4);
+      this.addKeyBeacon(x, y, `legend-${l.weapon}`, 0xffd977);
+    }
+  }
+
   private addInteractable(
     x: number,
     y: number,
@@ -812,7 +831,8 @@ export class QuestScene extends Phaser.Scene {
     for (const [x, y] of opts.bridges ?? []) {
       this.add.sprite(this.wx(x), this.wy(y), "bridge").setDepth(3).setAlpha(0.96);
     }
-    const flowerTints = [0xffffff, 0xffd7e5, 0xfff0bf, 0xd7e0ff, 0xffc2a1];
+    // purple, red, white and pink only
+    const flowerTints = [0xb779e8, 0xe23a4e, 0xffffff, 0xff8ec4];
     for (let i = 0; i < (opts.flowers ?? 0); i++) {
       const tx = 4 + rnd() * (DESIGN_W - 8);
       const ty = 4 + rnd() * (DESIGN_H - 8);
@@ -1134,7 +1154,7 @@ export class QuestScene extends Phaser.Scene {
         [60, 51],
         [60, 82],
       ],
-      flowers: 240,
+      flowers: 180,
       border: true,
     });
 
@@ -1427,7 +1447,7 @@ export class QuestScene extends Phaser.Scene {
         [58, 68],
         [76, 68],
       ],
-      flowers: 300,
+      flowers: 225,
     });
 
     this.addLandmark(
@@ -1682,7 +1702,7 @@ export class QuestScene extends Phaser.Scene {
         [12, 46, 6],
         [84, 70, 6],
       ],
-      flowers: 260,
+      flowers: 195,
       border: true,
     });
 
@@ -1835,7 +1855,7 @@ export class QuestScene extends Phaser.Scene {
         [26, 74],
         [104, 74],
       ],
-      flowers: 0,
+      flowers: 90,
     });
 
     // altar, priest and Andrew waiting at the front
@@ -1850,6 +1870,17 @@ export class QuestScene extends Phaser.Scene {
     ];
     FAMILY_GUESTS.forEach((g, i) => {
       const spot = famSpots[i];
+      if (spot) this.addGuest(g, spot[0], spot[1]);
+    });
+    // Andrew's closest friends, gathered on the groom's side
+    const friendSpots: [number, number][] = [
+      [56, 70],
+      [78, 70],
+      [56, 82],
+      [78, 82],
+    ];
+    CATHEDRAL_FRIENDS.forEach((g, i) => {
+      const spot = friendSpots[i];
       if (spot) this.addGuest(g, spot[0], spot[1]);
     });
     this.addInteractable(this.wx(66), this.wy(32), "andrew-ceremony", "andrew-ceremony", "Say your vows", {
@@ -2163,6 +2194,20 @@ export class QuestScene extends Phaser.Scene {
         this.removeInteractable(it);
         this.openModal({ type: "envelope", envelopeId: it.id! });
         break;
+      case "legendary": {
+        const pick = LEGENDARY_PICKUPS.find((l) => l.weapon === it.id);
+        this.removeKeyBeacon(`legend-${it.id}`);
+        this.removeInteractable(it);
+        if (it.id) this.grantWeapon(it.id);
+        if (pick) {
+          this.openModal({
+            type: "info",
+            title: WEAPON_BY_ID[pick.weapon]?.name ?? "Legendary weapon",
+            body: pick.body,
+          });
+        }
+        break;
+      }
       case "boots":
         this.removeInteractable(it);
         this.save.swift_boots = true;
@@ -2338,7 +2383,8 @@ export class QuestScene extends Phaser.Scene {
       case "guest": {
         const guest =
           Object.values(WEDDING_GUESTS).find((g) => g?.id === it.id) ??
-          FAMILY_GUESTS.find((g) => g.id === it.id);
+          FAMILY_GUESTS.find((g) => g.id === it.id) ??
+          CATHEDRAL_FRIENDS.find((g) => g.id === it.id);
         if (!guest) break;
         this.openModal({
           type: "guest",
