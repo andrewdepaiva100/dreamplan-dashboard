@@ -474,7 +474,9 @@ export class QuestScene extends Phaser.Scene {
   private spawnAnimals(seed: number, specs: [string, number, number, number][]) {
     const rnd = irnd(seed);
     for (const [key, tx, ty, count] of specs) {
-      for (let i = 0; i < count; i++) {
+      // 15% fewer animals per act, but never fewer than one of a species.
+      const total = Math.max(1, Math.round(count * 0.85));
+      for (let i = 0; i < total; i++) {
         const x = this.wx(tx + (rnd() - 0.5) * 12);
         const y = this.wy(ty + (rnd() - 0.5) * 8);
         const a = this.add.sprite(x, y, key).setDepth(9);
@@ -855,12 +857,12 @@ export class QuestScene extends Phaser.Scene {
         .setScale(0.8 + rnd() * 0.6);
     }
     if (opts.border) {
-      // Sparse, evenly spaced border trees — one every 6 design units.
-      for (let x = 2; x < DESIGN_W - 2; x += 6) {
+      // Sparse, evenly spaced border trees — 15% fewer than before.
+      for (let x = 2; x < DESIGN_W - 2; x += 7) {
         solid(x, 1.4, "tree", 0.28);
         solid(x + 3, DESIGN_H - 2.2, "tree", 0.28);
       }
-      for (let y = 5; y < DESIGN_H - 3; y += 6) {
+      for (let y = 5; y < DESIGN_H - 3; y += 7) {
         solid(1.4, y, "tree", 0.28);
         solid(DESIGN_W - 2.2, y + 3, "tree", 0.28);
       }
