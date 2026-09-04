@@ -272,7 +272,15 @@ export class QuestScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, this.mapW * TILE, this.mapH * TILE);
     this.physics.world.setBounds(0, 0, this.mapW * TILE, this.mapH * TILE);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
-    this.cameras.main.setZoom(this.scale.width < 620 ? 1.1 : 1.45);
+    // Never let a small realm letterbox: zoom in enough to always fill the view.
+    {
+      const base = this.scale.width < 620 ? 1.1 : 1.45;
+      const fill = Math.max(
+        this.scale.width / (this.mapW * TILE),
+        this.scale.height / (this.mapH * TILE),
+      );
+      this.cameras.main.setZoom(Math.max(base, fill));
+    }
 
     // warm romantic sunlight wash across the whole scene
     const sunlight = this.add.rectangle(
@@ -937,7 +945,7 @@ export class QuestScene extends Phaser.Scene {
           : zone === "the_haven"
             ? 62
             : zone === "starry_ascent"
-              ? 18
+              ? 44
               : MAP_W;
     this.mapW = dims;
     this.mapH = dims;
@@ -1796,11 +1804,6 @@ export class QuestScene extends Phaser.Scene {
         id: "summit",
       });
     this.addInteractable(this.wx(60), this.wy(46), "rest-stone", "rest", "Rest here");
-    if (this.save.vault_keys_count < 3)
-      this.addInteractable(this.wx(103), this.wy(36), "key", "vault-key", "Take the Golden Vault Key", {
-        id: "ascent",
-      });
-    this.addInteractable(this.wx(115), this.wy(36), "vault-door", "vault", "Open the Vault of Gratitude");
 
     if (this.save.relics_collected.includes("seal")) this.spawnGateway(this.wx(84), this.wy(16));
   }
@@ -2441,6 +2444,8 @@ export class QuestScene extends Phaser.Scene {
 
     if (id === "seal") {
       this.zoneState["finale"] = true;
+      this.objective = "The Cathedral gate opens — step through the portal.";
+      this.spawnGateway(this.player.x, this.player.y - 90);
     } else {
       const zone = this.save.current_zone;
       const need = RELICS.filter((r) => r.zone === zone).map((r) => r.id);
