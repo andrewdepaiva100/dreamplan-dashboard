@@ -2154,6 +2154,7 @@ export function createQuestGame(parent: HTMLElement, save: QuestSave) {
     scene: [QuestScene],
   });
   game.scene.start("quest", { save });
+  (window as unknown as Record<string, unknown>)["__questGame"] = game;
   void TILE_COUNT;
   return game;
 }
