@@ -65,40 +65,41 @@ export type Envelope = {
 export const ENVELOPES: Envelope[] = [
   {
     id: "waterfall",
-    title: "Waterfall Envelope #1",
+    title: "Envelope #1 — Love",
     zone: "sunlit_shores",
     letter:
-      "Maria — I hid this one behind the water on purpose. The loudest place on the map, and still the quietest place I know, because you're the one who found it. Thank you for walking toward me even when the noise was rushing. I would cross that water a thousand times for you. — Andrew",
+      "LOVE. Maria — I hid this one behind the water on purpose, because love is like that: loud and rushing on the outside, still and certain underneath. Loving you isn't a feeling I fell into, it's a choice I make every morning and would make a thousand more times. — Andrew",
   },
   {
     id: "hedge",
-    title: "Hedge Envelope #2",
+    title: "Envelope #2 — Peace",
     zone: "wedding_garden",
     letter:
-      "You broke through the wall. That's exactly what you did for my heart — you kept showing up gently until the hedges opened. I love the way you never force anything; you just bloom, and everything around you rearranges itself to make room. — Andrew",
+      "PEACE. You never force anything. You just bloom, and the world rearranges itself to make room for you. That is what you brought into my life — peace. Not the empty kind, the kind that stays through hard seasons because you're standing in it with me. — Andrew",
   },
   {
     id: "patio",
-    title: "Coffee Patio Envelope #3",
+    title: "Envelope #3 — Patience",
     zone: "the_haven",
     letter:
-      "Every coffee, every long talk, every ordinary afternoon with you has been my favorite part of being alive. If forever looks like this table and your laugh across from me, then I am the richest man in any realm. — Andrew",
+      "PATIENCE. Every long talk, every ordinary afternoon, every time you waited for me to find my words instead of rushing me — that's patience, and it's the quiet way you've loved me best. Forever with you looks like this table, and I am in no hurry anywhere else. — Andrew",
   },
   {
     id: "summit",
-    title: "Starlight Envelope #4",
+    title: "Envelope #4 — Kindness",
     zone: "starry_ascent",
     letter:
-      "You climbed. Of course you climbed. You have always been the kind of person who keeps going with a soft heart, and that is the rarest strength there is. Look at the stars for a second — that's what loving you feels like. — Andrew",
+      "KINDNESS. You climbed all this way and still stopped for everyone along the road. You keep going with a soft heart, and that is the rarest strength there is. Look at the stars for a second — your kindness is what makes the whole sky feel warm. — Andrew",
   },
   {
     id: "cathedral",
-    title: "Cathedral Envelope #5",
+    title: "Envelope #5 — Loyalty",
     zone: "cathedral",
     letter:
-      "Last one. There is nothing left to hide, only a door to walk through together. I choose you today and every day after, in the loud seasons and the quiet ones. Come find me by the stained glass. — Andrew",
+      "LOYALTY. Last one. Nothing left to hide, only a door to walk through together. I choose you today and every day after, in the loud seasons and the quiet ones, for as long as I have breath. Come find me by the stained glass. — Andrew",
   },
 ];
+
 
 export const ENVELOPE_IDS = ENVELOPES.map((e) => e.id);
 
