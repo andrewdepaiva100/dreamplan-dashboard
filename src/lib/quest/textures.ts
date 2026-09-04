@@ -348,6 +348,8 @@ export function buildSprites(scene: Phaser.Scene) {
     "spark-wand": { blade: "#ffd977", grip: "#8a6a34", kind: "wand" },
     "floral-bow": { blade: "#ff9ec4", grip: "#6d4d2c", kind: "bow" },
     lightblade: { blade: "#bfe3ff", grip: "#c8a24a", kind: "sword" },
+    "love-sword": { blade: "#ff6fae", grip: "#c8a24a", kind: "sword" },
+    "ally-blade": { blade: "#6fb6ff", grip: "#c8a24a", kind: "sword" },
     "starlight-censer": { blade: "#a9b6ff", grip: "#9aa4c4", kind: "wand" },
     "blade-of-vows": { blade: "#f2f0e4", grip: "#c8a24a", kind: "sword" },
     "lantern-wand": { blade: "#ffd977", grip: "#8a6a34", kind: "wand" },
