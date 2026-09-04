@@ -98,6 +98,13 @@ export const ENVELOPES: Envelope[] = [
     letter:
       "LOYALTY. Last one. Nothing left to hide, only a door to walk through together. I choose you today and every day after, in the loud seasons and the quiet ones, for as long as I have breath. Come find me by the stained glass. — Andrew",
   },
+  {
+    id: "wedding-hour",
+    title: "Secret Envelope — The Hour Has Come",
+    zone: "starry_ascent",
+    letter:
+      "IT'S TIME. Five pillars, all gold — which means the sky just told you what I've been holding in all morning: the wedding is about to start. The doors are open, the seats are filling, and every person who loves us is already whispering your name. The musicians are tuning; the first notes of our melody are minutes away. Pastor Alcir is smoothing his robe and pretending his knees don't creak. And I am standing at the end of the aisle in a suit I have straightened forty times, watching that door, waiting for it to open on you. Take one breath here under the stars. Then come down the staircase, Maria. I'll be right there. — Andrew",
+  },
 ];
 
 
@@ -583,6 +590,34 @@ export const PILLAR_GUARDIANS: BossConfig[] = [
     slides: [],
     silent: true,
     projectile: { color: 0xd6588f, speed: 170, every: 2400 },
+  },
+  {
+    name: "Violet Shard Guardian",
+    hp: 1000,
+    taunt: "Violet light splinters — a shard guardian unfolds from the pillar.",
+    art: "boss-star",
+    color: 0x9a6fe0,
+    scale: 0.95,
+    demon: "",
+    mariaLine: "",
+    intro: "",
+    slides: [],
+    silent: true,
+    projectile: { color: 0x9a6fe0, speed: 170, every: 2400 },
+  },
+  {
+    name: "Dawnlight Shard Guardian",
+    hp: 1000,
+    taunt: "The final pillar burns white-gold — one last shard guardian answers.",
+    art: "boss-star",
+    color: 0xf2e2a8,
+    scale: 0.95,
+    demon: "",
+    mariaLine: "",
+    intro: "",
+    slides: [],
+    silent: true,
+    projectile: { color: 0xf2e2a8, speed: 170, every: 2400 },
   },
 ];
 

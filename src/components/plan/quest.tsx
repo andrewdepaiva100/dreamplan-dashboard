@@ -47,6 +47,7 @@ import portraitAndre from "@/assets/quest/portrait-andre.jpg";
 import portraitPhillip from "@/assets/quest/portrait-phillip.jpg";
 import portraitItalo from "@/assets/quest/portrait-italo.jpg";
 import portraitGabe from "@/assets/quest/portrait-gabe.jpg";
+import portraitAndressa from "@/assets/quest/portrait-andressa.jpg";
 import bossWater from "@/assets/quest/boss-water.png";
 import bossGarden from "@/assets/quest/boss-garden.png";
 import bossHaven from "@/assets/quest/boss-haven.png";
@@ -70,6 +71,7 @@ const GUEST_PORTRAITS: Record<string, string> = {
   phillip: portraitPhillip,
   italo: portraitItalo,
   gabe: portraitGabe,
+  andressa: portraitAndressa,
 };
 
 /** Wax-seal colour + display word per themed love letter. */

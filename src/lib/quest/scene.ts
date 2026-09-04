@@ -687,19 +687,19 @@ export class QuestScene extends Phaser.Scene {
   private updateAlly(time: number) {
     const c = this.companion;
     if (!c) return;
-    if (this.allyBlade) this.allyBlade.setPosition(c.x + 12, c.y + 2).setDepth(c.depth + 1);
+    if (this.allyBlade) this.allyBlade.setPosition(c.x + 19, c.y + 2).setDepth(c.depth + 1);
     if (!this.save.weapons.includes("love-sword")) return;
     if (time < this.allySwingAt) return;
     const power = Math.max(1, Math.round(this.equippedWeapon().damage / 2));
     let hit = false;
     (this.enemies.getChildren() as Phaser.Physics.Arcade.Sprite[]).forEach((e) => {
-      if (!hit && e.active && Phaser.Math.Distance.Between(e.x, e.y, c.x, c.y) < 74) {
+      if (!hit && e.active && Phaser.Math.Distance.Between(e.x, e.y, c.x, c.y) < 112) {
         this.transformEnemy(e);
         hit = true;
       }
     });
     if (!hit && this.boss?.active && this.bossPhase === 1) {
-      if (Phaser.Math.Distance.Between(this.boss.x, this.boss.y, c.x, c.y) < 96) {
+      if (Phaser.Math.Distance.Between(this.boss.x, this.boss.y, c.x, c.y) < 145) {
         this.bossHitAt = 0;
         this.damageBoss(power);
         hit = true;
@@ -1850,11 +1850,11 @@ export class QuestScene extends Phaser.Scene {
       this.zoneState["pendingPillar"] = undefined;
       const beaten = ((this.zoneState["guardians"] as number[]) ?? []).concat(pending);
       this.zoneState["guardians"] = beaten;
-      const arr = (this.zoneState["pillars"] as number[]) ?? [0, 0, 0];
+      const arr = (this.zoneState["pillars"] as number[]) ?? [0, 0, 0, 0, 0];
       const aligned = arr.every((v, k) => v === 1 && beaten.includes(k));
       this.objective = aligned
         ? "The pillars align."
-        : `The Celestial Staircase — align all three pillars to warm gold (${beaten.length}/3).`;
+        : `The Celestial Staircase — align all five pillars to warm gold (${beaten.length}/5).`;
       if (aligned && !this.zoneState["stairs"]) {
         this.zoneState["stairs"] = true;
         this.openStaircase();
@@ -2042,9 +2042,21 @@ export class QuestScene extends Phaser.Scene {
         [16, 20],
         [104, 20],
       ], 5);
-      // one clean, symmetrical bloom court at the heart of the plateau
-      this.rect(d, 52, 44, 28, 20, T.BLOOM);
-      this.rect(d, 56, 48, 20, 12, T.MARBLE);
+      // a constellation court at the heart of the plateau
+      this.rect(d, 50, 42, 32, 24, T.BLOOM);
+      this.rect(d, 54, 46, 24, 16, T.MARBLE);
+      this.rect(d, 62, 52, 8, 4, T.BLOOM);
+      // star-point inlays along both roads
+      const inlay: [number, number][] = [
+        [24, 84], [40, 84], [56, 84], [72, 84], [88, 84],
+        [104, 68], [104, 52], [104, 36], [16, 68], [16, 52],
+        [16, 36], [32, 20], [48, 20], [64, 20], [80, 20], [96, 20],
+      ];
+      for (const [ix, iy] of inlay) this.rect(d, ix, iy, 2, 2, T.BLOOM);
+      // reflecting pools tucked clear of the walking roads
+      this.rect(d, 28, 30, 10, 7, T.WATER);
+      this.rect(d, 84, 44, 9, 7, T.WATER);
+      this.rect(d, 34, 62, 8, 6, T.WATER);
     });
     this.addPlayer(20, 85);
     this.spawnActGuide(26, 82);
@@ -2055,28 +2067,111 @@ export class QuestScene extends Phaser.Scene {
       100,
       22,
       "The Starry Observatory",
-      "A crystal dome tuned to the constellations. Align the three pillars and the stairway of stars appears.",
+      "A crystal dome tuned to the constellations. Align all five pillars and the stairway of stars appears.",
     );
     this.spawnActBoss(100, 32);
     this.spawnAnimals(4404, [["bird", 60, 50, 8]]);
 
-    this.zoneState["pillars"] = [0, 0, 0];
+    this.zoneState["pillars"] = [0, 0, 0, 0, 0];
     const pillarSpots: [number, number][] = [
       [54, 78],
       [88, 68],
       [42, 46],
+      [72, 30],
+      [26, 72],
     ];
-    pillarSpots.forEach(([x, y], i) =>
-      this.addInteractable(this.wx(x!), this.wy(y!), "pillar", "pillar", "Turn the crystal pillar (blue \u2192 gold \u2192 rose)", {
-        id: String(i),
-      }),
-    );
+    pillarSpots.forEach(([x, y], i) => {
+      const it = this.addInteractable(
+        this.wx(x!),
+        this.wy(y!),
+        "pillar",
+        "pillar",
+        "Turn the crystal pillar (blue \u2192 gold \u2192 rose)",
+        { id: String(i) },
+      );
+      // Each pillar reads as a small shrine: an aura pulse, crystal shards
+      // and star-flowers ringing its base.
+      const aura = this.add
+        .sprite(it.obj.x, it.obj.y, "spark")
+        .setTint(0x8fa6ff)
+        .setAlpha(0.35)
+        .setScale(5)
+        .setDepth(2)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({
+        targets: aura,
+        scale: 7.5,
+        alpha: 0.14,
+        duration: 1800 + i * 120,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * Math.PI * 2;
+        this.add
+          .sprite(it.obj.x + Math.cos(a) * 46, it.obj.y + Math.sin(a) * 30, "flowers")
+          .setTint(k % 2 ? 0xbfd0ff : 0xffe6b8)
+          .setAlpha(0.85)
+          .setScale(0.7)
+          .setDepth(4);
+      }
+    });
+
+    // Floating star lanterns and slow drifting light motes.
+    const lanterns: [number, number][] = [
+      [34, 36], [66, 24], [96, 58], [46, 62], [80, 80], [20, 50],
+    ];
+    for (const [lx, ly] of lanterns) {
+      const l = this.add
+        .sprite(this.wx(lx), this.wy(ly), "spark")
+        .setTint(0xffe6a8)
+        .setAlpha(0.55)
+        .setScale(2.6)
+        .setDepth(6)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      this.addLight(l.x, l.y, 0.4);
+      this.tweens.add({
+        targets: l,
+        y: l.y - 14,
+        alpha: 0.85,
+        duration: 2600,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+    }
+    for (let m = 0; m < 26; m++) {
+      const mote = this.add
+        .sprite(
+          this.wx(6 + Math.random() * 108),
+          this.wy(8 + Math.random() * 84),
+          "spark",
+        )
+        .setTint(0xdfe8ff)
+        .setAlpha(0.2 + Math.random() * 0.25)
+        .setScale(0.5 + Math.random() * 0.6)
+        .setDepth(5)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({
+        targets: mote,
+        y: mote.y - 40 - Math.random() * 50,
+        alpha: 0,
+        duration: 5000 + Math.random() * 4000,
+        repeat: -1,
+        delay: Math.random() * 3000,
+      });
+    }
 
     if (!this.has(this.save.secret_envelopes_found, "summit"))
       this.addInteractable(this.wx(102), this.wy(68), "envelope", "envelope", "Read the letter", {
         id: "summit",
       });
     this.addInteractable(this.wx(60), this.wy(46), "rest-stone", "rest", "Rest here");
+    if (this.zoneState["weddingLetter"] === true && !this.has(this.save.secret_envelopes_found, "wedding-hour"))
+      this.addInteractable(this.wx(60), this.wy(52), "envelope", "envelope", "Open the Secret Envelope", {
+        id: "wedding-hour",
+      });
 
     if (this.save.relics_collected.includes("seal")) this.spawnGateway(this.wx(84), this.wy(16));
   }
@@ -2084,11 +2179,29 @@ export class QuestScene extends Phaser.Scene {
   private openStaircase() {
     this.rect2Live();
     this.objective = "The Celestial Staircase forms — reach the Altar of Joy.";
-    this.emitToast("Three lights align. A staircase of stars unfolds.");
+    this.emitToast("Five lights align. A staircase of stars unfolds.");
+    // rising star burst along the new staircase
+    for (let i = 0; i < 30; i++) {
+      this.time.delayedCall(i * 60, () =>
+        this.spawnSparkle(this.wx(60 + (Math.random() - 0.5) * 40), this.wy(18 + Math.random() * 8), 0xffe6a8, 5),
+      );
+    }
     if (!this.save.relics_collected.includes("seal"))
       this.addInteractable(this.wx(84), this.wy(16), "relic", "relic", "Take the Seal of Perfect Peace", {
         id: "seal",
       });
+    // The wedding-hour letter appears where Maria stands.
+    if (!this.has(this.save.secret_envelopes_found, "wedding-hour")) {
+      this.zoneState["weddingLetter"] = true;
+      const ex = this.player?.x ?? this.wx(60);
+      const ey = (this.player?.y ?? this.wy(52)) + 26;
+      this.addInteractable(ex, ey, "envelope", "envelope", "Open the Secret Envelope", {
+        id: "wedding-hour",
+      });
+      this.time.delayedCall(1200, () =>
+        this.emitToast("A sealed envelope drifts down out of the starlight."),
+      );
+    }
   }
 
   private rect2Live() {
@@ -2994,12 +3107,12 @@ export class QuestScene extends Phaser.Scene {
         const aligned = arr.every((v, k) => v === 1 && guardiansBeaten.includes(k));
         this.emitToast(
           aligned
-            ? "All three pillars burn gold — the staircase forms."
-            : "Each pillar cycles blue \u2192 gold \u2192 rose. All three must be gold at once.",
+            ? "All five pillars burn gold — the staircase forms."
+            : "Each pillar cycles blue \u2192 gold \u2192 rose. All five must be gold at once.",
         );
         this.objective = aligned
           ? "The pillars align."
-          : `The Celestial Staircase — align all three pillars to warm gold (${arr.filter((v) => v === 1).length}/3).`;
+          : `The Celestial Staircase — align all five pillars to warm gold (${arr.filter((v) => v === 1).length}/5).`;
         if (aligned && !this.zoneState["stairs"]) {
           this.zoneState["stairs"] = true;
           this.openStaircase();
