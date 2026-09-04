@@ -63,6 +63,8 @@ const MAP_H = 180;
 const SX = MAP_W / DESIGN_W;
 const SY = MAP_H / DESIGN_H;
 const SPEED = 120;
+/** 2.5D floor tilt: vertical camera squash. 1 = flat top-down, lower = more perspective. */
+const SQUASH = 0.8;
 const DASH_MS = 170;
 const DASH_COOLDOWN = 2000;
 
@@ -163,12 +165,54 @@ export class QuestScene extends Phaser.Scene {
     preloadQuestArt(this);
   }
 
+  /**
+   * TRUE 2.5D PROJECTION.
+   *
+   * The camera is squashed vertically (zoomY = zoomX * SQUASH) so the ground
+   * plane reads as a surface receding away from the viewer instead of a flat
+   * sheet of paper. Everything that *stands up* in that world — characters,
+   * trees, buildings, text — gets its vertical scale pre-multiplied by 1/SQUASH
+   * so it renders upright and full height on top of the tilted floor. Flat
+   * things (shadow ellipses, ground washes, the tile floor) are deliberately
+   * left squashed, which is exactly what sells the perspective.
+   *
+   * The compensation is installed on the scaleY property itself, so tweens and
+   * any later setScale() call stay correct without touching call sites.
+   */
+  private installProjection() {
+    const K = 1 / SQUASH;
+    this.events.on(Phaser.Scenes.Events.ADDED_TO_SCENE, (go: Phaser.GameObjects.GameObject) => {
+      const upright =
+        go instanceof Phaser.GameObjects.Sprite ||
+        go instanceof Phaser.GameObjects.Image ||
+        go instanceof Phaser.GameObjects.Text;
+      if (!upright) return;
+      const o = go as unknown as { _scaleY: number; renderFlags: number };
+      if (Object.getOwnPropertyDescriptor(go, "scaleY")) return;
+      Object.defineProperty(go, "scaleY", {
+        configurable: true,
+        get() {
+          return o._scaleY;
+        },
+        set(v: number) {
+          const s = v * K;
+          o._scaleY = s;
+          if (s === 0) o.renderFlags &= ~4;
+          else o.renderFlags |= 4;
+        },
+      });
+      // re-run through the new setter so the object starts upright
+      (go as unknown as { scaleY: number }).scaleY = o._scaleY;
+    });
+  }
+
   create() {
     // Clear any leftover fade from the previous realm FIRST — a black screen
     // must never survive into a new scene, even if setup below hiccups.
     this.cameras.main.resetFX();
     this.cameras.main.setAlpha(1);
     this.cameras.main.fadeIn(500, 8, 12, 30);
+    this.installProjection();
 
     buildTileset(this);
     buildSprites(this);
@@ -299,9 +343,11 @@ export class QuestScene extends Phaser.Scene {
       const base = this.scale.width < 620 ? 1.1 : 1.45;
       const fill = Math.max(
         this.scale.width / (this.mapW * TILE),
-        this.scale.height / (this.mapH * TILE),
+        this.scale.height / (this.mapH * TILE * SQUASH),
       );
-      this.cameras.main.setZoom(Math.max(base, fill));
+      const z = Math.max(base, fill);
+      // squashed vertical zoom = the tilted ground plane of the 2.5D view
+      this.cameras.main.setZoom(z, z * SQUASH);
     }
 
     // warm romantic sunlight wash across the whole scene
@@ -324,6 +370,28 @@ export class QuestScene extends Phaser.Scene {
       repeat: -1,
       ease: "Sine.easeInOut",
     });
+
+    // ---- 2.5D atmosphere: distance haze + vignette -----------------------
+    {
+      const w = this.scale.width;
+      const h = this.scale.height;
+      const haze = this.add.graphics().setScrollFactor(0).setDepth(88);
+      haze.fillGradientStyle(0xbfd8f2, 0xbfd8f2, 0xbfd8f2, 0xbfd8f2, 0.34, 0.34, 0, 0);
+      haze.fillRect(0, 0, w, h * 0.42);
+      const vig = this.add.graphics().setScrollFactor(0).setDepth(89);
+      vig.fillGradientStyle(0x0a1226, 0x0a1226, 0x0a1226, 0x0a1226, 0, 0, 0.42, 0.42);
+      vig.fillRect(0, h * 0.55, w, h * 0.45);
+      this.scale.on("resize", () => {
+        const nw = this.scale.width;
+        const nh = this.scale.height;
+        haze.clear();
+        haze.fillGradientStyle(0xbfd8f2, 0xbfd8f2, 0xbfd8f2, 0xbfd8f2, 0.34, 0.34, 0, 0);
+        haze.fillRect(0, 0, nw, nh * 0.42);
+        vig.clear();
+        vig.fillGradientStyle(0x0a1226, 0x0a1226, 0x0a1226, 0x0a1226, 0, 0, 0.42, 0.42);
+        vig.fillRect(0, nh * 0.55, nw, nh * 0.45);
+      });
+    }
 
     this.pushHud(true);
     this.emitSave();
@@ -406,17 +474,17 @@ export class QuestScene extends Phaser.Scene {
   private bakeShadow(x: number, y: number, w: number, alpha = 0.2) {
     if (!this.shadowGfx) this.shadowGfx = this.add.graphics().setDepth(7);
     this.shadowGfx.fillStyle(0x0a1226, alpha);
-    this.shadowGfx.fillEllipse(x, y, w, w * 0.42);
+    this.shadowGfx.fillEllipse(x + w * 0.14, y + 2, w * 1.06, w * 0.5);
   }
 
   /** Soft contact shadow that grounds a moving actor in the 2.5D world. */
   private groundShadow(x: number, y: number, w: number, alpha = 0.24) {
-    return this.add.ellipse(x, y, w, w * 0.42, 0x0a1226, alpha).setDepth(7);
+    return this.add.ellipse(x, y, w * 1.06, w * 0.5, 0x0a1226, alpha).setDepth(7);
   }
 
   /** Attaches a contact shadow that tracks a moving actor every frame. */
   private attachShadow(t: Phaser.GameObjects.Sprite, w: number, alpha = 0.24) {
-    const s = this.groundShadow(t.x, t.y + t.displayHeight * 0.36, w, alpha);
+    const s = this.groundShadow(t.x + w * 0.14, t.y + t.displayHeight * 0.3, w, alpha);
     this.shadows.push({ s, t });
     return s;
   }
@@ -430,7 +498,7 @@ export class QuestScene extends Phaser.Scene {
     this.player = this.physics.add.sprite(x, y, "maria-down-0");
     this.player.anims.play("maria-idle-down");
     this.player.setScale(1.1);
-    this.player.setSize(13, 11).setOffset(5.5, 21.5);
+    this.player.setSize(13, 11 * SQUASH).setOffset(5.5, 22.5);
     this.player.setCollideWorldBounds(true);
     this.player.setDepth(this.dsort(y));
     this.attachShadow(this.player, 22, 0.28);
@@ -2899,7 +2967,7 @@ export class QuestScene extends Phaser.Scene {
       }
       const lift = pair.t === this.player ? Math.abs(bob) : 0;
       pair.s
-        .setPosition(pair.t.x, pair.t.y + pair.t.displayHeight * 0.36)
+        .setPosition(pair.t.x + pair.t.displayWidth * 0.12, pair.t.y + pair.t.displayHeight * 0.3)
         .setVisible(pair.t.visible)
         .setScale(1 - lift * 0.05)
         .setAlpha(pair.t.alpha * 0.9);
