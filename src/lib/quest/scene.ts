@@ -2325,6 +2325,14 @@ export class QuestScene extends Phaser.Scene {
         }
         break;
       }
+      case "guest": {
+        const guest =
+          Object.values(WEDDING_GUESTS).find((g) => g?.id === it.id) ??
+          FAMILY_GUESTS.find((g) => g.id === it.id);
+        if (!guest) break;
+        this.openModal({ type: "guest", name: guest.name, lines: guest.lines });
+        break;
+      }
       case "dog":
         this.openModal({
           type: "companion",
