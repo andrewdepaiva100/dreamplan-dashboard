@@ -2093,18 +2093,18 @@ export class QuestScene extends Phaser.Scene {
   // ---------------- ACT V --------------------------------------------------
   /** A gothic nave: stone floor, arcaded side walls, stained glass, pews, altar. */
   private buildAct5() {
-    this.cameras.main.setBackgroundColor("#1b1526");
-    this.makeMap(T.CANDLE, 505, (d) => {
+    this.cameras.main.setBackgroundColor("#e9e2d2");
+    this.makeMap(T.PATH, 505, (d) => {
       this.rect(d, 0, 0, DESIGN_W, DESIGN_H, T.WALL);
       // cool stone nave floor
       this.rect(d, 24, 12, 84, 80, T.MARBLE);
-      // raised sanctuary at the head of the nave
-      this.rect(d, 40, 12, 52, 14, T.CANDLE);
-      // long centre aisle runner
-      this.rect(d, 60, 26, 12, 66, T.CANDLE);
+      // raised sanctuary at the head of the nave — pale stone, not candlelit purple
+      this.rect(d, 40, 12, 52, 14, T.PATH);
+      // long centre aisle runner in a light beige stone
+      this.rect(d, 60, 26, 12, 66, T.PATH);
       // side aisles kept clear behind the columns
-      this.rect(d, 24, 26, 6, 66, T.CANDLE);
-      this.rect(d, 102, 26, 6, 66, T.CANDLE);
+      this.rect(d, 24, 26, 6, 66, T.PATH);
+      this.rect(d, 102, 26, 6, 66, T.PATH);
     });
     this.addPlayer(66, 86);
     this.scatterDecor(55, {
