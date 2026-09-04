@@ -19,6 +19,8 @@ import {
   SECOND_BOSSES,
   WEDDING_GUESTS,
   FAMILY_GUESTS,
+  CATHEDRAL_FRIENDS,
+  LEGENDARY_PICKUPS,
   type GuestInfo,
   type BossConfig,
   ZONES,
@@ -1853,6 +1855,17 @@ export class QuestScene extends Phaser.Scene {
       const spot = famSpots[i];
       if (spot) this.addGuest(g, spot[0], spot[1]);
     });
+    // Andrew's closest friends, gathered on the groom's side
+    const friendSpots: [number, number][] = [
+      [56, 70],
+      [78, 70],
+      [56, 82],
+      [78, 82],
+    ];
+    CATHEDRAL_FRIENDS.forEach((g, i) => {
+      const spot = friendSpots[i];
+      if (spot) this.addGuest(g, spot[0], spot[1]);
+    });
     this.addInteractable(this.wx(66), this.wy(32), "andrew-ceremony", "andrew-ceremony", "Say your vows", {
       radius: 70,
     });
@@ -2339,7 +2352,8 @@ export class QuestScene extends Phaser.Scene {
       case "guest": {
         const guest =
           Object.values(WEDDING_GUESTS).find((g) => g?.id === it.id) ??
-          FAMILY_GUESTS.find((g) => g.id === it.id);
+          FAMILY_GUESTS.find((g) => g.id === it.id) ??
+          CATHEDRAL_FRIENDS.find((g) => g.id === it.id);
         if (!guest) break;
         this.openModal({
           type: "guest",

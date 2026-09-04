@@ -293,8 +293,8 @@ export function buildSprites(scene: Phaser.Scene) {
     walkFrame(scene, `andrew-${dir}-1`, `andrew-${dir}`, spec[1], spec[2], 1);
     walkFrame(scene, `andrew-${dir}-2`, `andrew-${dir}`, spec[1], spec[2], 2);
   }
-  scaled(scene, "andrew", "andrew-down", 24, 34);
-  scaled(scene, "andrew-ceremony", "andrew-ceremony", 24, 34);
+  scaled(scene, "andrew", "andrew-down", 25, 39);
+  scaled(scene, "andrew-ceremony", "andrew-ceremony", 25, 39);
 
   // ---- ENEMIES ----------------------------------------------------------
   tinted(scene, "enemy-distraction", "enemy", 22, 22, "#9ba0ad");
