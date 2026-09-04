@@ -273,7 +273,7 @@ export const CONTROLS_HELP: { title: string; body: string }[] = [
 ];
 
 // =========================================================================
-// WEAPONS, BLACKSMITH, ACT GUIDES & BOSSES
+// WEAPONS, ACT GUIDES & BOSSES
 // =========================================================================
 
 export type Weapon = {
@@ -555,7 +555,7 @@ export const SIGNPOST_HEADER = "Weathered Signpost";
 
 export const SIGNPOST_DIRECTIONS: Record<ZoneId, string[]> = {
   sunlit_shores: [
-    "NORTH-WEST — The Blacksmith's forge. Ask for a blade; he never sends anyone away empty-handed.",
+    "NEARBY — Your realm guide. Speak with them; they will place this act's weapon in your hands.",
     "SOUTH — Your guide waits by the meadow trail with a gift for the road.",
     "EAST — The River Gates. Push the three stones onto the three plates to open the water.",
     "FAR EAST — The Grotto Temple and the shining gateway onward.",

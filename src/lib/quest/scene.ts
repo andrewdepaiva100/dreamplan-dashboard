@@ -872,7 +872,7 @@ export class QuestScene extends Phaser.Scene {
   }
 
   // ---------------- WEAPON IN HAND ----------------------------------------
-  /** Shows the equipped weapon in Maria's hand (nothing before the forge). */
+  /** Shows the equipped weapon in Maria's hand (nothing until a guide gifts one). */
   private refreshHand() {
     const id = this.save.equipped_weapon;
     const owned = !!id && this.save.weapons.includes(id);
