@@ -24,3 +24,16 @@ Each boss gets a short framing line so it is explicit these are Andrew's real in
 - `src/lib/quest/scene.ts`: gate `checkCutscene()` on realm-entry time and emit the landmark modal after the banner window.
 - `src/components/plan/quest.tsx`: shrink the objective HUD block; rework the `andrew` modal; render new boss framing/Maria line in the boss modal.
 - `src/lib/quest/content.ts`: add `demonOf` + `mariaLine` fields to each `BossConfig` (including second bosses) with the new copy.
+
+## 5. Act I spawn closer to the action
+Maria currently starts at the far west edge of the Sunlit Shores, a long walk from the road, temple and boss. Move the start point (and the guide/signpost/guest cluster that sits beside it) toward the middle of the realm so Act I begins near the main road, with the crossing and temple a short walk away.
+
+## 6. Act V: fewer hearts
+The cathedral is crowded with pickups. Act V gets exactly two golden hearts and a reduced number of plain hearts, placed along the aisle edges instead of scattered across the floor.
+
+## 7. Act V church redesign (reference image)
+Rebuild the cathedral interior to read like the reference: a long stone nave with a raised altar and candelabra at the front, a painted altarpiece behind it, a row of tall arched stained-glass windows down the side wall, stone columns between the arches, and two neat rows of dark wooden pews facing the altar with a clear central aisle. Cooler grey-stone floor with warm candlelight accents instead of the current open marble hall. New/updated art for the arched window, column and altarpiece as needed.
+
+## Technical notes (additions)
+- `src/lib/quest/scene.ts`: `buildAct1` player/NPC coordinates; `spawnHearts` gets per-zone counts (Act V: 2 golden, few plain); `buildAct5` layout rewritten with wall arcades, columns, pew rows, altar dais.
+- New sprites via image generation for the gothic window/column/altarpiece, registered in `src/lib/quest/textures.ts`.
