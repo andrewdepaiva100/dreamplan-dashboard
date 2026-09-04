@@ -164,7 +164,7 @@ export class QuestHouseScene extends Phaser.Scene {
     pelt.fillEllipse(cx + 90, fy + 200, 190, 96);
     pelt.fillEllipse(cx + 10, fy + 178, 70, 56);
     pelt.fillEllipse(cx + 170, fy + 226, 66, 44);
-    pelt.fillStyle(0x84573221, 1);
+    pelt.fillStyle(0x845732, 1);
     pelt.fillEllipse(cx + 96, fy + 196, 120, 54);
 
     // ---- bookshelf + potted tree -----------------------------------------
