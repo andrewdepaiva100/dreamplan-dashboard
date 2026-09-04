@@ -26,6 +26,8 @@ Friends in Act 5 no longer show a descriptive line under their names. Three exce
 ## Also
 - 10% more lamps and torches across Acts I–IV for a warmer, better-lit world.
 - The grey enemies get colour — tinted, more characterful variants instead of flat grey blobs.
+- Act II boss arena is widened by 10% so there's room to move.
+- Boss projectiles fly 20% slower.
 
 ## Technical notes
 - `src/lib/quest/content.ts`: boss `demon`/`role` text, Alicia line, Bram weapon + line, new sword entry with damage, weapon blurbs with damage values, Act 5 guest `role` fields blanked except Gabriel/Phillip/Gianluca.
