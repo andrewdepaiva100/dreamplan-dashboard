@@ -33,6 +33,7 @@ import imgVaultDoor from "@/assets/quest/vault-door.png";
 import imgGateway from "@/assets/quest/gateway.png";
 import imgHeart from "@/assets/quest/heart-pickup.png";
 import imgGoldenHeart from "@/assets/quest/golden-heart.png";
+import imgSwiftSandals from "@/assets/quest/swift-sandals.png";
 import imgArbor from "@/assets/quest/arbor.png";
 import imgGuest from "@/assets/quest/guest.png";
 import imgGuide from "@/assets/quest/guide.png";
@@ -133,6 +134,7 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   gateway: [imgGateway, 44, 56],
   "heart-pickup": [imgHeart, 16, 14],
   "golden-heart": [imgGoldenHeart, 26, 24],
+  "swift-sandals": [imgSwiftSandals, 26, 22],
   arbor: [imgArbor, 40, 44],
   guest: [imgGuest, 20, 30],
   guide: [imgGuide, 22, 32],
@@ -286,6 +288,7 @@ export function buildSprites(scene: Phaser.Scene) {
     ["gateway", "gateway"],
     ["heart-pickup", "heart-pickup"],
     ["golden-heart", "golden-heart"],
+    ["swift-sandals", "swift-sandals"],
     ["arbor", "arbor"],
     ["guest", "guest"],
     ["guide", "guide"],

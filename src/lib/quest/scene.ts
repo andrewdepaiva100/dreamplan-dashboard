@@ -869,7 +869,8 @@ export class QuestScene extends Phaser.Scene {
     this.objective = ZONES[zone].objective;
     // Act I is a compact, welcoming realm; Act II is a small open garden so the
     // four seasonal keys stay findable; later acts sprawl at full size.
-    const dims = zone === "sunlit_shores" ? 62 : zone === "wedding_garden" ? 70 : MAP_W;
+    const dims =
+      zone === "sunlit_shores" ? 62 : zone === "wedding_garden" ? 70 : zone === "the_haven" ? 126 : MAP_W;
     this.mapW = dims;
     this.mapH = dims;
     this.sxF = this.mapW / DESIGN_W;
@@ -1642,9 +1643,11 @@ export class QuestScene extends Phaser.Scene {
       }),
     );
 
-    this.addInteractable(this.wx(66), this.wy(54), "andrew", "andrew", "Talk with Andrew", {
+    this.addInteractable(this.wx(26), this.wy(55), "andrew", "andrew", "Talk with Andrew", {
       radius: 54,
     });
+    if (!this.save.swift_boots)
+      this.addInteractable(this.wx(24), this.wy(45), "swift-sandals", "boots", SWIFT_SANDALS.prompt);
     this.addInteractable(this.wx(60), this.wy(50), "stone-memory", "memory", "Touch the Memory Stone");
     if (!this.has(this.save.secret_envelopes_found, "patio"))
       this.addInteractable(this.wx(16), this.wy(18), "envelope", "envelope", "Read the letter", {
@@ -2091,6 +2094,14 @@ export class QuestScene extends Phaser.Scene {
         this.removeInteractable(it);
         this.openModal({ type: "envelope", envelopeId: it.id! });
         break;
+      case "boots":
+        this.removeInteractable(it);
+        this.save.swift_boots = true;
+        this.emitSave();
+        this.pushHud(true);
+        this.spawnSparkle(this.player.x, this.player.y, 0xffd977, 22);
+        this.openModal({ type: "info", title: SWIFT_SANDALS.name, body: SWIFT_SANDALS.body });
+        break;
       case "rest":
         this.save.player_health = 5;
         this.stamina = 100;
@@ -2106,7 +2117,7 @@ export class QuestScene extends Phaser.Scene {
         if (sheets >= 3 && !this.save.relics_collected.includes("shield")) {
           this.zoneState["melodyPlayed"] = true;
           this.objective = "Andrew plays the golden harp — take the Shield of Unshakable Faith.";
-          this.addInteractable(this.wx(66), this.wy(58), "relic", "relic", "Take the relic", {
+          this.addInteractable(this.wx(30), this.wy(59), "relic", "relic", "Take the relic", {
             id: "shield",
           });
           this.openModal({
@@ -2529,7 +2540,8 @@ export class QuestScene extends Phaser.Scene {
       vy /= len;
     }
     const dashing = time < this.dashUntil;
-    const speed = SPEED * (dashing ? 3 : 1);
+    const swift = this.save.swift_boots ? SWIFT_SANDALS.multiplier : 1;
+    const speed = SPEED * swift * (dashing ? 3 : 1);
     this.player.setVelocity(vx * speed, vy * speed);
 
     // 4-directional animation

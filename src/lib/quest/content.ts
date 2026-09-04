@@ -349,6 +349,16 @@ export const WEAPON_BY_ID: Record<string, Weapon> = Object.fromEntries(
 /** Act I's guide hands this over — there is no forge and no practice blade. */
 export const DEFAULT_WEAPON = "spark-wand";
 
+/** Post-Act II speed collectible found near the Haven spawn. */
+export const SWIFT_SANDALS = {
+  id: "swift-sandals",
+  name: "The Swift Sandals of Joy",
+  prompt: "Take the Swift Sandals",
+  multiplier: 1.45,
+  body:
+    "Left on the Haven cobblestones, gold ribbons still fluttering. The moment Maria laces them on her step lightens — she moves through every realm noticeably faster from here on, and the sandals never leave her.",
+};
+
 /** The forge on the Sunlit Shores — Bram hands over the Act II weapon early. */
 export const BLACKSMITH = {
   name: "Bram the Smith",
