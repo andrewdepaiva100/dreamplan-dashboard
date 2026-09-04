@@ -27,6 +27,7 @@ import {
 import { EV, type HudState, type ModalPayload } from "@/lib/quest/events";
 import type { ZoneId } from "@/lib/quest/content";
 import mariaPortrait from "@/assets/quest/maria-portrait.png";
+import titleCouple from "@/assets/quest/title-couple.png";
 import portraitLorena from "@/assets/quest/portrait-lorena.jpg";
 import portraitAlicia from "@/assets/quest/portrait-alicia.jpg";
 import portraitPedro from "@/assets/quest/portrait-pedro.jpg";
@@ -661,26 +662,37 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
     return (
       <div className="relative overflow-hidden rounded-2xl border border-rose-gold/30 bg-[image:var(--gradient-cover)] px-6 py-12 text-center">
         <AmbientCanvas />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(6,10,24,0.55)_100%)]" />
         <div className="relative z-10 mx-auto flex max-w-md flex-col items-center">
-          <div className="w-full rounded-3xl border border-rose-gold/40 bg-[rgba(255,255,255,0.12)] p-8 shadow-[0_0_60px_-20px_rgba(201,162,75,0.45)] backdrop-blur-xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-gold-glow">
+          <div className="w-full rounded-3xl border border-rose-gold/40 bg-[rgba(255,255,255,0.12)] p-6 shadow-[0_0_60px_-20px_rgba(201,162,75,0.45)] backdrop-blur-xl sm:p-8">
+            <div className="mx-auto max-w-[240px] animate-[quest-float_6s_ease-in-out_infinite]">
+              <img
+                src={titleCouple}
+                alt="Pixel-art Andrew and Maria standing together in a golden flower meadow"
+                width={1024}
+                height={1024}
+                className="w-full rounded-2xl border-2 border-gold/70 shadow-[0_0_40px_-10px_rgba(201,162,75,0.6)]"
+                style={{ imageRendering: "pixelated" }}
+              />
+            </div>
+            <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.35em] text-gold-glow">
               A gift for Maria
             </p>
-            <h2 className="mt-4 font-display text-[2.6rem] font-extrabold leading-tight text-white">
+            <h2 className="mt-3 font-display text-[2.6rem] font-extrabold leading-tight text-white">
               Maria&apos;s Quest
             </h2>
             <p className="mt-1 font-serif-italic text-xl italic text-blush">Realm of the Golden Ring</p>
-            <p className="mx-auto mt-5 max-w-xs text-sm leading-relaxed text-sky">
+            <p className="mx-auto mt-4 max-w-xs text-sm leading-relaxed text-sky">
               Walk five realms, turn worry into blossoms, gather five relics of love, and find Andrew
               waiting at the cathedral.
             </p>
 
-            <div className="mx-auto mt-8 flex max-w-xs flex-col gap-3">
+            <div className="mx-auto mt-7 flex max-w-xs flex-col gap-3">
               <button
                 type="button"
                 disabled={loading}
                 onClick={() => void startGame(true)}
-                className="rounded-xl bg-gradient-to-r from-gold to-gold-glow px-5 py-3 text-sm font-bold text-navy shadow-lg shadow-gold/20 transition-transform active:scale-[0.98] disabled:opacity-60"
+                className="rounded-xl bg-gradient-to-r from-gold to-gold-glow px-5 py-3.5 text-sm font-bold text-navy shadow-lg shadow-gold/30 transition hover:shadow-xl hover:shadow-gold/40 active:scale-[0.98] disabled:opacity-60"
               >
                 New Game
               </button>
@@ -688,21 +700,21 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                 type="button"
                 disabled={loading || !canContinue}
                 onClick={() => void startGame(false)}
-                className="rounded-xl border border-sky/60 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-transform active:scale-[0.98] disabled:opacity-40"
+                className="rounded-xl border border-sky/60 bg-white/10 px-5 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:border-gold/60 hover:bg-white/15 active:scale-[0.98] disabled:opacity-40"
               >
                 {canContinue ? "Continue Your Journey" : "No saved journey yet"}
               </button>
               <button
                 type="button"
                 onClick={() => setOverlay("story")}
-                className="rounded-xl border border-rose-gold/40 bg-white/10 px-5 py-3 text-sm font-semibold text-blush backdrop-blur-sm transition-transform active:scale-[0.98]"
+                className="rounded-xl border border-rose-gold/40 bg-white/10 px-5 py-3.5 text-sm font-semibold text-blush backdrop-blur-sm transition hover:border-gold/60 hover:bg-white/15 active:scale-[0.98]"
               >
                 How to Play &amp; Story
               </button>
               <button
                 type="button"
                 onClick={onExit}
-                className="rounded-xl px-5 py-3 text-sm font-semibold text-sky underline underline-offset-4 transition-transform active:scale-[0.98]"
+                className="rounded-xl px-5 py-3 text-sm font-semibold text-sky underline underline-offset-4 transition hover:text-white active:scale-[0.98]"
               >
                 Back to Dashboard
               </button>

@@ -439,7 +439,7 @@ export class QuestScene extends Phaser.Scene {
   // =======================================================================
 
   /** Places the act's flagship building with a solid footprint and a cutscene trigger. */
-  private addLandmark(key: string, tx: number, ty: number, title: string, body: string) {
+  private addLandmark(key: string, tx: number, ty: number, title: string, body: string, footH = 0.22) {
     const sprite = this.add.sprite(this.wx(tx), this.wy(ty), key).setDepth(11);
     if (!this.solidDecor) this.solidDecor = this.physics.add.staticGroup();
     const foot = this.solidDecor.create(
@@ -449,7 +449,7 @@ export class QuestScene extends Phaser.Scene {
     ) as Phaser.Physics.Arcade.Sprite;
     foot.setVisible(false);
     const b = foot.body as Phaser.Physics.Arcade.StaticBody;
-    b.setSize(sprite.width * 0.72, Math.max(16, sprite.height * 0.22));
+    b.setSize(sprite.width * 0.72, Math.max(16, sprite.height * footH));
     b.updateFromGameObject?.();
     this.landmark = { sprite, title, body };
     this.tweens.add({
@@ -1387,6 +1387,8 @@ export class QuestScene extends Phaser.Scene {
       this.rect(d, 111, 36, 1, 8, T.HEDGE);
       this.rect(d, 111, 60, 1, 7, T.HEDGE);
       this.rect(d, 108, 44, 5, 16, T.MARBLE);
+      // generous marble walk-up directly in front of the seal door
+      this.rect(d, 104, 46, 8, 12, T.MARBLE);
       this.rect(d, 112, 35, 18, 1, T.HEDGE);
       this.rect(d, 112, 66, 18, 1, T.HEDGE);
       // central fountain court
@@ -1434,6 +1436,8 @@ export class QuestScene extends Phaser.Scene {
       44,
       "The Grand Conservatory",
       "Glass and white iron hold an endless summer inside. Four seasonal keys wake its doors.",
+      // shallow footprint — the seal door below the dome must stay reachable
+      0.1,
     );
     this.spawnAnimals(2202, [
       ["bird", 40, 30, 6],
@@ -1464,6 +1468,8 @@ export class QuestScene extends Phaser.Scene {
       "vault-door",
       "conservatory",
       "Open the Conservatory",
+      // letter-like reach so the E prompt appears as soon as Maria steps up
+      { radius: 84 },
     );
     this.addInteractable(this.wx(66), this.wy(54), "rest-stone", "rest", "Rest here");
 
