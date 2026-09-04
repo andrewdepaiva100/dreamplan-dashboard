@@ -292,6 +292,8 @@ export class QuestScene extends Phaser.Scene {
         throw err;
       }
     }
+    // Bridges may have carved new walkable tiles — refresh collision.
+    this.layer.setCollision(SOLID_TILES as unknown as number[]);
     this.spawnCompanion();
     this.spawnLegendaries();
 
