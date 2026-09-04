@@ -946,7 +946,7 @@ export class QuestScene extends Phaser.Scene {
             ? 62
             : zone === "starry_ascent"
               ? 44
-              : MAP_W;
+              : 30;
     this.mapW = dims;
     this.mapH = dims;
     this.sxF = this.mapW / DESIGN_W;
