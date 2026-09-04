@@ -2489,31 +2489,36 @@ export class QuestScene extends Phaser.Scene {
       type: "boss",
       name: cfg.name,
       art: cfg.art,
+      role: cfg.role ?? "",
       intro: cfg.intro,
       demon: cfg.demon,
       mariaLine: cfg.mariaLine,
-      choices: cfg.replies.map((r) => ({ id: r.id, text: r.text })),
+      slides: cfg.slides.map((s) => ({
+        boss: s.boss,
+        replies: s.replies.map((r) => ({ id: r.id, text: r.text, answer: r.answer })),
+      })),
     });
   }
 
-  /** Maria's answer decides how the fight opens. */
+  /** Maria's dominant tone across the confrontation decides how the fight opens. */
   private onBossChoice(id: string) {
     const cfg = ACT_BOSSES[this.save.current_zone];
     this.onResume();
     if (!cfg || !this.boss) return;
-    const reply = cfg.replies.find((r) => r.id === id) ?? cfg.replies[0]!;
+    const flavor = (id in BOON_BY_FLAVOR ? id : "bold") as keyof typeof BOON_BY_FLAVOR;
+    const reply = BOON_BY_FLAVOR[flavor];
     try {
       const raw = localStorage.getItem("quest-boss-choices");
       const all = raw ? (JSON.parse(raw) as Record<string, string>) : {};
-      all[this.save.current_zone] = reply.id;
+      all[this.save.current_zone] = flavor;
       localStorage.setItem("quest-boss-choices", JSON.stringify(all));
     } catch {
       /* storage is optional */
     }
     this.bossPhase = 1;
     this.objective = `${cfg.name} — swing your weapon until its worry lifts.`;
-    this.emitToast(`${cfg.name}: "${reply.answer}"`);
-    this.time.delayedCall(2600, () => this.emitToast(reply.boonText));
+    this.emitToast(reply.boonText);
+
     if (reply.boon === "stamina") {
       this.stamina = 100;
       this.dashReadyAt = 0;
