@@ -687,19 +687,19 @@ export class QuestScene extends Phaser.Scene {
   private updateAlly(time: number) {
     const c = this.companion;
     if (!c) return;
-    if (this.allyBlade) this.allyBlade.setPosition(c.x + 12, c.y + 2).setDepth(c.depth + 1);
+    if (this.allyBlade) this.allyBlade.setPosition(c.x + 19, c.y + 2).setDepth(c.depth + 1);
     if (!this.save.weapons.includes("love-sword")) return;
     if (time < this.allySwingAt) return;
     const power = Math.max(1, Math.round(this.equippedWeapon().damage / 2));
     let hit = false;
     (this.enemies.getChildren() as Phaser.Physics.Arcade.Sprite[]).forEach((e) => {
-      if (!hit && e.active && Phaser.Math.Distance.Between(e.x, e.y, c.x, c.y) < 74) {
+      if (!hit && e.active && Phaser.Math.Distance.Between(e.x, e.y, c.x, c.y) < 112) {
         this.transformEnemy(e);
         hit = true;
       }
     });
     if (!hit && this.boss?.active && this.bossPhase === 1) {
-      if (Phaser.Math.Distance.Between(this.boss.x, this.boss.y, c.x, c.y) < 96) {
+      if (Phaser.Math.Distance.Between(this.boss.x, this.boss.y, c.x, c.y) < 145) {
         this.bossHitAt = 0;
         this.damageBoss(power);
         hit = true;
