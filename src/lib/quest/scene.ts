@@ -299,7 +299,7 @@ export class QuestScene extends Phaser.Scene {
     }
     decorate(data);
     this.map = this.make.tilemap({ data, tileWidth: TILE, tileHeight: TILE });
-    const tiles = this.map.addTilesetImage("quest-tiles", "quest-tiles", TILE, TILE, 0, 0)!;
+    const tiles = this.map.addTilesetImage("quest-tiles", "quest-tiles", TILE * HD, TILE * HD, 0, 0)!;
     this.layer = this.map.createLayer(0, tiles, 0, 0)!;
     this.layer.setCollision(SOLID_TILES as unknown as number[]);
     this.layer.setCullPadding(3, 3);
