@@ -35,6 +35,9 @@ import imgHeart from "@/assets/quest/heart-pickup.png";
 import imgGoldenHeart from "@/assets/quest/golden-heart.png";
 import imgSwiftSandals from "@/assets/quest/swift-sandals.png";
 import imgArbor from "@/assets/quest/arbor.png";
+import imgPriest from "@/assets/quest/priest.png";
+import imgPew from "@/assets/quest/pew.png";
+import imgAltar from "@/assets/quest/altar.png";
 import imgGuest from "@/assets/quest/guest.png";
 import imgGuide from "@/assets/quest/guide.png";
 import imgSignpost from "@/assets/quest/signpost.png";
@@ -136,6 +139,9 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   "golden-heart": [imgGoldenHeart, 26, 24],
   "swift-sandals": [imgSwiftSandals, 26, 22],
   arbor: [imgArbor, 40, 44],
+  priest: [imgPriest, 24, 34],
+  pew: [imgPew, 40, 22],
+  altar: [imgAltar, 46, 34],
   guest: [imgGuest, 20, 30],
   guide: [imgGuide, 22, 32],
   "guide-act": [imgGuideAct, 24, 34],
@@ -290,6 +296,9 @@ export function buildSprites(scene: Phaser.Scene) {
     ["golden-heart", "golden-heart"],
     ["swift-sandals", "swift-sandals"],
     ["arbor", "arbor"],
+    ["priest", "priest"],
+    ["pew", "pew"],
+    ["altar", "altar"],
     ["guest", "guest"],
     ["guide", "guide"],
     ["guide-act", "guide-act"],
