@@ -172,49 +172,69 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
     const HOME = [0, 4, 7, 4, 5, 2, 0, -5, 0, 4, 9, 7, 5, 4, 2, 0];
     const melody = mode === "battle" ? BATTLE : mode === "home" ? HOME : (THEMES[zone] ?? THEMES["sunlit_shores"]!);
     const bassRoot = mode === "battle" ? -17 : mode === "home" ? -12 : -12;
-    const step = mode === "battle" ? 0.24 : mode === "home" ? 0.62 : 0.42; // seconds per note
+    // Unhurried, breathing pace — closer to a quiet piano score than a chiptune.
+    const step = mode === "battle" ? 0.34 : mode === "home" ? 1.5 : 1.15;
 
     const master = ctx.createGain();
     master.gain.value = 0.0001;
     master.connect(ctx.destination);
-    master.gain.exponentialRampToValueAtTime(mode === "battle" ? 0.09 : 0.07, ctx.currentTime + 1.2);
+    master.gain.exponentialRampToValueAtTime(mode === "battle" ? 0.075 : 0.06, ctx.currentTime + 2.5);
 
-    // warm reverb-ish softener
+    // warm, soft-felt tone: heavy low-pass so nothing sounds pixelated
     const soft = ctx.createBiquadFilter();
     soft.type = "lowpass";
-    soft.frequency.value = mode === "battle" ? 2600 : 1900;
+    soft.frequency.value = mode === "battle" ? 1500 : 1000;
+    soft.Q.value = 0.4;
     soft.connect(master);
 
-    const pluck = (freq: number, at: number, dur: number, gain: number, type: OscillatorType) => {
-      const o = ctx.createOscillator();
-      o.type = type;
-      o.frequency.setValueAtTime(freq, at);
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, at);
-      g.gain.exponentialRampToValueAtTime(gain, at + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-      o.connect(g).connect(soft);
-      o.start(at);
-      o.stop(at + dur + 0.05);
+    /** A felt-piano note: sine body, faint triangle overtone, long soft tail. */
+    const note = (freq: number, at: number, dur: number, gain: number) => {
+      for (const [type, mul, amp] of [
+        ["sine", 1, 1],
+        ["triangle", 2, 0.16],
+      ] as [OscillatorType, number, number][]) {
+        const o = ctx.createOscillator();
+        o.type = type;
+        o.frequency.setValueAtTime(freq * mul, at);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, at);
+        g.gain.linearRampToValueAtTime(gain * amp, at + 0.09);
+        g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+        o.connect(g).connect(soft);
+        o.start(at);
+        o.stop(at + dur + 0.1);
+      }
     };
 
+    // a slow pad underneath, the way ambient game scores hold a room together
+    const padOsc = ctx.createOscillator();
+    const padGain = ctx.createGain();
+    padOsc.type = "sine";
+    padOsc.frequency.value = hz(bassRoot);
+    padGain.gain.value = 0.0001;
+    padGain.gain.linearRampToValueAtTime(mode === "battle" ? 0.05 : 0.035, ctx.currentTime + 4);
+    padOsc.connect(padGain).connect(soft);
+    padOsc.start();
+
     let i = 0;
-    let next = ctx.currentTime + 0.1;
+    let next = ctx.currentTime + 0.6;
     const tick = () => {
-      const horizon = ctx.currentTime + 0.6;
+      const horizon = ctx.currentTime + 1.2;
       while (next < horizon) {
         const n = melody[i % melody.length]!;
-        pluck(hz(n), next, mode === "battle" ? 0.28 : 0.9, 0.5, mode === "battle" ? "sawtooth" : "triangle");
-        // soft harmony a third above, every other note
-        if (i % 2 === 0) pluck(hz(n + (mode === "battle" ? 3 : 4)), next + 0.03, 0.7, 0.18, "sine");
-        // bass on the downbeat of each bar of four
-        if (i % 4 === 0) pluck(hz(bassRoot + (i % 8 === 0 ? 0 : 5)), next, mode === "battle" ? 0.5 : 1.6, 0.35, "sine");
-        next += step;
+        const rest = mode === "battle" ? 0 : Math.random();
+        // let phrases breathe: sometimes simply hold the silence
+        if (rest < 0.78) {
+          note(hz(n), next, mode === "battle" ? 0.9 : 3.4, mode === "battle" ? 0.32 : 0.24);
+          if (i % 4 === 0) note(hz(n + 7) / 2, next + 0.12, 4.2, 0.09);
+        }
+        if (i % 4 === 0) note(hz(bassRoot + (i % 8 === 0 ? 0 : 5)), next, 4.5, 0.14);
+        next += step * (mode === "battle" ? 1 : 0.85 + Math.random() * 0.6);
         i += 1;
       }
     };
     tick();
-    const timer = window.setInterval(tick, 250);
+    const timer = window.setInterval(tick, 400);
 
     stopRef.current = () => {
       window.clearInterval(timer);
