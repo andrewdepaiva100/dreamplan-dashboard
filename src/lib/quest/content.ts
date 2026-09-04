@@ -187,7 +187,7 @@ export const ZONES: Record<ZoneId, ZoneInfo> = {
   wedding_garden: {
     id: "wedding_garden",
     act: "Act II",
-    title: "The Labyrinth of the Wedding Garden",
+    title: "The Wedding Garden",
     objective: "Collect the four seasonal keys, open the Conservatory, and calm the Stress Spectre.",
   },
   the_haven: {
@@ -246,7 +246,7 @@ export const HOW_TO_PLAY = [
 
 export const REALM_LANDMARKS: { direction: string; name: string; act: string; zone: ZoneId }[] = [
   { direction: "West", name: "The River Gates & Sunken Grotto", act: "Act I", zone: "sunlit_shores" },
-  { direction: "North", name: "The Labyrinth of the Wedding Garden", act: "Act II", zone: "wedding_garden" },
+  { direction: "North", name: "The Wedding Garden", act: "Act II", zone: "wedding_garden" },
   { direction: "Center", name: "The Haven Town Square & Fountain", act: "Act III", zone: "the_haven" },
   { direction: "East", name: "The Starry Ascent Mountain", act: "Act IV", zone: "starry_ascent" },
   { direction: "Summit", name: "The Grand Cathedral of Serenity", act: "Act V", zone: "cathedral" },
