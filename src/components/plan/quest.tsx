@@ -27,6 +27,27 @@ import {
 import { EV, type HudState, type ModalPayload } from "@/lib/quest/events";
 import type { ZoneId } from "@/lib/quest/content";
 import mariaPortrait from "@/assets/quest/maria-portrait.png";
+import portraitLorena from "@/assets/quest/portrait-lorena.jpg";
+import portraitAlicia from "@/assets/quest/portrait-alicia.jpg";
+import portraitPedro from "@/assets/quest/portrait-pedro.jpg";
+import portraitGianluca from "@/assets/quest/portrait-gianluca.jpg";
+import portraitRaquel from "@/assets/quest/portrait-raquel.jpg";
+import portraitMarcos from "@/assets/quest/portrait-marcos.jpg";
+import portraitSilvia from "@/assets/quest/portrait-silvia.jpg";
+import portraitGustavo from "@/assets/quest/portrait-gustavo.jpg";
+
+
+const GUEST_PORTRAITS: Record<string, string> = {
+  lorena: portraitLorena,
+  alicia: portraitAlicia,
+  pedro: portraitPedro,
+  gianluca: portraitGianluca,
+  raquel: portraitRaquel,
+  marcos: portraitMarcos,
+  silvia: portraitSilvia,
+  gustavo: portraitGustavo,
+};
+
 
 type MapSnapshot = {
   rows: string[];
@@ -221,35 +242,113 @@ function GlassPanel({
   );
 }
 
-/** A short guest conversation: taps through each excited line, then closes. */
+/**
+ * Cinematic NPC conversation: a large painted portrait beside a typewriter
+ * dialogue box, tapped through line by line like a premium RPG.
+ */
 function GuestDialogue({
+  id,
   name,
+  role,
   lines,
   onClose,
 }: {
+  id: string;
   name: string;
+  role?: string;
   lines: string[];
   onClose: () => void;
 }) {
   const [idx, setIdx] = useState(0);
+  const [typed, setTyped] = useState("");
   const line = lines[Math.min(idx, lines.length - 1)] ?? "";
   const last = idx >= lines.length - 1;
+  const done = typed.length >= line.length;
+  const portrait = GUEST_PORTRAITS[id];
+
+  useEffect(() => {
+    setTyped("");
+    let i = 0;
+    const t = window.setInterval(() => {
+      i += 1;
+      setTyped(line.slice(0, i));
+      if (i >= line.length) window.clearInterval(t);
+    }, 18);
+    return () => window.clearInterval(t);
+  }, [line]);
+
+  const advance = () => {
+    buzz();
+    if (!done) {
+      setTyped(line);
+      return;
+    }
+    if (last) onClose();
+    else setIdx((i) => i + 1);
+  };
+
   return (
-    <GlassPanel title={name} {...(last ? { onClose } : {})}>
-      <p className="font-serif-italic italic text-navy">“{line}”</p>
-      {last ? null : (
-        <button
-          type="button"
-          onClick={() => {
-            buzz();
-            setIdx((i) => i + 1);
-          }}
-          className="mt-4 w-full rounded-xl bg-navy px-4 py-3 text-sm font-semibold text-white"
-        >
-          Continue
-        </button>
-      )}
-    </GlassPanel>
+    <div className="absolute inset-0 z-40 flex items-end justify-center bg-[rgba(6,10,24,0.6)] p-3 backdrop-blur-[3px] sm:items-center">
+      <button
+        type="button"
+        onClick={advance}
+        className="w-full max-w-3xl cursor-pointer text-left"
+        aria-label="Continue conversation"
+      >
+        <div className="flex items-end gap-0 sm:gap-3">
+          {portrait ? (
+            <img
+              src={portrait}
+              alt={name}
+              width={448}
+              height={448}
+              loading="lazy"
+              className="hidden h-44 w-44 shrink-0 rounded-2xl border-2 border-gold/70 object-cover shadow-2xl sm:block"
+            />
+          ) : null}
+          <div className="relative flex-1 overflow-hidden rounded-2xl border-2 border-gold/70 bg-[rgba(10,16,34,0.94)] shadow-2xl">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-gold/10 via-transparent to-rose-gold/10" />
+            <div className="relative flex items-start gap-3 p-4">
+              {portrait ? (
+                <img
+                  src={portrait}
+                  alt=""
+                  width={448}
+                  height={448}
+                  loading="lazy"
+                  className="h-16 w-16 shrink-0 rounded-xl border border-gold/60 object-cover sm:hidden"
+                />
+              ) : null}
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline gap-x-3">
+                  <span className="font-display text-lg font-bold tracking-wide text-gold">{name}</span>
+                  {role ? (
+                    <span className="text-[11px] uppercase tracking-[0.18em] text-white/55">{role}</span>
+                  ) : null}
+                </div>
+                <p className="mt-2 min-h-[3.5rem] font-serif-italic text-[15px] italic leading-relaxed text-white/95">
+                  “{typed}
+                  {done ? "”" : ""}
+                </p>
+                <div className="mt-3 flex items-center justify-between">
+                  <div className="flex gap-1.5">
+                    {lines.map((_, i) => (
+                      <span
+                        key={i}
+                        className={`h-1.5 w-4 rounded-full ${i <= idx ? "bg-gold" : "bg-white/20"}`}
+                      />
+                    ))}
+                  </div>
+                  <span className="animate-pulse text-xs font-semibold uppercase tracking-[0.2em] text-gold">
+                    {done ? (last ? "Tap to close" : "Tap to continue") : "…"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </button>
+    </div>
   );
 }
 
@@ -951,7 +1050,14 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       ) : null}
 
       {modal?.type === "guest" ? (
-        <GuestDialogue key={modal.name} name={modal.name} lines={modal.lines} onClose={closeModal} />
+        <GuestDialogue
+          key={modal.name}
+          id={modal.id}
+          name={modal.name}
+          {...(modal.role ? { role: modal.role } : {})}
+          lines={modal.lines}
+          onClose={closeModal}
+        />
       ) : null}
 
       {modal?.type === "companion" ? (

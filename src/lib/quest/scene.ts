@@ -1383,8 +1383,10 @@ export class QuestScene extends Phaser.Scene {
       // grand conservatory on the eastern edge, fronted by a wide open plaza
       this.rect(d, 92, 30, 40, 42, T.MARBLE);
       this.rect(d, 112, 36, 18, 30, T.MARBLE);
-      this.rect(d, 111, 36, 1, 14, T.HEDGE);
-      this.rect(d, 111, 52, 1, 14, T.HEDGE);
+      // wide welcoming entrance — never let the doorway pinch shut
+      this.rect(d, 111, 36, 1, 8, T.HEDGE);
+      this.rect(d, 111, 60, 1, 7, T.HEDGE);
+      this.rect(d, 108, 44, 5, 16, T.MARBLE);
       this.rect(d, 112, 35, 18, 1, T.HEDGE);
       this.rect(d, 112, 66, 18, 1, T.HEDGE);
       // central fountain court
@@ -2332,7 +2334,13 @@ export class QuestScene extends Phaser.Scene {
           Object.values(WEDDING_GUESTS).find((g) => g?.id === it.id) ??
           FAMILY_GUESTS.find((g) => g.id === it.id);
         if (!guest) break;
-        this.openModal({ type: "guest", name: guest.name, lines: guest.lines });
+        this.openModal({
+          type: "guest",
+          id: guest.id,
+          name: guest.name,
+          ...(guest.role ? { role: guest.role } : {}),
+          lines: guest.lines,
+        });
         break;
       }
       case "dog":
