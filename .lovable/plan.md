@@ -6,9 +6,13 @@ Already in the game (verified in the code): 1.1x sprites with matched hitboxes, 
 
 The map overlay shrinks from full-screen to a centered glass panel at roughly 65% of viewport width and height (with sensible min/max sizes so it stays usable on phone and desktop). The background stays visible and softly blurred behind it. The rendered mini-map, landmark pins, fast-travel taps and the pulsing gold Maria ticker all keep working at the smaller size, with the pin hit areas kept finger-friendly.
 
-## 2. Act guide characters with permanent weapon rewards
+## 2. Attack button, blacksmith, guides and permanent weapons
 
-Each act gets its own friendly guide NPC standing near the act's spawn, with a distinct name and look. Talking to them opens a dialogue that explains the act's goal in plain terms, then awards a permanent weapon:
+The PEACE button is gone. In its place is a single ATTACK button (same position, same keys) that swings whatever weapon Maria currently holds — a short arc swing with a light trail, hit spark and knockback.
+
+At the very start of Act I, a large Blacksmith building sits beside the spawn with a blacksmith NPC outside. Talking to him hands Maria the **Wooden Sword**, her default weapon, so she is armed before the first enemy.
+
+Each act then gets its own friendly guide NPC near the act's spawn, with a distinct name and look. Talking to them explains the act's goal in plain terms and awards a stronger permanent weapon:
 
 - Act I — Radiant Spark Wand
 - Act II — Floral Bow
@@ -16,7 +20,8 @@ Each act gets its own friendly guide NPC standing near the act's spawn, with a d
 - Act IV — Starlight Censer
 - Act V — Ring of Dawn
 
-Weapons collect into an inventory shown in the HUD (small icon row) and in the Memories album. The newest weapon is auto-equipped and strengthens the Peace Burst (wider radius, more damage). Owned weapons persist in the save so they survive reloads and act changes.
+Weapons collect into an inventory shown in the HUD (small icon row) and in the Memories album; tapping an icon equips it. The newest weapon auto-equips, and each has its own swing art, reach and damage (wooden sword weakest, later weapons noticeably stronger). Owned weapons and the equipped one persist in the save.
+
 
 ## 3. Balanced boss fight per act
 
