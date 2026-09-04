@@ -1,6 +1,8 @@
 import * as Phaser from "phaser";
 import {
   ACT_BOSSES,
+  BOON_BY_FLAVOR,
+
   ACT_GUIDES,
   BLACKSMITH,
   MAX_DOG,
