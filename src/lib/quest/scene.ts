@@ -737,6 +737,24 @@ export class QuestScene extends Phaser.Scene {
 
   /** The current act's guiding target: relic first, then the way onward. */
   private objectiveTarget(): Phaser.GameObjects.Sprite | null {
+    // In Act II the seasonal keys gate everything else — while any remain,
+    // the compass always seeks the nearest unfound key.
+    if (this.save.current_zone === "wedding_garden") {
+      const found = (this.zoneState["keysFound"] as number) ?? 0;
+      if (found < 4) {
+        let bestKey: Interactable | null = null;
+        let bestD = Infinity;
+        for (const it of this.interactables) {
+          if (!it.enabled || !it.obj.active || it.kind !== "season-key") continue;
+          const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, it.obj.x, it.obj.y);
+          if (d < bestD) {
+            bestKey = it;
+            bestD = d;
+          }
+        }
+        if (bestKey) return bestKey.obj;
+      }
+    }
     const order = [
       "relic",
       "gateway",
