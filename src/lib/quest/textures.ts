@@ -46,6 +46,7 @@ import imgLorena from "@/assets/quest/lorena.png";
 import imgAlicia from "@/assets/quest/alicia.png";
 import imgPedro from "@/assets/quest/pedro.png";
 import imgGianluca from "@/assets/quest/gianluca.png";
+import imgAdriel from "@/assets/quest/adriel.png";
 import imgRaquel from "@/assets/quest/raquel.png";
 import imgMarcos from "@/assets/quest/marcos.png";
 import imgSilvia from "@/assets/quest/silvia.png";
@@ -163,6 +164,7 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   alicia: [imgAlicia, 24, 35],
   pedro: [imgPedro, 20, 29],
   gianluca: [imgGianluca, 24, 35],
+  adriel: [imgAdriel, 24, 35],
   raquel: [imgRaquel, 24, 35],
   marcos: [imgMarcos, 24, 35],
   silvia: [imgSilvia, 24, 35],
@@ -333,6 +335,7 @@ export function buildSprites(scene: Phaser.Scene) {
     ["alicia", "alicia"],
     ["pedro", "pedro"],
     ["gianluca", "gianluca"],
+    ["adriel", "adriel"],
     ["raquel", "raquel"],
     ["marcos", "marcos"],
     ["silvia", "silvia"],
