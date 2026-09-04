@@ -46,7 +46,7 @@ function readLocal(): QuestSave | null {
   try {
     const raw = window.localStorage.getItem(LOCAL_KEY);
     if (!raw) return null;
-    return { ...EMPTY_SAVE, ...(JSON.parse(raw) as Partial<QuestSave>) };
+    return migrateWeapons({ ...EMPTY_SAVE, ...(JSON.parse(raw) as Partial<QuestSave>) });
   } catch {
     return null;
   }
