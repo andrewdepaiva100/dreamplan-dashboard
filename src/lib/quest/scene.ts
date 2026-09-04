@@ -2067,28 +2067,111 @@ export class QuestScene extends Phaser.Scene {
       100,
       22,
       "The Starry Observatory",
-      "A crystal dome tuned to the constellations. Align the three pillars and the stairway of stars appears.",
+      "A crystal dome tuned to the constellations. Align all five pillars and the stairway of stars appears.",
     );
     this.spawnActBoss(100, 32);
     this.spawnAnimals(4404, [["bird", 60, 50, 8]]);
 
-    this.zoneState["pillars"] = [0, 0, 0];
+    this.zoneState["pillars"] = [0, 0, 0, 0, 0];
     const pillarSpots: [number, number][] = [
       [54, 78],
       [88, 68],
       [42, 46],
+      [72, 30],
+      [26, 72],
     ];
-    pillarSpots.forEach(([x, y], i) =>
-      this.addInteractable(this.wx(x!), this.wy(y!), "pillar", "pillar", "Turn the crystal pillar (blue \u2192 gold \u2192 rose)", {
-        id: String(i),
-      }),
-    );
+    pillarSpots.forEach(([x, y], i) => {
+      const it = this.addInteractable(
+        this.wx(x!),
+        this.wy(y!),
+        "pillar",
+        "pillar",
+        "Turn the crystal pillar (blue \u2192 gold \u2192 rose)",
+        { id: String(i) },
+      );
+      // Each pillar reads as a small shrine: an aura pulse, crystal shards
+      // and star-flowers ringing its base.
+      const aura = this.add
+        .sprite(it.obj.x, it.obj.y, "spark")
+        .setTint(0x8fa6ff)
+        .setAlpha(0.35)
+        .setScale(5)
+        .setDepth(2)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({
+        targets: aura,
+        scale: 7.5,
+        alpha: 0.14,
+        duration: 1800 + i * 120,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * Math.PI * 2;
+        this.add
+          .sprite(it.obj.x + Math.cos(a) * 46, it.obj.y + Math.sin(a) * 30, "flowers")
+          .setTint(k % 2 ? 0xbfd0ff : 0xffe6b8)
+          .setAlpha(0.85)
+          .setScale(0.7)
+          .setDepth(4);
+      }
+    });
+
+    // Floating star lanterns and slow drifting light motes.
+    const lanterns: [number, number][] = [
+      [34, 36], [66, 24], [96, 58], [46, 62], [80, 80], [20, 50],
+    ];
+    for (const [lx, ly] of lanterns) {
+      const l = this.add
+        .sprite(this.wx(lx), this.wy(ly), "spark")
+        .setTint(0xffe6a8)
+        .setAlpha(0.55)
+        .setScale(2.6)
+        .setDepth(6)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      this.addLight(l.x, l.y, 0.4);
+      this.tweens.add({
+        targets: l,
+        y: l.y - 14,
+        alpha: 0.85,
+        duration: 2600,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+    }
+    for (let m = 0; m < 26; m++) {
+      const mote = this.add
+        .sprite(
+          this.wx(6 + Math.random() * 108),
+          this.wy(8 + Math.random() * 84),
+          "spark",
+        )
+        .setTint(0xdfe8ff)
+        .setAlpha(0.2 + Math.random() * 0.25)
+        .setScale(0.5 + Math.random() * 0.6)
+        .setDepth(5)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({
+        targets: mote,
+        y: mote.y - 40 - Math.random() * 50,
+        alpha: 0,
+        duration: 5000 + Math.random() * 4000,
+        repeat: -1,
+        delay: Math.random() * 3000,
+      });
+    }
 
     if (!this.has(this.save.secret_envelopes_found, "summit"))
       this.addInteractable(this.wx(102), this.wy(68), "envelope", "envelope", "Read the letter", {
         id: "summit",
       });
     this.addInteractable(this.wx(60), this.wy(46), "rest-stone", "rest", "Rest here");
+    if (this.zoneState["weddingLetter"] === true && !this.has(this.save.secret_envelopes_found, "wedding-hour"))
+      this.addInteractable(this.wx(60), this.wy(52), "envelope", "envelope", "Open the Secret Envelope", {
+        id: "wedding-hour",
+      });
 
     if (this.save.relics_collected.includes("seal")) this.spawnGateway(this.wx(84), this.wy(16));
   }
