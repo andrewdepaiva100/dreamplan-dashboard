@@ -932,6 +932,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                   buzz();
                   setModal(null);
                   emit(EV.companion, "yes");
+                  emit(EV.resume);
                 }}
                 className="rounded-xl bg-navy px-4 py-3 text-sm font-semibold text-white"
               >
@@ -942,6 +943,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                 onClick={() => {
                   setModal(null);
                   emit(EV.companion, "no");
+                  emit(EV.resume);
                 }}
                 className="rounded-xl border border-gold/40 bg-white/80 px-4 py-3 text-sm font-medium text-navy"
               >
