@@ -602,6 +602,15 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                 style={{ width: `${Math.round(hud.dashProgress * 100)}%` }}
               />
             </div>
+            {hud.shield?.owned ? (
+              <p
+                className={`mt-1.5 text-[10px] font-bold uppercase tracking-[0.15em] ${
+                  hud.shield.ready ? "text-gold" : "text-white/40"
+                }`}
+              >
+                Aegis {hud.shield.ready ? "ready" : "resting"}
+              </p>
+            ) : null}
           </div>
 
           {/* objective tracker — top centre */}
@@ -852,6 +861,55 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
               </div>
             );
           })()}
+        </GlassPanel>
+      ) : null}
+
+      {modal?.type === "directions" ? (
+        <GlassPanel title={modal.title} onClose={closeModal}>
+          <ul className="space-y-2 text-left">
+            {modal.lines.map((line) => (
+              <li
+                key={line}
+                className="rounded-xl border border-gold/30 bg-white/70 p-3 text-sm text-navy"
+              >
+                {line}
+              </li>
+            ))}
+          </ul>
+        </GlassPanel>
+      ) : null}
+
+      {modal?.type === "boss" ? (
+        <GlassPanel
+          title={modal.name}
+          onClose={() => {
+            const first = modal.choices[0];
+            if (first) {
+              setModal(null);
+              emit(EV.bosschoice, first.id);
+            }
+          }}
+        >
+          <p className="font-serif-italic italic text-navy">“{modal.intro}”</p>
+          <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-gold">
+            How does Maria answer?
+          </p>
+          <div className="mt-2 grid gap-2">
+            {modal.choices.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => {
+                  buzz();
+                  setModal(null);
+                  emit(EV.bosschoice, c.id);
+                }}
+                className="rounded-xl border border-gold/40 bg-white/80 p-3 text-left text-sm font-medium text-navy transition hover:border-gold hover:bg-gold/15"
+              >
+                “{c.text}”
+              </button>
+            ))}
+          </div>
         </GlassPanel>
       ) : null}
 
