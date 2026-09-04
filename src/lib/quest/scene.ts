@@ -169,6 +169,7 @@ export class QuestScene extends Phaser.Scene {
   private drops!: Phaser.Physics.Arcade.Group;
   private bossShotTimer?: Phaser.Time.TimerEvent;
   private musicMode = "";
+  private nextGatewayCheck = 0;
 
   constructor() {
     super("quest");
@@ -1878,7 +1879,9 @@ export class QuestScene extends Phaser.Scene {
     const need = RELICS.filter((r) => r.zone === zone).map((r) => r.id);
     const missing = need.filter((n) => !this.save.relics_collected.includes(n));
     if (missing.length === 0) {
-      this.spawnGateway(bx, by - 90);
+      this.objective = "The way forward opens — step through the gateway of light.";
+      this.spawnGateway(bx, by - 90, true);
+      this.emitToast("A gateway of light opens nearby.");
       return;
     }
     this.objective = "Claim the relic left behind.";
@@ -3182,13 +3185,13 @@ export class QuestScene extends Phaser.Scene {
     if (id === "seal") {
       this.zoneState["finale"] = true;
       this.objective = "The Cathedral gate opens — step through the portal.";
-      this.spawnGateway(this.player.x, this.player.y - 90);
+      this.spawnGateway(this.player.x, this.player.y - 90, true);
     } else {
       const zone = this.save.current_zone;
       const need = RELICS.filter((r) => r.zone === zone).map((r) => r.id);
       if (need.every((n) => this.save.relics_collected.includes(n))) {
         this.objective = "The way forward opens — step through the gateway of light.";
-        this.spawnGateway(this.player.x, this.player.y - 90);
+        this.spawnGateway(this.player.x, this.player.y - 90, true);
       }
     }
   }
@@ -3538,6 +3541,11 @@ export class QuestScene extends Phaser.Scene {
       this.game.events.emit(EV.music, mode);
     }
     this.updateHand(dir);
+    // Safety net: once an act's relics are in hand, a portal must always exist.
+    if (time > this.nextGatewayCheck) {
+      this.nextGatewayCheck = time + 2000;
+      this.ensureGateway();
+    }
     this.checkPortal();
     this.checkBossEncounter();
     this.updateCompanion();
