@@ -1406,6 +1406,7 @@ export class QuestScene extends Phaser.Scene {
     this.spawnActGuide(96, 58);
     this.addBlacksmith(96, 40);
     this.addDogOffer(102, 46);
+    if (WEDDING_GUESTS.wedding_garden) this.addGuest(WEDDING_GUESTS.wedding_garden, 105, 58);
     this.scatterDecor(22, {
       groves: [
         [16, 30, 6],
@@ -1639,6 +1640,7 @@ export class QuestScene extends Phaser.Scene {
       ], 3);
     });
     this.addPlayer(18, 51);
+    if (WEDDING_GUESTS.haven_town) this.addGuest(WEDDING_GUESTS.haven_town, 26, 46);
     this.scatterDecor(33, {
       village: [
         [16, 40],
@@ -1752,6 +1754,7 @@ export class QuestScene extends Phaser.Scene {
     });
     this.addPlayer(20, 85);
     this.spawnActGuide(26, 82);
+    if (WEDDING_GUESTS.starry_ascent) this.addGuest(WEDDING_GUESTS.starry_ascent, 31, 86);
     this.addLandmark(
       "landmark-observatory",
       100,
@@ -1827,6 +1830,17 @@ export class QuestScene extends Phaser.Scene {
     // altar, priest and Andrew waiting at the front
     this.add.sprite(this.wx(66), this.wy(20), "altar").setDepth(6);
     this.add.sprite(this.wx(54), this.wy(30), "priest").setDepth(7);
+    // both families standing together near the front pews
+    const famSpots: [number, number][] = [
+      [48, 46],
+      [84, 46],
+      [48, 58],
+      [84, 58],
+    ];
+    FAMILY_GUESTS.forEach((g, i) => {
+      const spot = famSpots[i];
+      if (spot) this.addGuest(g, spot[0], spot[1]);
+    });
     this.addInteractable(this.wx(66), this.wy(32), "andrew-ceremony", "andrew-ceremony", "Say your vows", {
       radius: 70,
     });
