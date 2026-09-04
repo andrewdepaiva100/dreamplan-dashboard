@@ -105,6 +105,7 @@ export class QuestScene extends Phaser.Scene {
   private cutscenePlayed = false;
   private pingMarker: Phaser.GameObjects.Triangle | null = null;
   private pingUntil = 0;
+  private keyBeacons: Map<string, Phaser.GameObjects.Container> = new Map();
   private companion: Phaser.GameObjects.Sprite | null = null;
   private bossPhase = 0;
   private bossHits = 0;
@@ -828,10 +829,11 @@ export class QuestScene extends Phaser.Scene {
 
   private buildZone(zone: ZoneId) {
     this.objective = ZONES[zone].objective;
-    // Act I is a compact, welcoming realm (~1/3 the area of the later acts).
-    const small = zone === "sunlit_shores";
-    this.mapW = small ? 62 : MAP_W;
-    this.mapH = small ? 62 : MAP_H;
+    // Act I is a compact, welcoming realm; Act II is a mid-size garden so the
+    // four seasonal keys stay findable; later acts sprawl at full size.
+    const dims = zone === "sunlit_shores" ? 62 : zone === "wedding_garden" ? 100 : MAP_W;
+    this.mapW = dims;
+    this.mapH = dims;
     this.sxF = this.mapW / DESIGN_W;
     this.syF = this.mapH / DESIGN_H;
     if (zone === "sunlit_shores") this.buildAct1();
