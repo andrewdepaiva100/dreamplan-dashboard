@@ -32,6 +32,7 @@ import portraitLorena from "@/assets/quest/portrait-lorena.jpg";
 import portraitAlicia from "@/assets/quest/portrait-alicia.jpg";
 import portraitPedro from "@/assets/quest/portrait-pedro.jpg";
 import portraitGianluca from "@/assets/quest/portrait-gianluca.jpg";
+import portraitAdriel from "@/assets/quest/portrait-adriel.jpg";
 import portraitRaquel from "@/assets/quest/portrait-raquel.jpg";
 import portraitMarcos from "@/assets/quest/portrait-marcos.jpg";
 import portraitSilvia from "@/assets/quest/portrait-silvia.jpg";
@@ -47,6 +48,7 @@ const GUEST_PORTRAITS: Record<string, string> = {
   alicia: portraitAlicia,
   pedro: portraitPedro,
   gianluca: portraitGianluca,
+  adriel: portraitAdriel,
   raquel: portraitRaquel,
   marcos: portraitMarcos,
   silvia: portraitSilvia,
