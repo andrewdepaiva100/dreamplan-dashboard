@@ -1,4 +1,9 @@
-# Act I Simplification, Wedding-Hype Characters & Distinct Act IV Bosses
+# Act I Simplification, Map Sizes, Trees, Wedding Guests & Act IV Bosses
+
+## 0. Shrink Acts I–IV by 20% and spread out the trees
+- New realm sizes: Act I `62 → 50`, Act II `70 → 56`, Act III `62 → 50`, Act IV `44 → 35`. Act V (the tiny church) is untouched.
+- Rework tree/grove placement in every act: replace clustered groves with a minimum-distance scatter so **no two trees ever touch or clump** — trees are spaced apart across the map, and dense "grove" clusters are removed. Forest edges keep just a thin, spaced-out border line.
+- All scaled positions (roads, buildings, bosses, NPCs, envelopes, hearts, keys) are design-grid based, so they re-map automatically — verified after resizing.
 
 ## 1. Act I — remove the River Gates side quest
 Strip out the block-pushing puzzle so the start is a simple straight shot into the story.
