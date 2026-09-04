@@ -546,7 +546,10 @@ export const BLACKSMITH = {
   repeat: "The forge stays lit for you. That bow of yours will hold — vine never snaps when it's strung with care.",
 };
 
-export const ACT_GUIDES: Record<ZoneId, { name: string; weapon: string; line: string }> = {
+export const ACT_GUIDES: Record<
+  ZoneId,
+  { name: string; weapon: string; line: string; pages: string[] }
+> = {
   sunlit_shores: {
     name: "Wren of the Shores",
     weapon: "spark-wand",
