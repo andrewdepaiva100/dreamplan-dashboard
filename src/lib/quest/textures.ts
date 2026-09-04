@@ -42,6 +42,9 @@ import imgItalo from "@/assets/quest/italo.png";
 import imgGabe from "@/assets/quest/gabe.png";
 import imgPew from "@/assets/quest/pew.png";
 import imgAltar from "@/assets/quest/altar.png";
+import imgChurchWindow from "@/assets/quest/church-window.png";
+import imgChurchColumn from "@/assets/quest/church-column.png";
+import imgAltarpiece from "@/assets/quest/church-altarpiece.png";
 import imgLorena from "@/assets/quest/lorena.png";
 import imgAlicia from "@/assets/quest/alicia.png";
 import imgPedro from "@/assets/quest/pedro.png";
@@ -160,6 +163,9 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   gabe: [imgGabe, 24, 35],
   pew: [imgPew, 40, 22],
   altar: [imgAltar, 46, 34],
+  "church-window": [imgChurchWindow, 46, 62],
+  "church-column": [imgChurchColumn, 30, 52],
+  altarpiece: [imgAltarpiece, 118, 88],
   lorena: [imgLorena, 24, 35],
   alicia: [imgAlicia, 24, 35],
   pedro: [imgPedro, 20, 29],
@@ -331,6 +337,9 @@ export function buildSprites(scene: Phaser.Scene) {
     ["gabe", "gabe"],
     ["pew", "pew"],
     ["altar", "altar"],
+    ["church-window", "church-window"],
+    ["church-column", "church-column"],
+    ["altarpiece", "altarpiece"],
     ["lorena", "lorena"],
     ["alicia", "alicia"],
     ["pedro", "pedro"],
