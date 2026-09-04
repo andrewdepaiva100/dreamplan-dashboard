@@ -1016,7 +1016,7 @@ function AmbientCanvas() {
   return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />;
 }
 
-export function MariasQuest({ onExit }: { onExit: () => void }) {
+export function MariasQuest({ onExit }: { onExit?: () => void }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
   const saverRef = useRef(createDebouncedSaver(1200));
@@ -1285,13 +1285,15 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
               >
                 ✦ Enter the 3D Realm — Beta
               </button>
-              <button
-                type="button"
-                onClick={onExit}
-                className="rounded-xl px-5 py-3 text-sm font-semibold text-sky underline underline-offset-4 transition hover:text-white active:scale-[0.98]"
-              >
-                Back to Dashboard
-              </button>
+              {onExit && (
+                <button
+                  type="button"
+                  onClick={onExit}
+                  className="rounded-xl px-5 py-3 text-sm font-semibold text-sky underline underline-offset-4 transition hover:text-white active:scale-[0.98]"
+                >
+                  Back to Dashboard
+                </button>
+              )}
             </div>
           </div>
         </div>
