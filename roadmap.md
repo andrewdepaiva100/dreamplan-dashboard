@@ -2,14 +2,14 @@
 
 Full 3D rebuild (low-poly, R3F) alongside existing 2D game. 2D stays playable until 3D reaches parity.
 
-## Stage 1 — Foundation + Act I playable (in progress)
-- [ ] Install three/@react-three/fiber@^9/@react-three/drei@^10 + @types/three
-- [ ] Source CC0 GLBs: animated female character (Quaternius), tree/nature (Kenney nature kit), verify glTF magic
-- [ ] src/components/plan/quest3d/: Canvas3D, ActIMeadow scene, Player (WASD + mobile joystick, Idle/Walk/Run crossfade), FollowCamera
-- [ ] Lighting/art direction: golden-hour hemisphere + directional shadows, fog, Environment Lightformers, low-poly toon look
-- [ ] HUD3D: hearts, objective tracker, mobile joystick, title card
-- [ ] Mount behind a "3D" toggle in quest section (ssr-safe)
-- [ ] Verify in browser (screenshot + console clean)
+## Stage 1 — Foundation + Act I playable ✅
+- [x] Install three/@react-three/fiber@^9/@react-three/drei@^10 + @types/three
+- [x] Source CC0 GLBs: KayKit Adventurers (Mage=Maria, Knight=Andrew, Rogue/Barbarian=bosses) + Kenney Nature Kit, verified
+- [x] src/components/plan/quest3d/: Quest3D, Meadow scene, Player (WASD + joystick, Idle/Walk/Run/Spellcast crossfade), FollowCamera
+- [x] Lighting: sky + fog + shadowed sun, Environment Lightformers
+- [x] HUD3D: hearts, objective, joystick, act banner, attack button
+- [x] Mounted behind "Enter the 3D Realm — Beta" on quest title screen (lazy-loaded, client-only)
+- [x] Verified in browser: renders, walks, attacks, console clean
 
 ## Stage 2 — Gameplay systems
 - [ ] Enemies + melee attack, boss (Warden of Rushing Water) with 3D boss dialogue portraits
