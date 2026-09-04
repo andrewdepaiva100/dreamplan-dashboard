@@ -176,6 +176,8 @@ export class QuestScene extends Phaser.Scene {
     this.pingUntil = 0;
     this.pingMarker = null;
     this.companion = null;
+    this.dog = null;
+    this.dogArmed = false;
     // These are lazily created; a reloaded realm must never reuse objects that
     // belonged to the previous scene instance (they are already destroyed).
     this.solidDecor = this.physics.add.staticGroup();
@@ -1221,13 +1223,13 @@ export class QuestScene extends Phaser.Scene {
         this.rect(d, bx + Math.floor(bw / 2) - 1, by + bh, 3, 1, T.BLOOM);
         this.rect(d, bx + 1, by + 1, bw - 1, bh - 1, T.BLOOM);
       }
-      // grand conservatory on the eastern edge
+      // grand conservatory on the eastern edge, fronted by a wide open plaza
+      this.rect(d, 92, 30, 40, 42, T.MARBLE);
       this.rect(d, 112, 36, 18, 30, T.MARBLE);
-      this.rect(d, 111, 36, 1, 30, T.HEDGE);
-      this.rect(d, 130, 36, 2, 30, T.HEDGE);
+      this.rect(d, 111, 36, 1, 14, T.HEDGE);
+      this.rect(d, 111, 52, 1, 14, T.HEDGE);
       this.rect(d, 112, 35, 18, 1, T.HEDGE);
       this.rect(d, 112, 66, 18, 1, T.HEDGE);
-      this.rect(d, 111, 50, 1, 2, T.HEDGE); // sealed door
       // central fountain court
       this.rect(d, 54, 46, 24, 16, T.WATER);
       this.rect(d, 53, 45, 26, 1, T.WALL);
@@ -1243,8 +1245,11 @@ export class QuestScene extends Phaser.Scene {
         [108, 50],
       ]);
     });
-    this.addPlayer(12, 90);
-    this.spawnActGuide(18, 88);
+    // Maria steps out of the portal right on the Conservatory plaza
+    this.addPlayer(100, 52);
+    this.spawnActGuide(96, 58);
+    this.addBlacksmith(96, 40);
+    this.addDogOffer(102, 46);
     this.scatterDecor(22, {
       groves: [
         [16, 30, 6],
