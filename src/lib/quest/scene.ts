@@ -212,6 +212,7 @@ export class QuestScene extends Phaser.Scene {
       }
     }
     this.spawnCompanion();
+    this.spawnLegendaries();
 
 
     // ---- groups (pooled) -------------------------------------------------
@@ -705,6 +706,22 @@ export class QuestScene extends Phaser.Scene {
       cam.startFollow(this.player, true, 0.12, 0.12);
       this.openModal({ type: "info", title: l.title, body: l.body });
     });
+  }
+
+  /** Hidden legendary weapons — one each in Acts I, III and IV. */
+  private spawnLegendaries() {
+    for (const l of LEGENDARY_PICKUPS) {
+      if (l.zone !== this.save.current_zone) continue;
+      if (this.save.weapons.includes(l.weapon)) continue;
+      const x = this.wx(l.x);
+      const y = this.wy(l.y);
+      const it = this.addInteractable(x, y, "relic", "legendary", l.prompt, {
+        id: l.weapon,
+        radius: 84,
+      });
+      it?.obj.setTint(0xffd977).setScale(1.4);
+      this.addKeyBeacon(x, y, `legend-${l.weapon}`, 0xffd977);
+    }
   }
 
   private addInteractable(
