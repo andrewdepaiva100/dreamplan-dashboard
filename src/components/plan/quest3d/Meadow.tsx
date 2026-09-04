@@ -9,12 +9,12 @@ export function Meadow() {
       {/* ground */}
       <mesh rotation-x={-Math.PI / 2} receiveShadow>
         <circleGeometry args={[110, 64]} />
-        <meshStandardMaterial color="#58a24b" />
+        <meshStandardMaterial color="#4f9c44" />
       </mesh>
       {/* soft meadow tone ring */}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.01, 0]} receiveShadow>
         <circleGeometry args={[60, 48]} />
-        <meshStandardMaterial color="#63b154" />
+        <meshStandardMaterial color="#58ab4d" />
       </mesh>
 
       <Suspense fallback={null}>

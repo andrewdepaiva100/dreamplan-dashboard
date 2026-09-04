@@ -56,15 +56,15 @@ export default function Quest3D({ onExit }: { onExit: () => void }) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[110] h-[100dvh] w-screen overflow-hidden bg-[#aee3ff]">
+    <div className="fixed inset-0 z-[110] h-[100dvh] w-screen overflow-hidden bg-[#9fd8f7]">
       <Canvas
         shadows
         dpr={[1, 2]}
         gl={{ antialias: true, powerPreference: "high-performance" }}
         camera={{ position: [0, 9, 16], fov: 55, near: 0.1, far: 220 }}
       >
-        <color attach="background" args={["#aee3ff"]} />
-        <fog attach="fog" args={["#aee3ff", 45, 140]} />
+        <color attach="background" args={["#9fd8f7"]} />
+        <fog attach="fog" args={["#9fd8f7", 60, 160]} />
         <hemisphereLight args={["#cfe8ff", "#3f7a3a", 0.85]} />
         <directionalLight
           position={[24, 30, 14]}
