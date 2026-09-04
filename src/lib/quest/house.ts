@@ -293,6 +293,7 @@ export class QuestHouseScene extends Phaser.Scene {
 
   private onResume() {
     this.frozen = false;
+    this.physics.resume();
   }
 
   private nearest() {
