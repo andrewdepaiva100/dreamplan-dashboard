@@ -2220,6 +2220,7 @@ export class QuestScene extends Phaser.Scene {
         this.openModal({ type: "memory" });
         break;
       case "sheet": {
+        this.removeKeyBeacon(`sheet-${it.id ?? ""}`);
         this.removeInteractable(it);
         const n = ((this.zoneState["sheets"] as number) ?? 0) + 1;
         this.zoneState["sheets"] = n;
