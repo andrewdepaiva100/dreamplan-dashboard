@@ -2780,7 +2780,16 @@ export class QuestScene extends Phaser.Scene {
     const dashing = time < this.dashUntil;
     const swift = this.save.swift_boots ? SWIFT_SANDALS.multiplier : 1;
     const speed = SPEED * swift * (dashing ? 3 : 1);
-    this.player.setVelocity(vx * speed, vy * speed);
+    // Nicer walking feel: ease into a stride and glide to a stop instead of
+    // snapping between full speed and zero. Frame-rate independent damping.
+    const dt = Math.min(delta, 50) / 1000;
+    const accel = dashing ? 26 : 13;
+    const damp = 1 - Math.exp(-accel * dt);
+    this.vel.x += (vx * speed - this.vel.x) * damp;
+    this.vel.y += (vy * speed - this.vel.y) * damp;
+    if (Math.abs(this.vel.x) < 2) this.vel.x = 0;
+    if (Math.abs(this.vel.y) < 2) this.vel.y = 0;
+    this.player.setVelocity(this.vel.x, this.vel.y);
 
     // 4-directional animation
     const moving = len > 0.05;
