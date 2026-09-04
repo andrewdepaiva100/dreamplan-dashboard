@@ -1844,38 +1844,66 @@ export class QuestScene extends Phaser.Scene {
   }
 
   // ---------------- ACT V --------------------------------------------------
-  /** A tiny, intimate church interior: one aisle, pews, altar, priest, Andrew. */
+  /** A gothic nave: stone floor, arcaded side walls, stained glass, pews, altar. */
   private buildAct5() {
-    this.cameras.main.setBackgroundColor("#2a1f38");
+    this.cameras.main.setBackgroundColor("#1b1526");
     this.makeMap(T.CANDLE, 505, (d) => {
       this.rect(d, 0, 0, DESIGN_W, DESIGN_H, T.WALL);
-      // the whole interior is marble
-      this.rect(d, 20, 14, 92, 76, T.MARBLE);
-      // sanctuary step, a touch brighter
-      this.rect(d, 40, 14, 52, 12, T.CANDLE);
-      // centre aisle runner
-      this.rect(d, 58, 26, 16, 64, T.CANDLE);
+      // cool stone nave floor
+      this.rect(d, 24, 12, 84, 80, T.MARBLE);
+      // raised sanctuary at the head of the nave
+      this.rect(d, 40, 12, 52, 14, T.CANDLE);
+      // long centre aisle runner
+      this.rect(d, 60, 26, 12, 66, T.CANDLE);
+      // side aisles kept clear behind the columns
+      this.rect(d, 24, 26, 6, 66, T.CANDLE);
+      this.rect(d, 102, 26, 6, 66, T.CANDLE);
     });
-    this.addPlayer(66, 84);
+    this.addPlayer(66, 86);
     this.scatterDecor(55, {
       lamps: [
-        [26, 30],
-        [104, 30],
-        [26, 74],
-        [104, 74],
+        [30, 30],
+        [102, 30],
+        [30, 78],
+        [102, 78],
       ],
       flowers: 0,
     });
 
-    // altar, priest and Andrew waiting at the front
-    this.add.sprite(this.wx(66), this.wy(20), "altar").setDepth(6);
+    // arcaded side walls: tall stained-glass windows between stone columns
+    for (let r = 0; r < 5; r++) {
+      const y = 26 + r * 15;
+      this.add.sprite(this.wx(23), this.wy(y), "church-window").setDepth(4);
+      this.add.sprite(this.wx(109), this.wy(y), "church-window").setDepth(4);
+      this.add.sprite(this.wx(31), this.wy(y + 7), "church-column").setDepth(6);
+      this.add.sprite(this.wx(101), this.wy(y + 7), "church-column").setDepth(6);
+      // warm candlelight pooling under each window
+      this.add.circle(this.wx(25), this.wy(y + 4), 26, 0xffcf87, 0.14).setDepth(2);
+      this.add.circle(this.wx(107), this.wy(y + 4), 26, 0xffcf87, 0.14).setDepth(2);
+    }
+
+    // gilded altarpiece, altar and celebrant at the head of the nave
+    this.add.sprite(this.wx(66), this.wy(12), "altarpiece").setDepth(5);
+    this.add.sprite(this.wx(66), this.wy(22), "altar").setDepth(6);
     this.add.sprite(this.wx(54), this.wy(30), "priest").setDepth(7);
+    // candelabra flanking the altar
+    for (const cx of [52, 80]) {
+      const flame = this.add.circle(this.wx(cx), this.wy(20), 7, 0xffd58a, 0.85).setDepth(7);
+      this.tweens.add({
+        targets: flame,
+        alpha: { from: 0.5, to: 0.95 },
+        scale: { from: 0.85, to: 1.15 },
+        duration: 900,
+        yoyo: true,
+        repeat: -1,
+      });
+    }
     // both families standing together near the front pews
     const famSpots: [number, number][] = [
-      [48, 46],
-      [84, 46],
-      [48, 58],
-      [84, 58],
+      [50, 44],
+      [84, 44],
+      [50, 56],
+      [84, 56],
     ];
     FAMILY_GUESTS.forEach((g, i) => {
       const spot = famSpots[i];
@@ -1896,25 +1924,26 @@ export class QuestScene extends Phaser.Scene {
       radius: 70,
     });
 
-    // pews flanking the aisle, with a few guests seated
-    for (let r = 0; r < 5; r++) {
-      const y = 40 + r * 11;
-      this.add.sprite(this.wx(40), this.wy(y), "pew").setDepth(5);
-      this.add.sprite(this.wx(92), this.wy(y), "pew").setDepth(5);
-      if (r % 2 === 0) {
-        this.add.sprite(this.wx(40), this.wy(y - 4), "guest").setDepth(6);
-        this.add.sprite(this.wx(92), this.wy(y - 4), "guest").setDepth(6);
+    // two neat rows of dark pews facing the altar, flanking the aisle
+    for (let r = 0; r < 6; r++) {
+      const y = 38 + r * 9;
+      this.add.sprite(this.wx(46), this.wy(y), "pew").setDepth(5);
+      this.add.sprite(this.wx(86), this.wy(y), "pew").setDepth(5);
+      if (r % 2 === 1) {
+        this.add.sprite(this.wx(46), this.wy(y - 4), "guest").setDepth(6);
+        this.add.sprite(this.wx(86), this.wy(y - 4), "guest").setDepth(6);
       }
     }
 
     if (!this.has(this.save.secret_envelopes_found, "cathedral"))
-      this.addInteractable(this.wx(30), this.wy(84), "envelope", "envelope", "Read the letter", {
+      this.addInteractable(this.wx(34), this.wy(86), "envelope", "envelope", "Read the letter", {
         id: "cathedral",
       });
 
-    // stained glass glow over the sanctuary
-    this.add.rectangle(this.wx(66), this.wy(16), 200, 44, 0xc9a24b, 0.45).setDepth(2);
+    // stained glass light spilling across the sanctuary floor
+    this.add.rectangle(this.wx(66), this.wy(18), 230, 52, 0xc9a24b, 0.4).setDepth(2);
   }
+
 
 
   // =======================================================================
