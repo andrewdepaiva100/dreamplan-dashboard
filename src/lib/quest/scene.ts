@@ -1850,11 +1850,11 @@ export class QuestScene extends Phaser.Scene {
       this.zoneState["pendingPillar"] = undefined;
       const beaten = ((this.zoneState["guardians"] as number[]) ?? []).concat(pending);
       this.zoneState["guardians"] = beaten;
-      const arr = (this.zoneState["pillars"] as number[]) ?? [0, 0, 0];
+      const arr = (this.zoneState["pillars"] as number[]) ?? [0, 0, 0, 0, 0];
       const aligned = arr.every((v, k) => v === 1 && beaten.includes(k));
       this.objective = aligned
         ? "The pillars align."
-        : `The Celestial Staircase — align all three pillars to warm gold (${beaten.length}/3).`;
+        : `The Celestial Staircase — align all five pillars to warm gold (${beaten.length}/5).`;
       if (aligned && !this.zoneState["stairs"]) {
         this.zoneState["stairs"] = true;
         this.openStaircase();
@@ -3107,12 +3107,12 @@ export class QuestScene extends Phaser.Scene {
         const aligned = arr.every((v, k) => v === 1 && guardiansBeaten.includes(k));
         this.emitToast(
           aligned
-            ? "All three pillars burn gold — the staircase forms."
-            : "Each pillar cycles blue \u2192 gold \u2192 rose. All three must be gold at once.",
+            ? "All five pillars burn gold — the staircase forms."
+            : "Each pillar cycles blue \u2192 gold \u2192 rose. All five must be gold at once.",
         );
         this.objective = aligned
           ? "The pillars align."
-          : `The Celestial Staircase — align all three pillars to warm gold (${arr.filter((v) => v === 1).length}/3).`;
+          : `The Celestial Staircase — align all five pillars to warm gold (${arr.filter((v) => v === 1).length}/5).`;
         if (aligned && !this.zoneState["stairs"]) {
           this.zoneState["stairs"] = true;
           this.openStaircase();
