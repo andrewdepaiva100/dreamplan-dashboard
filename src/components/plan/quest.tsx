@@ -1703,8 +1703,8 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       {showBag ? (
         <GlassPanel title="Backpack" onClose={() => setShowBag(false)}>
           <p className="text-xs text-navy/70">
-            Everything you've gathered. Tap an item to eat it — raw meat can be cooked right here,
-            any time.
+            Everything you've gathered. Tap an item to eat it, or use the Eat buttons below — raw
+            meat can be cooked right here, any time.
           </p>
           <div className="mt-3">
             <ItemGrid
@@ -1714,6 +1714,27 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                 emit(EV.item, { action: "eat", id });
               }}
             />
+          </div>
+          <div className="mt-3 space-y-2">
+            {FOOD_ITEMS.filter((f) => !f.raw && (hud?.inventory?.[f.id] ?? 0) > 0).map((f) => (
+              <button
+                key={`eat-${f.id}`}
+                type="button"
+                onClick={() => {
+                  buzz();
+                  emit(EV.item, { action: "eat", id: f.id });
+                }}
+                className="flex w-full items-center gap-3 rounded-xl border border-rose-gold/50 bg-white/80 p-3 text-left"
+              >
+                <span className="text-2xl">{f.icon}</span>
+                <span className="flex-1 text-sm font-bold text-navy">
+                  Eat {f.name} ({hud?.inventory?.[f.id] ?? 0})
+                </span>
+                <span className="text-[11px] font-semibold text-navy/70">
+                  +{f.heal} {HEART}
+                </span>
+              </button>
+            ))}
           </div>
           <div className="mt-3 space-y-2">
             {FOOD_ITEMS.filter((f) => f.cookedId && (hud?.inventory?.[f.id] ?? 0) > 0).map((f) => (
