@@ -27,6 +27,27 @@ import {
 import { EV, type HudState, type ModalPayload } from "@/lib/quest/events";
 import type { ZoneId } from "@/lib/quest/content";
 import mariaPortrait from "@/assets/quest/maria-portrait.png";
+import portraitLorena from "@/assets/quest/portrait-lorena.jpg";
+import portraitAlicia from "@/assets/quest/portrait-alicia.jpg";
+import portraitPedro from "@/assets/quest/portrait-pedro.jpg";
+import portraitGianluca from "@/assets/quest/portrait-gianluca.jpg";
+import portraitRaquel from "@/assets/quest/portrait-raquel.jpg";
+import portraitMarcos from "@/assets/quest/portrait-marcos.jpg";
+import portraitSilvia from "@/assets/quest/portrait-silvia.jpg";
+import portraitGustavo from "@/assets/quest/portrait-gustavo.jpg";
+
+
+const GUEST_PORTRAITS: Record<string, string> = {
+  lorena: portraitLorena,
+  alicia: portraitAlicia,
+  pedro: portraitPedro,
+  gianluca: portraitGianluca,
+  raquel: portraitRaquel,
+  marcos: portraitMarcos,
+  silvia: portraitSilvia,
+  gustavo: portraitGustavo,
+};
+
 
 type MapSnapshot = {
   rows: string[];
@@ -1029,7 +1050,14 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       ) : null}
 
       {modal?.type === "guest" ? (
-        <GuestDialogue key={modal.name} name={modal.name} lines={modal.lines} onClose={closeModal} />
+        <GuestDialogue
+          key={modal.name}
+          id={modal.id}
+          name={modal.name}
+          {...(modal.role ? { role: modal.role } : {})}
+          lines={modal.lines}
+          onClose={closeModal}
+        />
       ) : null}
 
       {modal?.type === "companion" ? (
