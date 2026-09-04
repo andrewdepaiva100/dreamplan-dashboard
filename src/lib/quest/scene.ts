@@ -169,6 +169,7 @@ export class QuestScene extends Phaser.Scene {
   private drops!: Phaser.Physics.Arcade.Group;
   private bossShotTimer?: Phaser.Time.TimerEvent;
   private musicMode = "";
+  private nextGatewayCheck = 0;
 
   constructor() {
     super("quest");
@@ -1878,7 +1879,9 @@ export class QuestScene extends Phaser.Scene {
     const need = RELICS.filter((r) => r.zone === zone).map((r) => r.id);
     const missing = need.filter((n) => !this.save.relics_collected.includes(n));
     if (missing.length === 0) {
-      this.spawnGateway(bx, by - 90);
+      this.objective = "The way forward opens — step through the gateway of light.";
+      this.spawnGateway(bx, by - 90, true);
+      this.emitToast("A gateway of light opens nearby.");
       return;
     }
     this.objective = "Claim the relic left behind.";
@@ -3182,26 +3185,61 @@ export class QuestScene extends Phaser.Scene {
     if (id === "seal") {
       this.zoneState["finale"] = true;
       this.objective = "The Cathedral gate opens — step through the portal.";
-      this.spawnGateway(this.player.x, this.player.y - 90);
+      this.spawnGateway(this.player.x, this.player.y - 90, true);
     } else {
       const zone = this.save.current_zone;
       const need = RELICS.filter((r) => r.zone === zone).map((r) => r.id);
       if (need.every((n) => this.save.relics_collected.includes(n))) {
         this.objective = "The way forward opens — step through the gateway of light.";
-        this.spawnGateway(this.player.x, this.player.y - 90);
+        this.spawnGateway(this.player.x, this.player.y - 90, true);
       }
     }
   }
 
-  private spawnGateway(x: number, y: number) {
-    if (this.interactables.some((i) => i.kind === "gateway")) return;
+  /** Nudges a portal spot onto walkable ground so it can never land in a wall. */
+  private walkableSpot(x: number, y: number): { x: number; y: number } {
+    const w = this.mapW * TILE;
+    const h = this.mapH * TILE;
+    const free = (px: number, py: number) => {
+      const t = this.layer?.getTileAtWorldXY(px, py);
+      if (!t) return false;
+      const i = t.index as number;
+      return !(SOLID_TILES as unknown as number[]).includes(i) && i !== T.WATER;
+    };
+    const cx = Phaser.Math.Clamp(x, 60, w - 60);
+    const cy = Phaser.Math.Clamp(y, 60, h - 60);
+    if (free(cx, cy)) return { x: cx, y: cy };
+    for (let r = 32; r <= 480; r += 32) {
+      for (let a = 0; a < 12; a++) {
+        const px = Phaser.Math.Clamp(cx + Math.cos((a / 12) * Math.PI * 2) * r, 60, w - 60);
+        const py = Phaser.Math.Clamp(cy + Math.sin((a / 12) * Math.PI * 2) * r, 60, h - 60);
+        if (free(px, py)) return { x: px, y: py };
+      }
+    }
+    return { x: this.player?.x ?? cx, y: this.player?.y ?? cy };
+  }
+
+  private spawnGateway(x: number, y: number, relocate = false) {
+    const spot = this.walkableSpot(x, y);
+    const existing = this.interactables.find((i) => i.kind === "gateway");
+    if (existing) {
+      // A portal already exists — never silently drop the request. When the act
+      // just ended, bring it to the player so it can't be missed.
+      if (relocate) {
+        existing.obj.setPosition(spot.x, spot.y);
+        existing.enabled = true;
+        existing.obj.setActive(true).setVisible(true);
+        this.gatewayObj = existing.obj;
+      }
+      return;
+    }
     const order = this.zoneOrder();
     const next = order[Math.min(order.length - 1, order.indexOf(this.save.current_zone) + 1)]!;
-    const it = this.addInteractable(x, y, "portal", "gateway", `Portal — ${ZONES[next].title}`, {
+    const it = this.addInteractable(spot.x, spot.y, "portal", "gateway", `Portal — ${ZONES[next].title}`, {
       radius: 62,
     });
     this.add
-      .sprite(x, y, "glow")
+      .sprite(spot.x, spot.y, "glow")
       .setDepth(11)
       .setScale(4)
       .setAlpha(0.5)
@@ -3220,11 +3258,15 @@ export class QuestScene extends Phaser.Scene {
   /** Every realm always offers a way onward once its relics are gathered. */
   private ensureGateway() {
     if (this.save.current_zone === "cathedral") return;
-    if (this.interactables.some((i) => i.kind === "gateway")) return;
+    if (this.interactables.some((i) => i.kind === "gateway")) {
+      this.gatewayObj = this.interactables.find((i) => i.kind === "gateway")!.obj;
+      return;
+    }
     if (!this.zoneRelicsDone(this.save.current_zone)) return;
     const spot = this.landmark?.sprite;
     this.spawnGateway(spot ? spot.x : this.player.x + 140, spot ? spot.y + 90 : this.player.y);
   }
+
 
   private advanceZone() {
     const order: ZoneId[] = [
@@ -3499,6 +3541,11 @@ export class QuestScene extends Phaser.Scene {
       this.game.events.emit(EV.music, mode);
     }
     this.updateHand(dir);
+    // Safety net: once an act's relics are in hand, a portal must always exist.
+    if (time > this.nextGatewayCheck) {
+      this.nextGatewayCheck = time + 2000;
+      this.ensureGateway();
+    }
     this.checkPortal();
     this.checkBossEncounter();
     this.updateCompanion();
