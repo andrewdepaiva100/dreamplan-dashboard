@@ -105,6 +105,17 @@ export class QuestHouseScene extends Phaser.Scene {
       g.fillRect(wx - 38, oy + 55, 76, 5);
       g.fillStyle(0x6b4a2c, 1);
       g.fillRect(wx - 54, oy + 90, 108, 9);
+      // linen curtains with a folded edge
+      for (const side of [-1, 1]) {
+        const bx = wx + side * 46;
+        g.fillStyle(0x8e4a63, 1);
+        g.fillRect(bx - (side < 0 ? 0 : 20), oy + 20, 20, 76);
+        g.fillStyle(0xa85d78, 0.85);
+        g.fillRect(bx - (side < 0 ? 0 : 14), oy + 20, 7, 76);
+        g.fillStyle(0x000000, 0.16);
+        g.fillRect(bx - (side < 0 ? -14 : 20), oy + 20, 6, 76);
+      }
+      g.fillStyle(0x c9a44c, 1);
       // soft square of daylight on the boards below
       const pool = this.add.graphics().setDepth(3);
       pool.fillStyle(0xffe9b8, 0.16);
