@@ -135,8 +135,15 @@ export class QuestScene extends Phaser.Scene {
   }
 
   create() {
+    // Clear any leftover fade from the previous realm FIRST — a black screen
+    // must never survive into a new scene, even if setup below hiccups.
+    this.cameras.main.resetFX();
+    this.cameras.main.setAlpha(1);
+    this.cameras.main.fadeIn(500, 8, 12, 30);
+
     buildTileset(this);
     buildSprites(this);
+
 
     this.frozen = false;
     this.stamina = 100;
@@ -159,10 +166,30 @@ export class QuestScene extends Phaser.Scene {
     this.landmark = null;
     this.cutscenePlayed = false;
     this.pingUntil = 0;
+    this.pingMarker = null;
     this.companion = null;
+    // These are lazily created; a reloaded realm must never reuse objects that
+    // belonged to the previous scene instance (they are already destroyed).
+    this.solidDecor = this.physics.add.staticGroup();
+    this.arrow = undefined as unknown as Phaser.GameObjects.Triangle;
 
-    this.buildZone(this.save.current_zone);
+
+
+    try {
+      this.buildZone(this.save.current_zone);
+    } catch (err) {
+      console.error("[quest] realm build failed", err);
+      // Never strand the player on a black screen: fall back to Act I.
+      if (this.save.current_zone !== "sunlit_shores") {
+        this.save.current_zone = "sunlit_shores";
+        this.buildZone("sunlit_shores");
+        this.emitToast("The path shimmered oddly — you're back on the Sunlit Shores.");
+      } else {
+        throw err;
+      }
+    }
     this.spawnCompanion();
+
 
     // ---- groups (pooled) -------------------------------------------------
     this.enemies = this.physics.add.group({ maxSize: 60, runChildUpdate: false });
@@ -226,7 +253,6 @@ export class QuestScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, this.mapW * TILE, this.mapH * TILE);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     this.cameras.main.setZoom(this.scale.width < 620 ? 1.1 : 1.45);
-    this.cameras.main.fadeIn(500, 8, 12, 30);
 
     // warm romantic sunlight wash across the whole scene
     const sunlight = this.add.rectangle(
