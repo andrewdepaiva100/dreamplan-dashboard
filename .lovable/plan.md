@@ -83,3 +83,8 @@ begins. Choices are remembered for the ending recap.
   so no database change is needed.
 - Verified after the change by running the game in a browser: clear Act I, walk into
   the portal, confirm Act II loads, confirm hearts heal and the sword renders in hand.
+- Boss work: new boss art per act in `src/assets/quest/`, boss definitions with taunt
+  plus three reply options and their effects in `src/lib/quest/content.ts`, a
+  `boss-dialogue` modal payload in `src/lib/quest/events.ts` rendered in
+  `src/components/plan/quest.tsx`, and a gate in `scene.ts` so the encounter only
+  starts after a reply is chosen.
