@@ -284,7 +284,7 @@ function GuestDialogue({
 }: {
   id: string;
   name: string;
-  role?: string;
+  role?: string | undefined;
   lines: string[];
   onClose: () => void;
 }) {
@@ -405,7 +405,7 @@ function BossDialogue({
   onDone,
 }: {
   name: string;
-  role?: string;
+  role?: string | undefined;
   art: string;
   demon: string;
   mariaLine: string;
