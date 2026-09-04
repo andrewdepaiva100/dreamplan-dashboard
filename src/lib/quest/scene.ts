@@ -819,9 +819,11 @@ export class QuestScene extends Phaser.Scene {
     const farFromTrees = (tx: number, ty: number) =>
       trees.every(([ax, ay]) => Math.hypot(ax - tx, ay - ty) >= MIN_TREE_GAP);
     for (const [x, y, n] of opts.groves ?? []) {
+      // 15% fewer trees per grove — airier realms, same spacing rules.
+      const target = Math.max(1, Math.round(n * 0.85));
       let placed = 0;
       let guard = 0;
-      while (placed < n && guard++ < 400) {
+      while (placed < target && guard++ < 400) {
         const tx = Math.round(x + (rnd() - 0.5) * 24);
         const ty = Math.round(y + (rnd() - 0.5) * 20);
         if (tx < 4 || ty < 4 || tx > DESIGN_W - 4 || ty > DESIGN_H - 4) continue;
@@ -831,6 +833,7 @@ export class QuestScene extends Phaser.Scene {
         placed++;
       }
     }
+
     for (const [x, y] of opts.lamps ?? []) solid(x, y, "lamp", 0.22);
     for (const [x, y] of opts.benches ?? []) solid(x, y, "bench", 0.5);
     for (const [x, y, n] of opts.fences ?? []) {
