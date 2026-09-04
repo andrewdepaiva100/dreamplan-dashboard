@@ -38,6 +38,15 @@ import imgArbor from "@/assets/quest/arbor.png";
 import imgPriest from "@/assets/quest/priest.png";
 import imgPew from "@/assets/quest/pew.png";
 import imgAltar from "@/assets/quest/altar.png";
+import imgLorena from "@/assets/quest/lorena.png";
+import imgAlicia from "@/assets/quest/alicia.png";
+import imgPedro from "@/assets/quest/pedro.png";
+import imgGianluca from "@/assets/quest/gianluca.png";
+import imgRaquel from "@/assets/quest/raquel.png";
+import imgMarcos from "@/assets/quest/marcos.png";
+import imgSilvia from "@/assets/quest/silvia.png";
+import imgGustavo from "@/assets/quest/gustavo.png";
+import imgBossHollow from "@/assets/quest/boss-hollow.png";
 import imgGuest from "@/assets/quest/guest.png";
 import imgGuide from "@/assets/quest/guide.png";
 import imgSignpost from "@/assets/quest/signpost.png";
@@ -142,6 +151,15 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   priest: [imgPriest, 24, 34],
   pew: [imgPew, 40, 22],
   altar: [imgAltar, 46, 34],
+  lorena: [imgLorena, 22, 32],
+  alicia: [imgAlicia, 22, 32],
+  pedro: [imgPedro, 18, 26],
+  gianluca: [imgGianluca, 22, 32],
+  raquel: [imgRaquel, 22, 32],
+  marcos: [imgMarcos, 22, 32],
+  silvia: [imgSilvia, 22, 32],
+  gustavo: [imgGustavo, 22, 32],
+  "boss-hollow": [imgBossHollow, 34, 44],
   guest: [imgGuest, 20, 30],
   guide: [imgGuide, 22, 32],
   "guide-act": [imgGuideAct, 24, 34],
@@ -299,6 +317,15 @@ export function buildSprites(scene: Phaser.Scene) {
     ["priest", "priest"],
     ["pew", "pew"],
     ["altar", "altar"],
+    ["lorena", "lorena"],
+    ["alicia", "alicia"],
+    ["pedro", "pedro"],
+    ["gianluca", "gianluca"],
+    ["raquel", "raquel"],
+    ["marcos", "marcos"],
+    ["silvia", "silvia"],
+    ["gustavo", "gustavo"],
+    ["boss-hollow", "boss-hollow"],
     ["guest", "guest"],
     ["guide", "guide"],
     ["guide-act", "guide-act"],
