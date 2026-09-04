@@ -1641,7 +1641,7 @@ export class QuestScene extends Phaser.Scene {
       ], 3);
     });
     this.addPlayer(18, 51);
-    if (WEDDING_GUESTS.the_haven) this.addGuest(WEDDING_GUESTS.haven_town, 26, 46);
+    if (WEDDING_GUESTS.the_haven) this.addGuest(WEDDING_GUESTS.the_haven, 26, 46);
     this.scatterDecor(33, {
       village: [
         [16, 40],
