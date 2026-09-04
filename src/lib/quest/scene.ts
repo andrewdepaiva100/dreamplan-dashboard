@@ -1105,7 +1105,7 @@ export class QuestScene extends Phaser.Scene {
         [60, 51],
         [60, 82],
       ],
-      flowers: 90,
+      flowers: 240,
       border: true,
     });
 
@@ -1434,7 +1434,7 @@ export class QuestScene extends Phaser.Scene {
         [58, 68],
         [76, 68],
       ],
-      flowers: 120,
+      flowers: 300,
     });
 
     this.addLandmark(
@@ -1682,7 +1682,7 @@ export class QuestScene extends Phaser.Scene {
         [12, 46, 6],
         [96, 70, 6],
       ],
-      flowers: 100,
+      flowers: 260,
       border: true,
     });
 
@@ -1841,7 +1841,7 @@ export class QuestScene extends Phaser.Scene {
         [40, 70],
         [92, 70],
       ],
-      flowers: 40,
+      flowers: 140,
     });
     this.addLandmark(
       "landmark-cathedral",
