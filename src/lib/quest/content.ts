@@ -260,7 +260,7 @@ export const CONTROLS_HELP: { title: string; body: string }[] = [
   },
   {
     title: "Attack",
-    body: "Tap PEACE (or press Space) to send out blossoms that calm any worry they touch — nothing is ever harmed.",
+    body: "Tap ATTACK (or press Space) to swing your equipped weapon. Anything you strike turns to butterflies — nothing is ever harmed.",
   },
   {
     title: "Dash",

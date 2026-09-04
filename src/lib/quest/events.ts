@@ -15,6 +15,7 @@ export const EV = {
   act: "quest:act",
   travel: "quest:travel",
   guideme: "quest:guideme",
+  equip: "quest:equip",
 } as const;
 
 export type HudState = {
@@ -31,6 +32,9 @@ export type HudState = {
   keys: number;
   prompt: string | null;
   weddingCompleted: boolean;
+  weapons: string[];
+  equipped: string | null;
+  boss: { name: string; hp: number; max: number } | null;
 };
 
 export type ModalPayload =
@@ -40,4 +44,5 @@ export type ModalPayload =
   | { type: "andrew"; line: string }
   | { type: "vault" }
   | { type: "info"; title: string; body: string }
-  | { type: "guide" };
+  | { type: "guide" }
+  | { type: "weapon"; weaponId: string; speaker: string; line: string };
