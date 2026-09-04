@@ -1855,7 +1855,7 @@ export class QuestScene extends Phaser.Scene {
         [26, 74],
         [104, 74],
       ],
-      flowers: 0,
+      flowers: 90,
     });
 
     // altar, priest and Andrew waiting at the front
