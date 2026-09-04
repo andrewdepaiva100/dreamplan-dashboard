@@ -21,25 +21,37 @@ wired into the portrait list so it appears whenever her dialogue opens.
 ## 3. Act IV becomes beautiful
 
 Act IV is a bare marble plateau. It gets a night-sky garden treatment while
-keeping the same open, easy-to-walk floor and the same puzzle:
+keeping the same open, easy-to-walk floor:
 
 - a constellation-patterned court: bloom-and-marble ring around the center,
   star-point inlays along both roads instead of plain slabs
 - reflecting pools at the plateau edges with soft glow, placed clear of paths
 - floating star lanterns and slow drifting light motes across the sky
-- crystal shards and star-flowers dotted around the three pillars, so each
-  pillar reads as a shrine rather than a lone post
+- crystal shards and star-flowers dotted around each pillar, so every pillar
+  reads as a shrine rather than a lone post
 - richer aura on the pillars: blue pulse, gold shimmer once turned, rose bloom
 - a soft aurora wash over the upper sky and a gentle vignette
 - when the staircase forms, a burst of rising star particles along it
 
-No changes to enemies, guardians, boss HP, or the puzzle rules.
+## 4. Five pillars, and a secret letter at the end
+
+- Act IV now has five crystal pillars instead of three, spread across the
+  plateau so the climb takes a real tour of the act. Each still wakes its own
+  silent 1000 HP guardian, and the staircase only forms once all five are gold.
+- The moment the fifth pillar turns gold, a Secret Envelope appears where Maria
+  stands: a letter about the wedding that is about to begin — the guests
+  arriving, the music warming up, Andrew waiting at the end of the aisle. It is
+  saved like the other secret envelopes so it can be re-read.
+
+No changes to enemies' behaviour, boss HP, or the puzzle rules.
 
 ## Technical notes
 
 - `src/lib/quest/scene.ts`: `updateAlly` distances and blade offset; `buildAct4`
-  tile decoration, decor sprites, particle emitters, pillar aura tweens;
-  `openStaircase` particle flourish.
+  tile decoration, decor sprites, particle emitters, pillar aura tweens, five
+  pillar spots and `zoneState.pillars` length 5; `openStaircase` particle
+  flourish plus the new "wedding-hour" envelope spawn.
+- `src/lib/quest/content.ts`: new secret envelope entry with the wedding letter.
 - New `src/assets/quest/portrait-andressa.jpg`, imported and added to
   `GUEST_PORTRAITS` in `src/components/plan/quest.tsx`.
 - Reuses existing sprites (lamp, flowers, petal, key/relic glow) where possible
