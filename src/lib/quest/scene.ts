@@ -24,6 +24,7 @@ import {
 
 export { EV } from "./events";
 export type { HudState, ModalPayload } from "./events";
+import { AEGIS, SIGNPOST_DIRECTIONS, SIGNPOST_HEADER } from "./content";
 import { EV, type HudState, type ModalPayload } from "./events";
 
 type Interactable = {
@@ -451,7 +452,14 @@ export class QuestScene extends Phaser.Scene {
   unlockedZones(): ZoneId[] {
     const order = this.zoneOrder();
     if (this.save.wedding_completed) return order;
-    return order.slice(0, order.indexOf(this.save.current_zone) + 1);
+    // A realm stays unlocked forever once its relics are gathered, so walking
+    // back through an old portal never re-seals the road ahead.
+    let reached = order.indexOf(this.save.current_zone);
+    for (let i = 0; i < order.length - 1; i++) {
+      if (this.zoneRelicsDone(order[i]!)) reached = Math.max(reached, i + 1);
+      else break;
+    }
+    return order.slice(0, reached + 1);
   }
 
   /** Live minimap data for the React map overlay. */
@@ -939,7 +947,7 @@ export class QuestScene extends Phaser.Scene {
     this.addInteractable(this.wx(tx), this.wy(ty), "guide", "guide", "Read the Realm Map", {
       radius: 88,
     });
-    this.addInteractable(this.wx(tx - 4), this.wy(ty), "signpost", "signpost", "Read the signpost", {
+    this.addInteractable(this.wx(tx - 4), this.wy(ty), "signpost", "signpost", "Read the directions", {
       radius: 84,
     });
   }
@@ -1606,9 +1614,9 @@ export class QuestScene extends Phaser.Scene {
     this.time.delayedCall(300, () => this.player.clearTint());
     this.emitSave();
 
-    if (this.save.player_health <= 1 && this.save.relics_collected.includes("shield")) {
+    if (this.save.player_health <= 1 && this.save.relics_collected.includes(AEGIS.id)) {
       if (now > this.shieldReadyAt) {
-        this.shieldReadyAt = now + 8000;
+        this.shieldReadyAt = now + 12000;
         const ring = this.add.circle(this.player.x, this.player.y, 30, 0xc9a24b, 0.3).setDepth(9);
         this.tweens.add({
           targets: ring,
@@ -1621,7 +1629,8 @@ export class QuestScene extends Phaser.Scene {
           if (en.active && Phaser.Math.Distance.Between(en.x, en.y, this.player.x, this.player.y) < 150)
             this.transformEnemy(en);
         });
-        this.emitToast("The Shield of Unshakable Faith pulses — faith holds you steady.");
+        this.invulnUntil = Math.max(this.invulnUntil, now + 2200);
+        this.emitToast(AEGIS.trigger);
       }
     }
 
@@ -1806,6 +1815,15 @@ export class QuestScene extends Phaser.Scene {
       case "act-guide": {
         const g = ACT_GUIDES[this.save.current_zone];
         const fresh = this.grantWeapon(g.weapon);
+        if (!fresh && !this.save.relics_collected.includes(AEGIS.id)) {
+          this.save.relics_collected = [...this.save.relics_collected, AEGIS.id];
+          this.emitSave();
+          this.pushHud(true);
+          this.spawnSparkle(this.player.x, this.player.y, 0xf3d489, 24);
+          this.cameras.main.flash(300, 255, 240, 191);
+          this.openModal({ type: "info", title: AEGIS.name, body: `${g.name}: "${AEGIS.line}"` });
+          break;
+        }
         this.openModal({
           type: fresh ? "weapon" : "info",
           ...(fresh
@@ -1815,8 +1833,14 @@ export class QuestScene extends Phaser.Scene {
         break;
       }
       case "guide":
-      case "signpost":
         this.openModal({ type: "guide" });
+        break;
+      case "signpost":
+        this.openModal({
+          type: "directions",
+          title: SIGNPOST_HEADER,
+          lines: SIGNPOST_DIRECTIONS[this.save.current_zone],
+        });
         break;
       case "gateway":
         this.advanceZone();
@@ -1878,6 +1902,17 @@ export class QuestScene extends Phaser.Scene {
       yoyo: true,
       repeat: -1,
     });
+    it.obj.setScale(1.15);
+    this.gatewayObj = it.obj;
+  }
+
+  /** Every realm always offers a way onward once its relics are gathered. */
+  private ensureGateway() {
+    if (this.save.current_zone === "cathedral") return;
+    if (this.interactables.some((i) => i.kind === "gateway")) return;
+    if (!this.zoneRelicsDone(this.save.current_zone)) return;
+    const spot = this.landmark?.sprite;
+    this.spawnGateway(spot ? spot.x : this.player.x + 140, spot ? spot.y + 90 : this.player.y);
   }
 
   private advanceZone() {
