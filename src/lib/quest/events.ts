@@ -18,6 +18,10 @@ export const EV = {
   equip: "quest:equip",
   bosschoice: "quest:bosschoice",
   companion: "quest:companion",
+  /** Scene -> React: "explore" or "battle" music layer. */
+  music: "quest:music",
+  /** React -> scene: inventory action (eat / cook / stash / take / sleep / leave). */
+  item: "quest:item",
 } as const;
 
 export type HudState = {
@@ -38,6 +42,14 @@ export type HudState = {
   equipped: string | null;
   boss: { name: string; hp: number; max: number } | null;
   shield: { owned: boolean; ready: boolean } | null;
+  /** 0..1 through the day; 0 = dawn. */
+  timeOfDay: number;
+  night: boolean;
+  clock: string;
+  /** Backpack contents, item id -> count. */
+  inventory: Record<string, number>;
+  /** True while Maria is inside her house. */
+  indoors: boolean;
 };
 
 export type ModalPayload =
@@ -52,6 +64,9 @@ export type ModalPayload =
   | { type: "directions"; title: string; lines: string[] }
   | { type: "guest"; id: string; name: string; role?: string; lines: string[] }
   | { type: "companion"; name: string; body: string; owned: boolean }
+  | { type: "chest"; inventory: Record<string, number>; chest: Record<string, number> }
+  | { type: "hearth"; inventory: Record<string, number> }
+  | { type: "bed" }
   | {
       type: "boss";
       name: string;

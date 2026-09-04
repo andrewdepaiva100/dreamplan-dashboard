@@ -498,4 +498,190 @@ export function buildSprites(scene: Phaser.Scene) {
     ctx.stroke();
     void g;
   });
+
+  buildHomeSprites(scene);
 }
+
+/**
+ * Cottage interior furniture, food drops, boss bolts and the warm light discs
+ * used by the day/night pass. All procedural — no extra art to download.
+ */
+export function buildHomeSprites(scene: Phaser.Scene) {
+  // soft warm light disc for lamps, torches and windows at night
+  drawTo(scene, "light-warm", 128, 128, (ctx) => {
+    const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    g.addColorStop(0, "rgba(255,214,140,0.95)");
+    g.addColorStop(0.45, "rgba(255,182,96,0.38)");
+    g.addColorStop(1, "rgba(255,170,80,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 128, 128);
+  });
+
+  // boss projectile — white core so a runtime tint reads true
+  drawTo(scene, "bolt", 18, 18, (ctx) => {
+    const g = ctx.createRadialGradient(9, 9, 0, 9, 9, 9);
+    g.addColorStop(0, "rgba(255,255,255,1)");
+    g.addColorStop(0.55, "rgba(255,255,255,0.75)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 18, 18);
+  });
+
+  // raw meat drop
+  drawTo(scene, "drop-raw-meat", 20, 16, (ctx) => {
+    ctx.fillStyle = "#c9505a";
+    ctx.beginPath();
+    ctx.ellipse(10, 9, 8, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#e88a92";
+    ctx.beginPath();
+    ctx.ellipse(8, 7, 4, 2.6, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f2e6d2";
+    ctx.fillRect(15, 6, 4, 3);
+  });
+
+  // cooked meat drop
+  drawTo(scene, "drop-cooked-meat", 20, 16, (ctx) => {
+    ctx.fillStyle = "#8a4a25";
+    ctx.beginPath();
+    ctx.ellipse(10, 9, 8, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#c07a3d";
+    ctx.beginPath();
+    ctx.ellipse(8, 7, 4, 2.6, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f2e6d2";
+    ctx.fillRect(15, 6, 4, 3);
+  });
+
+  // berries drop
+  drawTo(scene, "drop-berries", 16, 14, (ctx) => {
+    for (const [x, y, r, c] of [
+      [5, 8, 4, "#5b4bb5"],
+      [10, 6, 3.4, "#7663d6"],
+      [11, 10, 3, "#4a3d99"],
+    ] as [number, number, number, string][]) {
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = "#3f7a3f";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(8, 4);
+    ctx.lineTo(12, 1);
+    ctx.stroke();
+  });
+
+  // storage chest
+  drawTo(scene, "chest", 34, 28, (ctx) => {
+    ctx.fillStyle = "#7a4d24";
+    ctx.fillRect(2, 10, 30, 16);
+    ctx.fillStyle = "#96632f";
+    ctx.beginPath();
+    ctx.moveTo(2, 11);
+    ctx.quadraticCurveTo(17, 0, 32, 11);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#d8a94e";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(3, 11, 28, 14);
+    ctx.fillStyle = "#e6c065";
+    ctx.fillRect(15, 12, 4, 8);
+    ctx.fillStyle = "#3a2410";
+    ctx.fillRect(16, 15, 2, 3);
+  });
+
+  // hearth / fireplace
+  drawTo(scene, "hearth", 44, 40, (ctx) => {
+    ctx.fillStyle = "#6d6a66";
+    ctx.fillRect(1, 4, 42, 34);
+    ctx.fillStyle = "#8b8781";
+    for (let y = 0; y < 5; y++)
+      for (let x = 0; x < 6; x++)
+        ctx.fillRect(3 + x * 7 + (y % 2 ? 3 : 0), 6 + y * 6, 6, 5);
+    ctx.fillStyle = "#231a14";
+    ctx.beginPath();
+    ctx.moveTo(11, 38);
+    ctx.lineTo(11, 22);
+    ctx.quadraticCurveTo(22, 12, 33, 22);
+    ctx.lineTo(33, 38);
+    ctx.closePath();
+    ctx.fill();
+    const g = ctx.createLinearGradient(0, 38, 0, 22);
+    g.addColorStop(0, "#ffd166");
+    g.addColorStop(1, "#e2542a");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(15, 38);
+    ctx.quadraticCurveTo(16, 26, 22, 22);
+    ctx.quadraticCurveTo(28, 26, 29, 38);
+    ctx.closePath();
+    ctx.fill();
+  });
+
+  // bed
+  drawTo(scene, "bed", 48, 34, (ctx) => {
+    ctx.fillStyle = "#6b4526";
+    ctx.fillRect(1, 6, 46, 26);
+    ctx.fillStyle = "#8a5a31";
+    ctx.fillRect(1, 2, 8, 30);
+    ctx.fillStyle = "#f6efe2";
+    ctx.fillRect(9, 9, 12, 14);
+    ctx.fillStyle = "#c2405a";
+    ctx.fillRect(20, 9, 26, 20);
+    ctx.fillStyle = "#e0708a";
+    ctx.fillRect(20, 9, 26, 5);
+  });
+
+  // small round rug
+  drawTo(scene, "rug", 88, 56, (ctx) => {
+    ctx.fillStyle = "#8d3f52";
+    ctx.beginPath();
+    ctx.ellipse(44, 28, 43, 27, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#d8a94e";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(44, 28, 32, 19, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "#f2dfae";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(44, 28, 20, 12, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+
+  // warm interior window
+  drawTo(scene, "window-warm", 34, 30, (ctx) => {
+    ctx.fillStyle = "#5a3a1e";
+    ctx.fillRect(0, 0, 34, 30);
+    const g = ctx.createLinearGradient(0, 0, 0, 30);
+    g.addColorStop(0, "#1c2a52");
+    g.addColorStop(1, "#3d4f86");
+    ctx.fillStyle = g;
+    ctx.fillRect(3, 3, 28, 24);
+    ctx.strokeStyle = "#5a3a1e";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(17, 3);
+    ctx.lineTo(17, 27);
+    ctx.moveTo(3, 15);
+    ctx.lineTo(31, 15);
+    ctx.stroke();
+  });
+
+  // cooking pot / table
+  drawTo(scene, "table", 40, 26, (ctx) => {
+    ctx.fillStyle = "#8a5a31";
+    ctx.fillRect(2, 4, 36, 8);
+    ctx.fillStyle = "#6b4526";
+    ctx.fillRect(5, 12, 5, 12);
+    ctx.fillRect(30, 12, 5, 12);
+    ctx.fillStyle = "#e6d7bd";
+    ctx.fillRect(12, 0, 16, 5);
+  });
+}
+
