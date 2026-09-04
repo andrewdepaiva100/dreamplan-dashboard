@@ -42,10 +42,11 @@ Background music starts muted; the speaker toggle in the top-right HUD turns it 
 
 ## Technical notes
 
-- `src/lib/quest/scene.ts`: per-zone map dimensions (Act I ~1/3 area) replacing the single global size, act guide NPCs with dialogue, weapon award events, weapon-scaled Peace Burst, per-act boss definitions with health, minion summon timer and arena setup, boss HP broadcast on the HUD event.
-- `src/lib/quest/content.ts`: guide names/dialogue per act, weapon definitions (name, blurb, icon), boss names and objective copy.
-- `src/components/plan/quest.tsx`: compact centered map modal, boss health bar overlay, inventory strip, weapon-received modal, mute defaulting to on.
-- `src/lib/quest/events.ts`: boss HP and weapon payload types.
-- `src/lib/quest/save.ts` + `maria_quest_saves`: weapons stored inside the existing jsonb state; no schema change needed.
-- New bundled art in `src/assets/quest/` for the four extra guides, five weapon icons, and a minion sprite, generated in the same style as the current set.
+- `src/lib/quest/scene.ts`: per-zone map dimensions (Act I ~1/3 area) replacing the single global size, blacksmith building + NPC at spawn, act guide NPCs with dialogue, weapon award events, melee swing attack replacing the peace burst (per-weapon reach/damage/arc), per-act boss definitions with health, minion summon timer and arena setup, boss HP broadcast on the HUD event.
+- `src/lib/quest/content.ts`: blacksmith and guide dialogue, weapon definitions (name, blurb, icon, damage/reach), boss names and objective copy; controls/how-to-play text updated from PEACE to ATTACK.
+- `src/components/plan/quest.tsx`: compact centered map modal, ATTACK button replacing PEACE, boss health bar overlay, inventory strip with equip taps, weapon-received modal, mute defaulting to on.
+- `src/lib/quest/events.ts`: boss HP, weapon and inventory payload types.
+- `src/lib/quest/save.ts` + `maria_quest_saves`: weapons and equipped weapon stored inside the existing jsonb state; no schema change needed.
+- New bundled art in `src/assets/quest/`: blacksmith building, blacksmith NPC, four extra guides, six weapon icons (wooden sword plus the five act weapons), swing arc and a minion sprite, in the same style as the current set.
+
 - Verified with typecheck, production build and a live browser run through Act I's guide, weapon award and boss fight.
