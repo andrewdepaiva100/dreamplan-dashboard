@@ -61,6 +61,9 @@ import imgDog from "@/assets/quest/dog.png";
 import imgBird from "@/assets/quest/bird.png";
 import imgDeer from "@/assets/quest/deer.png";
 import imgDuck from "@/assets/quest/duck.png";
+import imgBlacksmith from "@/assets/quest/blacksmith.png";
+import imgBlacksmithNpc from "@/assets/quest/blacksmith-npc.png";
+import imgGuideAct from "@/assets/quest/guide-act.png";
 
 export const TILE = 32;
 export const HD = 2;
@@ -125,6 +128,9 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   arbor: [imgArbor, 40, 44],
   guest: [imgGuest, 20, 30],
   guide: [imgGuide, 22, 32],
+  blacksmith: [imgBlacksmith, 96, 115],
+  "blacksmith-npc": [imgBlacksmithNpc, 24, 32],
+  "guide-act": [imgGuideAct, 24, 34],
   signpost: [imgSignpost, 24, 32],
   fountain: [imgFountain, 34, 38],
   house: [imgHouse, 64, 56],
@@ -275,6 +281,9 @@ export function buildSprites(scene: Phaser.Scene) {
     ["arbor", "arbor"],
     ["guest", "guest"],
     ["guide", "guide"],
+    ["blacksmith", "blacksmith"],
+    ["blacksmith-npc", "blacksmith-npc"],
+    ["guide-act", "guide-act"],
     ["signpost", "signpost"],
     ["fountain", "fountain"],
     ["house", "house"],

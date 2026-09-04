@@ -8,6 +8,8 @@ export type QuestSave = {
   secret_envelopes_found: string[];
   vault_keys_count: number;
   wedding_completed: boolean;
+  weapons: string[];
+  equipped_weapon: string | null;
 };
 
 export const SLOT = "maria";
@@ -19,6 +21,8 @@ export const EMPTY_SAVE: QuestSave = {
   secret_envelopes_found: [],
   vault_keys_count: 0,
   wedding_completed: false,
+  weapons: [],
+  equipped_weapon: null,
 };
 
 const LOCAL_KEY = "marias-quest-save-v1";
@@ -48,7 +52,7 @@ export async function loadSave(): Promise<QuestSave | null> {
     const { data, error } = await supabase
       .from("maria_quest_saves")
       .select(
-        "current_zone, player_health, relics_collected, secret_envelopes_found, vault_keys_count, wedding_completed",
+        "current_zone, player_health, relics_collected, secret_envelopes_found, vault_keys_count, wedding_completed, weapons, equipped_weapon",
       )
       .eq("slot", SLOT)
       .maybeSingle();
@@ -65,6 +69,8 @@ export async function loadSave(): Promise<QuestSave | null> {
         : [],
       vault_keys_count: data.vault_keys_count ?? 0,
       wedding_completed: Boolean(data.wedding_completed),
+      weapons: Array.isArray(data.weapons) ? (data.weapons as string[]) : [],
+      equipped_weapon: (data.equipped_weapon as string | null) ?? null,
     };
     writeLocal(remote);
     return remote;
@@ -88,6 +94,8 @@ export async function persistSave(save: QuestSave): Promise<void> {
           secret_envelopes_found: save.secret_envelopes_found,
           vault_keys_count: save.vault_keys_count,
           wedding_completed: save.wedding_completed,
+          weapons: save.weapons,
+          equipped_weapon: save.equipped_weapon,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "slot" },

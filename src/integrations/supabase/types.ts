@@ -146,6 +146,7 @@ export type Database = {
         Row: {
           created_at: string
           current_zone: string
+          equipped_weapon: string | null
           id: string
           player_health: number
           relics_collected: Json
@@ -154,11 +155,13 @@ export type Database = {
           updated_at: string
           user_id: string | null
           vault_keys_count: number
+          weapons: Json
           wedding_completed: boolean
         }
         Insert: {
           created_at?: string
           current_zone?: string
+          equipped_weapon?: string | null
           id?: string
           player_health?: number
           relics_collected?: Json
@@ -167,11 +170,13 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           vault_keys_count?: number
+          weapons?: Json
           wedding_completed?: boolean
         }
         Update: {
           created_at?: string
           current_zone?: string
+          equipped_weapon?: string | null
           id?: string
           player_health?: number
           relics_collected?: Json
@@ -180,6 +185,7 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           vault_keys_count?: number
+          weapons?: Json
           wedding_completed?: boolean
         }
         Relationships: []
