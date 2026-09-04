@@ -614,7 +614,7 @@ export class QuestScene extends Phaser.Scene {
     ) as Phaser.Physics.Arcade.Sprite;
     foot.setVisible(false);
     const b = foot.body as Phaser.Physics.Arcade.StaticBody;
-    b.setSize(sprite.width * 0.72, Math.max(16, sprite.height * footH));
+    b.setSize(sprite.width * 0.45, Math.max(10, sprite.height * footH * 0.5));
     b.updateFromGameObject?.();
     this.landmark = { sprite, title, body };
     this.tweens.add({
