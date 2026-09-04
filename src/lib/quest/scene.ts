@@ -3236,7 +3236,7 @@ export class QuestScene extends Phaser.Scene {
     const order = this.zoneOrder();
     const next = order[Math.min(order.length - 1, order.indexOf(this.save.current_zone) + 1)]!;
     const it = this.addInteractable(spot.x, spot.y, "portal", "gateway", `Portal — ${ZONES[next].title}`, {
-      radius: 62,
+      radius: 170,
     });
     this.add
       .sprite(spot.x, spot.y, "glow")
