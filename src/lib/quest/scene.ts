@@ -614,7 +614,7 @@ export class QuestScene extends Phaser.Scene {
     ) as Phaser.Physics.Arcade.Sprite;
     foot.setVisible(false);
     const b = foot.body as Phaser.Physics.Arcade.StaticBody;
-    b.setSize(sprite.width * 0.72, Math.max(16, sprite.height * footH));
+    b.setSize(sprite.width * 0.45, Math.max(10, sprite.height * footH * 0.5));
     b.updateFromGameObject?.();
     this.landmark = { sprite, title, body };
     this.tweens.add({
@@ -977,9 +977,12 @@ export class QuestScene extends Phaser.Scene {
       s.setDepth(this.dsort(s.y + s.displayHeight * 0.3));
       this.bakeShadow(s.x, s.y + s.displayHeight * 0.36, s.displayWidth * 0.66, 0.2);
       const b = s.body as Phaser.Physics.Arcade.StaticBody;
-      const h = Math.max(10, s.height * footH);
-      b.setSize(s.width * 0.7, h);
-      b.setOffset(s.width * 0.15, s.height - h);
+      // Slim footprints: only the base of a prop blocks Maria, so the world
+      // never feels like a grid of invisible boxes.
+      const h = Math.max(6, s.height * footH * 0.5);
+      const w = s.width * 0.42;
+      b.setSize(w, h);
+      b.setOffset((s.width - w) / 2, s.height - h);
       b.updateFromGameObject?.();
       return s;
     };
@@ -2112,16 +2115,8 @@ export class QuestScene extends Phaser.Scene {
       this.rect(d, 102, 26, 6, 66, T.PATH);
     });
     this.addPlayer(66, 86);
-    this.scatterDecor(55, {
-      lamps: [
-        [30, 30],
-        [102, 30],
-        [30, 78],
-        [102, 78],
-        [66, 44],
-      ],
-      flowers: 0,
-    });
+    // No lamps in the cathedral — Act V is always full daylight.
+    this.scatterDecor(55, { flowers: 0 });
 
     // arcaded side walls: tall stained-glass windows between stone columns
     for (let r = 0; r < 5; r++) {
@@ -3236,7 +3231,7 @@ export class QuestScene extends Phaser.Scene {
     const order = this.zoneOrder();
     const next = order[Math.min(order.length - 1, order.indexOf(this.save.current_zone) + 1)]!;
     const it = this.addInteractable(spot.x, spot.y, "portal", "gateway", `Portal — ${ZONES[next].title}`, {
-      radius: 62,
+      radius: 170,
     });
     this.add
       .sprite(spot.x, spot.y, "glow")
