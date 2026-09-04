@@ -915,3 +915,55 @@ export const FAMILY_GUESTS: GuestInfo[] = [
     ],
   },
 ];
+
+/** Andrew's closest friends, all standing together in the Act V cathedral. */
+export const CATHEDRAL_FRIENDS: GuestInfo[] = [
+  {
+    id: "andre",
+    name: "Andre",
+    art: "andre",
+    role: "Andrew\u2019s best friend",
+    prompt: "Greet Andre",
+    lines: [
+      "There he is. Suit and everything. I have known this guy since we were kids and I have never seen him this calm.",
+      "Maria, you did something to him. In the best way.",
+      "I am so excited for this wedding I could not sleep last night. Let's get you two married.",
+    ],
+  },
+  {
+    id: "phillip",
+    name: "Phillip",
+    art: "phillip",
+    role: "Groomsman",
+    prompt: "Greet Phillip",
+    lines: [
+      "Okay, everybody is seated, the candles are lit, and I only cried once so far.",
+      "You two are the real deal. Everyone in this room knows it.",
+      "So excited for you both. Go on — he is waiting up front.",
+    ],
+  },
+  {
+    id: "italo",
+    name: "Italo",
+    art: "italo",
+    role: "Groomsman",
+    prompt: "Greet Italo",
+    lines: [
+      "Maria! You look unbelievable. Andrew is going to forget every word he practised.",
+      "We have been waiting for this day for years, honestly.",
+      "I am so excited for the wedding. Save me a dance, alright?",
+    ],
+  },
+  {
+    id: "gabe",
+    name: "Gabe",
+    art: "gabe",
+    role: "Groomsman",
+    prompt: "Greet Gabe",
+    lines: [
+      "Big day. Huge day. I have the rings, I checked four times, we are fine.",
+      "You two make the rest of us believe in this stuff, you know that?",
+      "I am so excited for the wedding. Best day of the year, easy.",
+    ],
+  },
+];
