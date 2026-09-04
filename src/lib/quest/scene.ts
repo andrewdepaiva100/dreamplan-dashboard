@@ -1193,8 +1193,23 @@ export class QuestScene extends Phaser.Scene {
     this.tweens.add({ targets: it.obj, y: it.obj.y - 3, duration: 1500, yoyo: true, repeat: -1 });
   }
 
+  /** A wedding guest with a short, purely celebratory dialogue. */
+  private addGuest(guest: GuestInfo, tx: number, ty: number) {
+    const it = this.addInteractable(
+      this.wx(tx),
+      this.wy(ty),
+      guest.art,
+      "guest",
+      guest.prompt,
+      { id: guest.id, radius: 80 },
+    );
+    it.obj.setDepth(11);
+    this.tweens.add({ targets: it.obj, y: it.obj.y - 2, duration: 1600, yoyo: true, repeat: -1 });
+  }
+
   /** Max the dog — an optional companion Maria can adopt beside the forge. */
   private addDogOffer(tx: number, ty: number) {
+    void 0;
     if (this.dogAdopted()) {
       this.spawnDog(this.wx(tx), this.wy(ty));
       return;
