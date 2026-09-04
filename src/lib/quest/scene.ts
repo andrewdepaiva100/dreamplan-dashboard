@@ -2923,10 +2923,28 @@ export class QuestScene extends Phaser.Scene {
       case "pillar": {
         const arr = this.zoneState["pillars"] as number[];
         const i = Number(it.id);
-        arr[i] = ((arr[i] ?? 0) + 1) % 3;
-        it.obj.setTint([0x8fa6ff, 0xfff0bf, 0xffd7e5][arr[i]!]!);
+        if (this.boss?.active || this.bossTalking) {
+          this.emitToast("Not while something is still fighting you.");
+          break;
+        }
+        const next = ((arr[i] ?? 0) + 1) % 3;
+        it.obj.setTint([0x8fa6ff, 0xfff0bf, 0xffd7e5][next]!);
         this.spawnSparkle(it.obj.x, it.obj.y, 0xd7e0ff, 8);
-        const aligned = arr.every((v) => v === 1);
+        // Turning a pillar gold wakes its shard guardian; the pillar only
+        // counts as aligned once that guardian is defeated.
+        const guardiansBeaten = (this.zoneState["guardians"] as number[]) ?? [];
+        if (next === 1 && !guardiansBeaten.includes(i)) {
+          this.zoneState["pendingPillar"] = i;
+          arr[i] = 1;
+          const cfg = PILLAR_GUARDIANS[i] ?? PILLAR_GUARDIANS[0]!;
+          this.spawnActBoss(0, 0, cfg);
+          if (this.boss) this.boss.setPosition(it.obj.x + 90, it.obj.y);
+          if (this.bossHalo) this.bossHalo.setPosition(it.obj.x + 90, it.obj.y);
+          this.objective = `${cfg.name} guards the pillar — bring it down.`;
+          break;
+        }
+        arr[i] = next;
+        const aligned = arr.every((v, k) => v === 1 && guardiansBeaten.includes(k));
         this.emitToast(
           aligned
             ? "All three pillars burn gold — the staircase forms."
