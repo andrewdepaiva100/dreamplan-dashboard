@@ -221,6 +221,38 @@ function GlassPanel({
   );
 }
 
+/** A short guest conversation: taps through each excited line, then closes. */
+function GuestDialogue({
+  name,
+  lines,
+  onClose,
+}: {
+  name: string;
+  lines: string[];
+  onClose: () => void;
+}) {
+  const [idx, setIdx] = useState(0);
+  const line = lines[Math.min(idx, lines.length - 1)] ?? "";
+  const last = idx >= lines.length - 1;
+  return (
+    <GlassPanel title={name} onClose={last ? onClose : undefined}>
+      <p className="font-serif-italic italic text-navy">“{line}”</p>
+      {last ? null : (
+        <button
+          type="button"
+          onClick={() => {
+            buzz();
+            setIdx((i) => i + 1);
+          }}
+          className="mt-4 w-full rounded-xl bg-navy px-4 py-3 text-sm font-semibold text-white"
+        >
+          Continue
+        </button>
+      )}
+    </GlassPanel>
+  );
+}
+
 /** Ambient background canvas: drifting gold motes and falling rose petals. */
 function AmbientCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
