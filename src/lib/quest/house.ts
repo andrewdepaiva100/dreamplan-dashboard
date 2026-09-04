@@ -7,8 +7,8 @@ import { buildHomeSprites } from "./textures";
 
 type Parent = Phaser.Scene & { resumeFromHouse: () => void };
 
-const ROOM_W = 640;
-const ROOM_H = 420;
+const ROOM_W = 860;
+const ROOM_H = 560;
 
 /**
  * Maria's home — one warm, hand-lit room she can step into from any act.
