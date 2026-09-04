@@ -303,15 +303,16 @@ export class QuestScene extends Phaser.Scene {
   // ZONE CONSTRUCTION
   // =======================================================================
 
-  private makeMap(base: number, seed: number, decorate: (d: number[][]) => void) {
+  private makeMap(_base: number, seed: number, decorate: (d: number[][]) => void) {
     const rnd = irnd(seed);
     const data: number[][] = [];
     for (let y = 0; y < this.mapH; y++) {
       const row: number[] = [];
       for (let x = 0; x < this.mapW; x++) {
         const edge = x === 0 || y === 0 || x === this.mapW - 1 || y === this.mapH - 1;
-        // full-colour ground: lush meadow mixed with the zone's own base tile
-        row.push(edge ? T.WALL : rnd() < 0.5 ? T.MEADOW : base);
+        // one continuous lush meadow across the whole realm, flecked with
+        // blooming grass so every act shares the same green
+        row.push(edge ? T.WALL : rnd() < 0.14 ? T.BLOOM : T.MEADOW);
       }
       data.push(row);
     }
