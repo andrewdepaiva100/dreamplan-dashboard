@@ -146,6 +146,7 @@ export class QuestScene extends Phaser.Scene {
   private bossSlow = 1;
   /** 2.5D: grounded contact shadows that follow moving actors. */
   private shadows: { s: Phaser.GameObjects.Ellipse; t: Phaser.GameObjects.Sprite }[] = [];
+  private shadowGfx: Phaser.GameObjects.Graphics | undefined;
   /** 2.5D: smoothed walk velocity (acceleration + glide, no snap-stops). */
   private vel = { x: 0, y: 0 };
   private bobPhase = 0;
@@ -190,6 +191,7 @@ export class QuestScene extends Phaser.Scene {
     this.bossSlow = 1;
     this.bossHalo = null;
     this.shadows = [];
+    this.shadowGfx = undefined;
     this.vel = { x: 0, y: 0 };
     this.bobPhase = 0;
     if (this.save.weapons.length === 0) this.save.weapons = [];
@@ -397,7 +399,17 @@ export class QuestScene extends Phaser.Scene {
     return 12 + y * 0.01;
   }
 
-  /** Soft contact shadow that grounds an actor in the 2.5D world. */
+  /**
+   * Static props bake their shadow into ONE shared Graphics object, so a
+   * whole realm of trees and houses costs a single draw call.
+   */
+  private bakeShadow(x: number, y: number, w: number, alpha = 0.2) {
+    if (!this.shadowGfx) this.shadowGfx = this.add.graphics().setDepth(7);
+    this.shadowGfx.fillStyle(0x0a1226, alpha);
+    this.shadowGfx.fillEllipse(x, y, w, w * 0.42);
+  }
+
+  /** Soft contact shadow that grounds a moving actor in the 2.5D world. */
   private groundShadow(x: number, y: number, w: number, alpha = 0.24) {
     return this.add.ellipse(x, y, w, w * 0.42, 0x0a1226, alpha).setDepth(7);
   }
@@ -481,7 +493,7 @@ export class QuestScene extends Phaser.Scene {
   private addLandmark(key: string, tx: number, ty: number, title: string, body: string, footH = 0.22) {
     const sprite = this.add.sprite(this.wx(tx), this.wy(ty), key);
     sprite.setDepth(this.dsort(sprite.y + sprite.displayHeight * 0.3));
-    this.groundShadow(sprite.x, sprite.y + sprite.displayHeight * 0.34, sprite.displayWidth * 0.7, 0.2);
+    this.bakeShadow(sprite.x, sprite.y + sprite.displayHeight * 0.34, sprite.displayWidth * 0.7, 0.2);
     if (!this.solidDecor) this.solidDecor = this.physics.add.staticGroup();
     const foot = this.solidDecor.create(
       sprite.x,
@@ -604,7 +616,7 @@ export class QuestScene extends Phaser.Scene {
     } else dir = dy < 0 ? "up" : "down";
     const key = `andrew-${moving ? "walk" : "idle"}-${dir}`;
     if (c.anims.currentAnim?.key !== key) c.anims.play(key, true);
-    c.setDepth(c.y > this.player.y ? 21 : 19);
+    c.setDepth(this.dsort(c.y));
   }
 
   /** Which acts the player may fast-travel to (everything reached so far). */
@@ -776,7 +788,7 @@ export class QuestScene extends Phaser.Scene {
     opts: { id?: string; radius?: number; data?: Record<string, unknown>; depth?: number } = {},
   ) {
     const obj = this.add.sprite(x, y, texture).setDepth(opts.depth ?? this.dsort(y));
-    this.groundShadow(x, y + obj.displayHeight * 0.34, obj.displayWidth * 0.6, 0.18);
+    this.bakeShadow(x, y + obj.displayHeight * 0.34, obj.displayWidth * 0.6, 0.18);
     if (texture.startsWith("andrew")) obj.setScale(1.1);
     // Hidden love letters get a tall rose beacon and a generous reach so they
     // are always findable from across a realm.
@@ -837,7 +849,7 @@ export class QuestScene extends Phaser.Scene {
         key,
       ) as Phaser.Physics.Arcade.Sprite;
       s.setDepth(this.dsort(s.y + s.displayHeight * 0.3));
-      this.groundShadow(s.x, s.y + s.displayHeight * 0.36, s.displayWidth * 0.66, 0.2);
+      this.bakeShadow(s.x, s.y + s.displayHeight * 0.36, s.displayWidth * 0.66, 0.2);
       const b = s.body as Phaser.Physics.Arcade.StaticBody;
       const h = Math.max(10, s.height * footH);
       b.setSize(s.width * 0.7, h);
