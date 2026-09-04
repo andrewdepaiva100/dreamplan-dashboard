@@ -163,16 +163,22 @@ function GlassPanel({
   onClose,
   title,
   wide,
+  compact,
 }: {
   children: React.ReactNode;
   onClose?: () => void;
   title: string;
   wide?: boolean;
+  compact?: boolean;
 }) {
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-center bg-[rgba(6,10,24,0.72)] p-4 backdrop-blur-sm">
       <div
-        className={`w-full ${wide ? "max-w-2xl" : "max-w-md"} max-h-full overflow-y-auto rounded-2xl border border-rose-gold/40 bg-[rgba(253,250,243,0.92)] p-6 shadow-2xl`}
+        className={`${
+          compact
+            ? "w-[68vw] min-w-[300px] max-w-lg max-h-[70vh] p-4"
+            : `w-full ${wide ? "max-w-2xl" : "max-w-md"} max-h-full p-6`
+        } overflow-y-auto rounded-2xl border border-rose-gold/40 bg-[rgba(253,250,243,0.92)] shadow-2xl`}
       >
         <h3 className="font-display text-xl font-bold text-navy">{title}</h3>
         <div className="mt-3 space-y-3 text-sm leading-relaxed text-navy/85">{children}</div>
@@ -329,7 +335,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
   const [mapSnap, setMapSnap] = useState<MapSnapshot | null>(null);
   const [showMemories, setShowMemories] = useState(false);
   const [actBanner, setActBanner] = useState<string | null>(null);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(true);
 
   useActMusic(screen === "playing" ? hud?.zone : undefined, muted);
 
@@ -712,9 +718,10 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
             <button
               type="button"
               onPointerDown={() => emit(EV.action)}
-              className="h-16 w-16 rounded-full bg-[#d61f2c] text-xs font-bold text-white"
+              className="flex h-16 w-16 flex-col items-center justify-center rounded-full bg-[#d61f2c] text-[11px] font-bold text-white shadow-lg"
             >
-              PEACE
+              <span className="text-base leading-none">{equippedWeapon?.icon ?? "🗡️"}</span>
+              ATTACK
             </button>
           </div>
           <button
@@ -778,6 +785,26 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
         </GlassPanel>
       ) : null}
 
+      {modal?.type === "weapon" ? (
+        <GlassPanel title={modal.speaker} onClose={closeModal}>
+          <p className="font-serif-italic italic">“{modal.line}”</p>
+          {(() => {
+            const w = WEAPON_BY_ID[modal.weaponId];
+            if (!w) return null;
+            return (
+              <div className="rounded-xl border border-gold/40 bg-gold/10 p-4 text-center">
+                <p className="text-3xl leading-none">{w.icon}</p>
+                <p className="mt-2 font-display text-lg font-bold text-navy">{w.name}</p>
+                <p className="mt-1 text-xs text-navy/70">{w.blurb}</p>
+                <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-gold">
+                  Power {w.damage} · Reach {w.reach}
+                </p>
+              </div>
+            );
+          })()}
+        </GlassPanel>
+      ) : null}
+
       {modal?.type === "guide" ? (
         <GlassPanel title="Realm Map" onClose={closeModal} wide>
           <p className="text-sm text-navy/80">
@@ -824,7 +851,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       ) : null}
 
       {showMap ? (
-        <GlassPanel title="Realm Map" onClose={() => setShowMap(false)} wide>
+        <GlassPanel title="Realm Map" onClose={() => setShowMap(false)} compact>
           {mapSnap ? (
             <>
               <LiveMapCanvas snap={mapSnap} />
