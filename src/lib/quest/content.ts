@@ -524,6 +524,8 @@ export type BossConfig = {
   taunt: string;
   /** Sprite key registered in textures.ts */
   art: string;
+  /** Short relationship subtitle shown under the name in dialogue */
+  role?: string;
   /** Aura colour for the boss glow. */
   color: number;
   scale: number;
@@ -741,6 +743,8 @@ export type GuestInfo = {
   name: string;
   /** Sprite key registered in textures.ts */
   art: string;
+  /** Short relationship subtitle shown under the name in dialogue */
+  role?: string;
   prompt: string;
   lines: string[];
 };
@@ -750,6 +754,7 @@ export const WEDDING_GUESTS: Partial<Record<ZoneId, GuestInfo>> = {
     id: "lorena",
     name: "Lorena",
     art: "lorena",
+    role: "Maria\u2019s closest friend",
     prompt: "Say hello to Lorena",
     lines: [
       "Maria! I still cannot believe it is really happening — you and Andrew, married!",
@@ -761,6 +766,7 @@ export const WEDDING_GUESTS: Partial<Record<ZoneId, GuestInfo>> = {
     id: "alicia",
     name: "Alicia",
     art: "alicia",
+    role: "Bridesmaid & lifelong friend",
     prompt: "Say hello to Alicia",
     lines: [
       "Look at all these flowers — it is like the whole garden got the invitation!",
@@ -772,6 +778,7 @@ export const WEDDING_GUESTS: Partial<Record<ZoneId, GuestInfo>> = {
     id: "pedro",
     name: "Pedro",
     art: "pedro",
+    role: "Maria\u2019s little brother",
     prompt: "Say hello to Pedro",
     lines: [
       "MARI! Are you getting married for REAL for real?!",
@@ -783,6 +790,7 @@ export const WEDDING_GUESTS: Partial<Record<ZoneId, GuestInfo>> = {
     id: "gianluca",
     name: "Gianluca",
     art: "gianluca",
+    role: "Groomsman & old friend",
     prompt: "Say hello to Gianluca",
     lines: [
       "All the way up this mountain, and still all anyone can talk about is the wedding.",
@@ -797,6 +805,7 @@ export const FAMILY_GUESTS: GuestInfo[] = [
     id: "raquel",
     name: "Mom (Raquel)",
     art: "raquel",
+    role: "Andrew\u2019s mother",
     prompt: "Hug Mom",
     lines: [
       "My baby boy. Getting married. I have been dreaming about this day since before you could walk.",
@@ -808,6 +817,7 @@ export const FAMILY_GUESTS: GuestInfo[] = [
     id: "marcos",
     name: "Dad (Marcos)",
     art: "marcos",
+    role: "Andrew\u2019s father",
     prompt: "Hug Dad",
     lines: [
       "Son. You look sharp. Your old man is proud — I mean that.",
@@ -819,6 +829,7 @@ export const FAMILY_GUESTS: GuestInfo[] = [
     id: "silvia",
     name: "Her Mom (Silvia)",
     art: "silvia",
+    role: "Maria\u2019s mother",
     prompt: "Hug Silvia",
     lines: [
       "Maria, mija — you are glowing. A mother knows when her daughter found the right one.",
@@ -830,6 +841,7 @@ export const FAMILY_GUESTS: GuestInfo[] = [
     id: "gustavo",
     name: "Her Dad (Gustavo)",
     art: "gustavo",
+    role: "Maria\u2019s father",
     prompt: "Hug Gustavo",
     lines: [
       "There is my girl. And the young man brave enough to marry her.",
