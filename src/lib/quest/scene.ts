@@ -2641,6 +2641,8 @@ export class QuestScene extends Phaser.Scene {
   }
 
   private addHouse() {
+    // No cottage in the cathedral — Act V is the wedding itself.
+    if (this.save.current_zone === "cathedral") return;
     const spot = this.houseSpot();
     if (!spot) return;
     const [x, y] = spot;
