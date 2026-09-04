@@ -140,7 +140,11 @@ function LiveMapCanvas({ snap }: { snap: MapSnapshot }) {
   return <canvas ref={ref} width={420} height={420} className="mx-auto w-full max-w-sm rounded-xl border border-gold/40" />;
 }
 
-/** Gentle procedural score — one warm chord loop per act, no audio files. */
+/**
+ * Procedural score — a real melody, not a drone. Each act gets a gentle
+ * music-box theme plucked over a soft bass, battles get a driving minor
+ * theme, and home gets a slow lullaby.
+ */
 function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode = "explore") {
   const ctxRef = useRef<AudioContext | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
@@ -153,78 +157,82 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
     const ctx = ctxRef.current ?? new AC();
     ctxRef.current = ctx;
     void ctx.resume();
-    const chords: Record<string, number[]> = {
-      sunlit_shores: [261.6, 329.6, 392.0],
-      wedding_garden: [293.7, 370.0, 440.0],
-      the_haven: [349.2, 440.0, 523.3],
-      starry_ascent: [220.0, 277.2, 329.6],
-      cathedral: [261.6, 392.0, 523.3],
+
+    // semitone -> Hz, A4 = 440
+    const hz = (n: number) => 440 * Math.pow(2, (n - 9) / 12);
+    // melodies are scale degrees in semitones from C4 (0 = C4)
+    const THEMES: Record<string, number[]> = {
+      sunlit_shores: [0, 4, 7, 12, 9, 7, 4, 7, 5, 9, 12, 9, 7, 4, 2, 0],
+      wedding_garden: [2, 5, 9, 14, 12, 9, 5, 9, 7, 11, 14, 12, 9, 7, 5, 2],
+      the_haven: [5, 9, 12, 17, 16, 12, 9, 12, 7, 11, 14, 12, 9, 5, 7, 5],
+      starry_ascent: [-3, 2, 4, 9, 7, 4, 2, 4, 0, 5, 9, 7, 4, 2, -1, -3],
+      cathedral: [0, 7, 12, 16, 19, 16, 12, 7, 5, 9, 12, 17, 16, 12, 7, 0],
     };
-    const BATTLE = [146.8, 174.6, 233.1];
-    const HOME = [196.0, 246.9, 293.7];
-    const notes =
-      mode === "battle" ? BATTLE : mode === "home" ? HOME : (chords[zone] ?? chords["sunlit_shores"]!);
+    const BATTLE = [-5, -5, 2, 3, -5, 7, 6, 3, -5, -5, 2, 3, 10, 7, 3, 2];
+    const HOME = [0, 4, 7, 4, 5, 2, 0, -5, 0, 4, 9, 7, 5, 4, 2, 0];
+    const melody = mode === "battle" ? BATTLE : mode === "home" ? HOME : (THEMES[zone] ?? THEMES["sunlit_shores"]!);
+    const bassRoot = mode === "battle" ? -17 : mode === "home" ? -12 : -12;
+    const step = mode === "battle" ? 0.24 : mode === "home" ? 0.62 : 0.42; // seconds per note
+
     const master = ctx.createGain();
     master.gain.value = 0.0001;
     master.connect(ctx.destination);
-    master.gain.exponentialRampToValueAtTime(mode === "battle" ? 0.085 : 0.05, ctx.currentTime + (mode === "battle" ? 0.5 : 2));
-    // battle adds a low heartbeat pulse under the chord
-    let pulse: OscillatorNode | null = null;
-    if (mode === "battle") {
-      pulse = ctx.createOscillator();
-      pulse.type = "sine";
-      pulse.frequency.value = 73.4;
-      const pg = ctx.createGain();
-      pg.gain.value = 0.0;
-      const beat = ctx.createOscillator();
-      beat.type = "square";
-      beat.frequency.value = 2.2;
-      const bg = ctx.createGain();
-      bg.gain.value = 0.5;
-      beat.connect(bg).connect(pg.gain);
-      pulse.connect(pg).connect(master);
-      pulse.start();
-      beat.start();
-    }
-    const oscs = notes.map((f, i) => {
+    master.gain.exponentialRampToValueAtTime(mode === "battle" ? 0.09 : 0.07, ctx.currentTime + 1.2);
+
+    // warm reverb-ish softener
+    const soft = ctx.createBiquadFilter();
+    soft.type = "lowpass";
+    soft.frequency.value = mode === "battle" ? 2600 : 1900;
+    soft.connect(master);
+
+    const pluck = (freq: number, at: number, dur: number, gain: number, type: OscillatorType) => {
       const o = ctx.createOscillator();
-      o.type = mode === "battle" ? "sawtooth" : i === 0 ? "sine" : "triangle";
-      o.frequency.value = f;
+      o.type = type;
+      o.frequency.setValueAtTime(freq, at);
       const g = ctx.createGain();
-      g.gain.value = 0.32 / (i + 1);
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = (mode === "battle" ? 0.9 : 0.07) + i * 0.03;
-      const lg = ctx.createGain();
-      lg.gain.value = 0.16;
-      lfo.connect(lg).connect(g.gain);
-      lfo.start();
-      o.connect(g).connect(master);
-      o.start();
-      return [o, lfo] as const;
-    });
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(gain, at + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+      o.connect(g).connect(soft);
+      o.start(at);
+      o.stop(at + dur + 0.05);
+    };
+
+    let i = 0;
+    let next = ctx.currentTime + 0.1;
+    const tick = () => {
+      const horizon = ctx.currentTime + 0.6;
+      while (next < horizon) {
+        const n = melody[i % melody.length]!;
+        pluck(hz(n), next, mode === "battle" ? 0.28 : 0.9, 0.5, mode === "battle" ? "sawtooth" : "triangle");
+        // soft harmony a third above, every other note
+        if (i % 2 === 0) pluck(hz(n + (mode === "battle" ? 3 : 4)), next + 0.03, 0.7, 0.18, "sine");
+        // bass on the downbeat of each bar of four
+        if (i % 4 === 0) pluck(hz(bassRoot + (i % 8 === 0 ? 0 : 5)), next, mode === "battle" ? 0.5 : 1.6, 0.35, "sine");
+        next += step;
+        i += 1;
+      }
+    };
+    tick();
+    const timer = window.setInterval(tick, 250);
+
     stopRef.current = () => {
-      master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
+      window.clearInterval(timer);
+      master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
       setTimeout(() => {
-        oscs.forEach(([o, l]) => {
-          try {
-            o.stop();
-            l.stop();
-          } catch {
-            /* already stopped */
-          }
-        });
         try {
-          pulse?.stop();
+          soft.disconnect();
+          master.disconnect();
         } catch {
-          /* already stopped */
+          /* already gone */
         }
-        master.disconnect();
       }, 700);
     };
     return () => stopRef.current?.();
   }, [zone, muted, mode]);
   useEffect(() => () => void ctxRef.current?.close(), []);
 }
+
 
 function buzz(ms = 18) {
   try {
