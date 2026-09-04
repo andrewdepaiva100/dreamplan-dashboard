@@ -918,6 +918,40 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
         </GlassPanel>
       ) : null}
 
+      {modal?.type === "companion" ? (
+        <GlassPanel
+          title={modal.name}
+          {...(modal.owned ? { onClose: closeModal } : {})}
+        >
+          <p className="text-navy/85">{modal.body}</p>
+          {modal.owned ? null : (
+            <div className="mt-3 grid gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  buzz();
+                  setModal(null);
+                  emit(EV.companion, "yes");
+                }}
+                className="rounded-xl bg-navy px-4 py-3 text-sm font-semibold text-white"
+              >
+                Yes — come with me, Max!
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setModal(null);
+                  emit(EV.companion, "no");
+                }}
+                className="rounded-xl border border-gold/40 bg-white/80 px-4 py-3 text-sm font-medium text-navy"
+              >
+                Not right now
+              </button>
+            </div>
+          )}
+        </GlassPanel>
+      ) : null}
+
       {modal?.type === "boss" ? (
         <GlassPanel
           title={modal.name}

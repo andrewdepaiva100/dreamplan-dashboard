@@ -596,3 +596,12 @@ export const SIGNPOST_DIRECTIONS: Record<ZoneId, string[]> = {
     "ASIDE — Side chapels, where a few last letters are hidden.",
   ],
 };
+
+/** Bram's dog — an optional companion Maria can adopt in the Wedding Garden. */
+export const MAX_DOG = {
+  name: "Max",
+  ask: "This scruffy fellow is Max. He's been my shadow at the forge since he was a pup, but he keeps staring north like the garden's calling him. Would you like him to walk with you? He won't lift a paw until you swing first — he only ever defends.",
+  yes: "Max is at your side! He'll bound after anything that troubles you — but only after you strike first.",
+  no: "Max wags anyway. He'll be right here by the forge whenever you change your mind.",
+  already: "Max looks up at you, tail going wild. He's yours as long as you'll have him.",
+};

@@ -17,6 +17,7 @@ export const EV = {
   ping: "quest:ping",
   equip: "quest:equip",
   bosschoice: "quest:bosschoice",
+  companion: "quest:companion",
 } as const;
 
 export type HudState = {
@@ -49,6 +50,7 @@ export type ModalPayload =
   | { type: "guide" }
   | { type: "weapon"; weaponId: string; speaker: string; line: string }
   | { type: "directions"; title: string; lines: string[] }
+  | { type: "companion"; name: string; body: string; owned: boolean }
   | {
       type: "boss";
       name: string;

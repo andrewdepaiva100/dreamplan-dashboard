@@ -3,6 +3,7 @@ import {
   ACT_BOSSES,
   ACT_GUIDES,
   BLACKSMITH,
+  MAX_DOG,
   DEFAULT_WEAPON,
   ENVELOPES,
   RELICS,
@@ -109,6 +110,9 @@ export class QuestScene extends Phaser.Scene {
   private pingUntil = 0;
   private keyBeacons: Map<string, Phaser.GameObjects.Container> = new Map();
   private companion: Phaser.GameObjects.Sprite | null = null;
+  private dog: Phaser.Physics.Arcade.Sprite | null = null;
+  private dogArmed = false;
+  private dogBiteAt = 0;
   private bossPhase = 0;
   private bossHits = 0;
   private bossTimer?: Phaser.Time.TimerEvent;
@@ -172,6 +176,8 @@ export class QuestScene extends Phaser.Scene {
     this.pingUntil = 0;
     this.pingMarker = null;
     this.companion = null;
+    this.dog = null;
+    this.dogArmed = false;
     // These are lazily created; a reloaded realm must never reuse objects that
     // belonged to the previous scene instance (they are already destroyed).
     this.solidDecor = this.physics.add.staticGroup();
@@ -238,6 +244,7 @@ export class QuestScene extends Phaser.Scene {
     g.on(EV.ping, this.pingObjective, this);
     g.on(EV.equip, this.equipWeapon, this);
     g.on(EV.bosschoice, this.onBossChoice, this);
+    g.on(EV.companion, this.onCompanionChoice, this);
 
     this.events.once("shutdown", () => {
       g.off(EV.stick, this.onStick, this);
@@ -249,6 +256,7 @@ export class QuestScene extends Phaser.Scene {
       g.off(EV.ping, this.pingObjective, this);
       g.off(EV.equip, this.equipWeapon, this);
       g.off(EV.bosschoice, this.onBossChoice, this);
+      g.off(EV.companion, this.onCompanionChoice, this);
       this.bossTimer?.remove();
     });
 
@@ -1089,7 +1097,6 @@ export class QuestScene extends Phaser.Scene {
       });
     }
     this.addInteractable(this.wx(24), this.wy(30), "rest-stone", "rest", "Rest here");
-    this.addBlacksmith(34, 68);
     this.addLandmark(
       "landmark-temple",
       110,
@@ -1134,6 +1141,107 @@ export class QuestScene extends Phaser.Scene {
       { radius: 92 },
     );
     this.tweens.add({ targets: it.obj, y: it.obj.y - 3, duration: 1500, yoyo: true, repeat: -1 });
+  }
+
+  /** Max the dog — an optional companion Maria can adopt beside the forge. */
+  private addDogOffer(tx: number, ty: number) {
+    if (this.dogAdopted()) {
+      this.spawnDog(this.wx(tx), this.wy(ty));
+      return;
+    }
+    const it = this.addInteractable(this.wx(tx), this.wy(ty), "dog", "dog", `Meet ${MAX_DOG.name}`, {
+      radius: 84,
+    });
+    this.tweens.add({ targets: it.obj, y: it.obj.y - 4, duration: 900, yoyo: true, repeat: -1 });
+    this.zoneState["dogOffer"] = it;
+  }
+
+  private dogAdopted() {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem("marias-quest-dog") === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  private setDogAdopted() {
+    try {
+      window.localStorage.setItem("marias-quest-dog", "1");
+    } catch {
+      /* storage unavailable — companion still lasts this session */
+    }
+  }
+
+  /** Creates the following dog sprite; it only bites once Maria has swung. */
+  private spawnDog(x: number, y: number) {
+    if (this.dog) return;
+    const d = this.physics.add.sprite(x, y, "dog").setDepth(13);
+    d.setCircle(9);
+    d.body?.setAllowGravity(false);
+    this.dog = d;
+  }
+
+  /** Called from the companion modal — adopts Max or politely declines. */
+  private onCompanionChoice(answer: string) {
+    if (answer !== "yes") {
+      this.emitToast(MAX_DOG.no);
+      return;
+    }
+    const offer = this.zoneState["dogOffer"] as Interactable | undefined;
+    if (offer) {
+      const { x, y } = offer.obj;
+      offer.enabled = false;
+      offer.obj.destroy();
+      this.interactables = this.interactables.filter((i) => i !== offer);
+      this.zoneState["dogOffer"] = undefined;
+      this.spawnDog(x, y);
+    } else {
+      this.spawnDog(this.player.x + 30, this.player.y + 20);
+    }
+    this.setDogAdopted();
+    this.spawnSparkle(this.player.x, this.player.y, 0xffd7a5, 16);
+    this.emitToast(MAX_DOG.yes);
+  }
+
+  /** Max trails Maria, and after her first swing he charges nearby worries. */
+  private updateDog(time: number) {
+    const d = this.dog;
+    if (!d?.active) return;
+    let tx = this.player.x - 34;
+    let ty = this.player.y + 22;
+    let charging = false;
+    if (this.dogArmed) {
+      let best: Phaser.Physics.Arcade.Sprite | null = null;
+      let bestD = 230;
+      for (const e of this.enemies.getChildren() as Phaser.Physics.Arcade.Sprite[]) {
+        if (!e.active) continue;
+        const dd = Phaser.Math.Distance.Between(d.x, d.y, e.x, e.y);
+        if (dd < bestD) {
+          bestD = dd;
+          best = e;
+        }
+      }
+      if (best) {
+        tx = best.x;
+        ty = best.y;
+        charging = true;
+        if (bestD < 26 && time > this.dogBiteAt) {
+          this.dogBiteAt = time + 500;
+          this.transformEnemy(best);
+        }
+      }
+    }
+    const dist = Phaser.Math.Distance.Between(d.x, d.y, tx, ty);
+    if (dist > 16) {
+      const a = Math.atan2(ty - d.y, tx - d.x);
+      const sp = charging ? 190 : Math.min(210, 90 + dist);
+      d.setVelocity(Math.cos(a) * sp, Math.sin(a) * sp);
+      d.setFlipX(Math.cos(a) < 0);
+    } else {
+      d.setVelocity(0, 0);
+    }
+    d.y += Math.sin(time / 140) * 0.2;
   }
 
   /** Village market stalls — flat, collidable dressing. */
@@ -1218,13 +1326,13 @@ export class QuestScene extends Phaser.Scene {
         this.rect(d, bx + Math.floor(bw / 2) - 1, by + bh, 3, 1, T.BLOOM);
         this.rect(d, bx + 1, by + 1, bw - 1, bh - 1, T.BLOOM);
       }
-      // grand conservatory on the eastern edge
+      // grand conservatory on the eastern edge, fronted by a wide open plaza
+      this.rect(d, 92, 30, 40, 42, T.MARBLE);
       this.rect(d, 112, 36, 18, 30, T.MARBLE);
-      this.rect(d, 111, 36, 1, 30, T.HEDGE);
-      this.rect(d, 130, 36, 2, 30, T.HEDGE);
+      this.rect(d, 111, 36, 1, 14, T.HEDGE);
+      this.rect(d, 111, 52, 1, 14, T.HEDGE);
       this.rect(d, 112, 35, 18, 1, T.HEDGE);
       this.rect(d, 112, 66, 18, 1, T.HEDGE);
-      this.rect(d, 111, 50, 1, 2, T.HEDGE); // sealed door
       // central fountain court
       this.rect(d, 54, 46, 24, 16, T.WATER);
       this.rect(d, 53, 45, 26, 1, T.WALL);
@@ -1240,8 +1348,11 @@ export class QuestScene extends Phaser.Scene {
         [108, 50],
       ]);
     });
-    this.addPlayer(12, 90);
-    this.spawnActGuide(18, 88);
+    // Maria steps out of the portal right on the Conservatory plaza
+    this.addPlayer(100, 52);
+    this.spawnActGuide(96, 58);
+    this.addBlacksmith(96, 40);
+    this.addDogOffer(102, 46);
     this.scatterDecor(22, {
       groves: [
         [16, 30, 6],
@@ -1833,6 +1944,7 @@ export class QuestScene extends Phaser.Scene {
     const now = this.time.now;
     if (now < this.swingAt) return;
     this.swingAt = now + 320;
+    this.dogArmed = true;
     if (this.stamina >= 6) this.stamina -= 6;
     const w = this.equippedWeapon();
     const dir =
@@ -2131,6 +2243,14 @@ export class QuestScene extends Phaser.Scene {
         }
         break;
       }
+      case "dog":
+        this.openModal({
+          type: "companion",
+          name: MAX_DOG.name,
+          body: this.dog ? MAX_DOG.already : MAX_DOG.ask,
+          owned: Boolean(this.dog),
+        });
+        break;
       case "guide":
         this.openModal({ type: "guide" });
         break;
@@ -2441,6 +2561,8 @@ export class QuestScene extends Phaser.Scene {
       this.lastAura = time;
       this.auraTrail(moving);
     }
+
+    this.updateDog(time);
 
     // enemies chase
     const children = this.enemies.getChildren() as Phaser.Physics.Arcade.Sprite[];
