@@ -117,14 +117,14 @@ export async function loadSave(): Promise<QuestSave | null> {
       time_of_day: typeof data.time_of_day === "number" ? data.time_of_day : 0.38,
       inventory: asCounts(data.inventory),
       chest: asCounts(data.chest),
-      checkpoint_zone: ((data as Record<string, unknown>).checkpoint_zone as ZoneId | null) ?? null,
+      checkpoint_zone: ((data as Record<string, unknown>)["checkpoint_zone"] as ZoneId | null) ?? null,
       checkpoint_x:
-        typeof (data as Record<string, unknown>).checkpoint_x === "number"
-          ? ((data as Record<string, unknown>).checkpoint_x as number)
+        typeof (data as Record<string, unknown>)["checkpoint_x"] === "number"
+          ? ((data as Record<string, unknown>)["checkpoint_x"] as number)
           : null,
       checkpoint_y:
-        typeof (data as Record<string, unknown>).checkpoint_y === "number"
-          ? ((data as Record<string, unknown>).checkpoint_y as number)
+        typeof (data as Record<string, unknown>)["checkpoint_y"] === "number"
+          ? ((data as Record<string, unknown>)["checkpoint_y"] as number)
           : null,
     };
     const migrated = migrateWeapons(remote);
