@@ -1028,7 +1028,7 @@ export const WEDDING_GUESTS: Partial<Record<ZoneId, GuestInfo>> = {
     role: "Maria\u2019s little brother",
     prompt: "Say hello to Pedro",
     lines: [
-      "MARI! Are you getting married for REAL for real?!",
+      "MARIA! Are you getting married for REAL for real?!",
       "I am SO excited. Mom said I have to wear nice shoes and I said fine, but only this once.",
       "You are the best sister. Tell Andrew he is almost as cool as me. Almost.",
     ],
