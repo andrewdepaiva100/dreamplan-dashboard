@@ -5,7 +5,7 @@ import { FOOD_BY_ID, HOUSE, ZONES } from "./content";
 import type { QuestSave } from "./save";
 import { buildHomeSprites } from "./textures";
 
-type Parent = Phaser.Scene & { resumeFromHouse: () => void };
+type Parent = Phaser.Scene & { resumeFromHouse: () => void; save: QuestSave };
 
 const ROOM_W = 860;
 const ROOM_H = 560;
