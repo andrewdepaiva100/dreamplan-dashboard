@@ -1741,30 +1741,22 @@ export class QuestScene extends Phaser.Scene {
   private buildAct4() {
     this.cameras.main.setBackgroundColor("#0d1226");
     this.makeMap(T.SKY, 404, (d) => {
-      this.rect(d, 0, 0, DESIGN_W, DESIGN_H, T.VOID);
-      const islands: [number, number, number, number][] = [
-        [8, 78, 24, 14],
-        [42, 72, 20, 12],
-        [78, 62, 20, 12],
-        [14, 52, 24, 12],
-        [48, 40, 24, 14],
-        [92, 30, 24, 14],
-        [30, 18, 24, 12],
-        [72, 10, 24, 12],
-      ];
-      for (const [x, y, w, h] of islands) this.rect(d, x, y, w, h, T.MARBLE);
-      // bridges
-      this.rect(d, 30, 84, 14, 3, T.PATH);
-      this.rect(d, 60, 76, 20, 3, T.PATH);
-      this.rect(d, 36, 58, 14, 3, T.PATH);
-      this.rect(d, 70, 50, 24, 3, T.PATH);
-      this.rect(d, 56, 30, 18, 3, T.PATH);
-      this.rect(d, 42, 42, 8, 5, T.PATH);
-      this.rect(d, 94, 20, 8, 5, T.PATH);
-      // full-colour bloom accents on the islands (no grey noise)
-      for (const [x, y, w, h] of islands)
-        for (let j = 0; j < h; j += 3)
-          for (let i = 0; i < w; i += 3) this.rect(d, x + i, y + j, 1, 1, T.BLOOM);
+      // A tiny, wide-open sky plateau — one continuous walkable floor, no
+      // chasms, bridges or walls to block the climb.
+      this.rect(d, 0, 0, DESIGN_W, DESIGN_H, T.MARBLE);
+      this.road(d, [
+        [16, 84],
+        [104, 84],
+        [104, 20],
+      ], 5);
+      this.road(d, [
+        [16, 84],
+        [16, 20],
+        [104, 20],
+      ], 5);
+      // soft bloom accents scattered across the plateau
+      for (let j = 6; j < DESIGN_H - 6; j += 9)
+        for (let i = 6; i < DESIGN_W - 6; i += 9) this.rect(d, i, j, 2, 2, T.BLOOM);
     });
     this.addPlayer(20, 85);
     this.spawnActGuide(26, 82);
@@ -1800,18 +1792,6 @@ export class QuestScene extends Phaser.Scene {
         id: "ascent",
       });
     this.addInteractable(this.wx(115), this.wy(36), "vault-door", "vault", "Open the Vault of Gratitude");
-
-    // moving platform ferry between two islands
-    const ferry = this.add.rectangle(this.wx(42), this.wy(58), 64, 48, 0xd7e0ff, 0.9).setDepth(3);
-    this.tweens.add({
-      targets: ferry,
-      y: this.wy(30),
-      duration: 5200,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-    });
-    this.zoneState["ferry"] = ferry;
 
     if (this.save.relics_collected.includes("seal")) this.spawnGateway(this.wx(84), this.wy(16));
   }
