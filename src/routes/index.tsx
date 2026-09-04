@@ -250,16 +250,6 @@ function Index() {
     { label: "Your Parents", value: plan.funds.yourParents, color: FUND_COLORS.yourParents },
   ];
 
-  const stats = [
-    { label: "Target Budget", value: currency(targetBudget), tone: "navy" as const },
-    { label: "Total Available", value: currency(totalAvailable), tone: "navy" as const },
-    {
-      label: "Surplus Reserve",
-      value: signedCurrency(surplus),
-      tone: surplus >= 0 ? ("teal" as const) : ("red" as const),
-    },
-    { label: "Baseline Monthly Overhead", value: currency(overhead), tone: "navy" as const },
-  ];
 
   return (
     <main className="mx-auto max-w-[900px] px-4 pb-20 pt-12">
@@ -357,25 +347,6 @@ function Index() {
       </div>
       )}
 
-      {/* METRIC STRIP — dashboard-only; hidden inside sub-views so it never overlaps */}
-      {(active === null || active === "activity" || active === "health" || active === "s1" || active === "payments" || active === "s2" || active === "s3" || active === "s4" || active === "s5") && (
-      <div className="relative mt-6 grid grid-cols-2 gap-3.5 px-2 pt-2 md:grid-cols-4">
-        {stats.map((s) => (
-          <div key={s.label} className="card-surface rounded-2xl px-4 py-4">
-            <div className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
-              {s.label}
-            </div>
-            <div
-              className={`mt-1.5 font-display text-[22px] font-bold ${
-                s.tone === "teal" ? "text-teal" : s.tone === "red" ? "text-destructive" : "text-navy"
-              }`}
-            >
-              {s.value}
-            </div>
-          </div>
-        ))}
-      </div>
-      )}
 
       {/* BACK TO OVERVIEW (section view only) */}
       {active && (
