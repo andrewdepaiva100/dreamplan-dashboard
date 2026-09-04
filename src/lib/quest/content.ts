@@ -537,6 +537,55 @@ export const SECOND_BOSSES: Partial<Record<ZoneId, BossConfig>> = {
   },
 };
 
+/**
+ * Act IV — each crystal pillar wakes a shard guardian when it turns gold.
+ * Silent: no dialogue, they simply attack.
+ */
+export const PILLAR_GUARDIANS: BossConfig[] = [
+  {
+    name: "Sapphire Shard Guardian",
+    hp: 1000,
+    taunt: "The pillar blazes gold — a sapphire shard guardian tears free of the light.",
+    art: "boss-star",
+    color: 0x4a7bd6,
+    scale: 0.95,
+    demon: "",
+    mariaLine: "",
+    intro: "",
+    slides: [],
+    silent: true,
+    projectile: { color: 0x4a7bd6, speed: 170, every: 2400 },
+  },
+  {
+    name: "Amber Shard Guardian",
+    hp: 1000,
+    taunt: "Gold light cracks — an amber shard guardian steps out of the pillar.",
+    art: "boss-star",
+    color: 0xe0a94a,
+    scale: 0.95,
+    demon: "",
+    mariaLine: "",
+    intro: "",
+    slides: [],
+    silent: true,
+    projectile: { color: 0xe0a94a, speed: 170, every: 2400 },
+  },
+  {
+    name: "Rose Shard Guardian",
+    hp: 1000,
+    taunt: "The last pillar flares — a rose shard guardian rises to defend it.",
+    art: "boss-star",
+    color: 0xd6588f,
+    scale: 0.95,
+    demon: "",
+    mariaLine: "",
+    intro: "",
+    slides: [],
+    silent: true,
+    projectile: { color: 0xd6588f, speed: 170, every: 2400 },
+  },
+];
+
 /** Post-Act II speed collectible found near the Haven spawn. */
 export const SWIFT_SANDALS = {
   id: "swift-sandals",
