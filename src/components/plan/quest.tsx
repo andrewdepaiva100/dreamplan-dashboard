@@ -2,8 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type Phaser from "phaser";
 import {
   ANDREW_AFFIRMATIONS,
-  CEREMONY_CHOICES,
-  CEREMONY_OPENING,
+  CEREMONY_SCRIPT,
   CONTROLS_HELP,
   ENVELOPES,
   FINAL_PROPOSAL,
@@ -352,8 +351,9 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
   const [toast, setToast] = useState<string | null>(null);
   const [photo, setPhoto] = useState(false);
   const [ceremony, setCeremony] = useState<null | {
-    step: "opening" | "reply" | "proposal" | "vows" | "finale";
-    choice?: string;
+    phase: "script" | "proposal" | "finale";
+    i: number;
+    reply?: string;
   }>(null);
   const [overlay, setOverlay] = useState<TitleOverlay>(null);
   const [showControls, setShowControls] = useState(false);
@@ -422,7 +422,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
           saverRef.current.queue(s);
         });
         game.events.on(EV.toast, (m: string) => setToast(m));
-        game.events.on(EV.ceremony, () => setCeremony({ step: "opening" }));
+        game.events.on(EV.ceremony, () => setCeremony({ phase: "script", i: 0 }));
       });
     },
     [],
