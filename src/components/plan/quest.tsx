@@ -362,6 +362,52 @@ function ItemGrid({
  * Cinematic NPC conversation: a large painted portrait beside a typewriter
  * dialogue box, tapped through line by line like a premium RPG.
  */
+/** A long, paged conversation with an act guide — weapon handed over at the end. */
+function GuideTalk({
+  name,
+  pages,
+  weaponId,
+  line,
+  onClose,
+}: {
+  name: string;
+  pages: string[];
+  weaponId?: string | undefined;
+  line: string;
+  onClose: () => void;
+}) {
+  const [showGift, setShowGift] = useState(false);
+  const w = weaponId ? WEAPON_BY_ID[weaponId] : undefined;
+
+  if (showGift && w) {
+    return (
+      <GlassPanel title={name} onClose={onClose}>
+        <p className="font-serif-italic italic">“{line}”</p>
+        <div className="rounded-xl border border-gold/40 bg-gold/10 p-4 text-center">
+          <p className="text-3xl leading-none">{w.icon}</p>
+          <p className="mt-2 font-display text-lg font-bold text-navy">{w.name}</p>
+          <p className="mt-1 text-xs text-navy/70">{w.blurb}</p>
+          <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-gold">
+            Power {w.damage} · Reach {w.reach}
+          </p>
+        </div>
+      </GlassPanel>
+    );
+  }
+
+  return (
+    <GuestDialogue
+      id="act-guide"
+      name={name}
+      lines={pages}
+      onClose={() => {
+        if (w) setShowGift(true);
+        else onClose();
+      }}
+    />
+  );
+}
+
 function GuestDialogue({
   id,
   name,
@@ -1424,6 +1470,17 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
             ))}
           </ul>
         </GlassPanel>
+      ) : null}
+
+      {modal?.type === "guidetalk" ? (
+        <GuideTalk
+          key={modal.name}
+          name={modal.name}
+          pages={modal.pages}
+          {...(modal.weaponId ? { weaponId: modal.weaponId } : {})}
+          line={modal.line}
+          onClose={closeModal}
+        />
       ) : null}
 
       {modal?.type === "guest" ? (
