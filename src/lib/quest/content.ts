@@ -522,7 +522,7 @@ export const SECOND_BOSSES: Partial<Record<ZoneId, BossConfig>> = {
       "This is what finds Andrew at three in the morning — the what-if he can never argue down.",
     mariaLine:
       "I've felt him lie awake with this. It doesn't get him tonight.",
-    hp: 5460,
+    hp: 12000,
     taunt: "The stars go cold. A second shadow rises — The Hollow of Doubtful Nights.",
     art: "boss-hollow",
     color: 0x27336e,
