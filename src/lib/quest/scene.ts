@@ -1215,6 +1215,7 @@ export class QuestScene extends Phaser.Scene {
     ]);
 
     const seasons = ["Spring", "Summer", "Autumn", "Winter"];
+    const tints = [0x9dff70, 0xffd94a, 0xff9a3d, 0x8fd4ff];
     const spots: [number, number][] = [
       [18, 18],
       [96, 18],
@@ -1227,6 +1228,7 @@ export class QuestScene extends Phaser.Scene {
       this.addInteractable(this.wx(x), this.wy(y), "key", "season-key", `Take the ${s} key`, {
         id: s,
       });
+      this.addKeyBeacon(this.wx(x), this.wy(y), s, tints[i]!);
     });
 
     this.addInteractable(
