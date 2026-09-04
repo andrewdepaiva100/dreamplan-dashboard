@@ -144,6 +144,12 @@ export class QuestScene extends Phaser.Scene {
   private bossDialogueDone = false;
   private bossHalo: Phaser.GameObjects.Arc | null = null;
   private bossSlow = 1;
+  /** 2.5D: grounded contact shadows that follow moving actors. */
+  private shadows: { s: Phaser.GameObjects.Ellipse; t: Phaser.GameObjects.Sprite }[] = [];
+  private shadowGfx: Phaser.GameObjects.Graphics | undefined;
+  /** 2.5D: smoothed walk velocity (acceleration + glide, no snap-stops). */
+  private vel = { x: 0, y: 0 };
+  private bobPhase = 0;
 
   constructor() {
     super("quest");
@@ -184,6 +190,10 @@ export class QuestScene extends Phaser.Scene {
     this.bossDialogueDone = false;
     this.bossSlow = 1;
     this.bossHalo = null;
+    this.shadows = [];
+    this.shadowGfx = undefined;
+    this.vel = { x: 0, y: 0 };
+    this.bobPhase = 0;
     if (this.save.weapons.length === 0) this.save.weapons = [];
     this.animals = [];
     this.keyBeacons = new Map();
@@ -380,6 +390,37 @@ export class QuestScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * 2.5D depth sorting: everything standing on the ground is drawn in the
+   * order its feet appear, so Maria walks *behind* a tree she is above and
+   * *in front* of one she has passed.
+   */
+  dsort(y: number) {
+    return 12 + y * 0.01;
+  }
+
+  /**
+   * Static props bake their shadow into ONE shared Graphics object, so a
+   * whole realm of trees and houses costs a single draw call.
+   */
+  private bakeShadow(x: number, y: number, w: number, alpha = 0.2) {
+    if (!this.shadowGfx) this.shadowGfx = this.add.graphics().setDepth(7);
+    this.shadowGfx.fillStyle(0x0a1226, alpha);
+    this.shadowGfx.fillEllipse(x, y, w, w * 0.42);
+  }
+
+  /** Soft contact shadow that grounds a moving actor in the 2.5D world. */
+  private groundShadow(x: number, y: number, w: number, alpha = 0.24) {
+    return this.add.ellipse(x, y, w, w * 0.42, 0x0a1226, alpha).setDepth(7);
+  }
+
+  /** Attaches a contact shadow that tracks a moving actor every frame. */
+  private attachShadow(t: Phaser.GameObjects.Sprite, w: number, alpha = 0.24) {
+    const s = this.groundShadow(t.x, t.y + t.displayHeight * 0.36, w, alpha);
+    this.shadows.push({ s, t });
+    return s;
+  }
+
   private addPlayer(tx: number, ty: number) {
     const x = this.wx(Phaser.Math.Clamp(tx, 2, DESIGN_W - 3));
     const y = this.wy(Phaser.Math.Clamp(ty, 2, DESIGN_H - 3));
@@ -391,7 +432,8 @@ export class QuestScene extends Phaser.Scene {
     this.player.setScale(1.1);
     this.player.setSize(13, 11).setOffset(5.5, 21.5);
     this.player.setCollideWorldBounds(true);
-    this.player.setDepth(20);
+    this.player.setDepth(this.dsort(y));
+    this.attachShadow(this.player, 22, 0.28);
     this.promptText = this.add
       .text(this.player.x, this.player.y - 36, "", {
         fontFamily: "system-ui, sans-serif",
@@ -449,7 +491,9 @@ export class QuestScene extends Phaser.Scene {
 
   /** Places the act's flagship building with a solid footprint and a cutscene trigger. */
   private addLandmark(key: string, tx: number, ty: number, title: string, body: string, footH = 0.22) {
-    const sprite = this.add.sprite(this.wx(tx), this.wy(ty), key).setDepth(11);
+    const sprite = this.add.sprite(this.wx(tx), this.wy(ty), key);
+    sprite.setDepth(this.dsort(sprite.y + sprite.displayHeight * 0.3));
+    this.bakeShadow(sprite.x, sprite.y + sprite.displayHeight * 0.34, sprite.displayWidth * 0.7, 0.2);
     if (!this.solidDecor) this.solidDecor = this.physics.add.staticGroup();
     const foot = this.solidDecor.create(
       sprite.x,
@@ -479,7 +523,8 @@ export class QuestScene extends Phaser.Scene {
       for (let i = 0; i < total; i++) {
         const x = this.wx(tx + (rnd() - 0.5) * 12);
         const y = this.wy(ty + (rnd() - 0.5) * 8);
-        const a = this.add.sprite(x, y, key).setDepth(9);
+        const a = this.add.sprite(x, y, key).setDepth(this.dsort(y));
+        this.attachShadow(a, 14, 0.18);
         a.setFlipX(rnd() < 0.5);
         this.animals.push(a);
         const roam = () => {
@@ -506,7 +551,7 @@ export class QuestScene extends Phaser.Scene {
     if ((!this.save.wedding_completed && !allied) || this.save.current_zone === "cathedral") return;
     this.companion = this.add
       .sprite(this.player.x - 24, this.player.y + 8, "andrew-down-0")
-      .setDepth(19)
+      .setDepth(this.dsort(this.player.y))
       .setScale(1.1);
     this.companion.anims.play("andrew-idle-down");
     if (this.save.weapons.includes("love-sword") && this.textures.exists("hand-ally-blade")) {
@@ -571,7 +616,7 @@ export class QuestScene extends Phaser.Scene {
     } else dir = dy < 0 ? "up" : "down";
     const key = `andrew-${moving ? "walk" : "idle"}-${dir}`;
     if (c.anims.currentAnim?.key !== key) c.anims.play(key, true);
-    c.setDepth(c.y > this.player.y ? 21 : 19);
+    c.setDepth(this.dsort(c.y));
   }
 
   /** Which acts the player may fast-travel to (everything reached so far). */
@@ -742,7 +787,8 @@ export class QuestScene extends Phaser.Scene {
     label: string,
     opts: { id?: string; radius?: number; data?: Record<string, unknown>; depth?: number } = {},
   ) {
-    const obj = this.add.sprite(x, y, texture).setDepth(opts.depth ?? 12);
+    const obj = this.add.sprite(x, y, texture).setDepth(opts.depth ?? this.dsort(y));
+    this.bakeShadow(x, y + obj.displayHeight * 0.34, obj.displayWidth * 0.6, 0.18);
     if (texture.startsWith("andrew")) obj.setScale(1.1);
     // Hidden love letters get a tall rose beacon and a generous reach so they
     // are always findable from across a realm.
@@ -802,7 +848,8 @@ export class QuestScene extends Phaser.Scene {
         this.wy(ty),
         key,
       ) as Phaser.Physics.Arcade.Sprite;
-      s.setDepth(10 + ty * 0.01);
+      s.setDepth(this.dsort(s.y + s.displayHeight * 0.3));
+      this.bakeShadow(s.x, s.y + s.displayHeight * 0.36, s.displayWidth * 0.66, 0.2);
       const b = s.body as Phaser.Physics.Arcade.StaticBody;
       const h = Math.max(10, s.height * footH);
       b.setSize(s.width * 0.7, h);
@@ -1089,7 +1136,7 @@ export class QuestScene extends Phaser.Scene {
     this.hand
       .setPosition(this.player.x + ox, this.player.y + (dir === "up" ? -2 : 2))
       .setFlipX(side < 0)
-      .setDepth(dir === "up" ? 19 : 21)
+      .setDepth(this.player.depth + (dir === "up" ? -0.5 : 0.5))
       .setVisible(this.player.visible)
       .setAlpha(this.player.alpha);
   }
@@ -1275,7 +1322,8 @@ export class QuestScene extends Phaser.Scene {
   /** Creates the following dog sprite; it only bites once Maria has swung. */
   private spawnDog(x: number, y: number) {
     if (this.dog) return;
-    const d = this.physics.add.sprite(x, y, "dog").setDepth(13);
+    const d = this.physics.add.sprite(x, y, "dog").setDepth(this.dsort(y));
+    this.attachShadow(d, 16, 0.22);
     d.setCircle(9);
     d.body?.setAllowGravity(false);
     this.dog = d;
@@ -1532,7 +1580,8 @@ export class QuestScene extends Phaser.Scene {
     const x = this.wx(tx);
     const y = this.wy(ty);
     const artKey = this.textures.exists(cfg.art) ? cfg.art : "spectre";
-    this.boss = this.physics.add.sprite(x, y, artKey).setDepth(18).setScale(cfg.scale);
+    this.boss = this.physics.add.sprite(x, y, artKey).setDepth(this.dsort(y)).setScale(cfg.scale);
+    this.attachShadow(this.boss, 46 * cfg.scale, 0.3);
     const halo = this.add.circle(x, y, 54, cfg.color, 0.18).setDepth(17);
     this.tweens.add({
       targets: halo,
@@ -2724,6 +2773,8 @@ export class QuestScene extends Phaser.Scene {
   override update(time: number, delta: number) {
     if (!this.player?.body) return;
     if (this.frozen) {
+      this.vel.x = 0;
+      this.vel.y = 0;
       this.player.setVelocity(0, 0);
       return;
     }
@@ -2743,7 +2794,16 @@ export class QuestScene extends Phaser.Scene {
     const dashing = time < this.dashUntil;
     const swift = this.save.swift_boots ? SWIFT_SANDALS.multiplier : 1;
     const speed = SPEED * swift * (dashing ? 3 : 1);
-    this.player.setVelocity(vx * speed, vy * speed);
+    // Nicer walking feel: ease into a stride and glide to a stop instead of
+    // snapping between full speed and zero. Frame-rate independent damping.
+    const dt = Math.min(delta, 50) / 1000;
+    const accel = dashing ? 26 : 13;
+    const damp = 1 - Math.exp(-accel * dt);
+    this.vel.x += (vx * speed - this.vel.x) * damp;
+    this.vel.y += (vy * speed - this.vel.y) * damp;
+    if (Math.abs(this.vel.x) < 2) this.vel.x = 0;
+    if (Math.abs(this.vel.y) < 2) this.vel.y = 0;
+    this.player.setVelocity(this.vel.x, this.vel.y);
 
     // 4-directional animation
     const moving = len > 0.05;
@@ -2783,6 +2843,7 @@ export class QuestScene extends Phaser.Scene {
       if (!e.active) continue;
       const d = Phaser.Math.Distance.Between(e.x, e.y, this.player.x, this.player.y);
       const sp = (e.getData("speed") as number) ?? 50;
+      e.setDepth(this.dsort(e.y));
       if (d < 260) {
         const a = Math.atan2(this.player.y - e.y, this.player.x - e.x);
         e.setVelocity(Math.cos(a) * sp, Math.sin(a) * sp);
@@ -2818,6 +2879,31 @@ export class QuestScene extends Phaser.Scene {
 
     // player facing invulnerability blink
     this.player.setAlpha(time < this.invulnUntil ? (Math.floor(time / 80) % 2 ? 0.45 : 1) : 1);
+
+    // ---- 2.5D pass: contact shadows, y-sorted draw order, walk bob --------
+    const sp = Math.hypot(this.vel.x, this.vel.y);
+    this.bobPhase += (sp / SPEED) * delta * 0.014;
+    const bob = sp > 4 ? Math.sin(this.bobPhase) * 1.2 : 0;
+    this.player.setDepth(this.dsort(this.player.y));
+    this.player.setScale(1.1, 1.1 + bob * 0.012);
+    if (this.companion) this.companion.setDepth(this.dsort(this.companion.y));
+    if (this.dog) this.dog.setDepth(this.dsort(this.dog.y));
+    if (this.boss?.active) this.boss.setDepth(this.dsort(this.boss.y));
+    for (const a of this.animals) if (a.active) a.setDepth(this.dsort(a.y));
+    for (let i = this.shadows.length - 1; i >= 0; i--) {
+      const pair = this.shadows[i]!;
+      if (!pair.t.active) {
+        pair.s.destroy();
+        this.shadows.splice(i, 1);
+        continue;
+      }
+      const lift = pair.t === this.player ? Math.abs(bob) : 0;
+      pair.s
+        .setPosition(pair.t.x, pair.t.y + pair.t.displayHeight * 0.36)
+        .setVisible(pair.t.visible)
+        .setScale(1 - lift * 0.05)
+        .setAlpha(pair.t.alpha * 0.9);
+    }
 
     const near = this.nearest();
     this.prompt = near ? near.label : null;
