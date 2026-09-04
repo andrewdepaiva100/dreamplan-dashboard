@@ -1124,7 +1124,7 @@ export class QuestScene extends Phaser.Scene {
     this.hand
       .setPosition(this.player.x + ox, this.player.y + (dir === "up" ? -2 : 2))
       .setFlipX(side < 0)
-      .setDepth(dir === "up" ? 19 : 21)
+      .setDepth(this.player.depth + (dir === "up" ? -0.5 : 0.5))
       .setVisible(this.player.visible)
       .setAlpha(this.player.alpha);
   }
