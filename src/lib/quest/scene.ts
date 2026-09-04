@@ -1,7 +1,12 @@
 import * as Phaser from "phaser";
 import {
+  ACT_BOSSES,
+  ACT_GUIDES,
+  BLACKSMITH,
+  DEFAULT_WEAPON,
   ENVELOPES,
   RELICS,
+  WEAPON_BY_ID,
   REST_STONE_LINES,
   ZONES,
   type ZoneId,
@@ -53,6 +58,11 @@ function irnd(seed: number) {
 export class QuestScene extends Phaser.Scene {
   save: QuestSave = { ...EMPTY_SAVE };
 
+  private mapW = MAP_W;
+  private mapH = MAP_H;
+  private sxF = SX;
+  private syF = SY;
+
   private player!: Phaser.Physics.Arcade.Sprite;
   private layer!: Phaser.Tilemaps.TilemapLayer;
   private map!: Phaser.Tilemaps.Tilemap;
@@ -94,6 +104,11 @@ export class QuestScene extends Phaser.Scene {
   private bossPhase = 0;
   private bossHits = 0;
   private bossTimer?: Phaser.Time.TimerEvent;
+  private bossHp = 0;
+  private bossMax = 0;
+  private bossName = "";
+  private bossHitAt = 0;
+  private swingAt = 0;
 
   constructor() {
     super("quest");
@@ -118,6 +133,10 @@ export class QuestScene extends Phaser.Scene {
     this.boss = null;
     this.bossPhase = 0;
     this.bossHits = 0;
+    this.bossHp = 0;
+    this.bossMax = 0;
+    this.bossName = "";
+    if (this.save.weapons.length === 0) this.save.weapons = [];
     this.animals = [];
     this.landmark = null;
     this.cutscenePlayed = false;
@@ -153,8 +172,8 @@ export class QuestScene extends Phaser.Scene {
     this.keys = this.input.keyboard!.addKeys(
       "W,A,S,D,SPACE,J,SHIFT,K,E,ENTER",
     ) as Record<string, Phaser.Input.Keyboard.Key>;
-    this.keys["SPACE"]!.on("down", () => this.peaceBurst());
-    this.keys["J"]!.on("down", () => this.peaceBurst());
+    this.keys["SPACE"]!.on("down", () => this.attack());
+    this.keys["J"]!.on("down", () => this.attack());
     this.keys["SHIFT"]!.on("down", () => this.dash());
     this.keys["K"]!.on("down", () => this.dash());
     this.keys["E"]!.on("down", () => this.interact());
@@ -162,27 +181,29 @@ export class QuestScene extends Phaser.Scene {
 
     const g = this.game.events;
     g.on(EV.stick, this.onStick, this);
-    g.on(EV.action, this.peaceBurst, this);
+    g.on(EV.action, this.attack, this);
     g.on(EV.dash, this.dash, this);
     g.on(EV.interact, this.interact, this);
     g.on(EV.resume, this.onResume, this);
     g.on(EV.travel, this.travelTo, this);
     g.on(EV.guideme, this.startAutopilot, this);
+    g.on(EV.equip, this.equipWeapon, this);
 
     this.events.once("shutdown", () => {
       g.off(EV.stick, this.onStick, this);
-      g.off(EV.action, this.peaceBurst, this);
+      g.off(EV.action, this.attack, this);
       g.off(EV.dash, this.dash, this);
       g.off(EV.interact, this.interact, this);
       g.off(EV.resume, this.onResume, this);
       g.off(EV.travel, this.travelTo, this);
       g.off(EV.guideme, this.startAutopilot, this);
+      g.off(EV.equip, this.equipWeapon, this);
       this.bossTimer?.remove();
     });
 
     // ---- camera ----------------------------------------------------------
-    this.cameras.main.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
-    this.physics.world.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
+    this.cameras.main.setBounds(0, 0, this.mapW * TILE, this.mapH * TILE);
+    this.physics.world.setBounds(0, 0, this.mapW * TILE, this.mapH * TILE);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     this.cameras.main.setZoom(this.scale.width < 620 ? 1.1 : 1.45);
     this.cameras.main.fadeIn(500, 8, 12, 30);
@@ -219,10 +240,10 @@ export class QuestScene extends Phaser.Scene {
   private makeMap(base: number, seed: number, decorate: (d: number[][]) => void) {
     const rnd = irnd(seed);
     const data: number[][] = [];
-    for (let y = 0; y < MAP_H; y++) {
+    for (let y = 0; y < this.mapH; y++) {
       const row: number[] = [];
-      for (let x = 0; x < MAP_W; x++) {
-        const edge = x === 0 || y === 0 || x === MAP_W - 1 || y === MAP_H - 1;
+      for (let x = 0; x < this.mapW; x++) {
+        const edge = x === 0 || y === 0 || x === this.mapW - 1 || y === this.mapH - 1;
         // full-colour ground: lush meadow mixed with the zone's own base tile
         row.push(edge ? T.WALL : rnd() < 0.5 ? T.MEADOW : base);
       }
@@ -239,27 +260,27 @@ export class QuestScene extends Phaser.Scene {
 
   /** design-grid tile -> real grid tile */
   private sx(n: number) {
-    return Math.round(n * SX);
+    return Math.round(n * this.sxF);
   }
   private sy(n: number) {
-    return Math.round(n * SY);
+    return Math.round(n * this.syF);
   }
   /** design-grid tile -> world pixels */
   wx(n: number) {
-    return n * SX * TILE;
+    return n * this.sxF * TILE;
   }
   wy(n: number) {
-    return n * SY * TILE;
+    return n * this.syF * TILE;
   }
 
   private rect(d: number[][], x: number, y: number, w: number, h: number, t: number) {
     const x0 = this.sx(x);
     const y0 = this.sy(y);
-    const w0 = Math.max(1, Math.round(w * SX));
-    const h0 = Math.max(1, Math.round(h * SY));
+    const w0 = Math.max(1, Math.round(w * this.sxF));
+    const h0 = Math.max(1, Math.round(h * this.syF));
     for (let j = y0; j < y0 + h0; j++)
       for (let i = x0; i < x0 + w0; i++)
-        if (d[j] && i >= 0 && i < MAP_W && j >= 0 && j < MAP_H) d[j]![i] = t;
+        if (d[j] && i >= 0 && i < this.mapW && j >= 0 && j < this.mapH) d[j]![i] = t;
   }
 
   /** Carve a road/trail through the design grid along a waypoint chain. */
@@ -373,8 +394,8 @@ export class QuestScene extends Phaser.Scene {
         a.setFlipX(rnd() < 0.5);
         this.animals.push(a);
         const roam = () => {
-          const nx = Phaser.Math.Clamp(a.x + (rnd() - 0.5) * 200, 64, MAP_W * TILE - 64);
-          const ny = Phaser.Math.Clamp(a.y + (rnd() - 0.5) * 160, 64, MAP_H * TILE - 64);
+          const nx = Phaser.Math.Clamp(a.x + (rnd() - 0.5) * 200, 64, this.mapW * TILE - 64);
+          const ny = Phaser.Math.Clamp(a.y + (rnd() - 0.5) * 160, 64, this.mapH * TILE - 64);
           a.setFlipX(nx < a.x);
           this.tweens.add({
             targets: a,
@@ -437,9 +458,9 @@ export class QuestScene extends Phaser.Scene {
   getMapSnapshot() {
     const step = 3;
     const rows: string[] = [];
-    for (let y = 0; y < MAP_H; y += step) {
+    for (let y = 0; y < this.mapH; y += step) {
       let row = "";
-      for (let x = 0; x < MAP_W; x += step) {
+      for (let x = 0; x < this.mapW; x += step) {
         row += String(this.layer?.getTileAt(x, y)?.index ?? 0);
       }
       rows.push(row);
@@ -447,8 +468,8 @@ export class QuestScene extends Phaser.Scene {
     const pins: { x: number; y: number; label: string; kind: string }[] = [];
     if (this.landmark)
       pins.push({
-        x: this.landmark.sprite.x / (MAP_W * TILE),
-        y: this.landmark.sprite.y / (MAP_H * TILE),
+        x: this.landmark.sprite.x / (this.mapW * TILE),
+        y: this.landmark.sprite.y / (this.mapH * TILE),
         label: this.landmark.title,
         kind: "landmark",
       });
@@ -457,15 +478,15 @@ export class QuestScene extends Phaser.Scene {
       if (!["relic", "gateway", "guide", "vault", "andrew", "andrew-ceremony"].includes(it.kind))
         continue;
       pins.push({
-        x: it.obj.x / (MAP_W * TILE),
-        y: it.obj.y / (MAP_H * TILE),
+        x: it.obj.x / (this.mapW * TILE),
+        y: it.obj.y / (this.mapH * TILE),
         label: it.label,
         kind: it.kind,
       });
     }
     return {
       rows,
-      player: { x: this.player.x / (MAP_W * TILE), y: this.player.y / (MAP_H * TILE) },
+      player: { x: this.player.x / (this.mapW * TILE), y: this.player.y / (this.mapH * TILE) },
       pins,
       zone: this.save.current_zone,
       unlocked: this.unlockedZones(),
@@ -708,6 +729,12 @@ export class QuestScene extends Phaser.Scene {
 
   private buildZone(zone: ZoneId) {
     this.objective = ZONES[zone].objective;
+    // Act I is a compact, welcoming realm (~1/3 the area of the later acts).
+    const small = zone === "sunlit_shores";
+    this.mapW = small ? 104 : MAP_W;
+    this.mapH = small ? 104 : MAP_H;
+    this.sxF = this.mapW / DESIGN_W;
+    this.syF = this.mapH / DESIGN_H;
     if (zone === "sunlit_shores") this.buildAct1();
     else if (zone === "wedding_garden") this.buildAct2();
     else if (zone === "the_haven") this.buildAct3();
@@ -898,8 +925,8 @@ export class QuestScene extends Phaser.Scene {
   private rectLive(x: number, y: number, w: number, h: number, index: number) {
     const x0 = this.sx(x);
     const y0 = this.sy(y);
-    const w0 = Math.max(1, Math.round(w * SX));
-    const h0 = Math.max(1, Math.round(h * SY));
+    const w0 = Math.max(1, Math.round(w * this.sxF));
+    const h0 = Math.max(1, Math.round(h * this.syF));
     for (let j = y0; j < y0 + h0; j++)
       for (let i = x0; i < x0 + w0; i++) this.layer.putTileAt(index, i, j);
     this.layer.setCollision(SOLID_TILES as unknown as number[]);
@@ -1022,96 +1049,104 @@ export class QuestScene extends Phaser.Scene {
       this.spawnGateway(this.wx(117), this.wy(51));
   }
 
-  private startBoss() {
-    const cx = this.wx(121);
-    const cy = this.wy(51);
-    this.bossPhase = 1;
+  // =======================================================================
+  // ACT BOSS (shared, approachable melee encounter)
+  // =======================================================================
+
+  private zoneRelicsDone(zone: ZoneId) {
+    const need = RELICS.filter((r) => r.zone === zone).map((r) => r.id);
+    return need.length > 0 && need.every((n) => this.save.relics_collected.includes(n));
+  }
+
+  private spawnActBoss(tx: number, ty: number) {
+    const zone = this.save.current_zone;
+    const cfg = ACT_BOSSES[zone];
+    if (!cfg || this.boss || this.zoneRelicsDone(zone)) return;
+    const x = this.wx(tx);
+    const y = this.wy(ty);
+    this.boss = this.physics.add.sprite(x, y, "spectre").setDepth(18).setScale(1.5);
+    const bb = this.boss.body as Phaser.Physics.Arcade.Body;
+    bb.setAllowGravity(false);
+    this.boss.setCollideWorldBounds(true);
+    this.boss.setCircle(20, 4, 4);
     this.bossHits = 0;
-    this.objective = "The Stress Spectre — Phase 1: dodge the shadow bursts and answer with peace.";
-    this.boss = this.physics.add.sprite(cx, cy, "spectre").setDepth(18);
-    this.boss.setImmovable(true);
-    (this.boss.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
-    this.physics.add.overlap(this.petals, this.boss, (p) => {
-      (p as Phaser.Physics.Arcade.Sprite).setActive(false).setVisible(false);
-      if (this.bossPhase !== 1 || !this.boss) return;
-      this.bossHits++;
-      this.boss.setTint(0xffd7e5);
-      this.time.delayedCall(120, () => this.boss?.clearTint());
-      this.spawnSparkle(this.boss.x, this.boss.y, 0xffd7e5);
-      if (this.bossHits >= 6) this.bossPhaseTwo();
-    });
+    this.bossPhase = 1;
+    this.bossHp = cfg.hp;
+    this.bossMax = cfg.hp;
+    this.bossName = cfg.name;
+    this.physics.add.overlap(this.player, this.boss, () => this.hurtPlayerDirect());
+    this.objective = `${cfg.name} — swing your weapon until its worry lifts.`;
+    this.emitToast(cfg.taunt);
+    // gentle waves of minions; never overwhelming
     this.bossTimer = this.time.addEvent({
-      delay: 1400,
+      delay: 5200,
       loop: true,
       callback: () => {
-        if (this.bossPhase !== 1 || !this.boss) return;
-        for (let i = 0; i < 8; i++) {
+        if (!this.boss?.active) return;
+        if (Phaser.Math.Distance.Between(this.boss.x, this.boss.y, this.player.x, this.player.y) > 520)
+          return;
+        for (let i = 0; i < 3; i++) {
+          const a = (i / 3) * Math.PI * 2;
           const e = this.spawnEnemy(
-            this.boss.x + Math.cos((i / 8) * Math.PI * 2) * 40,
-            this.boss.y + Math.sin((i / 8) * Math.PI * 2) * 40,
-            "enemy-overwhelm",
-            110,
+            this.boss.x + Math.cos(a) * 60,
+            this.boss.y + Math.sin(a) * 60,
+            "enemy-rush",
+            62,
             true,
           );
-          if (e) this.time.delayedCall(3200, () => e.destroy());
+          if (e) this.time.delayedCall(7000, () => e.destroy());
         }
       },
     });
-    this.emitToast("The Stress Spectre rises. Breathe — you have done harder things.");
   }
 
-  private bossPhaseTwo() {
-    this.bossPhase = 2;
-    this.bossTimer?.remove();
-    this.boss?.setAlpha(0.4);
-    this.objective = "Phase 2: find the one true golden heart among the illusions.";
-    const cx = this.wx(121);
-    const cy = this.wy(51);
-    const trueIndex = Phaser.Math.Between(0, 2);
-    [-72, 0, 72].forEach((dx, i) => {
-      const it = this.addInteractable(cx + dx, cy + 60, "golden-heart", "boss-heart", "Choose this heart", {
-        id: String(i),
-        data: { correct: i === trueIndex },
-      });
-      if (i === trueIndex) {
-        this.tweens.add({
-          targets: it.obj,
-          alpha: { from: 0.85, to: 1 },
-          duration: 700,
-          yoyo: true,
-          repeat: -1,
-        });
-      } else {
-        it.obj.setAlpha(0.85);
-      }
-    });
-    this.emitToast("The illusions scatter. One heart beats true.");
+  private damageBoss(amount: number) {
+    if (!this.boss?.active || this.bossPhase !== 1) return;
+    const now = this.time.now;
+    if (now < this.bossHitAt) return;
+    this.bossHitAt = now + 220;
+    this.bossHp = Math.max(0, this.bossHp - amount);
+    this.bossHits++;
+    this.boss.setTint(0xffd7e5);
+    this.time.delayedCall(120, () => this.boss?.clearTint());
+    this.spawnSparkle(this.boss.x, this.boss.y, 0xffd7e5, 10);
+    const a = Math.atan2(this.boss.y - this.player.y, this.boss.x - this.player.x);
+    this.boss.setVelocity(Math.cos(a) * 140, Math.sin(a) * 140);
+    this.time.delayedCall(200, () => this.boss?.setVelocity(0, 0));
+    if (this.bossHp <= 0) this.defeatActBoss();
   }
 
-  private defeatBoss() {
+  private defeatActBoss() {
     this.bossPhase = 3;
     this.bossTimer?.remove();
+    const zone = this.save.current_zone;
+    let bx = this.player.x;
+    let by = this.player.y;
     if (this.boss) {
-      const { x, y } = this.boss;
-      this.spawnSparkle(x, y, 0xffd7e5, 26);
+      bx = this.boss.x;
+      by = this.boss.y;
+      this.spawnSparkle(bx, by, 0xffd7e5, 30);
       this.boss.destroy();
       this.boss = null;
-      this.add.sprite(x, y, "arbor").setDepth(6);
+      this.add.sprite(bx, by, "arbor").setDepth(6);
     }
-    this.interactables = this.interactables.filter((i) => {
-      if (i.kind === "boss-heart") {
-        i.obj.destroy();
-        return false;
-      }
-      return true;
+    (this.enemies.getChildren() as Phaser.Physics.Arcade.Sprite[]).forEach((e) => {
+      if (e.active && e.getData("temp")) this.transformEnemy(e);
     });
     this.cameras.main.flash(500, 255, 215, 229);
-    this.emitToast("The Spectre becomes a blooming garden arbor.");
-    this.objective = "Claim the Anchor of Comfort and the Bloom of Reflection.";
-    if (!this.save.relics_collected.includes("anchor"))
-      this.addInteractable(this.wx(113), this.wy(45), "relic", "relic", "Take the relic", { id: "anchor" });
-    if (!this.save.relics_collected.includes("bloom"))
-      this.addInteractable(this.wx(129), this.wy(45), "relic", "relic", "Take the relic", { id: "bloom" });
+    this.emitToast(`${this.bossName} softens into blossoms.`);
+    const need = RELICS.filter((r) => r.zone === zone).map((r) => r.id);
+    const missing = need.filter((n) => !this.save.relics_collected.includes(n));
+    if (missing.length === 0) {
+      this.spawnGateway(bx, by - 90);
+      return;
+    }
+    this.objective = "Claim the relic left behind.";
+    missing.forEach((id, i) => {
+      this.addInteractable(bx + (i - (missing.length - 1) / 2) * 70, by + 60, "relic", "relic", "Take the relic", {
+        id,
+      });
+    });
   }
 
   // ---------------- ACT III ------------------------------------------------
@@ -1397,8 +1432,8 @@ export class QuestScene extends Phaser.Scene {
     let placed = 0;
     let guard = 0;
     while (placed < c.count && guard++ < 1200) {
-      const x = Math.floor(rnd() * (MAP_W - 8)) + 4;
-      const y = Math.floor(rnd() * (MAP_H - 8)) + 4;
+      const x = Math.floor(rnd() * (this.mapW - 8)) + 4;
+      const y = Math.floor(rnd() * (this.mapH - 8)) + 4;
       const tile = this.layer.getTileAt(x, y);
       if (!tile || SOLID_TILES.includes(tile.index as (typeof SOLID_TILES)[number])) continue;
       if (Phaser.Math.Distance.Between(x * TILE, y * TILE, this.player.x, this.player.y) < 220)
@@ -1453,34 +1488,60 @@ export class QuestScene extends Phaser.Scene {
     }
   }
 
-  private peaceBurst() {
+  private equippedWeapon() {
+    return WEAPON_BY_ID[this.save.equipped_weapon ?? DEFAULT_WEAPON] ?? WEAPON_BY_ID[DEFAULT_WEAPON]!;
+  }
+
+  /** Melee swing with the equipped weapon — everything struck turns to butterflies. */
+  private attack() {
     if (this.frozen || !this.player.active) return;
-    if (this.stamina < 12) return;
-    this.stamina = Math.max(0, this.stamina - 12);
-    const ring = this.add.circle(this.player.x, this.player.y, 20, 0xd61f2c, 0.22).setDepth(9);
-    this.tweens.add({
-      targets: ring,
-      radius: 110,
-      alpha: 0,
-      duration: 420,
-      onComplete: () => ring.destroy(),
-    });
-    for (let i = 0; i < 10; i++) {
-      const p = this.petals.get(this.player.x, this.player.y, "petal") as
-        | Phaser.Physics.Arcade.Sprite
-        | null;
-      if (!p) break;
-      p.setActive(true).setVisible(true).setDepth(17);
-      p.body!.reset(this.player.x, this.player.y);
-      p.setCircle(5);
-      const a = (i / 10) * Math.PI * 2;
-      p.setVelocity(Math.cos(a) * 260, Math.sin(a) * 260);
-      p.setAngularVelocity(300);
-      this.time.delayedCall(520, () => {
-        p.setActive(false).setVisible(false);
-        p.body?.stop();
-      });
+    if (!this.save.weapons.includes(this.save.equipped_weapon ?? "")) {
+      this.emitToast("You have no weapon yet — find the Blacksmith for a wooden sword.");
+      return;
     }
+    const now = this.time.now;
+    if (now < this.swingAt) return;
+    this.swingAt = now + 320;
+    if (this.stamina >= 6) this.stamina -= 6;
+    const w = this.equippedWeapon();
+    const dir =
+      this.lastDir === "up"
+        ? -Math.PI / 2
+        : this.lastDir === "down"
+          ? Math.PI / 2
+          : this.facing > 0
+            ? 0
+            : Math.PI;
+
+    // swing arc visual
+    const arc = this.add
+      .arc(this.player.x, this.player.y, w.reach, Phaser.Math.RadToDeg(dir) - 55, Phaser.Math.RadToDeg(dir) + 55, false, w.color, 0.35)
+      .setDepth(19);
+    this.tweens.add({
+      targets: arc,
+      alpha: 0,
+      scale: 1.15,
+      duration: 240,
+      onComplete: () => arc.destroy(),
+    });
+    this.spawnSparkle(
+      this.player.x + Math.cos(dir) * w.reach * 0.6,
+      this.player.y + Math.sin(dir) * w.reach * 0.6,
+      w.color,
+      8,
+    );
+
+    const inArc = (x: number, y: number, pad = 0) => {
+      const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, x, y);
+      if (d > w.reach + pad) return false;
+      const a = Math.atan2(y - this.player.y, x - this.player.x);
+      return Math.abs(Phaser.Math.Angle.Wrap(a - dir)) < 1.15;
+    };
+
+    (this.enemies.getChildren() as Phaser.Physics.Arcade.Sprite[]).forEach((e) => {
+      if (e.active && inArc(e.x, e.y)) this.transformEnemy(e);
+    });
+    if (this.boss?.active && inArc(this.boss.x, this.boss.y, 22)) this.damageBoss(w.damage);
   }
 
   private dash() {
@@ -1643,17 +1704,7 @@ export class QuestScene extends Phaser.Scene {
         }
         this.removeInteractable(it);
         this.rectLive(111, 50, 1, 2, T.MARBLE);
-        this.startBoss();
-        break;
-      }
-      case "boss-heart": {
-        const correct = Boolean(it.data?.["correct"]);
-        if (correct) this.defeatBoss();
-        else {
-          this.removeInteractable(it);
-          this.emitToast("An illusion dissolves. Look again.");
-          this.hurtPlayerDirect();
-        }
+        this.spawnActBoss(121, 51);
         break;
       }
       case "breakable": {
@@ -1700,6 +1751,27 @@ export class QuestScene extends Phaser.Scene {
           this.zoneState["stairs"] = true;
           this.openStaircase();
         }
+        break;
+      }
+      case "blacksmith": {
+        const fresh = this.grantWeapon(BLACKSMITH.weapon);
+        this.openModal({
+          type: fresh ? "weapon" : "info",
+          ...(fresh
+            ? { weaponId: BLACKSMITH.weapon, speaker: BLACKSMITH.name, line: BLACKSMITH.line }
+            : { title: BLACKSMITH.name, body: BLACKSMITH.repeat }),
+        } as ModalPayload);
+        break;
+      }
+      case "act-guide": {
+        const g = ACT_GUIDES[this.save.current_zone];
+        const fresh = this.grantWeapon(g.weapon);
+        this.openModal({
+          type: fresh ? "weapon" : "info",
+          ...(fresh
+            ? { weaponId: g.weapon, speaker: g.name, line: g.line }
+            : { title: g.name, body: g.line }),
+        } as ModalPayload);
         break;
       }
       case "guide":
@@ -1795,6 +1867,29 @@ export class QuestScene extends Phaser.Scene {
     this.game.events.emit(EV.modal, payload);
   }
 
+  private equipWeapon(id: string) {
+    if (!this.save.weapons.includes(id)) return;
+    this.save.equipped_weapon = id;
+    this.emitSave();
+    this.pushHud(true);
+    this.emitToast(`${WEAPON_BY_ID[id]?.name ?? "Weapon"} equipped.`);
+  }
+
+  /** Permanently award a weapon and auto-equip it if it is stronger. */
+  private grantWeapon(id: string) {
+    const w = WEAPON_BY_ID[id];
+    if (!w) return false;
+    if (this.save.weapons.includes(id)) return false;
+    this.save.weapons = [...this.save.weapons, id];
+    const cur = WEAPON_BY_ID[this.save.equipped_weapon ?? ""];
+    if (!cur || w.damage >= cur.damage) this.save.equipped_weapon = id;
+    this.emitSave();
+    this.pushHud(true);
+    this.spawnSparkle(this.player.x, this.player.y, w.color, 22);
+    this.cameras.main.flash(300, 255, 240, 191);
+    return true;
+  }
+
   private onResume() {
     this.frozen = false;
     this.physics.resume();
@@ -1834,6 +1929,12 @@ export class QuestScene extends Phaser.Scene {
       keys: this.save.vault_keys_count,
       prompt: this.prompt,
       weddingCompleted: this.save.wedding_completed,
+      weapons: this.save.weapons,
+      equipped: this.save.equipped_weapon,
+      boss:
+        this.boss?.active && this.bossPhase === 1
+          ? { name: this.bossName, hp: this.bossHp, max: this.bossMax }
+          : null,
     };
     const sig = JSON.stringify({ ...state, dashProgress: Math.round(state.dashProgress * 10) });
     if (!force && sig === this.lastHud) return;
