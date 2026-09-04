@@ -48,8 +48,10 @@ No changes to enemies' behaviour, boss HP, or the puzzle rules.
 ## Technical notes
 
 - `src/lib/quest/scene.ts`: `updateAlly` distances and blade offset; `buildAct4`
-  tile decoration, decor sprites, particle emitters, pillar aura tweens;
-  `openStaircase` particle flourish.
+  tile decoration, decor sprites, particle emitters, pillar aura tweens, five
+  pillar spots and `zoneState.pillars` length 5; `openStaircase` particle
+  flourish plus the new "wedding-hour" envelope spawn.
+- `src/lib/quest/content.ts`: new secret envelope entry with the wedding letter.
 - New `src/assets/quest/portrait-andressa.jpg`, imported and added to
   `GUEST_PORTRAITS` in `src/components/plan/quest.tsx`.
 - Reuses existing sprites (lamp, flowers, petal, key/relic glow) where possible
