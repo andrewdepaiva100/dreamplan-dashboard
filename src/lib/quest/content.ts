@@ -179,10 +179,6 @@ export const CEREMONY_SCRIPT: CeremonyBeat[] = [
   },
   {
     speaker: "Pastor Alcir",
-    text: "A marriage is not built on the day it begins. It is built on ten thousand quiet days afterward — the tired ones, the plain ones, the ones nobody photographs. God gives you each other for those days most of all.",
-  },
-  {
-    speaker: "Pastor Alcir",
     text: "Andrew, will you have this woman to be your wedded wife — to love her, comfort her, honour and keep her, in sickness and in health, in plenty and in want, and forsaking all others be faithful to her as long as you both shall live?",
   },
   {
@@ -211,11 +207,7 @@ export const CEREMONY_SCRIPT: CeremonyBeat[] = [
   },
   {
     speaker: "Maria",
-    text: "Andrew — I promise to walk beside you, never behind you and never ahead. I promise to be gentle with your heart and honest with my own, to tell you the truth kindly, and to stay when staying costs something. I promise laughter in our kitchen, grace in our arguments, and God at the centre of everything we build.",
-  },
-  {
-    speaker: "Maria",
-    text: "I have seen what you fight when no one is watching, and I have never once wanted to run. I will be the safe place you come home to and the voice that tells you the truth about yourself. You are my home. I take you as my husband.",
+    text: "Andrew — I promise to walk beside you, never behind you and never ahead. I promise to be gentle with your heart and honest with my own, to tell you the truth kindly, and to stay when staying costs something. I promise laughter in our kitchen, grace in our arguments, and God at the centre of everything we build. I have seen what you fight when no one is watching, and I have never once wanted to run. I will be the safe place you come home to and the voice that tells you the truth about yourself. You are my home. I take you as my husband.",
   },
   {
     speaker: "Pastor Alcir",
