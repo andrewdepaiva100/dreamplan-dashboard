@@ -767,7 +767,7 @@ export const WEDDING_GUESTS: Partial<Record<ZoneId, GuestInfo>> = {
       "Tell Andrew I expect a very dramatic first dance.",
     ],
   },
-  haven_town: {
+  the_haven: {
     id: "pedro",
     name: "Pedro",
     art: "pedro",
