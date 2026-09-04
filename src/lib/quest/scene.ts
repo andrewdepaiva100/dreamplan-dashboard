@@ -323,7 +323,7 @@ export class QuestScene extends Phaser.Scene {
         const edge = x === 0 || y === 0 || x === this.mapW - 1 || y === this.mapH - 1;
         // one continuous lush meadow across the whole realm, flecked with
         // blooming grass so every act shares the same green
-        row.push(edge ? T.WALL : rnd() < 0.14 ? T.BLOOM : T.MEADOW);
+        row.push(edge ? T.WALL : T.MEADOW);
       }
       data.push(row);
     }
@@ -812,7 +812,8 @@ export class QuestScene extends Phaser.Scene {
     for (const [x, y] of opts.bridges ?? []) {
       this.add.sprite(this.wx(x), this.wy(y), "bridge").setDepth(3).setAlpha(0.96);
     }
-    const flowerTints = [0xffffff, 0xffd7e5, 0xfff0bf, 0xd7e0ff, 0xffc2a1];
+    // purple, red, white and pink only
+    const flowerTints = [0xb779e8, 0xe23a4e, 0xffffff, 0xff8ec4];
     for (let i = 0; i < (opts.flowers ?? 0); i++) {
       const tx = 4 + rnd() * (DESIGN_W - 8);
       const ty = 4 + rnd() * (DESIGN_H - 8);
@@ -1134,7 +1135,7 @@ export class QuestScene extends Phaser.Scene {
         [60, 51],
         [60, 82],
       ],
-      flowers: 240,
+      flowers: 180,
       border: true,
     });
 
@@ -1427,7 +1428,7 @@ export class QuestScene extends Phaser.Scene {
         [58, 68],
         [76, 68],
       ],
-      flowers: 300,
+      flowers: 225,
     });
 
     this.addLandmark(
@@ -1682,7 +1683,7 @@ export class QuestScene extends Phaser.Scene {
         [12, 46, 6],
         [84, 70, 6],
       ],
-      flowers: 260,
+      flowers: 195,
       border: true,
     });
 
