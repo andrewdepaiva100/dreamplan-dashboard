@@ -405,7 +405,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
         if (!host || gameRef.current) return;
         const game = createQuestGame(host, save);
         gameRef.current = game;
-        (window as unknown as { __questGame?: unknown }).__questGame = game;
+
 
         game.events.on(EV.hud, (s: HudState) => setHud(s));
         game.events.on(EV.modal, (m: ModalPayload) => {
