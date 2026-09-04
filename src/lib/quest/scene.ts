@@ -19,6 +19,7 @@ import {
   SWIFT_SANDALS,
   LOVE_SWORD,
   SECOND_BOSSES,
+  PILLAR_GUARDIANS,
   WEDDING_GUESTS,
   FAMILY_GUESTS,
   CATHEDRAL_FRIENDS,
@@ -662,6 +663,13 @@ export class QuestScene extends Phaser.Scene {
   private spawnCompanion() {
     const allied = this.save.weapons.includes("love-sword");
     if ((!this.save.wedding_completed && !allied) || this.save.current_zone === "cathedral") return;
+    // In Act III Andrew stays put until the three music sheets are recovered.
+    if (
+      this.save.current_zone === "the_haven" &&
+      !this.save.relics_collected.includes("shield") &&
+      (((this.zoneState["sheets"] as number) ?? 0) < 3)
+    )
+      return;
     this.companion = this.add
       .sprite(this.player.x - 24, this.player.y + 8, "andrew-down-0")
       .setDepth(this.dsort(this.player.y))
@@ -854,6 +862,8 @@ export class QuestScene extends Phaser.Scene {
   /** Fires once when Maria first reaches the act's flagship landmark. */
   private checkCutscene() {
     if (this.cutscenePlayed || !this.landmark) return;
+    // Never interrupt a fight or a boss conversation with a landmark cutscene.
+    if (this.boss?.active || this.bossTalking || this.frozen) return;
     // Never collide with the act intro banner (it shows for ~3.6s on entry).
     if (this.time.now - this.realmEnteredAt < 4200) return;
     const l = this.landmark;
@@ -1827,10 +1837,35 @@ export class QuestScene extends Phaser.Scene {
     });
     this.cameras.main.flash(500, 255, 215, 229);
     this.emitToast(`${this.bossName} softens into blossoms.`);
+
+    // A pillar guardian: credit that pillar and check the alignment.
+    const pending = this.zoneState["pendingPillar"];
+    if (typeof pending === "number") {
+      this.zoneState["pendingPillar"] = undefined;
+      const beaten = ((this.zoneState["guardians"] as number[]) ?? []).concat(pending);
+      this.zoneState["guardians"] = beaten;
+      const arr = (this.zoneState["pillars"] as number[]) ?? [0, 0, 0];
+      const aligned = arr.every((v, k) => v === 1 && beaten.includes(k));
+      this.objective = aligned
+        ? "The pillars align."
+        : `The Celestial Staircase — align all three pillars to warm gold (${beaten.length}/3).`;
+      if (aligned && !this.zoneState["stairs"]) {
+        this.zoneState["stairs"] = true;
+        this.openStaircase();
+      }
+      this.bossPhase = 0;
+      return;
+    }
+
     const second = SECOND_BOSSES[zone];
     if (second && this.zoneState["secondBoss"] !== true) {
       this.zoneState["secondBoss"] = true;
       this.time.delayedCall(900, () => {
+        this.openModal({
+          type: "info",
+          title: "The sky is not finished with you",
+          body: "The blossoms have barely settled before the stars go cold. Something older stirs where the shadow stood — brace yourself.",
+        });
         this.spawnActBoss(0, 0, second);
         if (this.boss) this.boss.setPosition(bx, by);
         if (this.bossHalo) this.bossHalo.setPosition(bx, by);
@@ -1950,19 +1985,17 @@ export class QuestScene extends Phaser.Scene {
     ]);
 
     this.zoneState["sheets"] = 0;
-    // Three music sheets placed right along the main roads and fountain so
-    // Maria spots them naturally while exploring the square.
+    // Genuinely hidden: behind the stalls, tucked behind the town hall, and
+    // off-road in the far east corner. No beacons — she has to search.
     const sheetSpots: [number, number][] = [
-      [20, 52], // near spawn on the main road
-      [66, 64], // beside the fountain
-      [92, 50], // along the eastern road
+      [58, 24], // back alley behind the market stalls
+      [72, 12], // tucked behind the town hall
+      [104, 76], // far south-east corner, off every road
     ];
     sheetSpots.forEach(([x, y], i) => {
-      const it = this.addInteractable(this.wx(x), this.wy(y), "sheet", "sheet", "Pick up the music sheet", {
+      this.addInteractable(this.wx(x), this.wy(y), "sheet", "sheet", "Pick up the music sheet", {
         id: String(i),
       });
-      // tall golden beacon so each sheet is visible from across the square
-      this.addKeyBeacon(it.obj.x, it.obj.y, `sheet-${i}`, 0xffe6a8);
     });
 
     this.addInteractable(this.wx(26), this.wy(55), "andrew", "andrew", "Talk with Andrew", {
@@ -2060,18 +2093,18 @@ export class QuestScene extends Phaser.Scene {
   // ---------------- ACT V --------------------------------------------------
   /** A gothic nave: stone floor, arcaded side walls, stained glass, pews, altar. */
   private buildAct5() {
-    this.cameras.main.setBackgroundColor("#1b1526");
-    this.makeMap(T.CANDLE, 505, (d) => {
+    this.cameras.main.setBackgroundColor("#e9e2d2");
+    this.makeMap(T.PATH, 505, (d) => {
       this.rect(d, 0, 0, DESIGN_W, DESIGN_H, T.WALL);
       // cool stone nave floor
       this.rect(d, 24, 12, 84, 80, T.MARBLE);
-      // raised sanctuary at the head of the nave
-      this.rect(d, 40, 12, 52, 14, T.CANDLE);
-      // long centre aisle runner
-      this.rect(d, 60, 26, 12, 66, T.CANDLE);
+      // raised sanctuary at the head of the nave — pale stone, not candlelit purple
+      this.rect(d, 40, 12, 52, 14, T.PATH);
+      // long centre aisle runner in a light beige stone
+      this.rect(d, 60, 26, 12, 66, T.PATH);
       // side aisles kept clear behind the columns
-      this.rect(d, 24, 26, 6, 66, T.CANDLE);
-      this.rect(d, 102, 26, 6, 66, T.CANDLE);
+      this.rect(d, 24, 26, 6, 66, T.PATH);
+      this.rect(d, 102, 26, 6, 66, T.PATH);
     });
     this.addPlayer(66, 86);
     this.scatterDecor(55, {
@@ -2382,6 +2415,8 @@ export class QuestScene extends Phaser.Scene {
 
   /** Day runs 7:00 AM to 7:00 PM; night is everything else. 0 = day, 1 = night. */
   private nightFactor() {
+    // The wedding day never darkens.
+    if (this.save.current_zone === "cathedral") return 0;
     const h = this.dayT * 24;
     if (h >= 7.5 && h <= 18.5) return 0;
     if (h > 18.5 && h < 19.5) return Phaser.Math.Clamp((h - 18.5) / 1, 0, 1);
@@ -2390,8 +2425,12 @@ export class QuestScene extends Phaser.Scene {
   }
 
   private updateDayNight(delta: number) {
-    this.dayT = (this.dayT + delta / DAY_MS) % 1;
-    this.save.time_of_day = this.dayT;
+    if (this.save.current_zone === "cathedral") {
+      this.dayT = 0.5;
+    } else {
+      this.dayT = (this.dayT + delta / DAY_MS) % 1;
+      this.save.time_of_day = this.dayT;
+    }
     const n = this.nightFactor();
     const cam = this.cameras.main;
     if (this.nightVeil) {
@@ -2602,6 +2641,8 @@ export class QuestScene extends Phaser.Scene {
   }
 
   private addHouse() {
+    // No cottage in the cathedral — Act V is the wedding itself.
+    if (this.save.current_zone === "cathedral") return;
     const spot = this.houseSpot();
     if (!spot) return;
     const [x, y] = spot;
@@ -2846,7 +2887,9 @@ export class QuestScene extends Phaser.Scene {
             line:
               sheets >= 3
                 ? "The melody is ours now. Whenever the world gets loud, hum it and remember I'm right here."
-                : `Three pages of our song blew across the plaza — I've found ${sheets}/3 so far. Help me gather them and I'll play it for you.`,
+                : sheets === 0
+                  ? "Three pages of our wedding song are lost somewhere in this town — hidden well, not lying in the road. They matter, Maria: a marriage is played the way a song is played, every note kept in tune, nothing rushed, nothing skipped. Find all three and our marriage will be as beautiful as the music we'll dance to. Until then I can't walk with you — I'll be here, waiting on the melody."
+                  : `${sheets}/3 pages so far. Keep looking — behind things, off the roads. Every page you bring back is a promise that our life together stays in tune, and the moment the song is whole I'm walking beside you the rest of the way.`,
           });
         }
         break;
@@ -2864,9 +2907,12 @@ export class QuestScene extends Phaser.Scene {
         this.removeInteractable(it);
         const n = ((this.zoneState["sheets"] as number) ?? 0) + 1;
         this.zoneState["sheets"] = n;
-        this.objective = `The Missing Melody — ${n}/3 music sheets gathered.`;
-        this.emitToast(`Music sheet ${n}/3 recovered.`);
-        if (n >= 3) this.objective = "Bring the melody back to Andrew by the fountain.";
+        this.objective = `The Missing Melody — ${n}/3 hidden music sheets found.`;
+        this.emitToast(`Music sheet ${n}/3 recovered — the song of your marriage.`);
+        if (n >= 3) {
+          this.objective = "Bring the melody back to Andrew by the fountain.";
+          if (!this.companion) this.spawnCompanion();
+        }
         break;
       }
       case "season-key": {
@@ -2923,10 +2969,28 @@ export class QuestScene extends Phaser.Scene {
       case "pillar": {
         const arr = this.zoneState["pillars"] as number[];
         const i = Number(it.id);
-        arr[i] = ((arr[i] ?? 0) + 1) % 3;
-        it.obj.setTint([0x8fa6ff, 0xfff0bf, 0xffd7e5][arr[i]!]!);
+        if (this.boss?.active || this.bossTalking) {
+          this.emitToast("Not while something is still fighting you.");
+          break;
+        }
+        const next = ((arr[i] ?? 0) + 1) % 3;
+        it.obj.setTint([0x8fa6ff, 0xfff0bf, 0xffd7e5][next]!);
         this.spawnSparkle(it.obj.x, it.obj.y, 0xd7e0ff, 8);
-        const aligned = arr.every((v) => v === 1);
+        // Turning a pillar gold wakes its shard guardian; the pillar only
+        // counts as aligned once that guardian is defeated.
+        const guardiansBeaten = (this.zoneState["guardians"] as number[]) ?? [];
+        if (next === 1 && !guardiansBeaten.includes(i)) {
+          this.zoneState["pendingPillar"] = i;
+          arr[i] = 1;
+          const cfg = PILLAR_GUARDIANS[i] ?? PILLAR_GUARDIANS[0]!;
+          this.spawnActBoss(0, 0, cfg);
+          if (this.boss) this.boss.setPosition(it.obj.x + 90, it.obj.y);
+          if (this.bossHalo) this.bossHalo.setPosition(it.obj.x + 90, it.obj.y);
+          this.objective = `${cfg.name} guards the pillar — bring it down.`;
+          break;
+        }
+        arr[i] = next;
+        const aligned = arr.every((v, k) => v === 1 && guardiansBeaten.includes(k));
         this.emitToast(
           aligned
             ? "All three pillars burn gold — the staircase forms."

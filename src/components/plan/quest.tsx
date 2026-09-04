@@ -160,20 +160,93 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
 
     // semitone -> Hz, A4 = 440
     const hz = (n: number) => 440 * Math.pow(2, (n - 9) / 12);
-    // melodies are scale degrees in semitones from C4 (0 = C4)
-    const THEMES: Record<string, number[]> = {
-      sunlit_shores: [0, 4, 7, 12, 9, 7, 4, 7, 5, 9, 12, 9, 7, 4, 2, 0],
-      wedding_garden: [2, 5, 9, 14, 12, 9, 5, 9, 7, 11, 14, 12, 9, 7, 5, 2],
-      the_haven: [5, 9, 12, 17, 16, 12, 9, 12, 7, 11, 14, 12, 9, 5, 7, 5],
-      starry_ascent: [-3, 2, 4, 9, 7, 4, 2, 4, 0, 5, 9, 7, 4, 2, -1, -3],
-      cathedral: [0, 7, 12, 16, 19, 16, 12, 7, 5, 9, 12, 17, 16, 12, 7, 0],
+    // Each act gets its own melody, tempo, register and tone colour so the
+    // five realms never sound like variations of one another.
+    type Voice = {
+      melody: number[];
+      step: number;
+      bass: number;
+      /** Overtone character of each note. */
+      overtone: OscillatorType;
+      overtoneAmp: number;
+      /** Note length and low-pass brightness. */
+      dur: number;
+      cutoff: number;
+      /** How often a beat is simply held as silence. */
+      density: number;
+      swing: number;
+    };
+    const VOICES: Record<string, Voice> = {
+      // Act I — bright, open seaside melody
+      sunlit_shores: {
+        melody: [0, 4, 7, 12, 14, 12, 7, 9, 5, 9, 12, 16, 14, 12, 7, 4],
+        step: 0.95,
+        bass: -12,
+        overtone: "triangle",
+        overtoneAmp: 0.2,
+        dur: 2.8,
+        cutoff: 1500,
+        density: 0.9,
+        swing: 0.35,
+      },
+      // Act II — light waltz, three-beat lilt
+      wedding_garden: {
+        melody: [7, 11, 14, 9, 12, 16, 7, 11, 14, 12, 9, 5, 4, 7, 11, 9],
+        step: 0.62,
+        bass: -10,
+        overtone: "sine",
+        overtoneAmp: 0.1,
+        dur: 1.7,
+        cutoff: 1150,
+        density: 0.95,
+        swing: 0.12,
+      },
+      // Act III — warm, folky town tune
+      the_haven: {
+        melody: [5, 7, 9, 12, 9, 7, 5, 2, 0, 2, 5, 9, 7, 5, 4, 2],
+        step: 0.8,
+        bass: -17,
+        overtone: "sawtooth",
+        overtoneAmp: 0.07,
+        dur: 2.2,
+        cutoff: 1000,
+        density: 0.92,
+        swing: 0.2,
+      },
+      // Act IV — slow, airy night sky; sparse high notes
+      starry_ascent: {
+        melody: [19, 24, 21, 16, 19, 26, 21, 19, 14, 19, 23, 21, 16, 14, 12, 16],
+        step: 1.9,
+        bass: -24,
+        overtone: "sine",
+        overtoneAmp: 0.3,
+        dur: 5.2,
+        cutoff: 2200,
+        density: 0.62,
+        swing: 0.8,
+      },
+      // Act V — solemn organ-like processional
+      cathedral: {
+        melody: [0, 0, 5, 7, 12, 7, 5, 0, -5, 0, 4, 7, 12, 7, 4, 0],
+        step: 1.5,
+        bass: -29,
+        overtone: "square",
+        overtoneAmp: 0.05,
+        dur: 4.6,
+        cutoff: 900,
+        density: 1,
+        swing: 0,
+      },
     };
     const BATTLE = [-5, -5, 2, 3, -5, 7, 6, 3, -5, -5, 2, 3, 10, 7, 3, 2];
     const HOME = [0, 4, 7, 4, 5, 2, 0, -5, 0, 4, 9, 7, 5, 4, 2, 0];
-    const melody = mode === "battle" ? BATTLE : mode === "home" ? HOME : (THEMES[zone] ?? THEMES["sunlit_shores"]!);
-    const bassRoot = mode === "battle" ? -17 : mode === "home" ? -12 : -12;
-    // Unhurried, breathing pace — closer to a quiet piano score than a chiptune.
-    const step = mode === "battle" ? 0.34 : mode === "home" ? 1.5 : 1.15;
+    const act = VOICES[zone] ?? VOICES["sunlit_shores"]!;
+    const melody = mode === "battle" ? BATTLE : mode === "home" ? HOME : act.melody;
+    const bassRoot = mode === "battle" ? -17 : mode === "home" ? -12 : act.bass;
+    const step = mode === "battle" ? 0.34 : mode === "home" ? 1.5 : act.step;
+    const noteDur = mode === "battle" ? 0.9 : mode === "home" ? 3.4 : act.dur;
+    const density = mode === "explore" ? act.density : 1;
+    const swing = mode === "explore" ? act.swing : 0.6;
 
     const master = ctx.createGain();
     master.gain.value = 0.0001;
@@ -183,15 +256,15 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
     // warm, soft-felt tone: heavy low-pass so nothing sounds pixelated
     const soft = ctx.createBiquadFilter();
     soft.type = "lowpass";
-    soft.frequency.value = mode === "battle" ? 1500 : 1000;
+    soft.frequency.value = mode === "battle" ? 1500 : mode === "home" ? 1000 : act.cutoff;
     soft.Q.value = 0.4;
     soft.connect(master);
 
-    /** A felt-piano note: sine body, faint triangle overtone, long soft tail. */
+    /** A felt note: sine body plus the act's own overtone colour. */
     const note = (freq: number, at: number, dur: number, gain: number) => {
       for (const [type, mul, amp] of [
         ["sine", 1, 1],
-        ["triangle", 2, 0.16],
+        [mode === "explore" ? act.overtone : "triangle", 2, mode === "explore" ? act.overtoneAmp : 0.16],
       ] as [OscillatorType, number, number][]) {
         const o = ctx.createOscillator();
         o.type = type;
@@ -209,7 +282,7 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
     // a slow pad underneath, the way ambient game scores hold a room together
     const padOsc = ctx.createOscillator();
     const padGain = ctx.createGain();
-    padOsc.type = "sine";
+    padOsc.type = mode === "explore" && zone === "cathedral" ? "triangle" : "sine";
     padOsc.frequency.value = hz(bassRoot);
     padGain.gain.value = 0.0001;
     padGain.gain.linearRampToValueAtTime(mode === "battle" ? 0.05 : 0.035, ctx.currentTime + 4);
@@ -224,12 +297,12 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
         const n = melody[i % melody.length]!;
         const rest = mode === "battle" ? 0 : Math.random();
         // let phrases breathe: sometimes simply hold the silence
-        if (rest < 0.78) {
-          note(hz(n), next, mode === "battle" ? 0.9 : 3.4, mode === "battle" ? 0.32 : 0.24);
-          if (i % 4 === 0) note(hz(n + 7) / 2, next + 0.12, 4.2, 0.09);
+        if (rest < density) {
+          note(hz(n), next, noteDur, mode === "battle" ? 0.32 : 0.24);
+          if (i % 4 === 0) note(hz(n + 7) / 2, next + 0.12, noteDur + 0.8, 0.09);
         }
         if (i % 4 === 0) note(hz(bassRoot + (i % 8 === 0 ? 0 : 5)), next, 4.5, 0.14);
-        next += step * (mode === "battle" ? 1 : 0.85 + Math.random() * 0.6);
+        next += step * (mode === "battle" ? 1 : 1 - swing / 2 + Math.random() * swing);
         i += 1;
       }
     };
