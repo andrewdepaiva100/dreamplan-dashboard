@@ -17,6 +17,7 @@ import {
 } from "./content";
 import { EMPTY_SAVE, type QuestSave } from "./save";
 import {
+  HD,
   SOLID_TILES,
   T,
   TILE,
