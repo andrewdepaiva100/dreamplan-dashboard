@@ -201,6 +201,7 @@ export class QuestScene extends Phaser.Scene {
 
 
 
+    this.realmEnteredAt = this.time.now;
     try {
       this.buildZone(this.save.current_zone);
     } catch (err) {
