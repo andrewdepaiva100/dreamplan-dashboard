@@ -303,15 +303,16 @@ export class QuestScene extends Phaser.Scene {
   // ZONE CONSTRUCTION
   // =======================================================================
 
-  private makeMap(base: number, seed: number, decorate: (d: number[][]) => void) {
+  private makeMap(_base: number, seed: number, decorate: (d: number[][]) => void) {
     const rnd = irnd(seed);
     const data: number[][] = [];
     for (let y = 0; y < this.mapH; y++) {
       const row: number[] = [];
       for (let x = 0; x < this.mapW; x++) {
         const edge = x === 0 || y === 0 || x === this.mapW - 1 || y === this.mapH - 1;
-        // full-colour ground: lush meadow mixed with the zone's own base tile
-        row.push(edge ? T.WALL : rnd() < 0.5 ? T.MEADOW : base);
+        // one continuous lush meadow across the whole realm, flecked with
+        // blooming grass so every act shares the same green
+        row.push(edge ? T.WALL : rnd() < 0.14 ? T.BLOOM : T.MEADOW);
       }
       data.push(row);
     }
@@ -788,14 +789,16 @@ export class QuestScene extends Phaser.Scene {
     for (const [x, y] of opts.bridges ?? []) {
       this.add.sprite(this.wx(x), this.wy(y), "bridge").setDepth(3).setAlpha(0.96);
     }
+    const flowerTints = [0xffffff, 0xffd7e5, 0xfff0bf, 0xd7e0ff, 0xffc2a1];
     for (let i = 0; i < (opts.flowers ?? 0); i++) {
       const tx = 4 + rnd() * (DESIGN_W - 8);
       const ty = 4 + rnd() * (DESIGN_H - 8);
       this.add
         .sprite(this.wx(tx), this.wy(ty), "flowers")
         .setDepth(4)
-        .setAlpha(0.9)
-        .setScale(0.8 + rnd() * 0.5);
+        .setAlpha(0.92)
+        .setTint(flowerTints[Math.floor(rnd() * flowerTints.length)]!)
+        .setScale(0.8 + rnd() * 0.6);
     }
     if (opts.border) {
       for (let x = 2; x < DESIGN_W - 2; x += 2) {
@@ -1104,7 +1107,7 @@ export class QuestScene extends Phaser.Scene {
         [60, 51],
         [60, 82],
       ],
-      flowers: 90,
+      flowers: 240,
       border: true,
     });
 
@@ -1433,7 +1436,7 @@ export class QuestScene extends Phaser.Scene {
         [58, 68],
         [76, 68],
       ],
-      flowers: 120,
+      flowers: 300,
     });
 
     this.addLandmark(
@@ -1681,7 +1684,7 @@ export class QuestScene extends Phaser.Scene {
         [12, 46, 6],
         [96, 70, 6],
       ],
-      flowers: 100,
+      flowers: 260,
       border: true,
     });
 
@@ -1840,7 +1843,7 @@ export class QuestScene extends Phaser.Scene {
         [40, 70],
         [92, 70],
       ],
-      flowers: 40,
+      flowers: 140,
     });
     this.addLandmark(
       "landmark-cathedral",
