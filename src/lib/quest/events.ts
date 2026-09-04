@@ -60,6 +60,7 @@ export type ModalPayload =
   | { type: "vault" }
   | { type: "info"; title: string; body: string }
   | { type: "guide" }
+  | { type: "guidetalk"; name: string; pages: string[]; weaponId?: string; line: string }
   | { type: "weapon"; weaponId: string; speaker: string; line: string }
   | { type: "directions"; title: string; lines: string[] }
   | { type: "guest"; id: string; name: string; role?: string; lines: string[] }

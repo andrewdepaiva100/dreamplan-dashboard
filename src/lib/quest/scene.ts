@@ -1529,9 +1529,6 @@ export class QuestScene extends Phaser.Scene {
   }
 
   private spawnGuideAndSignpost(tx: number, ty: number) {
-    this.addInteractable(this.wx(tx), this.wy(ty), "guide", "guide", "Read the Realm Map", {
-      radius: 88,
-    });
     this.addInteractable(this.wx(tx - 4), this.wy(ty), "signpost", "signpost", "Read the directions", {
       radius: 84,
     });
@@ -2808,10 +2805,11 @@ export class QuestScene extends Phaser.Scene {
           break;
         }
         this.openModal({
-          type: fresh ? "weapon" : "info",
-          ...(fresh
-            ? { weaponId: g.weapon, speaker: g.name, line: g.line }
-            : { title: g.name, body: g.line }),
+          type: "guidetalk",
+          name: g.name,
+          pages: fresh ? g.pages : [g.line],
+          line: g.line,
+          ...(fresh ? { weaponId: g.weapon } : {}),
         } as ModalPayload);
         break;
       }

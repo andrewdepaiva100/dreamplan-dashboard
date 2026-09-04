@@ -546,31 +546,77 @@ export const BLACKSMITH = {
   repeat: "The forge stays lit for you. That bow of yours will hold — vine never snaps when it's strung with care.",
 };
 
-export const ACT_GUIDES: Record<ZoneId, { name: string; weapon: string; line: string }> = {
+export const ACT_GUIDES: Record<
+  ZoneId,
+  { name: string; weapon: string; line: string; pages: string[] }
+> = {
   sunlit_shores: {
     name: "Wren of the Shores",
     weapon: "spark-wand",
     line: "Welcome, Bringer of Peace. Follow the road east to the River Gate Temple — the Warden of Rushing Water guards the Lantern there. Take my Radiant Spark Wand; its light is louder than any worry.",
+    pages: [
+      "Oh — you're awake. Steady now, don't rush to your feet. I'm Wren, keeper of these shores. I've been sitting on this rock since before sunrise waiting for you, because the sea told me someone was coming today, and the sea has never once lied to me.",
+      "Your name is Maria. You'll want to hold on to that, because this realm has a habit of asking you who you are. This is the Realm of the Golden Ring — five lands laid end to end like beads on a chain, and every one of them was built out of something Andrew feels about you.",
+      "Andrew. Yes. He's the reason all this exists. He's waiting at the far end of the chain, in a little stone cathedral under a stained-glass window, and he cannot come to you — that's the rule of this place. The road only runs one way, and it has to be walked by you.",
+      "Here's what you're gathering. Five Relics, one hidden in each land. They aren't treasure, they're truths — the Lantern of Quiet Care, the Anchor of Comfort, the Bloom of Reflection, the Shield of Unshakable Faith, the Seal of Perfect Peace. Each one holds something Andrew has been trying to tell you.",
+      "There are also five sealed Envelopes tucked away where the world gets quiet — behind waterfalls, inside hedges, on a patio table, at the summit, and one last one in the cathedral itself. They're letters. Love, peace, patience, kindness, loyalty. Find them and read them slowly. That's not a side quest, that's the whole point.",
+      "Now the hard part. Each land is guarded. Sorrow here takes shape and walks around — the Warden of Rushing Water in this one, and worse further on: doubt, stress, weariness. They are not evil, Maria. They are the things that try to convince you that you are too much or not enough. You will beat them by refusing to believe them.",
+      "That's why I have this for you. The Radiant Spark Wand. Swing it and it throws light, not blades — every creature it touches remembers it was gentle once and turns back into petals. You'll find better weapons from the guides ahead and from the blacksmith. Keep them all; you can swap any time in your Armory.",
+      "Watch your hearts in the top corner. Take five hits and you'll wake back at the start of the land — nothing lost but time. Rest stones hum when you stand near them and give the hearts back. So does your house: there's a home in every land with a hearth to cook on, a chest to store what you gather and a bed to sleep the night away.",
+      "Speaking of night — the sun here runs a real day. Seven in the morning to seven at night is daylight; after that the lamps come on and the world goes quiet and a little braver. Animals wander the grass; hunt them if you need food, cook the meat at your hearth, eat it when your hearts run low.",
+      "Your road today: follow the coastal path east, past the fishing stones, until you reach the River Gate Temple. Go inside. The Warden is in there with the Lantern of Quiet Care. Don't be frightened by how loud it is — loud things are usually the most afraid.",
+      "One more thing, and then I'll let you go. Every land has a signpost if you lose your bearings, and the map button in the corner opens the whole realm at once. You are not lost, Maria. You're expected. Go on — he's been waiting a long time.",
+    ],
   },
   wedding_garden: {
     name: "Ivy the Gardener",
     weapon: "floral-bow",
     line: "The promenade runs straight to the Conservatory — no mazes here, just open beds and light. Four seasonal keys wake its doors, and the Stress Spectre waits inside.",
+    pages: [
+      "Mind the beds, love — mind the beds. There. I'm Ivy, and everything you can see growing here I put in the ground myself. Welcome to the Wedding Garden, the second land of the chain.",
+      "This place grew out of one specific afternoon: the day Andrew first pictured you walking down an aisle. That's why every path here is straight and open, no mazes, nothing hidden from you. He didn't want you to have to guess.",
+      "Two things are buried in this garden. The Anchor of Comfort and the Bloom of Reflection — two relics in one land, which never happens anywhere else. And an envelope, tucked into the hedge where the wind doesn't reach.",
+      "The Conservatory at the top of the promenade is locked with four seasonal keys — spring, summer, autumn, winter — scattered around the garden beds. Collect all four and the glass doors open. The Stress Spectre is what's waiting inside, and she is fast, so keep moving.",
+      "Take the Floral Bow. Vine-strung, fires from a distance, and every arrow blooms where it lands — you can fight the Spectre without ever letting her close. Keep your old wand too; some days a short reach is the kinder one.",
+      "Rest stone's by the arbour, your house is just west, and the wedding guests wandering the lawn will all talk to you. Talk back. They have things to say about the two of you that you have never heard.",
+    ],
   },
   the_haven: {
     name: "Marlowe the Bellkeeper",
     weapon: "lightblade",
     line: "Haven is loud today. The Clamour of Doubt paces the town hall steps and Andrew waits by the fountain. Take the Lightblade — it cuts through noise, never through hearts.",
+    pages: [
+      "Marlowe. Bellkeeper. Third land — welcome to the Haven, and I'll be honest with you: it's loud today.",
+      "This is the town Andrew built in his head for the ordinary years. Not the wedding, not the proposal — the Tuesdays. Groceries, coffee going cold, the two of you arguing about nothing and laughing about it by evening. That's what these streets are made of.",
+      "The Shield of Unshakable Faith is here, and so is the third envelope, out on the patio where you two would have taken your long talks. And Andrew — the real Andrew, or as close as this realm can hold — is waiting by the fountain. Go to him before you fight anything. Please.",
+      "The Clamour of Doubt paces the town hall steps. It's the voice that says you're not doing enough, that you're behind, that everyone else has it figured out. It doesn't hit hard. It just doesn't stop. Patience beats it, not fury.",
+      "Take the Lightblade. It cuts through noise and never through hearts. And take the Memory Stone by the fountain seriously when you find it — that one's about the day he asked you.",
+    ],
   },
   starry_ascent: {
     name: "Astra the Stargazer",
     weapon: "starlight-censer",
     line: "Listen closely, this peak has a lock on it. Three crystal pillars stand across the plateau, and each one turns through three colours: blue, gold, then rose. Only when all three burn warm gold at the same time does the Celestial Staircase form and the Seal of Perfect Peace become reachable — that Seal is the only thing that opens the way to the cathedral. So: turn a pillar, check its colour, move to the next, and come back around until all three are gold. The Weight of Weariness will circle you the whole time; swing this Starlight Censer and it will remember how to rest.",
+    pages: [
+      "Careful on the ledge. I'm Astra — I watch the sky from this plateau, and I've watched you climb the whole way up. Fourth land. You are very nearly there.",
+      "This peak is made of the nights Andrew couldn't sleep for thinking about you. That's why the stars are so close here. Every one of them is a thought he had at two in the morning that he never quite managed to say out loud.",
+      "The Seal of Perfect Peace is at the top, and it is the only thing that opens the road to the cathedral. No Seal, no wedding. So listen carefully to the lock.",
+      "Three crystal pillars stand across the plateau. Each one turns through three colours when you touch it: blue, then gold, then rose, then back to blue. The Celestial Staircase only forms when all three are burning warm gold at the same moment. Turn one, check it, walk to the next, and keep circling until they match.",
+      "The Weight of Weariness circles you the entire time. It's exhaustion given a body — it gets heavier the longer you fight it, which is exactly how the real thing works. Don't out-muscle it. Out-last it.",
+      "Take the Starlight Censer. Swing it and everything it touches remembers how to rest, including you. The fourth envelope is at the summit — read it up there, with the sky right on top of you. That's how it was meant to be read.",
+    ],
   },
   cathedral: {
     name: "Sister Lumen",
     weapon: "ring-of-dawn",
     line: "There is nothing left to fight here, only a door to walk through. Take the Ring of Dawn, and go meet him by the stained glass.",
+    pages: [
+      "Shh. Softly now. I'm Sister Lumen, and this is the last land — you can put your shoulders down.",
+      "There is nothing here to fight. Not one thing. Every creature you met on the road was something that wanted you to turn back, and you didn't, and now they're all behind you.",
+      "Your family is inside. Marcos and Raquel. Silvia and Gustavo. Every friend, every face. Pastor Alcir is at the altar and he'll marry you himself — he's Andrew's grandfather, did you know that? He asked for the honour twice.",
+      "The last envelope is here, and it's the shortest one. Loyalty. He didn't need many words for that one.",
+      "Take the Ring of Dawn. Then go through the doors and stand where the coloured light falls, and let him look at you. That's all that's left, Maria. Go.",
+    ],
   },
 };
 
