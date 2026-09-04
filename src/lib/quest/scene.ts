@@ -2761,6 +2761,8 @@ export class QuestScene extends Phaser.Scene {
   override update(time: number, delta: number) {
     if (!this.player?.body) return;
     if (this.frozen) {
+      this.vel.x = 0;
+      this.vel.y = 0;
       this.player.setVelocity(0, 0);
       return;
     }
@@ -2829,6 +2831,7 @@ export class QuestScene extends Phaser.Scene {
       if (!e.active) continue;
       const d = Phaser.Math.Distance.Between(e.x, e.y, this.player.x, this.player.y);
       const sp = (e.getData("speed") as number) ?? 50;
+      e.setDepth(this.dsort(e.y));
       if (d < 260) {
         const a = Math.atan2(this.player.y - e.y, this.player.x - e.x);
         e.setVelocity(Math.cos(a) * sp, Math.sin(a) * sp);
@@ -2864,6 +2867,31 @@ export class QuestScene extends Phaser.Scene {
 
     // player facing invulnerability blink
     this.player.setAlpha(time < this.invulnUntil ? (Math.floor(time / 80) % 2 ? 0.45 : 1) : 1);
+
+    // ---- 2.5D pass: contact shadows, y-sorted draw order, walk bob --------
+    const sp = Math.hypot(this.vel.x, this.vel.y);
+    this.bobPhase += (sp / SPEED) * delta * 0.014;
+    const bob = sp > 4 ? Math.sin(this.bobPhase) * 1.2 : 0;
+    this.player.setDepth(this.dsort(this.player.y));
+    this.player.setScale(1.1, 1.1 + bob * 0.012);
+    if (this.companion) this.companion.setDepth(this.dsort(this.companion.y));
+    if (this.dog) this.dog.setDepth(this.dsort(this.dog.y));
+    if (this.boss?.active) this.boss.setDepth(this.dsort(this.boss.y));
+    for (const a of this.animals) if (a.active) a.setDepth(this.dsort(a.y));
+    for (let i = this.shadows.length - 1; i >= 0; i--) {
+      const pair = this.shadows[i]!;
+      if (!pair.t.active) {
+        pair.s.destroy();
+        this.shadows.splice(i, 1);
+        continue;
+      }
+      const lift = pair.t === this.player ? Math.abs(bob) : 0;
+      pair.s
+        .setPosition(pair.t.x, pair.t.y + pair.t.displayHeight * 0.36)
+        .setVisible(pair.t.visible)
+        .setScale(1 - lift * 0.05)
+        .setAlpha(pair.t.alpha * 0.9);
+    }
 
     const near = this.nearest();
     this.prompt = near ? near.label : null;
