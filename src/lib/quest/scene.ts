@@ -479,7 +479,9 @@ export class QuestScene extends Phaser.Scene {
 
   /** Places the act's flagship building with a solid footprint and a cutscene trigger. */
   private addLandmark(key: string, tx: number, ty: number, title: string, body: string, footH = 0.22) {
-    const sprite = this.add.sprite(this.wx(tx), this.wy(ty), key).setDepth(11);
+    const sprite = this.add.sprite(this.wx(tx), this.wy(ty), key);
+    sprite.setDepth(this.dsort(sprite.y + sprite.displayHeight * 0.3));
+    this.groundShadow(sprite.x, sprite.y + sprite.displayHeight * 0.34, sprite.displayWidth * 0.7, 0.2);
     if (!this.solidDecor) this.solidDecor = this.physics.add.staticGroup();
     const foot = this.solidDecor.create(
       sprite.x,
@@ -509,7 +511,8 @@ export class QuestScene extends Phaser.Scene {
       for (let i = 0; i < total; i++) {
         const x = this.wx(tx + (rnd() - 0.5) * 12);
         const y = this.wy(ty + (rnd() - 0.5) * 8);
-        const a = this.add.sprite(x, y, key).setDepth(9);
+        const a = this.add.sprite(x, y, key).setDepth(this.dsort(y));
+        this.attachShadow(a, 14, 0.18);
         a.setFlipX(rnd() < 0.5);
         this.animals.push(a);
         const roam = () => {
@@ -536,7 +539,7 @@ export class QuestScene extends Phaser.Scene {
     if ((!this.save.wedding_completed && !allied) || this.save.current_zone === "cathedral") return;
     this.companion = this.add
       .sprite(this.player.x - 24, this.player.y + 8, "andrew-down-0")
-      .setDepth(19)
+      .setDepth(this.dsort(this.player.y))
       .setScale(1.1);
     this.companion.anims.play("andrew-idle-down");
     if (this.save.weapons.includes("love-sword") && this.textures.exists("hand-ally-blade")) {
@@ -772,7 +775,8 @@ export class QuestScene extends Phaser.Scene {
     label: string,
     opts: { id?: string; radius?: number; data?: Record<string, unknown>; depth?: number } = {},
   ) {
-    const obj = this.add.sprite(x, y, texture).setDepth(opts.depth ?? 12);
+    const obj = this.add.sprite(x, y, texture).setDepth(opts.depth ?? this.dsort(y));
+    this.groundShadow(x, y + obj.displayHeight * 0.34, obj.displayWidth * 0.6, 0.18);
     if (texture.startsWith("andrew")) obj.setScale(1.1);
     // Hidden love letters get a tall rose beacon and a generous reach so they
     // are always findable from across a realm.
@@ -832,7 +836,8 @@ export class QuestScene extends Phaser.Scene {
         this.wy(ty),
         key,
       ) as Phaser.Physics.Arcade.Sprite;
-      s.setDepth(10 + ty * 0.01);
+      s.setDepth(this.dsort(s.y + s.displayHeight * 0.3));
+      this.groundShadow(s.x, s.y + s.displayHeight * 0.36, s.displayWidth * 0.66, 0.2);
       const b = s.body as Phaser.Physics.Arcade.StaticBody;
       const h = Math.max(10, s.height * footH);
       b.setSize(s.width * 0.7, h);
@@ -1305,7 +1310,8 @@ export class QuestScene extends Phaser.Scene {
   /** Creates the following dog sprite; it only bites once Maria has swung. */
   private spawnDog(x: number, y: number) {
     if (this.dog) return;
-    const d = this.physics.add.sprite(x, y, "dog").setDepth(13);
+    const d = this.physics.add.sprite(x, y, "dog").setDepth(this.dsort(y));
+    this.attachShadow(d, 16, 0.22);
     d.setCircle(9);
     d.body?.setAllowGravity(false);
     this.dog = d;
@@ -1562,7 +1568,8 @@ export class QuestScene extends Phaser.Scene {
     const x = this.wx(tx);
     const y = this.wy(ty);
     const artKey = this.textures.exists(cfg.art) ? cfg.art : "spectre";
-    this.boss = this.physics.add.sprite(x, y, artKey).setDepth(18).setScale(cfg.scale);
+    this.boss = this.physics.add.sprite(x, y, artKey).setDepth(this.dsort(y)).setScale(cfg.scale);
+    this.attachShadow(this.boss, 46 * cfg.scale, 0.3);
     const halo = this.add.circle(x, y, 54, cfg.color, 0.18).setDepth(17);
     this.tweens.add({
       targets: halo,
