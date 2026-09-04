@@ -2163,6 +2163,7 @@ export class QuestScene extends Phaser.Scene {
       [78, 70],
       [56, 82],
       [78, 82],
+      [90, 82],
     ];
     CATHEDRAL_FRIENDS.forEach((g, i) => {
       const spot = friendSpots[i];

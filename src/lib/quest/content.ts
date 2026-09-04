@@ -1212,4 +1212,16 @@ export const CATHEDRAL_FRIENDS: GuestInfo[] = [
       "I am so excited for the wedding. Best day of the year, easy.",
     ],
   },
+  {
+    id: "andressa",
+    name: "Andressa",
+    art: "andressa",
+    role: "Andrew's sister",
+    prompt: "Greet Andressa",
+    lines: [
+      "Maria! I have been waiting for this day for so long — I am so excited to finally call you family.",
+      "Andrew has talked about you forever, and every time he did he smiled like a little kid. Now I get to see why.",
+      "Welcome to our family. I already love you, and I am so happy you are joining us.",
+    ],
+  },
 ];
