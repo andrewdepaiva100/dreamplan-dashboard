@@ -144,6 +144,9 @@ export type Database = {
       }
       maria_quest_saves: {
         Row: {
+          checkpoint_x: number | null
+          checkpoint_y: number | null
+          checkpoint_zone: string | null
           chest: Json
           created_at: string
           current_zone: string
@@ -163,6 +166,9 @@ export type Database = {
           wedding_completed: boolean
         }
         Insert: {
+          checkpoint_x?: number | null
+          checkpoint_y?: number | null
+          checkpoint_zone?: string | null
           chest?: Json
           created_at?: string
           current_zone?: string
@@ -182,6 +188,9 @@ export type Database = {
           wedding_completed?: boolean
         }
         Update: {
+          checkpoint_x?: number | null
+          checkpoint_y?: number | null
+          checkpoint_zone?: string | null
           chest?: Json
           created_at?: string
           current_zone?: string

@@ -351,6 +351,7 @@ export class QuestScene extends Phaser.Scene {
     g.on(EV.dash, this.dash, this);
     g.on(EV.interact, this.interact, this);
     g.on(EV.resume, this.onResume, this);
+    g.on(EV.respawn, this.respawnAtCheckpoint, this);
     g.on(EV.travel, this.travelTo, this);
     g.on(EV.ping, this.pingObjective, this);
     g.on(EV.equip, this.equipWeapon, this);
@@ -364,6 +365,7 @@ export class QuestScene extends Phaser.Scene {
       g.off(EV.dash, this.dash, this);
       g.off(EV.interact, this.interact, this);
       g.off(EV.resume, this.onResume, this);
+      g.off(EV.respawn, this.respawnAtCheckpoint, this);
       g.off(EV.travel, this.travelTo, this);
       g.off(EV.ping, this.pingObjective, this);
       g.off(EV.equip, this.equipWeapon, this);
@@ -1281,6 +1283,8 @@ export class QuestScene extends Phaser.Scene {
       this.rect(d, 126, 11, 2, 48, T.WALL);
       // grotto inner chamber wall accents
       this.rect(d, 100, 25, 8, 1, T.WALL);
+      // still pool tucked behind the first love letter
+      this.rect(d, 100, 21, 6, 3, T.WATER);
       this.rect(d, 116, 40, 8, 1, T.WALL);
       // western meadows with a winding trail
       this.rect(d, 8, 18, 38, 4, T.PATH);
@@ -1325,6 +1329,7 @@ export class QuestScene extends Phaser.Scene {
         [28, 44],
         [16, 68],
         [28, 68],
+        [22, 56],
       ],
       benches: [
         [22, 26],
@@ -1587,15 +1592,15 @@ export class QuestScene extends Phaser.Scene {
       }
       // grand conservatory on the eastern edge, fronted by a wide open plaza
       this.rect(d, 92, 30, 40, 42, T.MARBLE);
-      this.rect(d, 112, 36, 18, 30, T.MARBLE);
+      this.rect(d, 111, 34, 20, 33, T.MARBLE);
       // wide welcoming entrance — never let the doorway pinch shut
-      this.rect(d, 111, 36, 1, 8, T.HEDGE);
-      this.rect(d, 111, 60, 1, 7, T.HEDGE);
+      this.rect(d, 110, 34, 1, 9, T.HEDGE);
+      this.rect(d, 110, 59, 1, 8, T.HEDGE);
       this.rect(d, 108, 44, 5, 16, T.MARBLE);
       // generous marble walk-up directly in front of the seal door
       this.rect(d, 104, 46, 8, 12, T.MARBLE);
-      this.rect(d, 112, 35, 18, 1, T.HEDGE);
-      this.rect(d, 112, 66, 18, 1, T.HEDGE);
+      this.rect(d, 111, 33, 20, 1, T.HEDGE);
+      this.rect(d, 111, 67, 20, 1, T.HEDGE);
       // central fountain court
       this.rect(d, 54, 46, 24, 16, T.WATER);
       this.rect(d, 53, 45, 26, 1, T.WALL);
@@ -1627,6 +1632,7 @@ export class QuestScene extends Phaser.Scene {
         [30, 50],
         [66, 40],
         [100, 60],
+        [48, 64],
       ],
       benches: [
         [58, 68],
@@ -1768,6 +1774,7 @@ export class QuestScene extends Phaser.Scene {
   /** Ranged attack: a slow, dodgeable bolt of the boss's own colour. */
   private fireBossBolt(shot: { color: number; speed: number }) {
     if (!this.boss?.active || this.bossPhase !== 1 || this.frozen) return;
+    shot = { ...shot, speed: Math.round(shot.speed * 0.8) };
     const dist = Phaser.Math.Distance.Between(this.boss.x, this.boss.y, this.player.x, this.player.y);
     if (dist > 560) return;
     const b = this.bolts.create(this.boss.x, this.boss.y, "bolt") as Phaser.Physics.Arcade.Sprite | null;
@@ -1906,6 +1913,7 @@ export class QuestScene extends Phaser.Scene {
         [48, 66],
         [84, 66],
         [66, 34],
+        [66, 78],
       ],
       benches: [
         [50, 56],
@@ -2072,6 +2080,7 @@ export class QuestScene extends Phaser.Scene {
         [102, 30],
         [30, 78],
         [102, 78],
+        [66, 44],
       ],
       flowers: 0,
     });
@@ -2635,6 +2644,10 @@ export class QuestScene extends Phaser.Scene {
 
   private enterHouse() {
     this.save.time_of_day = this.dayT;
+    // stepping into her home sets the checkpoint for this act
+    this.save.checkpoint_zone = this.save.current_zone;
+    this.save.checkpoint_x = this.player.x;
+    this.save.checkpoint_y = this.player.y;
     this.emitSave();
     this.frozen = true;
     this.cameras.main.fadeOut(280, 0, 0, 0);
@@ -2699,16 +2712,30 @@ export class QuestScene extends Phaser.Scene {
     }
 
     if (this.save.player_health <= 0) {
-      this.save.player_health = 5;
-      this.stamina = 100;
+      this.save.player_health = 0;
       this.emitSave();
-      this.cameras.main.fadeOut(280, 0, 0, 0);
-      this.time.delayedCall(320, () => {
-        this.player.setPosition(this.spawnPoint.x, this.spawnPoint.y);
-        this.cameras.main.fadeIn(320, 0, 0, 0);
-        this.emitToast("You pause, breathe, and begin again. Hearts restored.");
-      });
+      this.pushHud();
+      this.openModal({ type: "gameover" });
     }
+  }
+
+  /** Game Over -> continue: hearts restored, respawn at the last house (or zone start). */
+  private respawnAtCheckpoint() {
+    this.save.player_health = 5;
+    this.stamina = 100;
+    const cp =
+      this.save.checkpoint_zone === this.save.current_zone &&
+      this.save.checkpoint_x != null &&
+      this.save.checkpoint_y != null
+        ? { x: this.save.checkpoint_x, y: this.save.checkpoint_y }
+        : this.spawnPoint;
+    this.emitSave();
+    this.cameras.main.fadeOut(280, 0, 0, 0);
+    this.time.delayedCall(320, () => {
+      this.player.setPosition(cp.x, cp.y + 40);
+      this.cameras.main.fadeIn(320, 0, 0, 0);
+      this.pushHud();
+    });
   }
 
   // =======================================================================
@@ -2859,7 +2886,7 @@ export class QuestScene extends Phaser.Scene {
           return;
         }
         this.removeInteractable(it);
-        this.rectLive(111, 50, 1, 2, T.MARBLE);
+        this.rectLive(110, 50, 2, 2, T.MARBLE);
         this.spawnActBoss(121, 51);
         break;
       }
@@ -3068,9 +3095,11 @@ export class QuestScene extends Phaser.Scene {
     const now = this.time.now;
     if (now < this.invulnUntil) return;
     this.invulnUntil = now + 900;
-    this.save.player_health = Math.max(1, this.save.player_health - 1);
+    this.save.player_health = Math.max(0, this.save.player_health - 1);
     this.cameras.main.shake(140, 0.005);
     this.emitSave();
+    this.pushHud();
+    if (this.save.player_health <= 0) this.openModal({ type: "gameover" });
   }
 
   private collectRelic(it: Interactable) {

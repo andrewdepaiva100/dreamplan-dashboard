@@ -22,6 +22,8 @@ export const EV = {
   music: "quest:music",
   /** React -> scene: inventory action (eat / cook / stash / take / sleep / leave). */
   item: "quest:item",
+  /** React -> scene: continue from checkpoint after a game over. */
+  respawn: "quest:respawn",
 } as const;
 
 export type HudState = {
@@ -53,6 +55,7 @@ export type HudState = {
 };
 
 export type ModalPayload =
+  | { type: "gameover" }
   | { type: "relic"; relicId: string }
   | { type: "envelope"; envelopeId: string }
   | { type: "memory" }

@@ -305,10 +305,10 @@ export function buildSprites(scene: Phaser.Scene) {
   scaled(scene, "andrew-ceremony", "andrew-ceremony", 25, 39);
 
   // ---- ENEMIES ----------------------------------------------------------
-  tinted(scene, "enemy-distraction", "enemy", 22, 22, "#9ba0ad");
-  tinted(scene, "enemy-overwhelm", "enemy", 22, 22, "#7d6cb0");
-  tinted(scene, "enemy-rush", "enemy", 22, 22, "#b56a62");
-  tinted(scene, "enemy-weariness", "enemy", 22, 22, "#5f7080");
+  tinted(scene, "enemy-distraction", "enemy", 22, 22, "#58a6e8");
+  tinted(scene, "enemy-overwhelm", "enemy", 22, 22, "#9d68e0");
+  tinted(scene, "enemy-rush", "enemy", 22, 22, "#e86a58");
+  tinted(scene, "enemy-weariness", "enemy", 22, 22, "#4fb08a");
   scaled(scene, "spectre", "spectre", 48, 48);
 
   // ---- PICKUPS / PROPS / NPCS -------------------------------------------
@@ -405,6 +405,7 @@ export function buildSprites(scene: Phaser.Scene) {
 
   // ---- WEAPON-IN-HAND overlays (procedural, tinted per weapon) -----------
   const HAND: Record<string, { blade: string; grip: string; kind: "sword" | "wand" | "bow" | "ring" }> = {
+    "ember-blade": { blade: "#ffa14a", grip: "#5c3a22", kind: "sword" },
     "spark-wand": { blade: "#ffd977", grip: "#8a6a34", kind: "wand" },
     "floral-bow": { blade: "#ff9ec4", grip: "#6d4d2c", kind: "bow" },
     lightblade: { blade: "#bfe3ff", grip: "#c8a24a", kind: "sword" },

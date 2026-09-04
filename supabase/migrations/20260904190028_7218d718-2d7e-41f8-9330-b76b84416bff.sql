@@ -1,0 +1,1 @@
+ALTER TABLE public.maria_quest_saves ADD COLUMN IF NOT EXISTS checkpoint_zone text, ADD COLUMN IF NOT EXISTS checkpoint_x double precision, ADD COLUMN IF NOT EXISTS checkpoint_y double precision;

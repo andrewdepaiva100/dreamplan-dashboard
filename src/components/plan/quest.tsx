@@ -1484,10 +1484,65 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
 
       {/* modals */}
       {modal?.type === "relic" && relic ? (
-        <GlassPanel title={relic.name} onClose={closeModal}>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-gold">{relic.note}</p>
-          <p className="font-serif-italic italic">“{relic.card}”</p>
-        </GlassPanel>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div
+            className="relative w-full max-w-md overflow-hidden rounded-[22px] p-[2px] shadow-2xl"
+            style={{
+              background:
+                "linear-gradient(135deg, #f7e6b0 0%, #b8912f 30%, #f3d489 55%, #8a6a1c 80%, #f7e6b0 100%)",
+            }}
+          >
+            <div
+              className="relative rounded-[20px] px-7 py-8 text-center"
+              style={{
+                background:
+                  "radial-gradient(130% 100% at 50% 0%, #fff9e8 0%, #f6ead0 55%, #ecdab4 100%)",
+              }}
+            >
+              <div className="pointer-events-none absolute inset-2 rounded-[16px] border border-[#d9c49a]/70" />
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[#c9a94f] bg-[radial-gradient(circle_at_35%_30%,#fff3cf,#e3c478)] text-2xl shadow-md">
+                ✦
+              </div>
+              <p className="text-[10px] uppercase tracking-[0.35em] text-[#a8905f]">{relic.note}</p>
+              <p className="mt-2 font-serif-italic text-3xl italic text-[#7a5a1e]">{relic.name}</p>
+              <div className="mx-auto my-4 h-px w-2/3 bg-gradient-to-r from-transparent via-[#c9a94f] to-transparent" />
+              <p className="font-serif-italic text-[15px] leading-7 text-[#3a3020]">“{relic.card}”</p>
+              <div className="mx-auto my-4 h-px w-2/3 bg-gradient-to-r from-transparent via-[#c9a94f] to-transparent" />
+              <button
+                type="button"
+                onClick={closeModal}
+                className="rounded-full bg-[#2c3350] px-8 py-2.5 text-sm font-semibold text-[#f7ecd6] transition hover:bg-[#3a4368] active:scale-95"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {modal?.type === "gameover" ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-sm overflow-hidden rounded-[22px] border border-[#5a2540]/60 bg-[#160a14] px-8 py-10 text-center shadow-2xl">
+            <div className="pointer-events-none absolute inset-2 rounded-[16px] border border-[#7a3a55]/40" />
+            <p className="text-[10px] uppercase tracking-[0.4em] text-[#b06a86]">The realm dims</p>
+            <p className="mt-2 font-serif-italic text-4xl italic text-[#f0d8e2]">Game Over</p>
+            <div className="mx-auto my-5 h-px w-2/3 bg-gradient-to-r from-transparent via-[#7a3a55] to-transparent" />
+            <p className="text-sm leading-6 text-[#c9a3b5]">
+              Maria's strength gives out — but home remembers her. Wake beside the last hearth you
+              visited, hearts restored.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                emit(EV.respawn);
+                closeModal();
+              }}
+              className="mt-6 rounded-full bg-[#7a3a55] px-8 py-2.5 text-sm font-semibold text-[#f7e6ec] transition hover:bg-[#8f4a68] active:scale-95"
+            >
+              Wake at your last rest
+            </button>
+          </div>
+        </div>
       ) : null}
 
       {modal?.type === "envelope" && envelope ? (
