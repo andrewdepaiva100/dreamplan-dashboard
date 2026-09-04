@@ -52,6 +52,20 @@ A HUD badge shows whether the shield is ready or recharging.
 - Collected hearts respawn when the act is re-entered, so she is never stranded at
   low health.
 
+## 7. Distinct boss designs with a pre-fight conversation
+
+Each act's boss gets its own custom artwork and personality instead of a shared
+silhouette — for example a shadowed Doubt-wraith on the shores, a thorn-crowned
+garden warden, a hollow house-spirit in the Haven, a star-eater on the ascent, and a
+veiled figure at the cathedral. Each gets an idle animation, a colored aura and its
+own attack pattern flavour.
+
+Before every boss fight, a conversation panel opens: the boss speaks its taunt, then
+Maria picks one of three replies (for example bold, gentle, or faith-filled). The
+choice sets the fight's opening tone — a small starting advantage such as extra
+stamina, a slower boss, or a heart restored — and the boss answers back before combat
+begins. Choices are remembered for the ending recap.
+
 ## Technical notes
 
 - `src/lib/quest/scene.ts`: portal overlap trigger + single guaranteed portal per act,
@@ -69,3 +83,8 @@ A HUD badge shows whether the shield is ready or recharging.
   so no database change is needed.
 - Verified after the change by running the game in a browser: clear Act I, walk into
   the portal, confirm Act II loads, confirm hearts heal and the sword renders in hand.
+- Boss work: new boss art per act in `src/assets/quest/`, boss definitions with taunt
+  plus three reply options and their effects in `src/lib/quest/content.ts`, a
+  `boss-dialogue` modal payload in `src/lib/quest/events.ts` rendered in
+  `src/components/plan/quest.tsx`, and a gate in `scene.ts` so the encounter only
+  starts after a reply is chosen.
