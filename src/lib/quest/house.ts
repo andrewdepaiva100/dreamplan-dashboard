@@ -254,12 +254,31 @@ export class QuestHouseScene extends Phaser.Scene {
       });
     }
 
+    // ---- lighting pass: warm hearth glow, floor sheen, deep corners --------
+    const glow = this.add.graphics().setDepth(31).setBlendMode(Phaser.BlendModes.ADD);
+    for (let i = 12; i > 0; i--) {
+      glow.fillStyle(0xff9a3c, 0.018);
+      glow.fillEllipse(cx, fy + 30, i * 62, i * 40);
+    }
+    const sheen = this.add.graphics().setDepth(30);
+    for (let i = 8; i > 0; i--) {
+      sheen.fillStyle(0xffe6bb, 0.012);
+      sheen.fillEllipse(cx, fy + fh * 0.55, i * 90, i * 34);
+    }
     // gentle vignette so the room edges fall away
     const vig = this.add.graphics().setDepth(33);
-    for (let i = 0; i < 10; i++) {
-      vig.fillStyle(0x1a0f08, 0.045);
+    for (let i = 0; i < 16; i++) {
+      vig.fillStyle(0x140b06, 0.04);
       vig.fillRect(ox + i * 4, oy + i * 4, ROOM_W - i * 8, ROOM_H - i * 8);
     }
+    // picture-rail trim + ceiling shade for a finished, built room
+    const trim = this.add.graphics().setDepth(4);
+    trim.fillStyle(0x3d2917, 1);
+    trim.fillRect(ox, oy + WALL_H - 34, ROOM_W, 6);
+    trim.fillStyle(0xd9bd96, 0.5);
+    trim.fillRect(ox, oy + WALL_H - 28, ROOM_W, 3);
+    trim.fillStyle(0x000000, 0.18);
+    trim.fillRect(ox, oy, ROOM_W, 30);
 
     // ---- door back outside ------------------------------------------------
     const dw = 104;
