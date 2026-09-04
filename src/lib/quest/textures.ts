@@ -347,7 +347,7 @@ export function buildSprites(scene: Phaser.Scene) {
     "lantern-wand": { blade: "#ffd977", grip: "#8a6a34", kind: "wand" },
     "bow-of-patience": { blade: "#e6cfa4", grip: "#6d4d2c", kind: "bow" },
     "censer-of-calm": { blade: "#dfe7ff", grip: "#9aa4c4", kind: "wand" },
-    "ring-of-dawn": { blade: "#ffe6a8", grip: "#e2b champagne", kind: "ring" },
+    "ring-of-dawn": { blade: "#ffe6a8", grip: "#c9a24a", kind: "ring" },
   };
   for (const [id, spec] of Object.entries(HAND)) {
     drawTo(scene, `hand-${id}`, 12, 26, (ctx) => {
@@ -414,7 +414,7 @@ export function buildSprites(scene: Phaser.Scene) {
     ctx.closePath();
     const g = ctx.createLinearGradient(0, 0, 0, 30);
     g.addColorStop(0, "#ffe9b0");
-    g.addColorStop(1, "#d5a martial");
+    g.addColorStop(1, "#d5a34a");
     ctx.fillStyle = "#f3d489";
     ctx.fill();
     ctx.strokeStyle = "#a8783a";
