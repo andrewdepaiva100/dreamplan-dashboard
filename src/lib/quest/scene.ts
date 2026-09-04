@@ -388,6 +388,27 @@ export class QuestScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * 2.5D depth sorting: everything standing on the ground is drawn in the
+   * order its feet appear, so Maria walks *behind* a tree she is above and
+   * *in front* of one she has passed.
+   */
+  dsort(y: number) {
+    return 12 + y * 0.01;
+  }
+
+  /** Soft contact shadow that grounds an actor in the 2.5D world. */
+  private groundShadow(x: number, y: number, w: number, alpha = 0.24) {
+    return this.add.ellipse(x, y, w, w * 0.42, 0x0a1226, alpha).setDepth(7);
+  }
+
+  /** Attaches a contact shadow that tracks a moving actor every frame. */
+  private attachShadow(t: Phaser.GameObjects.Sprite, w: number, alpha = 0.24) {
+    const s = this.groundShadow(t.x, t.y + t.displayHeight * 0.36, w, alpha);
+    this.shadows.push({ s, t });
+    return s;
+  }
+
   private addPlayer(tx: number, ty: number) {
     const x = this.wx(Phaser.Math.Clamp(tx, 2, DESIGN_W - 3));
     const y = this.wy(Phaser.Math.Clamp(ty, 2, DESIGN_H - 3));
@@ -399,7 +420,8 @@ export class QuestScene extends Phaser.Scene {
     this.player.setScale(1.1);
     this.player.setSize(13, 11).setOffset(5.5, 21.5);
     this.player.setCollideWorldBounds(true);
-    this.player.setDepth(20);
+    this.player.setDepth(this.dsort(y));
+    this.attachShadow(this.player, 22, 0.28);
     this.promptText = this.add
       .text(this.player.x, this.player.y - 36, "", {
         fontFamily: "system-ui, sans-serif",
