@@ -36,6 +36,10 @@ import portraitRaquel from "@/assets/quest/portrait-raquel.jpg";
 import portraitMarcos from "@/assets/quest/portrait-marcos.jpg";
 import portraitSilvia from "@/assets/quest/portrait-silvia.jpg";
 import portraitGustavo from "@/assets/quest/portrait-gustavo.jpg";
+import portraitAndre from "@/assets/quest/portrait-andre.jpg";
+import portraitPhillip from "@/assets/quest/portrait-phillip.jpg";
+import portraitItalo from "@/assets/quest/portrait-italo.jpg";
+import portraitGabe from "@/assets/quest/portrait-gabe.jpg";
 
 
 const GUEST_PORTRAITS: Record<string, string> = {
@@ -47,6 +51,19 @@ const GUEST_PORTRAITS: Record<string, string> = {
   marcos: portraitMarcos,
   silvia: portraitSilvia,
   gustavo: portraitGustavo,
+  andre: portraitAndre,
+  phillip: portraitPhillip,
+  italo: portraitItalo,
+  gabe: portraitGabe,
+};
+
+/** Wax-seal colour + display word per themed love letter. */
+const ENVELOPE_THEMES: Record<string, { word: string; seal: string }> = {
+  waterfall: { word: "Love", seal: "#c2405a" },
+  hedge: { word: "Peace", seal: "#3f7a63" },
+  patio: { word: "Patience", seal: "#a8762c" },
+  summit: { word: "Kindness", seal: "#8455a8" },
+  cathedral: { word: "Loyalty", seal: "#b8912f" },
 };
 
 
@@ -982,9 +999,40 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       ) : null}
 
       {modal?.type === "envelope" && envelope ? (
-        <GlassPanel title={envelope.title} onClose={closeModal}>
-          <p>{envelope.letter}</p>
-        </GlassPanel>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div
+            className="quest-letter relative w-full max-w-lg overflow-hidden rounded-[20px] border border-[#d9c49a] p-6 shadow-2xl sm:p-8"
+            style={{
+              background:
+                "radial-gradient(120% 90% at 20% 0%, #fffaf0 0%, #f7ecd6 55%, #efdfc2 100%)",
+            }}
+          >
+            <div
+              className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full text-[10px] font-semibold uppercase tracking-[0.15em] text-white shadow-md"
+              style={{ background: ENVELOPE_THEMES[envelope.id]?.seal ?? "#b8912f" }}
+            >
+              A&amp;M
+            </div>
+            <p className="text-center font-serif-italic text-3xl italic text-[#7a5a1e]">
+              {ENVELOPE_THEMES[envelope.id]?.word ?? "Letter"}
+            </p>
+            <p className="mt-1 text-center text-[10px] uppercase tracking-[0.3em] text-[#a8905f]">
+              {envelope.title}
+            </p>
+            <div className="my-4 h-px w-full bg-gradient-to-r from-transparent via-[#c9a94f] to-transparent" />
+            <p className="max-h-[46vh] overflow-y-auto whitespace-pre-line font-serif-italic text-[15px] leading-7 text-[#3a3020]">
+              {envelope.letter}
+            </p>
+            <div className="my-4 h-px w-full bg-gradient-to-r from-transparent via-[#c9a94f] to-transparent" />
+            <button
+              type="button"
+              onClick={closeModal}
+              className="mx-auto block rounded-full bg-[#2c3350] px-8 py-2.5 text-sm font-semibold text-[#f7ecd6] transition hover:bg-[#3a4368] active:scale-95"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
       ) : null}
 
       {modal?.type === "memory" ? (
