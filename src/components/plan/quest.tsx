@@ -18,6 +18,8 @@ import {
   WEAPON_BY_ID,
   WEAPONS,
   ZONES,
+  FOOD_ITEMS,
+  FOOD_BY_ID,
 } from "@/lib/quest/content";
 import {
   EMPTY_SAVE,
@@ -139,7 +141,7 @@ function LiveMapCanvas({ snap }: { snap: MapSnapshot }) {
 }
 
 /** Gentle procedural score — one warm chord loop per act, no audio files. */
-function useActMusic(zone: ZoneId | undefined, muted: boolean) {
+function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode = "explore") {
   const ctxRef = useRef<AudioContext | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
   useEffect(() => {
@@ -158,19 +160,40 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean) {
       starry_ascent: [220.0, 277.2, 329.6],
       cathedral: [261.6, 392.0, 523.3],
     };
-    const notes = chords[zone] ?? chords["sunlit_shores"]!;
+    const BATTLE = [146.8, 174.6, 233.1];
+    const HOME = [196.0, 246.9, 293.7];
+    const notes =
+      mode === "battle" ? BATTLE : mode === "home" ? HOME : (chords[zone] ?? chords["sunlit_shores"]!);
     const master = ctx.createGain();
     master.gain.value = 0.0001;
     master.connect(ctx.destination);
-    master.gain.exponentialRampToValueAtTime(0.05, ctx.currentTime + 2);
+    master.gain.exponentialRampToValueAtTime(mode === "battle" ? 0.085 : 0.05, ctx.currentTime + (mode === "battle" ? 0.5 : 2));
+    // battle adds a low heartbeat pulse under the chord
+    let pulse: OscillatorNode | null = null;
+    if (mode === "battle") {
+      pulse = ctx.createOscillator();
+      pulse.type = "sine";
+      pulse.frequency.value = 73.4;
+      const pg = ctx.createGain();
+      pg.gain.value = 0.0;
+      const beat = ctx.createOscillator();
+      beat.type = "square";
+      beat.frequency.value = 2.2;
+      const bg = ctx.createGain();
+      bg.gain.value = 0.5;
+      beat.connect(bg).connect(pg.gain);
+      pulse.connect(pg).connect(master);
+      pulse.start();
+      beat.start();
+    }
     const oscs = notes.map((f, i) => {
       const o = ctx.createOscillator();
-      o.type = i === 0 ? "sine" : "triangle";
+      o.type = mode === "battle" ? "sawtooth" : i === 0 ? "sine" : "triangle";
       o.frequency.value = f;
       const g = ctx.createGain();
       g.gain.value = 0.32 / (i + 1);
       const lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.07 + i * 0.03;
+      lfo.frequency.value = (mode === "battle" ? 0.9 : 0.07) + i * 0.03;
       const lg = ctx.createGain();
       lg.gain.value = 0.16;
       lfo.connect(lg).connect(g.gain);
@@ -190,11 +213,16 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean) {
             /* already stopped */
           }
         });
+        try {
+          pulse?.stop();
+        } catch {
+          /* already stopped */
+        }
         master.disconnect();
       }, 700);
     };
     return () => stopRef.current?.();
-  }, [zone, muted]);
+  }, [zone, muted, mode]);
   useEffect(() => () => void ctxRef.current?.close(), []);
 }
 
@@ -205,6 +233,8 @@ function buzz(ms = 18) {
     /* haptics unsupported */
   }
 }
+
+type MusicMode = "explore" | "battle" | "home";
 
 type Screen = "title" | "playing";
 type TitleOverlay = null | "story" | "guide";
@@ -269,6 +299,53 @@ function GlassPanel({
           </button>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+/** Minecraft-style slot grid. Empty slots stay visible so the bag reads as a bag. */
+function ItemGrid({
+  items,
+  slots = 20,
+  selected,
+  onPick,
+}: {
+  items: Record<string, number>;
+  slots?: number;
+  selected?: string | null;
+  onPick?: (id: string) => void;
+}) {
+  const filled = Object.entries(items).filter(([, n]) => n > 0);
+  const cells = Array.from({ length: Math.max(slots, filled.length) }, (_, i) => filled[i] ?? null);
+  return (
+    <div className="grid grid-cols-5 gap-1.5">
+      {cells.map((cell, i) => {
+        const food = cell ? FOOD_BY_ID[cell[0]] : undefined;
+        const on = cell && selected === cell[0];
+        return (
+          <button
+            key={i}
+            type="button"
+            disabled={!cell}
+            onClick={() => cell && onPick?.(cell[0])}
+            title={food?.name ?? "Empty slot"}
+            className={`relative flex aspect-square items-center justify-center rounded-lg border text-xl transition ${
+              on
+                ? "border-gold bg-gold/30"
+                : cell
+                  ? "border-navy/25 bg-white/80 hover:bg-gold/15"
+                  : "border-navy/10 bg-navy/5"
+            }`}
+          >
+            <span>{food?.icon ?? ""}</span>
+            {cell && cell[1] > 1 ? (
+              <span className="absolute bottom-0.5 right-1 text-[10px] font-bold text-navy">
+                {cell[1]}
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -690,8 +767,10 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
   const [actBanner, setActBanner] = useState<string | null>(null);
   const [muted, setMuted] = useState(true);
   const [realm3d, setRealm3d] = useState(false);
+  const [showBag, setShowBag] = useState(false);
+  const [musicMode, setMusicMode] = useState<MusicMode>("explore");
 
-  useActMusic(screen === "playing" ? hud?.zone : undefined, muted);
+  useActMusic(screen === "playing" ? hud?.zone : undefined, muted, musicMode);
 
   // lock page scroll while the full-screen game is up
   useEffect(() => {
@@ -749,6 +828,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
           saveRef.current = s;
           saverRef.current.queue(s);
         });
+        game.events.on(EV.music, (m: MusicMode) => setMusicMode(m));
         game.events.on(EV.toast, (m: string) => setToast(m));
         game.events.on(EV.ceremony, () => setCeremony({ phase: "script", i: 0 }));
       });
@@ -984,6 +1064,9 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
             <div className="mt-2 h-1.5 w-24 overflow-hidden rounded-full bg-white/20">
               <div className="h-full bg-teal" style={{ width: `${hud.stamina}%` }} />
             </div>
+            <p className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white/80">
+              {hud.night ? "🌙" : "☀️"} {hud.clock}
+            </p>
             <div className="mt-1 h-1.5 w-24 overflow-hidden rounded-full bg-white/20">
               <div
                 className="h-full bg-gold"
@@ -1067,6 +1150,23 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
               title="Armory"
             >
               ⚔️
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                buzz();
+                setShowBag(true);
+              }}
+              className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-white/30 bg-[rgba(11,30,61,0.78)] text-sm text-white backdrop-blur"
+              aria-label="Open the backpack"
+              title="Backpack"
+            >
+              🎒
+              {Object.values(hud.inventory ?? {}).reduce((a, b) => a + b, 0) > 0 ? (
+                <span className="absolute -right-1 -top-1 rounded-full bg-gold px-1 text-[9px] font-bold text-navy">
+                  {Object.values(hud.inventory ?? {}).reduce((a, b) => a + b, 0)}
+                </span>
+              ) : null}
             </button>
             <button
               type="button"
@@ -1399,6 +1499,126 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
               </div>
             ))}
           </div>
+        </GlassPanel>
+      ) : null}
+
+      {showBag ? (
+        <GlassPanel title="Backpack" onClose={() => setShowBag(false)}>
+          <p className="text-xs text-navy/70">
+            Everything you've gathered. Tap an item to eat it — raw meat has to be cooked on the
+            hearth at home first.
+          </p>
+          <div className="mt-3">
+            <ItemGrid
+              items={hud?.inventory ?? {}}
+              onPick={(id) => {
+                buzz();
+                emit(EV.item, { action: "eat", id });
+              }}
+            />
+          </div>
+          <div className="mt-3 space-y-1">
+            {FOOD_ITEMS.map((f) => (
+              <p key={f.id} className="text-[11px] text-navy/70">
+                <span className="mr-1">{f.icon}</span>
+                <span className="font-semibold text-navy">{f.name}</span> — {f.blurb}
+              </p>
+            ))}
+          </div>
+        </GlassPanel>
+      ) : null}
+
+      {modal?.type === "chest" ? (
+        <GlassPanel title="Home Chest" onClose={closeModal} wide>
+          <p className="text-xs text-navy/70">
+            Tap in the backpack to store, tap in the chest to take it back out.
+          </p>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-gold">
+                Backpack
+              </p>
+              <ItemGrid
+                items={modal.inventory}
+                slots={10}
+                onPick={(id) => {
+                  buzz();
+                  emit(EV.item, { action: "stash", id });
+                }}
+              />
+            </div>
+            <div>
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-gold">
+                Chest
+              </p>
+              <ItemGrid
+                items={modal.chest}
+                slots={10}
+                onPick={(id) => {
+                  buzz();
+                  emit(EV.item, { action: "take", id });
+                }}
+              />
+            </div>
+          </div>
+        </GlassPanel>
+      ) : null}
+
+      {modal?.type === "hearth" ? (
+        <GlassPanel title="The Hearth" onClose={closeModal}>
+          <p className="text-xs text-navy/70">
+            The fire is warm. Cook what you brought home — cooked meat restores two hearts.
+          </p>
+          <div className="mt-3 space-y-2">
+            {FOOD_ITEMS.filter((f) => f.cookedId).map((f) => {
+              const have = modal.inventory[f.id] ?? 0;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  disabled={have <= 0}
+                  onClick={() => {
+                    buzz();
+                    emit(EV.item, { action: "cook", id: f.id });
+                  }}
+                  className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left ${
+                    have > 0 ? "border-gold/50 bg-white/80" : "border-navy/15 bg-white/40 opacity-60"
+                  }`}
+                >
+                  <span className="text-2xl">{f.icon}</span>
+                  <span className="flex-1">
+                    <span className="block text-sm font-bold text-navy">
+                      Cook {f.name} ({have})
+                    </span>
+                    <span className="block text-[11px] text-navy/70">
+                      Becomes {FOOD_BY_ID[f.cookedId!]?.name}.
+                    </span>
+                  </span>
+                  <span className="text-lg">🔥</span>
+                </button>
+              );
+            })}
+          </div>
+        </GlassPanel>
+      ) : null}
+
+      {modal?.type === "bed" ? (
+        <GlassPanel title="Your Bed" onClose={closeModal}>
+          <p className="text-sm text-navy/80">
+            Soft quilts, quiet windows. Sleeping restores every heart and carries you through to
+            morning.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              buzz(40);
+              emit(EV.item, { action: "sleep" });
+              closeModal();
+            }}
+            className="mt-4 w-full rounded-xl bg-navy px-4 py-3 text-sm font-semibold text-white"
+          >
+            😴 Sleep until morning
+          </button>
         </GlassPanel>
       ) : null}
 

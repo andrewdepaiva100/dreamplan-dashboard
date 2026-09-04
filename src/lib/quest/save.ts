@@ -11,6 +11,12 @@ export type QuestSave = {
   weapons: string[];
   equipped_weapon: string | null;
   swift_boots: boolean;
+  /** 0..1 position in the day/night cycle (0 = dawn, 0.5 = dusk). */
+  time_of_day: number;
+  /** Backpack contents: item id -> count. */
+  inventory: Record<string, number>;
+  /** Home chest contents: item id -> count. */
+  chest: Record<string, number>;
 };
 
 export const SLOT = "maria";
@@ -25,6 +31,9 @@ export const EMPTY_SAVE: QuestSave = {
   weapons: [],
   equipped_weapon: null,
   swift_boots: false,
+  time_of_day: 0.38,
+  inventory: {},
+  chest: {},
 };
 
 const LOCAL_KEY = "marias-quest-save-v1";
@@ -41,6 +50,16 @@ export function migrateWeapons(save: QuestSave): QuestSave {
       ? save.equipped_weapon
       : "spark-wand";
   return { ...save, weapons, equipped_weapon: equipped };
+}
+
+/** Sanitises a jsonb item bag into a plain id -> positive count map. */
+function asCounts(v: unknown): Record<string, number> {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return {};
+  const out: Record<string, number> = {};
+  for (const [k, n] of Object.entries(v as Record<string, unknown>)) {
+    if (typeof n === "number" && n > 0) out[k] = Math.floor(n);
+  }
+  return out;
 }
 
 function readLocal(): QuestSave | null {
@@ -68,7 +87,7 @@ export async function loadSave(): Promise<QuestSave | null> {
     const { data, error } = await supabase
       .from("maria_quest_saves")
       .select(
-        "current_zone, player_health, relics_collected, secret_envelopes_found, vault_keys_count, wedding_completed, weapons, equipped_weapon, swift_boots",
+        "current_zone, player_health, relics_collected, secret_envelopes_found, vault_keys_count, wedding_completed, weapons, equipped_weapon, swift_boots, time_of_day, inventory, chest",
       )
       .eq("slot", SLOT)
       .maybeSingle();
@@ -88,6 +107,9 @@ export async function loadSave(): Promise<QuestSave | null> {
       weapons: Array.isArray(data.weapons) ? (data.weapons as string[]) : [],
       equipped_weapon: (data.equipped_weapon as string | null) ?? null,
       swift_boots: Boolean(data.swift_boots),
+      time_of_day: typeof data.time_of_day === "number" ? data.time_of_day : 0.38,
+      inventory: asCounts(data.inventory),
+      chest: asCounts(data.chest),
     };
     const migrated = migrateWeapons(remote);
     writeLocal(migrated);
@@ -115,6 +137,9 @@ export async function persistSave(save: QuestSave): Promise<void> {
           weapons: save.weapons,
           equipped_weapon: save.equipped_weapon,
           swift_boots: save.swift_boots,
+          time_of_day: save.time_of_day,
+          inventory: save.inventory,
+          chest: save.chest,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "slot" },

@@ -24,12 +24,16 @@ import {
   CATHEDRAL_FRIENDS,
   PASTOR_ADRIEL,
   LEGENDARY_PICKUPS,
+  FOOD_BY_ID,
+  ANIMAL_HP,
+  HOUSE,
   type GuestInfo,
   type BossConfig,
   ZONES,
   type ZoneId,
 } from "./content";
 import { EMPTY_SAVE, type QuestSave } from "./save";
+import { QuestHouseScene } from "./house";
 import {
   HD,
   SOLID_TILES,
@@ -65,6 +69,8 @@ const SY = MAP_H / DESIGN_H;
 const SPEED = 120;
 /** 2.5D floor tilt: vertical camera squash. 1 = flat top-down, lower = more perspective. */
 const SQUASH = 0.8;
+/** One full sunrise-to-sunrise cycle, in milliseconds. */
+const DAY_MS = 300000;
 const DASH_MS = 170;
 const DASH_COOLDOWN = 2000;
 
@@ -152,6 +158,14 @@ export class QuestScene extends Phaser.Scene {
   /** 2.5D: smoothed walk velocity (acceleration + glide, no snap-stops). */
   private vel = { x: 0, y: 0 };
   private bobPhase = 0;
+  /** 0..1 through the day; 0 = dawn, 0.5 = dusk. */
+  private dayT = 0.38;
+  private nightVeil: Phaser.GameObjects.Rectangle | null = null;
+  private warmLights: Phaser.GameObjects.Sprite[] = [];
+  private bolts!: Phaser.Physics.Arcade.Group;
+  private drops!: Phaser.Physics.Arcade.Group;
+  private bossShotTimer?: Phaser.Time.TimerEvent;
+  private musicMode = "";
 
   constructor() {
     super("quest");
@@ -238,6 +252,10 @@ export class QuestScene extends Phaser.Scene {
     this.shadowGfx = undefined;
     this.vel = { x: 0, y: 0 };
     this.bobPhase = 0;
+    this.dayT = ((this.save.time_of_day ?? 0.38) % 1 + 1) % 1;
+    this.nightVeil = null;
+    this.warmLights = [];
+    this.musicMode = "";
     if (this.save.weapons.length === 0) this.save.weapons = [];
     this.animals = [];
     this.keyBeacons = new Map();
@@ -284,8 +302,22 @@ export class QuestScene extends Phaser.Scene {
     });
     this.decor = this.add.group({ maxSize: 80 });
 
+    this.bolts = this.physics.add.group({ maxSize: 40, runChildUpdate: false });
+    this.drops = this.physics.add.group({ maxSize: 40, runChildUpdate: false });
+    this.buildDayNight();
+    this.addHouse();
+
     this.spawnEnemiesForZone(this.save.current_zone);
 
+    this.physics.add.overlap(this.player, this.bolts, (_p, b) => {
+      const bolt = b as Phaser.Physics.Arcade.Sprite;
+      if (!bolt.active) return;
+      bolt.destroy();
+      this.hurtPlayerDirect();
+    });
+    this.physics.add.overlap(this.player, this.drops, (_p, d) =>
+      this.collectDrop(d as Phaser.Physics.Arcade.Sprite),
+    );
     this.physics.add.collider(this.player, this.layer);
     this.physics.add.collider(this.enemies, this.layer);
     this.physics.add.overlap(this.player, this.enemies, (_p, e) =>
@@ -319,6 +351,7 @@ export class QuestScene extends Phaser.Scene {
     g.on(EV.equip, this.equipWeapon, this);
     g.on(EV.bosschoice, this.onBossChoice, this);
     g.on(EV.companion, this.onCompanionChoice, this);
+    g.on(EV.item, this.onItemAction, this);
 
     this.events.once("shutdown", () => {
       g.off(EV.stick, this.onStick, this);
@@ -331,7 +364,9 @@ export class QuestScene extends Phaser.Scene {
       g.off(EV.equip, this.equipWeapon, this);
       g.off(EV.bosschoice, this.onBossChoice, this);
       g.off(EV.companion, this.onCompanionChoice, this);
+      g.off(EV.item, this.onItemAction, this);
       this.bossTimer?.remove();
+      this.bossShotTimer?.remove();
     });
 
     // ---- camera ----------------------------------------------------------
@@ -592,6 +627,9 @@ export class QuestScene extends Phaser.Scene {
         const x = this.wx(tx + (rnd() - 0.5) * 12);
         const y = this.wy(ty + (rnd() - 0.5) * 8);
         const a = this.add.sprite(x, y, key).setDepth(this.dsort(y));
+        a.setData("hp", ANIMAL_HP);
+        a.setData("maxhp", ANIMAL_HP);
+        a.setData("species", key);
         this.attachShadow(a, 14, 0.18);
         a.setFlipX(rnd() < 0.5);
         this.animals.push(a);
@@ -951,7 +989,10 @@ export class QuestScene extends Phaser.Scene {
       }
     }
 
-    for (const [x, y] of opts.lamps ?? []) solid(x, y, "lamp", 0.22);
+    for (const [x, y] of opts.lamps ?? []) {
+      const lamp = solid(x, y, "lamp", 0.22);
+      this.addLight(lamp.x, lamp.y - 16, 1.1);
+    }
     for (const [x, y] of opts.benches ?? []) solid(x, y, "bench", 0.5);
     for (const [x, y, n] of opts.fences ?? []) {
       for (let i = 0; i < n; i++) solid(x + i * 1.25, y, "fence", 0.6);
@@ -1678,6 +1719,15 @@ export class QuestScene extends Phaser.Scene {
     this.objective = cfg.silent
       ? `${cfg.name} attacks — swing your weapon until it lifts.`
       : `${cfg.name} waits ahead — walk up and hear it out.`;
+    this.bossShotTimer?.remove();
+    if (cfg.projectile) {
+      const shot = cfg.projectile;
+      this.bossShotTimer = this.time.addEvent({
+        delay: shot.every,
+        loop: true,
+        callback: () => this.fireBossBolt(shot),
+      });
+    }
     // gentle waves of minions; never overwhelming
     this.bossTimer = this.time.addEvent({
       delay: zone === "the_haven" ? 3200 : 5200,
@@ -1701,6 +1751,23 @@ export class QuestScene extends Phaser.Scene {
     });
   }
 
+  /** Ranged attack: a slow, dodgeable bolt of the boss's own colour. */
+  private fireBossBolt(shot: { color: number; speed: number }) {
+    if (!this.boss?.active || this.bossPhase !== 1 || this.frozen) return;
+    const dist = Phaser.Math.Distance.Between(this.boss.x, this.boss.y, this.player.x, this.player.y);
+    if (dist > 560) return;
+    const b = this.bolts.create(this.boss.x, this.boss.y, "bolt") as Phaser.Physics.Arcade.Sprite | null;
+    if (!b) return;
+    b.setActive(true).setVisible(true).setDepth(this.dsort(this.boss.y) + 1);
+    b.setTint(shot.color).setScale(1.5);
+    (b.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+    b.setCircle(6, 3, 3);
+    const a = Math.atan2(this.player.y - this.boss.y, this.player.x - this.boss.x);
+    b.setVelocity(Math.cos(a) * shot.speed, Math.sin(a) * shot.speed);
+    this.tweens.add({ targets: b, scale: { from: 1.5, to: 2.1 }, duration: 400, yoyo: true, repeat: -1 });
+    this.time.delayedCall(4200, () => b.active && b.destroy());
+  }
+
   private damageBoss(amount: number) {
     if (!this.boss?.active || this.bossPhase !== 1) return;
     const now = this.time.now;
@@ -1711,6 +1778,7 @@ export class QuestScene extends Phaser.Scene {
     this.boss.setTint(0xffd7e5);
     this.time.delayedCall(120, () => this.boss?.clearTint());
     this.spawnSparkle(this.boss.x, this.boss.y, 0xffd7e5, 10);
+    this.floatText(this.boss.x, this.boss.y - 16, `-${amount}`, "#ffd7e5", true);
     const a = Math.atan2(this.boss.y - this.player.y, this.boss.x - this.player.x);
     this.boss.setVelocity(Math.cos(a) * 140, Math.sin(a) * 140);
     this.time.delayedCall(200, () => this.boss?.setVelocity(0, 0));
@@ -2082,10 +2150,12 @@ export class QuestScene extends Phaser.Scene {
       starry_ascent: { key: "enemy-weariness", count: 6, speed: 28 },
     };
     const c = config[zone]!;
+    // 20% fewer roaming worries — the world breathes, the bosses carry the fight.
+    const target = Math.max(1, Math.round(c.count * 0.8));
     const rnd = irnd(zone.length * 37 + 11);
     let placed = 0;
     let guard = 0;
-    while (placed < c.count && guard++ < 1200) {
+    while (placed < target && guard++ < 1200) {
       const x = Math.floor(rnd() * (this.mapW - 8)) + 4;
       const y = Math.floor(rnd() * (this.mapH - 8)) + 4;
       const tile = this.layer.getTileAt(x, y);
@@ -2257,7 +2327,213 @@ export class QuestScene extends Phaser.Scene {
     (this.enemies.getChildren() as Phaser.Physics.Arcade.Sprite[]).forEach((e) => {
       if (e.active && inArc(e.x, e.y)) this.transformEnemy(e);
     });
+    for (const a of this.animals) {
+      if (a.active && inArc(a.x, a.y, 10)) this.damageAnimal(a, w.damage);
+    }
     if (this.boss?.active && inArc(this.boss.x, this.boss.y, 22)) this.damageBoss(w.damage);
+  }
+
+  // =======================================================================
+  // DAY / NIGHT, FOOD, DROPS & DAMAGE NUMBERS
+  // =======================================================================
+
+  /** Full-screen darkness layer plus the warm lamp glows that punch through it. */
+  private buildDayNight() {
+    this.nightVeil = this.add
+      .rectangle(0, 0, 64, 64, 0x0a1233, 0)
+      .setDepth(940)
+      .setBlendMode(Phaser.BlendModes.MULTIPLY);
+  }
+
+  /** Registers a warm light that only shows itself after dusk. */
+  private addLight(x: number, y: number, scale = 1) {
+    const l = this.add
+      .sprite(x, y, "light-warm")
+      .setDepth(945)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setScale(scale)
+      .setAlpha(0);
+    this.warmLights.push(l);
+    return l;
+  }
+
+  /** 0 at noon, 1 at deep midnight. */
+  private nightFactor() {
+    return Phaser.Math.Clamp((1 - Math.cos(this.dayT * Math.PI * 2)) / 2, 0, 1);
+  }
+
+  private updateDayNight(delta: number) {
+    this.dayT = (this.dayT + delta / DAY_MS) % 1;
+    this.save.time_of_day = this.dayT;
+    const n = this.nightFactor();
+    const cam = this.cameras.main;
+    if (this.nightVeil) {
+      const v = cam.worldView;
+      this.nightVeil
+        .setPosition(v.centerX, v.centerY)
+        .setSize(v.width + 16, v.height + 16)
+        .setAlpha(0.78 * n);
+      // dawn/dusk lean warm, midnight leans deep blue
+      const dusk = Math.abs(Math.sin(this.dayT * Math.PI * 2));
+      this.nightVeil.setFillStyle(n > 0.72 ? 0x0a1233 : dusk > 0.6 ? 0x5a3a68 : 0x2c3a72);
+    }
+    const la = Phaser.Math.Clamp((n - 0.18) / 0.6, 0, 1);
+    for (const l of this.warmLights) {
+      l.setAlpha(la * (0.55 + 0.12 * Math.sin(this.time.now / 320 + l.x)));
+      l.setVisible(la > 0.02);
+    }
+  }
+
+  /** Human-readable clock for the HUD. */
+  private clockLabel() {
+    const mins = Math.round(this.dayT * 24 * 60);
+    const h = Math.floor(mins / 60) % 24;
+    const m = mins % 60;
+    const ampm = h < 12 ? "AM" : "PM";
+    const hh = h % 12 === 0 ? 12 : h % 12;
+    return `${hh}:${String(m).padStart(2, "0")} ${ampm}`;
+  }
+
+  /** Rising, fading combat number. */
+  private floatText(x: number, y: number, text: string, color: string, big = false) {
+    const t = this.add
+      .text(x, y - 12, text, {
+        fontFamily: "system-ui, sans-serif",
+        fontSize: big ? "16px" : "12px",
+        fontStyle: "bold",
+        color,
+        stroke: "#0b1e3d",
+        strokeThickness: 3,
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(970);
+    this.tweens.add({
+      targets: t,
+      y: y - (big ? 54 : 40),
+      alpha: 0,
+      duration: big ? 900 : 700,
+      ease: "Sine.easeOut",
+      onComplete: () => t.destroy(),
+    });
+  }
+
+  private damageAnimal(a: Phaser.GameObjects.Sprite, amount: number) {
+    const hp = Math.max(0, ((a.getData("hp") as number) ?? ANIMAL_HP) - amount);
+    a.setData("hp", hp);
+    this.floatText(a.x, a.y, `-${amount}`, "#ffe9a8");
+    a.setTint(0xff9aa5);
+    this.time.delayedCall(120, () => a.active && a.clearTint());
+    if (hp > 0) return;
+    const species = (a.getData("species") as string) ?? "duck";
+    const { x, y } = a;
+    this.tweens.killTweensOf(a);
+    this.animals = this.animals.filter((o) => o !== a);
+    a.destroy();
+    this.spawnSparkle(x, y, 0xffd7e5, 12);
+    this.dropItem(x, y, "raw-meat");
+    if (species === "deer" || Phaser.Math.Between(0, 100) > 55) this.dropItem(x + 14, y + 6, "berries");
+  }
+
+  /** Puts a collectable food item on the ground. */
+  private dropItem(x: number, y: number, id: string) {
+    const d = this.drops.create(x, y, `drop-${id}`) as Phaser.Physics.Arcade.Sprite | null;
+    if (!d) return;
+    d.setActive(true).setVisible(true).setDepth(this.dsort(y)).setData("item", id);
+    (d.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+    d.setScale(1.2);
+    this.tweens.add({
+      targets: d,
+      y: y - 5,
+      duration: 900,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+  }
+
+  private collectDrop(d: Phaser.Physics.Arcade.Sprite) {
+    if (!d.active) return;
+    const id = (d.getData("item") as string) ?? "berries";
+    d.destroy();
+    this.addItem(id, 1);
+    const food = FOOD_BY_ID[id];
+    this.floatText(this.player.x, this.player.y - 18, `+1 ${food?.name ?? "item"}`, "#c9f0a8");
+  }
+
+  addItem(id: string, n = 1) {
+    const inv = { ...this.save.inventory };
+    inv[id] = (inv[id] ?? 0) + n;
+    if (inv[id]! <= 0) delete inv[id];
+    this.save.inventory = inv;
+    this.emitSave();
+    this.pushHud(true);
+  }
+
+  /** Eat / cook / store / take, driven from the React inventory and house panels. */
+  private onItemAction(msg: { action: string; id?: string }) {
+    const id = msg.id ?? "";
+    if (msg.action === "eat") {
+      const food = FOOD_BY_ID[id];
+      if (!food || (this.save.inventory[id] ?? 0) <= 0) return;
+      if (food.raw) {
+        this.emitToast("Raw — cook it on the hearth at home first.");
+        return;
+      }
+      this.addItem(id, -1);
+      const before = this.save.player_health;
+      this.save.player_health = Math.min(5, before + food.heal);
+      this.emitSave();
+      this.pushHud(true);
+      this.floatText(this.player.x, this.player.y - 20, `+${this.save.player_health - before} ♥`, "#ff9ec4", true);
+      this.emitToast(`${food.name} eaten.`);
+    }
+  }
+
+  private addHouse() {
+    const spot = this.houseSpot();
+    if (!spot) return;
+    const x = this.wx(spot[0]);
+    const y = this.wy(spot[1]);
+    const home = this.add.sprite(x, y, "cottage").setDepth(this.dsort(y + 14));
+    this.bakeShadow(x, y + home.displayHeight * 0.34, home.displayWidth * 0.7, 0.2);
+    this.addLight(x, y + 6, 0.9);
+    this.addInteractable(x, y + 26, "plate", "house", HOUSE.prompt, { radius: 58, depth: 6 })
+      ?.obj.setAlpha(0.001);
+  }
+
+  /** Every act has a home within a short walk of where Maria arrives. */
+  private houseSpot(): [number, number] | null {
+    const spots: Record<ZoneId, [number, number]> = {
+      sunlit_shores: [40, 58],
+      wedding_garden: [24, 56],
+      the_haven: [46, 30],
+      starry_ascent: [26, 60],
+      cathedral: [30, 70],
+    };
+    return spots[this.save.current_zone] ?? null;
+  }
+
+  private enterHouse() {
+    this.save.time_of_day = this.dayT;
+    this.emitSave();
+    this.frozen = true;
+    this.cameras.main.fadeOut(280, 0, 0, 0);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      this.scene.launch("quest-house", { save: this.save, parent: this });
+      this.scene.pause();
+    });
+  }
+
+
+  /** Called by the house scene when Maria steps back outside. */
+  resumeFromHouse() {
+    this.frozen = false;
+    this.cameras.main.resetFX();
+    this.cameras.main.setAlpha(1);
+    this.cameras.main.fadeIn(280, 8, 12, 30);
+    this.dayT = ((this.save.time_of_day ?? this.dayT) % 1 + 1) % 1;
+    this.emitSave();
+    this.pushHud(true);
   }
 
   private dash() {
@@ -2377,6 +2653,9 @@ export class QuestScene extends Phaser.Scene {
         this.pushHud(true);
         this.spawnSparkle(this.player.x, this.player.y, 0xffd977, 22);
         this.openModal({ type: "info", title: SWIFT_SANDALS.name, body: SWIFT_SANDALS.body });
+        break;
+      case "house":
+        this.enterHouse();
         break;
       case "rest":
         this.save.player_health = 5;
@@ -2818,6 +3097,11 @@ export class QuestScene extends Phaser.Scene {
       weddingCompleted: this.save.wedding_completed,
       weapons: this.save.weapons,
       equipped: this.save.equipped_weapon,
+      timeOfDay: this.dayT,
+      night: this.nightFactor() > 0.45,
+      clock: this.clockLabel(),
+      inventory: this.save.inventory,
+      indoors: false,
       shield: this.save.relics_collected.includes(AEGIS.id)
         ? { owned: true, ready: now > this.shieldReadyAt }
         : null,
@@ -2981,6 +3265,17 @@ export class QuestScene extends Phaser.Scene {
         .setText(near ? `E / ACTION — ${near.label}` : "")
         .setVisible(!!near);
     }
+    this.updateDayNight(delta);
+    const fighting = Boolean(
+      this.boss?.active &&
+        this.bossPhase === 1 &&
+        Phaser.Math.Distance.Between(this.boss.x, this.boss.y, this.player.x, this.player.y) < 620,
+    );
+    const mode = fighting ? "battle" : "explore";
+    if (mode !== this.musicMode) {
+      this.musicMode = mode;
+      this.game.events.emit(EV.music, mode);
+    }
     this.updateHand(dir);
     this.checkPortal();
     this.checkBossEncounter();
@@ -3032,7 +3327,7 @@ export function createQuestGame(parent: HTMLElement, save: QuestSave) {
     fps: { target: 60, forceSetTimeOut: false },
     physics: { default: "arcade", arcade: { gravity: { x: 0, y: 0 }, debug: false } },
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [QuestScene],
+    scene: [QuestScene, QuestHouseScene],
   });
   game.scene.start("quest", { save });
   void TILE_COUNT;

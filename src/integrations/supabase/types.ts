@@ -144,15 +144,18 @@ export type Database = {
       }
       maria_quest_saves: {
         Row: {
+          chest: Json
           created_at: string
           current_zone: string
           equipped_weapon: string | null
           id: string
+          inventory: Json
           player_health: number
           relics_collected: Json
           secret_envelopes_found: Json
           slot: string
           swift_boots: boolean
+          time_of_day: number
           updated_at: string
           user_id: string | null
           vault_keys_count: number
@@ -160,15 +163,18 @@ export type Database = {
           wedding_completed: boolean
         }
         Insert: {
+          chest?: Json
           created_at?: string
           current_zone?: string
           equipped_weapon?: string | null
           id?: string
+          inventory?: Json
           player_health?: number
           relics_collected?: Json
           secret_envelopes_found?: Json
           slot?: string
           swift_boots?: boolean
+          time_of_day?: number
           updated_at?: string
           user_id?: string | null
           vault_keys_count?: number
@@ -176,15 +182,18 @@ export type Database = {
           wedding_completed?: boolean
         }
         Update: {
+          chest?: Json
           created_at?: string
           current_zone?: string
           equipped_weapon?: string | null
           id?: string
+          inventory?: Json
           player_health?: number
           relics_collected?: Json
           secret_envelopes_found?: Json
           slot?: string
           swift_boots?: boolean
+          time_of_day?: number
           updated_at?: string
           user_id?: string | null
           vault_keys_count?: number
