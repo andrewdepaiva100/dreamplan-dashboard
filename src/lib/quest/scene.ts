@@ -2042,9 +2042,21 @@ export class QuestScene extends Phaser.Scene {
         [16, 20],
         [104, 20],
       ], 5);
-      // one clean, symmetrical bloom court at the heart of the plateau
-      this.rect(d, 52, 44, 28, 20, T.BLOOM);
-      this.rect(d, 56, 48, 20, 12, T.MARBLE);
+      // a constellation court at the heart of the plateau
+      this.rect(d, 50, 42, 32, 24, T.BLOOM);
+      this.rect(d, 54, 46, 24, 16, T.MARBLE);
+      this.rect(d, 62, 52, 8, 4, T.BLOOM);
+      // star-point inlays along both roads
+      const inlay: [number, number][] = [
+        [24, 84], [40, 84], [56, 84], [72, 84], [88, 84],
+        [104, 68], [104, 52], [104, 36], [16, 68], [16, 52],
+        [16, 36], [32, 20], [48, 20], [64, 20], [80, 20], [96, 20],
+      ];
+      for (const [ix, iy] of inlay) this.rect(d, ix, iy, 2, 2, T.BLOOM);
+      // reflecting pools tucked clear of the walking roads
+      this.rect(d, 28, 30, 10, 7, T.WATER);
+      this.rect(d, 84, 44, 9, 7, T.WATER);
+      this.rect(d, 34, 62, 8, 6, T.WATER);
     });
     this.addPlayer(20, 85);
     this.spawnActGuide(26, 82);
