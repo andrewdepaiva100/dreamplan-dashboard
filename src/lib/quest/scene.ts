@@ -927,14 +927,15 @@ export class QuestScene extends Phaser.Scene {
   private buildZone(zone: ZoneId) {
     this.objective = ZONES[zone].objective;
     // Act I is a compact, welcoming realm; Act II is a small open garden so the
-    // four seasonal keys stay findable; later acts sprawl at full size.
+    // four seasonal keys stay findable; Act III is a cozy town square so the
+    // three music sheets are never far from the fountain.
     const dims =
       zone === "sunlit_shores"
         ? 62
         : zone === "wedding_garden"
           ? 70
           : zone === "the_haven"
-            ? 95
+            ? 62
             : zone === "starry_ascent"
               ? 18
               : MAP_W;
