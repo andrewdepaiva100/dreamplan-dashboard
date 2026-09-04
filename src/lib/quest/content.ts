@@ -567,3 +567,31 @@ export const GOLDEN_HEART_TEXT = "A golden heart — full health!";
 /** Short written directions shown by the wooden signpost (not the realm map). */
 export const SIGNPOST_HEADER = "Weathered Signpost";
 
+
+export const SIGNPOST_DIRECTIONS: Record<ZoneId, string[]> = {
+  sunlit_shores: [
+    "NORTH-WEST — The Blacksmith's forge. Ask for a blade; he never sends anyone away empty-handed.",
+    "SOUTH — Your guide waits by the meadow trail with a gift for the road.",
+    "EAST — The River Gates. Push the three stones onto the three plates to open the water.",
+    "FAR EAST — The Grotto Temple and the shining gateway onward.",
+  ],
+  wedding_garden: [
+    "NORTH — The glass conservatory and the seating puzzle.",
+    "WEST — Rose walks; letters are often tucked between the hedges.",
+    "EAST — The garden gateway, once the relic is yours.",
+  ],
+  the_haven: [
+    "CENTRE — The town square and its clock.",
+    "NORTH — The vault; three keys open it.",
+    "EAST — The road to the Starry Ascent.",
+  ],
+  starry_ascent: [
+    "UP — The switchbacks to the summit lantern.",
+    "WEST — A quiet ferry across the still water.",
+    "EAST — The last gateway, to the cathedral doors.",
+  ],
+  cathedral: [
+    "AHEAD — The aisle. He is waiting by the stained glass.",
+    "ASIDE — Side chapels, where a few last letters are hidden.",
+  ],
+};
