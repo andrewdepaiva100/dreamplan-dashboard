@@ -771,6 +771,30 @@ export class QuestScene extends Phaser.Scene {
       .setPosition(px + Math.cos(angle) * r, py + Math.sin(angle) * r);
     this.arrow.setRotation(angle + Math.PI / 2);
     this.arrow.setAlpha(0.6 + 0.25 * Math.sin(this.time.now / 320));
+    this.updatePingMarker(angle, px, py);
+  }
+
+  /** Big glowing gold compass marker, visible only for a few seconds after a ping. */
+  private updatePingMarker(angle: number, px: number, py: number) {
+    if (!this.pingMarker) {
+      this.pingMarker = this.add
+        .triangle(0, 0, 0, 26, 15, -18, -15, -18, 0xffe6a8, 0.95)
+        .setDepth(96)
+        .setScrollFactor(0)
+        .setVisible(false);
+      this.pingMarker.setStrokeStyle(3, 0xfff7de, 1);
+    }
+    if (this.time.now > this.pingUntil) {
+      this.pingMarker.setVisible(false);
+      return;
+    }
+    const r = 104;
+    this.pingMarker
+      .setVisible(true)
+      .setPosition(px + Math.cos(angle) * r, py + Math.sin(angle) * r);
+    this.pingMarker.setRotation(angle + Math.PI / 2);
+    this.pingMarker.setScale(1 + 0.12 * Math.sin(this.time.now / 180));
+    this.pingMarker.setAlpha(0.75 + 0.25 * Math.sin(this.time.now / 200));
   }
 
   private buildZone(zone: ZoneId) {
