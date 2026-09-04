@@ -25,11 +25,16 @@ Add Andre, Phillip, Italo and Gabe as guests in the Cathedral act, each with the
 They get the same cinematic portrait dialogue box the other guests use.
 
 ## 5. Grass and flowers in the opening area
-The patchy two-tone checkerboard in Act I becomes one clean, even meadow green across the whole realm. Scattered flower sprites are reduced by 25% (240 → 180 in Act I, and proportionally in the other acts) and restricted to purple, red, white and pink only.
+The patchy two-tone checkerboard becomes one clean, even meadow green across every realm (Acts I–V), starting with the opening area. Scattered flower sprites are reduced by 25% in every act (240→180, 300→225, 260→195, and the same cut elsewhere) and restricted to purple, red, white and pink only.
+
+## 6. The wedding pastor
+The Act V officiant becomes "Pastor Alcir" — Andrew's grandpa, a white man with grey hair. New pixel sprite and portrait to match, and every ceremony line is re-attributed to him (replacing "Father Elias"), with one warm grandfather touch in his opening words.
 
 ## Technical notes
-- `src/lib/quest/content.ts`: boss HP values, three new `WEAPONS` entries + pickup definitions, `FAMILY_GUESTS` names/lines, new Act V guest records.
-- `src/lib/quest/scene.ts`: `makeMap` stops sprinkling `T.BLOOM` (uniform `T.MEADOW`), flower counts reduced 25%, `flowerTints` limited to purple/red/white/pink, new legendary weapon pickup interactables with beacons, boss speed tuning.
-- `src/lib/quest/textures.ts`: register the four new guest sprites and legendary weapon icons.
-- New generated pixel art for Andre, Phillip, Italo, Gabe (sprites + dialogue portraits) in `src/assets/quest/`.
+- `src/lib/quest/content.ts`: boss HP values, three new `WEAPONS` entries + pickup definitions, `FAMILY_GUESTS` names/lines, new Act V guest records, ceremony speaker rename.
+- `src/lib/quest/scene.ts`: `makeMap` stops sprinkling `T.BLOOM` (uniform `T.MEADOW`) in all acts, flower counts reduced 25% everywhere, `flowerTints` limited to purple/red/white/pink, new legendary weapon pickup interactables with beacons, boss speed tuning.
+- `src/lib/quest/textures.ts`: register the four new guest sprites and the new pastor art.
+- New generated pixel art for Andre, Phillip, Italo, Gabe (sprites + dialogue portraits) and Pastor Alcir in `src/assets/quest/`.
 - Save schema already stores `weapons[]`, so the new weapons persist with no migration.
+- Add both new asks to `roadmap.md` when building.
+
