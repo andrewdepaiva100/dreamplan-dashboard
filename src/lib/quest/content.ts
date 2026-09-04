@@ -698,7 +698,7 @@ export const SIGNPOST_DIRECTIONS: Record<ZoneId, string[]> = {
   sunlit_shores: [
     "NEARBY — Your realm guide. Speak with them; they will place this act's weapon in your hands.",
     "SOUTH — Your guide waits by the meadow trail with a gift for the road.",
-    "EAST — The River Gates. Push the three stones onto the three plates to open the water.",
+    "EAST — The road to the Sunken Grotto. Follow it straight to the Warden.",
     "FAR EAST — The Grotto Temple and the shining gateway onward.",
   ],
   wedding_garden: [
