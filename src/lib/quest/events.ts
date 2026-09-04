@@ -53,6 +53,7 @@ export type HudState = {
 };
 
 export type ModalPayload =
+  | { type: "gameover" }
   | { type: "relic"; relicId: string }
   | { type: "envelope"; envelopeId: string }
   | { type: "memory" }
