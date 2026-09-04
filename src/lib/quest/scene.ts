@@ -1827,10 +1827,35 @@ export class QuestScene extends Phaser.Scene {
     });
     this.cameras.main.flash(500, 255, 215, 229);
     this.emitToast(`${this.bossName} softens into blossoms.`);
+
+    // A pillar guardian: credit that pillar and check the alignment.
+    const pending = this.zoneState["pendingPillar"];
+    if (typeof pending === "number") {
+      this.zoneState["pendingPillar"] = undefined;
+      const beaten = ((this.zoneState["guardians"] as number[]) ?? []).concat(pending);
+      this.zoneState["guardians"] = beaten;
+      const arr = (this.zoneState["pillars"] as number[]) ?? [0, 0, 0];
+      const aligned = arr.every((v, k) => v === 1 && beaten.includes(k));
+      this.objective = aligned
+        ? "The pillars align."
+        : `The Celestial Staircase — align all three pillars to warm gold (${beaten.length}/3).`;
+      if (aligned && !this.zoneState["stairs"]) {
+        this.zoneState["stairs"] = true;
+        this.openStaircase();
+      }
+      this.bossPhase = 0;
+      return;
+    }
+
     const second = SECOND_BOSSES[zone];
     if (second && this.zoneState["secondBoss"] !== true) {
       this.zoneState["secondBoss"] = true;
       this.time.delayedCall(900, () => {
+        this.openModal({
+          type: "info",
+          title: "The sky is not finished with you",
+          body: "The blossoms have barely settled before the stars go cold. Something older stirs where the shadow stood — brace yourself.",
+        });
         this.spawnActBoss(0, 0, second);
         if (this.boss) this.boss.setPosition(bx, by);
         if (this.bossHalo) this.bossHalo.setPosition(bx, by);
