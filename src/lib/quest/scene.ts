@@ -113,6 +113,8 @@ export class QuestScene extends Phaser.Scene {
   private arrow!: Phaser.GameObjects.Triangle;
   private boss: Phaser.Physics.Arcade.Sprite | null = null;
   spawnPoint = new Phaser.Math.Vector2(0, 0);
+  /** Timestamp of the last realm entry — used to defer landmark cutscenes. */
+  realmEnteredAt = 0;
   private animals: Phaser.GameObjects.Sprite[] = [];
   private landmark: { sprite: Phaser.GameObjects.Sprite; title: string; body: string } | null = null;
   private cutscenePlayed = false;
@@ -689,6 +691,8 @@ export class QuestScene extends Phaser.Scene {
   /** Fires once when Maria first reaches the act's flagship landmark. */
   private checkCutscene() {
     if (this.cutscenePlayed || !this.landmark) return;
+    // Never collide with the act intro banner (it shows for ~3.6s on entry).
+    if (this.time.now - this.realmEnteredAt < 4200) return;
     const l = this.landmark;
     if (Phaser.Math.Distance.Between(this.player.x, this.player.y, l.sprite.x, l.sprite.y) > 230)
       return;
@@ -701,7 +705,7 @@ export class QuestScene extends Phaser.Scene {
     cam.pan(l.sprite.x, l.sprite.y, 900, "Sine.easeInOut");
     cam.zoomTo(cam.zoom * 1.18, 900);
     this.game.events.emit(EV.act, { title: l.title });
-    this.time.delayedCall(1500, () => {
+    this.time.delayedCall(2600, () => {
       cam.pan(this.player.x, this.player.y, 600, "Sine.easeInOut");
       cam.zoomTo(this.scale.width < 620 ? 1.1 : 1.45, 600);
       cam.startFollow(this.player, true, 0.12, 0.12);
@@ -1034,8 +1038,9 @@ export class QuestScene extends Phaser.Scene {
       }
     };
     const tiny = this.mapW < 30;
-    place("heart-pickup", tiny ? 5 : 14);
-    place("golden-heart", tiny ? 1 : 3);
+    const cathedral = this.save.current_zone === "cathedral";
+    place("heart-pickup", cathedral ? 4 : tiny ? 5 : 14);
+    place("golden-heart", cathedral ? 2 : tiny ? 1 : 3);
     this.physics.add.overlap(this.player, this.hearts, (_p, obj) =>
       this.takeHeart(obj as Phaser.Physics.Arcade.Sprite),
     );
@@ -1118,10 +1123,10 @@ export class QuestScene extends Phaser.Scene {
       ]);
     });
 
-    this.addPlayer(18, 51);
-    this.spawnGuideAndSignpost(22, 48);
-    this.spawnActGuide(24, 56);
-    if (WEDDING_GUESTS.sunlit_shores) this.addGuest(WEDDING_GUESTS.sunlit_shores, 26, 44);
+    this.addPlayer(48, 51);
+    this.spawnGuideAndSignpost(52, 47);
+    this.spawnActGuide(50, 56);
+    if (WEDDING_GUESTS.sunlit_shores) this.addGuest(WEDDING_GUESTS.sunlit_shores, 44, 45);
     this.scatterDecor(11, {
       village: [
         [12, 34],
