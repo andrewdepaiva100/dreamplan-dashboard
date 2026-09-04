@@ -913,6 +913,8 @@ export class QuestScene extends Phaser.Scene {
     const obj = this.add.sprite(x, y, texture).setDepth(opts.depth ?? this.dsort(y));
     this.bakeShadow(x, y + obj.displayHeight * 0.34, obj.displayWidth * 0.6, 0.18);
     if (texture.startsWith("andrew")) obj.setScale(1.1);
+    // Every character besides Maria and Andrew reads 15% larger.
+    if (["guest", "act-guide", "guide"].includes(kind)) obj.setScale(obj.scale * 1.15);
     // Hidden love letters get a tall rose beacon and a generous reach so they
     // are always findable from across a realm.
     if (kind === "envelope") {
