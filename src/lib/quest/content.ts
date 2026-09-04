@@ -187,7 +187,7 @@ export const ZONES: Record<ZoneId, ZoneInfo> = {
   wedding_garden: {
     id: "wedding_garden",
     act: "Act II",
-    title: "The Labyrinth of the Wedding Garden",
+    title: "The Wedding Garden",
     objective: "Collect the four seasonal keys, open the Conservatory, and calm the Stress Spectre.",
   },
   the_haven: {
@@ -246,7 +246,7 @@ export const HOW_TO_PLAY = [
 
 export const REALM_LANDMARKS: { direction: string; name: string; act: string; zone: ZoneId }[] = [
   { direction: "West", name: "The River Gates & Sunken Grotto", act: "Act I", zone: "sunlit_shores" },
-  { direction: "North", name: "The Labyrinth of the Wedding Garden", act: "Act II", zone: "wedding_garden" },
+  { direction: "North", name: "The Wedding Garden", act: "Act II", zone: "wedding_garden" },
   { direction: "Center", name: "The Haven Town Square & Fountain", act: "Act III", zone: "the_haven" },
   { direction: "East", name: "The Starry Ascent Mountain", act: "Act IV", zone: "starry_ascent" },
   { direction: "Summit", name: "The Grand Cathedral of Serenity", act: "Act V", zone: "cathedral" },
@@ -349,6 +349,14 @@ export const WEAPON_BY_ID: Record<string, Weapon> = Object.fromEntries(
 /** Act I's guide hands this over — there is no forge and no practice blade. */
 export const DEFAULT_WEAPON = "spark-wand";
 
+/** The forge on the Sunlit Shores — Bram hands over the Act II weapon early. */
+export const BLACKSMITH = {
+  name: "Bram the Smith",
+  weapon: "floral-bow",
+  line: "Heard you're headed north to the garden. Rough hedges up there. I strung this Floral Bow from garden vine this morning — take it before you go, and every arrow you loose will bloom where it lands.",
+  repeat: "The forge stays lit for you. That bow of yours will hold — vine never snaps when it's strung with care.",
+};
+
 export const ACT_GUIDES: Record<ZoneId, { name: string; weapon: string; line: string }> = {
   sunlit_shores: {
     name: "Wren of the Shores",
@@ -358,7 +366,7 @@ export const ACT_GUIDES: Record<ZoneId, { name: string; weapon: string; line: st
   wedding_garden: {
     name: "Ivy the Gardener",
     weapon: "floral-bow",
-    line: "The hedges shift, but the promenade always leads to the Conservatory. The Stress Spectre waits inside. Take my Floral Bow — draw it and every arrow blooms.",
+    line: "The promenade runs straight to the Conservatory — no mazes here, just open beds and light. Four seasonal keys wake its doors, and the Stress Spectre waits inside.",
   },
   the_haven: {
     name: "Marlowe the Bellkeeper",
