@@ -62,6 +62,8 @@ import imgBird from "@/assets/quest/bird.png";
 import imgDeer from "@/assets/quest/deer.png";
 import imgDuck from "@/assets/quest/duck.png";
 import imgGuideAct from "@/assets/quest/guide-act.png";
+import imgBlacksmith from "@/assets/quest/blacksmith.png";
+import imgSmith from "@/assets/quest/smith.png";
 import imgBossWater from "@/assets/quest/boss-water.png";
 import imgBossGarden from "@/assets/quest/boss-garden.png";
 import imgBossHaven from "@/assets/quest/boss-haven.png";
@@ -160,6 +162,8 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   bird: [imgBird, 17, 14],
   deer: [imgDeer, 30, 21],
   duck: [imgDuck, 19, 20],
+  blacksmith: [imgBlacksmith, 78, 74],
+  smith: [imgSmith, 26, 34],
 };
 
 /** Queue every bundled image. Call from the scene's preload(). */
@@ -286,6 +290,8 @@ export function buildSprites(scene: Phaser.Scene) {
     ["guest", "guest"],
     ["guide", "guide"],
     ["guide-act", "guide-act"],
+    ["blacksmith", "blacksmith"],
+    ["smith", "smith"],
     ["signpost", "signpost"],
     ["fountain", "fountain"],
     ["house", "house"],
