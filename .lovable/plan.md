@@ -43,5 +43,7 @@ The five themed love letters get a richer presentation: an ornate letter card wi
 - `src/lib/quest/textures.ts`: register the four new guest sprites and the new pastor art.
 - New generated pixel art for Andre, Phillip, Italo, Gabe (sprites + dialogue portraits) and Pastor Alcir in `src/assets/quest/`.
 - Save schema already stores `weapons[]`, so the new weapons persist with no migration.
-- Add both new asks to `roadmap.md` when building.
+- Andrew's sprite entries in `src/lib/quest/textures.ts` get a +15% height over Maria's; envelope styling lives in the modal component in `src/components/plan/quest.tsx`.
+- Add the new asks to `roadmap.md` when building.
+
 
