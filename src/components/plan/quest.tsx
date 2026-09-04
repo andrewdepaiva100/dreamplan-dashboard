@@ -238,15 +238,17 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
 
     stopRef.current = () => {
       window.clearInterval(timer);
-      master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+      master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
       setTimeout(() => {
         try {
+          padOsc.stop();
+          padGain.disconnect();
           soft.disconnect();
           master.disconnect();
         } catch {
           /* already gone */
         }
-      }, 700);
+      }, 1500);
     };
     return () => stopRef.current?.();
   }, [zone, muted, mode]);
