@@ -855,6 +855,8 @@ export class QuestScene extends Phaser.Scene {
   /** Fires once when Maria first reaches the act's flagship landmark. */
   private checkCutscene() {
     if (this.cutscenePlayed || !this.landmark) return;
+    // Never interrupt a fight or a boss conversation with a landmark cutscene.
+    if (this.boss?.active || this.bossTalking || this.frozen) return;
     // Never collide with the act intro banner (it shows for ~3.6s on entry).
     if (this.time.now - this.realmEnteredAt < 4200) return;
     const l = this.landmark;
