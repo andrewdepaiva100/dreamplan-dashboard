@@ -17,6 +17,7 @@ import {
 } from "./content";
 import { EMPTY_SAVE, type QuestSave } from "./save";
 import {
+  HD,
   SOLID_TILES,
   T,
   TILE,
@@ -105,6 +106,7 @@ export class QuestScene extends Phaser.Scene {
   private cutscenePlayed = false;
   private pingMarker: Phaser.GameObjects.Triangle | null = null;
   private pingUntil = 0;
+  private keyBeacons: Map<string, Phaser.GameObjects.Container> = new Map();
   private companion: Phaser.GameObjects.Sprite | null = null;
   private bossPhase = 0;
   private bossHits = 0;
@@ -163,6 +165,7 @@ export class QuestScene extends Phaser.Scene {
     this.bossHalo = null;
     if (this.save.weapons.length === 0) this.save.weapons = [];
     this.animals = [];
+    this.keyBeacons = new Map();
     this.landmark = null;
     this.cutscenePlayed = false;
     this.pingUntil = 0;
@@ -297,7 +300,7 @@ export class QuestScene extends Phaser.Scene {
     }
     decorate(data);
     this.map = this.make.tilemap({ data, tileWidth: TILE, tileHeight: TILE });
-    const tiles = this.map.addTilesetImage("quest-tiles", "quest-tiles", TILE, TILE, 0, 0)!;
+    const tiles = this.map.addTilesetImage("quest-tiles", "quest-tiles", TILE * HD, TILE * HD, 0, 0)!;
     this.layer = this.map.createLayer(0, tiles, 0, 0)!;
     this.layer.setCollision(SOLID_TILES as unknown as number[]);
     this.layer.setCullPadding(3, 3);
@@ -528,7 +531,11 @@ export class QuestScene extends Phaser.Scene {
       });
     for (const it of this.interactables) {
       if (!it.enabled || !it.obj.active) continue;
-      if (!["relic", "gateway", "guide", "vault", "andrew", "andrew-ceremony"].includes(it.kind))
+      if (
+        !["relic", "gateway", "guide", "vault", "andrew", "andrew-ceremony", "season-key"].includes(
+          it.kind,
+        )
+      )
         continue;
       pins.push({
         x: it.obj.x / (this.mapW * TILE),
@@ -595,7 +602,13 @@ export class QuestScene extends Phaser.Scene {
       return;
     }
     this.pingUntil = this.time.now + 5200;
-    this.emitToast("A golden compass marks the way.");
+    const targetIt = this.interactables.find((i) => i.obj === target);
+    if (targetIt?.kind === "season-key") {
+      const found = (this.zoneState["keysFound"] as number) ?? 0;
+      this.emitToast(`The compass seeks the ${targetIt.id} key — ${4 - found} of 4 still hidden.`);
+    } else {
+      this.emitToast("A golden compass marks the way.");
+    }
   }
 
   /** Fires once when Maria first reaches the act's flagship landmark. */
@@ -735,6 +748,24 @@ export class QuestScene extends Phaser.Scene {
 
   /** The current act's guiding target: relic first, then the way onward. */
   private objectiveTarget(): Phaser.GameObjects.Sprite | null {
+    // In Act II the seasonal keys gate everything else — while any remain,
+    // the compass always seeks the nearest unfound key.
+    if (this.save.current_zone === "wedding_garden") {
+      const found = (this.zoneState["keysFound"] as number) ?? 0;
+      if (found < 4) {
+        let bestKey: Interactable | null = null;
+        let bestD = Infinity;
+        for (const it of this.interactables) {
+          if (!it.enabled || !it.obj.active || it.kind !== "season-key") continue;
+          const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, it.obj.x, it.obj.y);
+          if (d < bestD) {
+            bestKey = it;
+            bestD = d;
+          }
+        }
+        if (bestKey) return bestKey.obj;
+      }
+    }
     const order = [
       "relic",
       "gateway",
@@ -827,10 +858,11 @@ export class QuestScene extends Phaser.Scene {
 
   private buildZone(zone: ZoneId) {
     this.objective = ZONES[zone].objective;
-    // Act I is a compact, welcoming realm (~1/3 the area of the later acts).
-    const small = zone === "sunlit_shores";
-    this.mapW = small ? 62 : MAP_W;
-    this.mapH = small ? 62 : MAP_H;
+    // Act I is a compact, welcoming realm; Act II is a mid-size garden so the
+    // four seasonal keys stay findable; later acts sprawl at full size.
+    const dims = zone === "sunlit_shores" ? 62 : zone === "wedding_garden" ? 100 : MAP_W;
+    this.mapW = dims;
+    this.mapH = dims;
     this.sxF = this.mapW / DESIGN_W;
     this.syF = this.mapH / DESIGN_H;
     if (zone === "sunlit_shores") this.buildAct1();
@@ -1212,6 +1244,7 @@ export class QuestScene extends Phaser.Scene {
     ]);
 
     const seasons = ["Spring", "Summer", "Autumn", "Winter"];
+    const tints = [0x9dff70, 0xffd94a, 0xff9a3d, 0x8fd4ff];
     const spots: [number, number][] = [
       [18, 18],
       [96, 18],
@@ -1224,6 +1257,7 @@ export class QuestScene extends Phaser.Scene {
       this.addInteractable(this.wx(x), this.wy(y), "key", "season-key", `Take the ${s} key`, {
         id: s,
       });
+      this.addKeyBeacon(this.wx(x), this.wy(y), s, tints[i]!);
     });
 
     this.addInteractable(
@@ -1703,6 +1737,58 @@ export class QuestScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * A tall pillar of seasonal light marking an unclaimed key — visible from
+   * far across the garden. Destroyed the moment its key is taken.
+   */
+  private addKeyBeacon(x: number, y: number, id: string, tint: number) {
+    const c = this.add.container(x, y).setDepth(8);
+    const glow = this.add.ellipse(0, 0, 72, 28, tint, 0.32).setBlendMode(Phaser.BlendModes.ADD);
+    const pillar = this.add.rectangle(0, -130, 26, 270, tint, 0.22).setBlendMode(Phaser.BlendModes.ADD);
+    const core = this.add.rectangle(0, -130, 8, 270, tint, 0.42).setBlendMode(Phaser.BlendModes.ADD);
+    c.add([glow, pillar, core]);
+    this.tweens.add({
+      targets: [pillar, core, glow],
+      alpha: "+=0.14",
+      scaleY: "+=0.06",
+      duration: 1100,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+    const timer = this.time.addEvent({
+      delay: 650,
+      loop: true,
+      callback: () => {
+        if (!c.active) {
+          timer.destroy();
+          return;
+        }
+        const s = this.add
+          .sprite(x + Phaser.Math.Between(-16, 16), y, "spark")
+          .setTint(tint)
+          .setDepth(17)
+          .setAlpha(0.9);
+        this.tweens.add({
+          targets: s,
+          y: y - 170,
+          alpha: 0,
+          duration: 1150,
+          onComplete: () => s.destroy(),
+        });
+      },
+    });
+    this.keyBeacons.set(id, c);
+  }
+
+  private removeKeyBeacon(id: string) {
+    const c = this.keyBeacons.get(id);
+    if (!c) return;
+    this.keyBeacons.delete(id);
+    for (const child of c.list) this.tweens.killTweensOf(child);
+    c.destroy();
+  }
+
   private equippedWeapon() {
     return WEAPON_BY_ID[this.save.equipped_weapon ?? DEFAULT_WEAPON] ?? WEAPON_BY_ID[DEFAULT_WEAPON]!;
   }
@@ -1915,10 +2001,12 @@ export class QuestScene extends Phaser.Scene {
       }
       case "season-key": {
         this.removeInteractable(it);
+        this.removeKeyBeacon(it.id ?? "");
         const n = ((this.zoneState["keysFound"] as number) ?? 0) + 1;
         this.zoneState["keysFound"] = n;
         this.objective = `The Seasons Tile Lock — ${n}/4 seasonal keys.`;
         this.emitToast(`${it.id} key collected (${n}/4).`);
+        if (n < 4) this.emitToast("Follow the remaining pillars of light.");
         break;
       }
       case "conservatory": {
