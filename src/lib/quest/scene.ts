@@ -3,6 +3,7 @@ import {
   ACT_BOSSES,
   ACT_GUIDES,
   BLACKSMITH,
+  MAX_DOG,
   DEFAULT_WEAPON,
   ENVELOPES,
   RELICS,
@@ -109,6 +110,9 @@ export class QuestScene extends Phaser.Scene {
   private pingUntil = 0;
   private keyBeacons: Map<string, Phaser.GameObjects.Container> = new Map();
   private companion: Phaser.GameObjects.Sprite | null = null;
+  private dog: Phaser.Physics.Arcade.Sprite | null = null;
+  private dogArmed = false;
+  private dogBiteAt = 0;
   private bossPhase = 0;
   private bossHits = 0;
   private bossTimer?: Phaser.Time.TimerEvent;
@@ -1089,7 +1093,6 @@ export class QuestScene extends Phaser.Scene {
       });
     }
     this.addInteractable(this.wx(24), this.wy(30), "rest-stone", "rest", "Rest here");
-    this.addBlacksmith(34, 68);
     this.addLandmark(
       "landmark-temple",
       110,
