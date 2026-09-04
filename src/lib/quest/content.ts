@@ -683,15 +683,29 @@ export const FOOD_ITEMS: FoodItem[] = [
     id: "cooked-meat",
     name: "Cooked Meat",
     icon: "🍖",
-    heal: 2,
-    blurb: "Warm, seasoned and restoring. Two hearts back.",
+    heal: 0.5,
+    blurb: "Warm, seasoned and restoring. Half a heart back.",
   },
   {
     id: "berries",
     name: "Wild Berries",
     icon: "🫐",
-    heal: 1,
-    blurb: "Sweet handful gathered where the animals graze. One heart back.",
+    heal: 0.5,
+    blurb: "Sweet handful gathered where the animals graze. Half a heart back.",
+  },
+  {
+    id: "apple",
+    name: "Apple",
+    icon: "\u{1F34E}",
+    heal: 0.25,
+    blurb: "Picked from an orchard tree. A quarter heart back.",
+  },
+  {
+    id: "orange",
+    name: "Orange",
+    icon: "\u{1F34A}",
+    heal: 0.25,
+    blurb: "Sun-warm and sweet. A quarter heart back.",
   },
 ];
 

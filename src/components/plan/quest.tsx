@@ -172,61 +172,83 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
     const HOME = [0, 4, 7, 4, 5, 2, 0, -5, 0, 4, 9, 7, 5, 4, 2, 0];
     const melody = mode === "battle" ? BATTLE : mode === "home" ? HOME : (THEMES[zone] ?? THEMES["sunlit_shores"]!);
     const bassRoot = mode === "battle" ? -17 : mode === "home" ? -12 : -12;
-    const step = mode === "battle" ? 0.24 : mode === "home" ? 0.62 : 0.42; // seconds per note
+    // Unhurried, breathing pace — closer to a quiet piano score than a chiptune.
+    const step = mode === "battle" ? 0.34 : mode === "home" ? 1.5 : 1.15;
 
     const master = ctx.createGain();
     master.gain.value = 0.0001;
     master.connect(ctx.destination);
-    master.gain.exponentialRampToValueAtTime(mode === "battle" ? 0.09 : 0.07, ctx.currentTime + 1.2);
+    master.gain.exponentialRampToValueAtTime(mode === "battle" ? 0.075 : 0.06, ctx.currentTime + 2.5);
 
-    // warm reverb-ish softener
+    // warm, soft-felt tone: heavy low-pass so nothing sounds pixelated
     const soft = ctx.createBiquadFilter();
     soft.type = "lowpass";
-    soft.frequency.value = mode === "battle" ? 2600 : 1900;
+    soft.frequency.value = mode === "battle" ? 1500 : 1000;
+    soft.Q.value = 0.4;
     soft.connect(master);
 
-    const pluck = (freq: number, at: number, dur: number, gain: number, type: OscillatorType) => {
-      const o = ctx.createOscillator();
-      o.type = type;
-      o.frequency.setValueAtTime(freq, at);
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, at);
-      g.gain.exponentialRampToValueAtTime(gain, at + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-      o.connect(g).connect(soft);
-      o.start(at);
-      o.stop(at + dur + 0.05);
+    /** A felt-piano note: sine body, faint triangle overtone, long soft tail. */
+    const note = (freq: number, at: number, dur: number, gain: number) => {
+      for (const [type, mul, amp] of [
+        ["sine", 1, 1],
+        ["triangle", 2, 0.16],
+      ] as [OscillatorType, number, number][]) {
+        const o = ctx.createOscillator();
+        o.type = type;
+        o.frequency.setValueAtTime(freq * mul, at);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, at);
+        g.gain.linearRampToValueAtTime(gain * amp, at + 0.09);
+        g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+        o.connect(g).connect(soft);
+        o.start(at);
+        o.stop(at + dur + 0.1);
+      }
     };
 
+    // a slow pad underneath, the way ambient game scores hold a room together
+    const padOsc = ctx.createOscillator();
+    const padGain = ctx.createGain();
+    padOsc.type = "sine";
+    padOsc.frequency.value = hz(bassRoot);
+    padGain.gain.value = 0.0001;
+    padGain.gain.linearRampToValueAtTime(mode === "battle" ? 0.05 : 0.035, ctx.currentTime + 4);
+    padOsc.connect(padGain).connect(soft);
+    padOsc.start();
+
     let i = 0;
-    let next = ctx.currentTime + 0.1;
+    let next = ctx.currentTime + 0.6;
     const tick = () => {
-      const horizon = ctx.currentTime + 0.6;
+      const horizon = ctx.currentTime + 1.2;
       while (next < horizon) {
         const n = melody[i % melody.length]!;
-        pluck(hz(n), next, mode === "battle" ? 0.28 : 0.9, 0.5, mode === "battle" ? "sawtooth" : "triangle");
-        // soft harmony a third above, every other note
-        if (i % 2 === 0) pluck(hz(n + (mode === "battle" ? 3 : 4)), next + 0.03, 0.7, 0.18, "sine");
-        // bass on the downbeat of each bar of four
-        if (i % 4 === 0) pluck(hz(bassRoot + (i % 8 === 0 ? 0 : 5)), next, mode === "battle" ? 0.5 : 1.6, 0.35, "sine");
-        next += step;
+        const rest = mode === "battle" ? 0 : Math.random();
+        // let phrases breathe: sometimes simply hold the silence
+        if (rest < 0.78) {
+          note(hz(n), next, mode === "battle" ? 0.9 : 3.4, mode === "battle" ? 0.32 : 0.24);
+          if (i % 4 === 0) note(hz(n + 7) / 2, next + 0.12, 4.2, 0.09);
+        }
+        if (i % 4 === 0) note(hz(bassRoot + (i % 8 === 0 ? 0 : 5)), next, 4.5, 0.14);
+        next += step * (mode === "battle" ? 1 : 0.85 + Math.random() * 0.6);
         i += 1;
       }
     };
     tick();
-    const timer = window.setInterval(tick, 250);
+    const timer = window.setInterval(tick, 400);
 
     stopRef.current = () => {
       window.clearInterval(timer);
-      master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+      master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
       setTimeout(() => {
         try {
+          padOsc.stop();
+          padGain.disconnect();
           soft.disconnect();
           master.disconnect();
         } catch {
           /* already gone */
         }
-      }, 700);
+      }, 1500);
     };
     return () => stopRef.current?.();
   }, [zone, muted, mode]);
@@ -311,7 +333,10 @@ function GlassPanel({
   );
 }
 
-/** Minecraft-style slot grid. Empty slots stay visible so the bag reads as a bag. */
+/**
+ * Minecraft-style slot grid with press-and-move dragging that works with a
+ * finger, a mouse or a trackpad. Tapping a slot still acts instantly.
+ */
 function ItemGrid({
   items,
   slots = 20,
@@ -329,63 +354,126 @@ function ItemGrid({
   onDropIn?: (id: string, from: string) => void;
 }) {
   const [over, setOver] = useState(false);
+  const [ghost, setGhost] = useState<{ x: number; y: number; icon: string; name: string } | null>(
+    null,
+  );
   const filled = Object.entries(items).filter(([, n]) => n > 0);
   const cells = Array.from({ length: Math.max(slots, filled.length) }, (_, i) => filled[i] ?? null);
-  const dropProps = onDropIn
-    ? {
-        onDragOver: (e: import("react").DragEvent) => {
-          e.preventDefault();
-          setOver(true);
-        },
-        onDragLeave: () => setOver(false),
-        onDrop: (e: import("react").DragEvent) => {
-          e.preventDefault();
-          setOver(false);
-          const raw = e.dataTransfer.getData("text/plain");
-          const [from, id] = raw.split("|");
-          if (id && from && from !== dragGroup) onDropIn(id, from);
-        },
+
+  // Another grid asks us to accept an item / highlight while hovered.
+  useEffect(() => {
+    if (!dragGroup) return;
+    const onDrop = (e: Event) => {
+      const d = (e as CustomEvent<{ to: string; from: string; id: string }>).detail;
+      setOver(false);
+      if (d.to === dragGroup && d.from !== dragGroup) onDropIn?.(d.id, d.from);
+    };
+    const onOver = (e: Event) => {
+      const d = (e as CustomEvent<{ to: string | null; from: string }>).detail;
+      setOver(d.to === dragGroup && d.from !== dragGroup);
+    };
+    window.addEventListener("quest-slot-drop", onDrop);
+    window.addEventListener("quest-slot-over", onOver);
+    return () => {
+      window.removeEventListener("quest-slot-drop", onDrop);
+      window.removeEventListener("quest-slot-over", onOver);
+    };
+  }, [dragGroup, onDropIn]);
+
+  const startDrag = (id: string, e: import("react").PointerEvent) => {
+    if (!dragGroup) return;
+    const food = FOOD_BY_ID[id];
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let moved = false;
+    const groupAt = (x: number, y: number) => {
+      const el = document.elementFromPoint(x, y) as HTMLElement | null;
+      return el?.closest<HTMLElement>("[data-slot-group]")?.dataset["slotGroup"] ?? null;
+    };
+    const move = (ev: PointerEvent) => {
+      if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) < 8) return;
+      moved = true;
+      setGhost({ x: ev.clientX, y: ev.clientY, icon: food?.icon ?? "📦", name: food?.name ?? id });
+      window.dispatchEvent(
+        new CustomEvent("quest-slot-over", {
+          detail: { to: groupAt(ev.clientX, ev.clientY), from: dragGroup },
+        }),
+      );
+    };
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      setGhost(null);
+      window.dispatchEvent(
+        new CustomEvent("quest-slot-over", { detail: { to: null, from: dragGroup } }),
+      );
+      if (!moved) {
+        onPick?.(id);
+        return;
       }
-    : {};
-  return (
-    <div
-      {...dropProps}
-      className={`grid grid-cols-5 gap-1.5 rounded-xl p-1 transition ${
-        over ? "bg-gold/20 ring-2 ring-gold" : ""
-      }`}
-    >
-      {cells.map((cell, i) => {
-        const food = cell ? FOOD_BY_ID[cell[0]] : undefined;
-        const on = cell && selected === cell[0];
-        return (
-          <button
-            key={i}
-            type="button"
-            disabled={!cell}
-            draggable={Boolean(cell && dragGroup)}
-            onDragStart={(e) => {
-              if (cell && dragGroup) e.dataTransfer.setData("text/plain", `${dragGroup}|${cell[0]}`);
-            }}
-            onClick={() => cell && onPick?.(cell[0])}
-            title={food?.name ?? "Empty slot"}
-            className={`relative flex aspect-square items-center justify-center rounded-lg border text-xl transition ${
-              on
-                ? "border-gold bg-gold/30"
-                : cell
-                  ? "border-navy/25 bg-white/80 hover:bg-gold/15"
-                  : "border-navy/10 bg-navy/5"
-            }`}
-          >
-            <span>{food?.icon ?? ""}</span>
-            {cell && cell[1] > 1 ? (
-              <span className="absolute bottom-0.5 right-1 text-[10px] font-bold text-navy">
-                {cell[1]}
-              </span>
-            ) : null}
-          </button>
+      const to = groupAt(ev.clientX, ev.clientY);
+      if (to && to !== dragGroup) {
+        window.dispatchEvent(
+          new CustomEvent("quest-slot-drop", { detail: { to, from: dragGroup, id } }),
         );
-      })}
-    </div>
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  return (
+    <>
+      <div
+        data-slot-group={dragGroup}
+        className={`grid grid-cols-5 gap-1.5 rounded-xl p-1 transition ${
+          over ? "bg-gold/20 ring-2 ring-gold" : ""
+        }`}
+      >
+        {cells.map((cell, i) => {
+          const food = cell ? FOOD_BY_ID[cell[0]] : undefined;
+          const on = cell && selected === cell[0];
+          return (
+            <button
+              key={i}
+              type="button"
+              disabled={!cell}
+              onPointerDown={(e) => {
+                if (!cell) return;
+                if (dragGroup) startDrag(cell[0], e);
+              }}
+              onClick={() => {
+                if (cell && !dragGroup) onPick?.(cell[0]);
+              }}
+              title={food?.name ?? "Empty slot"}
+              className={`relative flex aspect-square touch-none select-none items-center justify-center rounded-lg border text-xl transition ${
+                on
+                  ? "border-gold bg-gold/30"
+                  : cell
+                    ? "border-navy/25 bg-white/80 hover:bg-gold/15"
+                    : "border-navy/10 bg-navy/5"
+              }`}
+            >
+              <span>{food?.icon ?? ""}</span>
+              {cell && cell[1] > 1 ? (
+                <span className="absolute bottom-0.5 right-1 text-[10px] font-bold text-navy">
+                  {cell[1]}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+      {ghost ? (
+        <div
+          className="pointer-events-none fixed z-[60] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-gold bg-white/95 px-2 py-1 text-center shadow-xl"
+          style={{ left: ghost.x, top: ghost.y }}
+        >
+          <span className="text-xl">{ghost.icon}</span>
+          <span className="ml-1 text-[10px] font-bold text-navy">{ghost.name}</span>
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -1143,8 +1231,22 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
         >
           <div className="rounded-xl bg-[rgba(11,30,61,0.72)] px-3 py-2 backdrop-blur">
             <div className="text-lg leading-none tracking-widest text-[#ff6b7a]">
-              {HEART.repeat(hud.health)}
-              <span className="text-white/25">{HEART.repeat(hud.maxHealth - hud.health)}</span>
+              {Array.from({ length: hud.maxHealth }, (_, i) => {
+                const fill = Math.max(0, Math.min(1, hud.health - i));
+                return (
+                  <span key={i} className="relative inline-block">
+                    <span className="text-white/25">{HEART}</span>
+                    {fill > 0 ? (
+                      <span
+                        className="absolute inset-y-0 left-0 overflow-hidden text-[#ff6b7a]"
+                        style={{ width: `${fill * 100}%` }}
+                      >
+                        {HEART}
+                      </span>
+                    ) : null}
+                  </span>
+                );
+              })}
             </div>
             <div className="mt-2 h-1.5 w-24 overflow-hidden rounded-full bg-white/20">
               <div className="h-full bg-teal" style={{ width: `${hud.stamina}%` }} />
@@ -1601,8 +1703,8 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       {showBag ? (
         <GlassPanel title="Backpack" onClose={() => setShowBag(false)}>
           <p className="text-xs text-navy/70">
-            Everything you've gathered. Tap an item to eat it — raw meat can be cooked right here,
-            any time.
+            Everything you've gathered. Tap an item to eat it, or use the Eat buttons below — raw
+            meat can be cooked right here, any time.
           </p>
           <div className="mt-3">
             <ItemGrid
@@ -1612,6 +1714,27 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                 emit(EV.item, { action: "eat", id });
               }}
             />
+          </div>
+          <div className="mt-3 space-y-2">
+            {FOOD_ITEMS.filter((f) => !f.raw && (hud?.inventory?.[f.id] ?? 0) > 0).map((f) => (
+              <button
+                key={`eat-${f.id}`}
+                type="button"
+                onClick={() => {
+                  buzz();
+                  emit(EV.item, { action: "eat", id: f.id });
+                }}
+                className="flex w-full items-center gap-3 rounded-xl border border-rose-gold/50 bg-white/80 p-3 text-left"
+              >
+                <span className="text-2xl">{f.icon}</span>
+                <span className="flex-1 text-sm font-bold text-navy">
+                  Eat {f.name} ({hud?.inventory?.[f.id] ?? 0})
+                </span>
+                <span className="text-[11px] font-semibold text-navy/70">
+                  +{f.heal} {HEART}
+                </span>
+              </button>
+            ))}
           </div>
           <div className="mt-3 space-y-2">
             {FOOD_ITEMS.filter((f) => f.cookedId && (hud?.inventory?.[f.id] ?? 0) > 0).map((f) => (

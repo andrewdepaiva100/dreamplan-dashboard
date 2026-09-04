@@ -1218,7 +1218,7 @@ export class QuestScene extends Phaser.Scene {
     };
     const tiny = this.mapW < 30;
     const cathedral = this.save.current_zone === "cathedral";
-    place("heart-pickup", cathedral ? 4 : tiny ? 5 : 14);
+    place("heart-pickup", cathedral ? 3 : tiny ? 4 : 12);
     place("golden-heart", cathedral ? 2 : tiny ? 1 : 3);
     this.physics.add.overlap(this.player, this.hearts, (_p, obj) =>
       this.takeHeart(obj as Phaser.Physics.Arcade.Sprite),
@@ -1339,9 +1339,11 @@ export class QuestScene extends Phaser.Scene {
         [60, 51],
         [60, 82],
       ],
-      flowers: 180,
+      flowers: 144,
       border: true,
     });
+
+    this.addFruitTrees();
 
     // Act I is intentionally straightforward: follow the road east to the
     // grotto, calm the Warden, and take the Lantern onward.
@@ -2495,12 +2497,22 @@ export class QuestScene extends Phaser.Scene {
         this.emitToast("Raw — cook it first (tap Cook in your backpack).");
         return;
       }
+      if (this.save.player_health >= 5) {
+        this.emitToast("Already at full hearts — save it for later.");
+        return;
+      }
       this.addItem(id, -1);
       const before = this.save.player_health;
-      this.save.player_health = Math.min(5, before + food.heal);
+      this.save.player_health = Math.min(5, Math.round((before + food.heal) * 4) / 4);
       this.emitSave();
       this.pushHud(true);
-      this.floatText(this.player.x, this.player.y - 20, `+${this.save.player_health - before} ♥`, "#ff9ec4", true);
+      this.floatText(
+        this.player.x,
+        this.player.y - 20,
+        `+${this.save.player_health - before} ♥`,
+        "#ff9ec4",
+        true,
+      );
       this.emitToast(`${food.name} eaten.`);
     } else if (msg.action === "cook") {
       const food = FOOD_BY_ID[id];
@@ -2511,6 +2523,73 @@ export class QuestScene extends Phaser.Scene {
       this.pushHud(true);
       this.emitToast(`${food.name} cooked into ${FOOD_BY_ID[food.cookedId]?.name}.`);
     }
+  }
+
+  /**
+   * A light orchard through Act I: apple and orange trees you can walk up to
+   * and pick. Each tree gives a fruit or two, goes bare, then regrows.
+   */
+  private addFruitTrees() {
+    const spots: [number, number, "apple" | "orange"][] = [
+      [26, 18, "apple"],
+      [40, 30, "orange"],
+      [18, 52, "apple"],
+      [34, 66, "orange"],
+      [50, 40, "apple"],
+      [76, 28, "orange"],
+      [88, 58, "apple"],
+      [72, 74, "orange"],
+    ];
+    for (const [x, y, kind] of spots) {
+      const wx = this.wx(x);
+      const wy = this.wy(y);
+      const tile = this.layer?.getTileAtWorldXY(wx, wy);
+      const idx = tile?.index ?? -1;
+      if (idx < 0 || (SOLID_TILES as unknown as number[]).includes(idx)) continue;
+      const trunk = this.add.sprite(wx, wy, "tree").setDepth(this.dsort(wy + 8));
+      trunk.setTint(kind === "apple" ? 0x8fd06a : 0xa8d06a);
+      this.bakeShadow(wx, wy + trunk.displayHeight * 0.34, trunk.displayWidth * 0.6, 0.2);
+      const it = this.addInteractable(wx, wy + 18, "plate", "fruit", `Pick ${kind}s`, {
+        id: kind,
+        radius: 56,
+        depth: 6,
+      });
+      it?.obj.setAlpha(0.001);
+      const fruit = this.add
+        .circle(wx + 6, wy - 6, 5, kind === "apple" ? 0xe23a4e : 0xff9a2e)
+        .setDepth(this.dsort(wy + 10));
+      const fruit2 = this.add
+        .circle(wx - 8, wy + 2, 4.5, kind === "apple" ? 0xe23a4e : 0xff9a2e)
+        .setDepth(this.dsort(wy + 10));
+      this.tweens.add({
+        targets: [fruit, fruit2],
+        alpha: 0.6,
+        duration: 900,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+      if (it) it.data = { fruit, fruit2 };
+    }
+  }
+
+  /** Take the fruit off a tree; it regrows a couple of minutes later. */
+  private pickFruit(it: Interactable) {
+    if (!it.enabled) return;
+    const kind = it.id === "orange" ? "orange" : "apple";
+    const n = Phaser.Math.Between(1, 2);
+    this.addItem(kind, n);
+    const d = (it.data ?? {}) as { fruit?: Phaser.GameObjects.Arc; fruit2?: Phaser.GameObjects.Arc };
+    d.fruit?.setVisible(false);
+    d.fruit2?.setVisible(false);
+    it.enabled = false;
+    this.spawnSparkle(it.obj.x, it.obj.y - 18, kind === "apple" ? 0xe23a4e : 0xff9a2e, 12);
+    this.emitToast(`Picked ${n} ${kind}${n > 1 ? "s" : ""}.`);
+    this.time.delayedCall(120000, () => {
+      it.enabled = true;
+      d.fruit?.setVisible(true);
+      d.fruit2?.setVisible(true);
+    });
   }
 
   private addHouse() {
@@ -2694,6 +2773,9 @@ export class QuestScene extends Phaser.Scene {
         this.pushHud(true);
         this.spawnSparkle(this.player.x, this.player.y, 0xffd977, 22);
         this.openModal({ type: "info", title: SWIFT_SANDALS.name, body: SWIFT_SANDALS.body });
+        break;
+      case "fruit":
+        this.pickFruit(it);
         break;
       case "house":
         this.enterHouse();
