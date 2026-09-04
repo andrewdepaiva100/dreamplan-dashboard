@@ -65,7 +65,7 @@ export function generateMeadow(): Placement[] {
     if (distTo(x, z, treeSpots) < 9) continue; // no tree clusters
     treeSpots.push({ x, z });
     placed.push({
-      url: TREES[Math.floor(rnd() * TREES.length)],
+      url: TREES[Math.floor(rnd() * TREES.length)]!,
       x, z,
       scale: 1.6 + rnd() * 1.2,
       rotY: rnd() * Math.PI * 2,
@@ -79,7 +79,7 @@ export function generateMeadow(): Placement[] {
     const a = rnd() * Math.PI * 2;
     const d = 12 + rnd() * (WORLD_R - 18);
     placed.push({
-      url: ROCKS[Math.floor(rnd() * ROCKS.length)],
+      url: ROCKS[Math.floor(rnd() * ROCKS.length)]!,
       x: Math.cos(a) * d, z: Math.sin(a) * d,
       scale: 0.8 + rnd() * 0.9,
       rotY: rnd() * Math.PI * 2,
@@ -93,7 +93,7 @@ export function generateMeadow(): Placement[] {
     const a = rnd() * Math.PI * 2;
     const d = 4 + rnd() * (WORLD_R - 10);
     placed.push({
-      url: FLOWERS[Math.floor(rnd() * FLOWERS.length)],
+      url: FLOWERS[Math.floor(rnd() * FLOWERS.length)]!,
       x: Math.cos(a) * d, z: Math.sin(a) * d,
       scale: 0.9 + rnd() * 0.7,
       rotY: rnd() * Math.PI * 2,
@@ -107,7 +107,7 @@ export function generateMeadow(): Placement[] {
     const a = rnd() * Math.PI * 2;
     const d = 5 + rnd() * (WORLD_R - 10);
     placed.push({
-      url: GRASS[Math.floor(rnd() * GRASS.length)],
+      url: GRASS[Math.floor(rnd() * GRASS.length)]!,
       x: Math.cos(a) * d, z: Math.sin(a) * d,
       scale: 0.9 + rnd() * 0.8,
       rotY: rnd() * Math.PI * 2,
