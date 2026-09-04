@@ -867,8 +867,9 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                 buzz();
                 setShowArmory(true);
               }}
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/30 bg-[rgba(11,30,61,0.78)] text-base text-white backdrop-blur"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/30 bg-[rgba(11,30,61,0.78)] text-sm text-white backdrop-blur"
               aria-label="Open the armory"
+              title="Armory"
             >
               ⚔️
             </button>
