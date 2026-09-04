@@ -166,53 +166,68 @@ export type CeremonyBeat =
 export const CEREMONY_SCRIPT: CeremonyBeat[] = [
   {
     speaker: "Pastor Alcir",
-    text: "Family — and I get to say that word twice today, as your pastor and as Andrew’s grandfather. Dearly beloved, we are gathered here in the sight of God and in the presence of these witnesses, to join together Andrew and Maria in holy matrimony. Please, come forward and take each other's hands.",
+    text: "Light through old glass, candles along the stone, and every face here worn soft with joy. I get to say the word family twice today — once as your pastor, once as Andrew's grandfather. Dearly beloved, we are gathered in the sight of God to join Andrew and Maria in holy matrimony. Come forward, children. Take each other's hands.",
   },
   {
     speaker: "Andrew",
-    text: "Maria... my hands are shaking a little. Not from fear — from how much this means. You look like every prayer I ever whispered, standing right in front of me.",
+    text: "Maria... my hands are shaking a little. Not from fear — from the weight of how much this means. I have walked through five realms to stand here, and none of it was as hard as waiting for this moment to be real.",
   },
   { choices: CEREMONY_CHOICES },
   {
     speaker: "Pastor Alcir",
-    text: "Love is patient, love is kind. It does not envy, it does not boast, it is not proud. It always protects, always trusts, always hopes, always perseveres. Love never fails. This is the covenant you enter today — not a feeling, but a promise renewed every morning.",
+    text: "Love is patient. Love is kind. It does not envy, it does not boast, it keeps no record of wrongs. It always protects, always trusts, always hopes, always perseveres. Love never fails. Hear that clearly today: what you enter is not a feeling that visits you — it is a promise you renew every single morning, in the ordinary light of an ordinary kitchen.",
   },
   {
     speaker: "Pastor Alcir",
     text: "Andrew, will you have this woman to be your wedded wife — to love her, comfort her, honour and keep her, in sickness and in health, in plenty and in want, and forsaking all others be faithful to her as long as you both shall live?",
   },
-  { speaker: "Andrew", text: "I will. With everything I am, I will." },
+  {
+    speaker: "Andrew",
+    text: "I will. With everything I am, and everything I am still becoming — I will.",
+  },
   {
     speaker: "Pastor Alcir",
     text: "Maria, will you have this man to be your wedded husband — to love him, comfort him, honour and keep him, in sickness and in health, in plenty and in want, and forsaking all others be faithful to him as long as you both shall live?",
   },
-  { speaker: "Maria", text: "I will. Today, tomorrow, and every day after." },
+  {
+    speaker: "Maria",
+    text: "I will. Today, tomorrow, and every ordinary day after — I will.",
+  },
   {
     speaker: "Pastor Alcir",
-    text: "Then speak now the vows you have written for one another.",
+    text: "Then speak now the vows you have written for one another. Say them slowly. Heaven is listening, and so is everyone who loves you.",
   },
   {
     speaker: "Andrew",
-    text: "Maria — I promise to be the calm in your loud days and the joy in your quiet ones. I promise to listen before I answer, to choose you when it is easy and to choose you louder when it is not. I promise to pray over our home, to work for our future, and to never let a day pass without telling you what you are to me. You are my peace. I take you as my wife.",
+    text: "Maria — I promise to be the calm in your loud days and the joy in your quiet ones. I promise to listen before I answer, to apologise before the sun goes down, and to choose you louder on the days it is hard than on the days it is easy. I promise to pray over our home, to work for our future, and to never let a night pass without you knowing exactly what you are to me.",
+  },
+  {
+    speaker: "Andrew",
+    text: "You met every fear I have and did not flinch. You carried what I could not say out loud. Whatever comes for us, it will have to come through both of us — and I like our odds. You are my peace. I take you as my wife.",
   },
   {
     speaker: "Maria",
-    text: "Andrew — I promise to walk beside you, not behind you and not ahead. I promise to be gentle with your heart, honest with my own, and faithful when the road is long. I promise laughter in our kitchen, grace in our arguments, and God at the centre of everything we build. You are my home. I take you as my husband.",
+    text: "Andrew — I promise to walk beside you, never behind you and never ahead. I promise to be gentle with your heart and honest with my own, to tell you the truth kindly, and to stay when staying costs something. I promise laughter in our kitchen, grace in our arguments, and God at the centre of everything we build. I have seen what you fight when no one is watching, and I have never once wanted to run. I will be the safe place you come home to and the voice that tells you the truth about yourself. You are my home. I take you as my husband.",
   },
   {
     speaker: "Pastor Alcir",
-    text: "The rings, please. A circle without beginning and without end — as your love is to be. Andrew, place the ring on her finger and say: with this ring, I thee wed.",
+    text: "The rings, please. A circle — no beginning, no end, no seam where it could ever come apart. Andrew, place it on her finger and say: with this ring, I thee wed.",
   },
-  { speaker: "Andrew", text: "With this ring, I thee wed. All that I have is yours." },
-  { speaker: "Maria", text: "With this ring, I thee wed. All that I am is yours." },
+  {
+    speaker: "Andrew",
+    text: "With this ring, I thee wed. All that I have is yours, and all that I build, I build for you.",
+  },
+  {
+    speaker: "Maria",
+    text: "With this ring, I thee wed. All that I am is yours, and all that I become, I become beside you.",
+  },
   {
     speaker: "Pastor Alcir",
-    text: "Inasmuch as Andrew and Maria have consented together in holy wedlock and have witnessed the same before God and this company, by the authority entrusted to me, I pronounce them husband and wife. What God has joined together, let no one separate.",
+    text: "Inasmuch as Andrew and Maria have consented together in holy wedlock before God and this company, by the authority entrusted to me I pronounce them husband and wife. What God has joined together, let no one separate. Andrew — kiss your bride.",
   },
-  { speaker: "Pastor Alcir", text: "Andrew — you may kiss your bride." },
   {
     speaker: "The Church",
-    text: "The whole church rises. Bells ring out over the golden realm, petals fall from the rafters, and every friend you have ever loved is on their feet.",
+    text: "The whole church rises at once. Bells break open over the golden realm, petals drift down from the rafters, and every person you have ever loved is on their feet — Marcos and Raquel, Silvia and Gustavo, every friend, every witness, all of it, for you two.",
   },
 ];
 
@@ -360,7 +375,7 @@ export const WEAPONS: Weapon[] = [
     id: "spark-wand",
     name: "Radiant Spark Wand",
     icon: "✨",
-    damage: 2,
+    damage: 100,
     reach: 72,
     color: 0xffd977,
     blurb: "Carved from grotto driftwood. Its light scatters worry before it can settle.",
@@ -369,7 +384,7 @@ export const WEAPONS: Weapon[] = [
     id: "floral-bow",
     name: "Floral Bow",
     icon: "🏹",
-    damage: 3,
+    damage: 180,
     reach: 90,
     color: 0xff9ec4,
     blurb: "Strung with garden vine. Every arrow blooms where it lands.",
@@ -378,7 +393,7 @@ export const WEAPONS: Weapon[] = [
     id: "lightblade",
     name: "Lightblade",
     icon: "⚔️",
-    damage: 4,
+    damage: 280,
     reach: 78,
     color: 0xbfe3ff,
     blurb: "Forged in Haven's clocktower. It cuts through noise, never through people.",
@@ -387,7 +402,7 @@ export const WEAPONS: Weapon[] = [
     id: "love-sword",
     name: "The Love Sword",
     icon: "💗",
-    damage: 5,
+    damage: 380,
     reach: 88,
     color: 0xff6fae,
     blurb: "Andrew's own blade, forged rose-pink. He carries its blue twin and fights at your side wherever you go.",
@@ -396,7 +411,7 @@ export const WEAPONS: Weapon[] = [
     id: "starlight-censer",
     name: "Celestial Stave",
     icon: "🌟",
-    damage: 5,
+    damage: 420,
     reach: 96,
     color: 0xa9b6ff,
     blurb: "Swings a slow arc of constellations that calms whatever it touches.",
@@ -405,7 +420,7 @@ export const WEAPONS: Weapon[] = [
     id: "ring-of-dawn",
     name: "Vow Shield / Peace Blade",
     icon: "🛡️",
-    damage: 6,
+    damage: 520,
     reach: 104,
     color: 0xffe6a8,
     blurb: "A shield that guards the promise and a blade that never needs to be drawn in anger.",
@@ -414,7 +429,7 @@ export const WEAPONS: Weapon[] = [
     id: "eternal-vow",
     name: "Ring of Eternal Vow",
     icon: "💍",
-    damage: 7,
+    damage: 720,
     reach: 116,
     color: 0xffd977,
     blurb: "A vow made metal. Legendary — it ends most arguments in a single swing.",
@@ -423,7 +438,7 @@ export const WEAPONS: Weapon[] = [
     id: "seraph-edge",
     name: "Seraph's Edge",
     icon: "🗡️",
-    damage: 6,
+    damage: 650,
     reach: 132,
     color: 0xbfe3ff,
     blurb: "Feather-light and impossibly fast. Legendary — it sweeps wide enough to clear a crowd.",
@@ -432,7 +447,7 @@ export const WEAPONS: Weapon[] = [
     id: "golden-crown",
     name: "Crown of the Golden Ring",
     icon: "👑",
-    damage: 10,
+    damage: 1000,
     reach: 150,
     color: 0xffb347,
     blurb: "The realm's own crown. Legendary — nothing that stands against love survives two strikes of it.",
@@ -487,7 +502,7 @@ export const DEFAULT_WEAPON = "spark-wand";
 /** Andrew's gift in Act III — the pink Love Sword, and he joins the fight. */
 export const LOVE_SWORD = {
   id: "love-sword",
-  line: "I made two. This one is yours — rose-pink, because that is what you are to me. I'll carry the blue one. From here on you don't walk into anything alone; wherever you go, I'm swinging right beside you.",
+  line: "I made this sword for you — I thought you might need it. Rose-pink, because that is what you are to me. I kept the blue one, so wherever this road goes, I'm swinging right beside you.",
 };
 
 /** Act IV's second boss — appears the moment the first one softens. */
@@ -498,7 +513,7 @@ export const SECOND_BOSSES: Partial<Record<ZoneId, BossConfig>> = {
       "This is what finds Andrew at three in the morning — the what-if he can never argue down.",
     mariaLine:
       "I've felt him lie awake with this. It doesn't get him tonight.",
-    hp: 10,
+    hp: 4200,
     taunt: "The stars go cold. A second shadow rises — The Hollow of Doubtful Nights.",
     art: "boss-hollow",
     color: 0x27336e,
@@ -622,7 +637,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
       "This is Andrew's fear of not being enough to provide — the current he wakes up fighting.",
     mariaLine:
       "I know this one. This is what he carries when he thinks he has to hold the whole river back alone. He doesn't. Not anymore.",
-    hp: 10,
+    hp: 2000,
     taunt: "The river swells and darkens. The Warden of Rushing Water rises to block the crossing — it has never let anyone through.",
     art: "boss-water",
     color: 0x4ec9d6,
@@ -659,7 +674,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
       "This is the pressure Andrew lives under — every plan, every bill, every thing he thinks depends on him.",
     mariaLine:
       "He never says it out loud, but I've watched this sit on his chest. Tonight it answers to me.",
-    hp: 12,
+    hp: 2800,
     taunt: "The glass above you darkens. The Stress Spectre descends — it has been waiting for you.",
     art: "boss-garden",
     color: 0xb79cf0,
@@ -696,7 +711,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
       "This is Andrew's doubt about himself — the voice telling him he won't be the husband he promised to be.",
     mariaLine:
       "He whispers this one to himself when he thinks I'm asleep. He's wrong about himself, and I'll prove it here.",
-    hp: 27,
+    hp: 6000,
     taunt: "The square falls silent. The Clamour of Doubt turns toward you — this one will not fall quickly.",
     art: "boss-haven",
     color: 0xd9a441,
@@ -733,7 +748,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
       "This is Andrew's exhaustion — the burnout he pushes through and never complains about.",
     mariaLine:
       "He's been tired for so long. Let me carry it for a while — that's what I'm walking up this mountain to say.",
-    hp: 9,
+    hp: 3200,
     taunt: "The summit dims. The Weight of Weariness presses down — it wants you to stop climbing, forever.",
     art: "boss-star",
     color: 0x8f9bff,

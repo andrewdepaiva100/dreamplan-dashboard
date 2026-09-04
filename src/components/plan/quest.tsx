@@ -14,6 +14,7 @@ import {
   STORY_PREMISE,
   VAULT_JOURNAL,
   WEAPON_BY_ID,
+  WEAPONS,
   ZONES,
 } from "@/lib/quest/content";
 import {
@@ -513,6 +514,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
   const [showMap, setShowMap] = useState(false);
   const [mapSnap, setMapSnap] = useState<MapSnapshot | null>(null);
   const [showMemories, setShowMemories] = useState(false);
+  const [showArmory, setShowArmory] = useState(false);
   const [actBanner, setActBanner] = useState<string | null>(null);
   const [muted, setMuted] = useState(true);
 
@@ -861,6 +863,17 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
             </button>
             <button
               type="button"
+              onClick={() => {
+                buzz();
+                setShowArmory(true);
+              }}
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/30 bg-[rgba(11,30,61,0.78)] text-base text-white backdrop-blur"
+              aria-label="Open the armory"
+            >
+              ⚔️
+            </button>
+            <button
+              type="button"
               onClick={() => setMuted((m) => !m)}
               className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/30 bg-[rgba(11,30,61,0.78)] text-base text-white backdrop-blur"
               aria-label={muted ? "Unmute music" : "Mute music"}
@@ -1175,10 +1188,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
             }
           }}
         >
-          <p className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-navy/80">
-            {modal.demon}
-          </p>
-          <p className="mt-3 font-serif-italic italic text-navy">“{modal.intro}”</p>
+          <p className="font-serif-italic italic text-navy">“{modal.intro}”</p>
           <div className="mt-3">
             <MariaPortrait caption="Maria stands her ground" />
           </div>
@@ -1222,6 +1232,55 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                 <p className="mt-1 text-sm font-semibold text-navy">{lm.name}</p>
               </div>
             ))}
+          </div>
+        </GlassPanel>
+      ) : null}
+
+      {showArmory ? (
+        <GlassPanel title="Armory" onClose={() => setShowArmory(false)} wide>
+          <p className="text-xs text-navy/70">
+            Every weapon in the realm. Gold ones are yours — tap to equip.
+          </p>
+          <div className="mt-2 grid gap-2">
+            {WEAPONS.map((w) => {
+              const owned = hud?.weapons.includes(w.id) ?? false;
+              const on = hud?.equipped === w.id;
+              return (
+                <button
+                  key={w.id}
+                  type="button"
+                  disabled={!owned}
+                  onClick={() => {
+                    buzz();
+                    emit(EV.equip, w.id);
+                    setShowArmory(false);
+                  }}
+                  className={`flex items-start gap-3 rounded-xl border p-3 text-left transition ${
+                    on
+                      ? "border-gold bg-gold/25"
+                      : owned
+                        ? "border-gold/40 bg-white/80 hover:bg-gold/10"
+                        : "border-navy/15 bg-white/40 opacity-70"
+                  }`}
+                >
+                  <span className="text-2xl leading-none">{w.icon}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="font-display text-sm font-bold text-navy">{w.name}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-gold">
+                        {on ? "Equipped" : owned ? "Owned" : "Not found yet"}
+                      </span>
+                    </span>
+                    <span className="mt-0.5 block text-[11px] font-semibold text-navy/70">
+                      Power {w.damage} · Reach {w.reach}
+                    </span>
+                    <span className="mt-1 block text-xs leading-relaxed text-navy/75">
+                      {w.blurb}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </GlassPanel>
       ) : null}

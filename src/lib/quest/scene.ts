@@ -1544,7 +1544,7 @@ export class QuestScene extends Phaser.Scene {
     // Phase 0 = dormant: the boss waits, speaks, and only fights after Maria answers.
     this.bossPhase = cfg.silent ? 1 : 0;
     this.bossDialogueDone = Boolean(cfg.silent);
-    if (cfg.silent) this.emitToast(cfg.demon);
+    if (cfg.silent) this.emitToast(cfg.taunt);
     this.bossHp = cfg.hp;
     this.bossMax = cfg.hp;
     this.bossName = cfg.name;
