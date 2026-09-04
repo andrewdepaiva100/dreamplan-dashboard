@@ -316,7 +316,7 @@ export const WEAPONS: Weapon[] = [
   },
   {
     id: "starlight-censer",
-    name: "Starlight Censer",
+    name: "Celestial Stave",
     icon: "🌟",
     damage: 5,
     reach: 96,
@@ -325,12 +325,12 @@ export const WEAPONS: Weapon[] = [
   },
   {
     id: "ring-of-dawn",
-    name: "Ring of Dawn",
-    icon: "💍",
+    name: "Vow Shield / Peace Blade",
+    icon: "🛡️",
     damage: 6,
     reach: 104,
     color: 0xffe6a8,
-    blurb: "The first light of forever, worn on your hand.",
+    blurb: "A shield that guards the promise and a blade that never needs to be drawn in anger.",
   },
 ];
 
@@ -338,14 +338,8 @@ export const WEAPON_BY_ID: Record<string, Weapon> = Object.fromEntries(
   WEAPONS.map((w) => [w.id, w]),
 );
 
-export const DEFAULT_WEAPON = "wooden-sword";
-
-export const BLACKSMITH = {
-  name: "Tobias the Blacksmith",
-  weapon: DEFAULT_WEAPON,
-  line: "Maria! You can't walk the realm empty-handed. Here — a wooden sword from my own bench. Swing it with the ATTACK button; nothing here truly dies, it just remembers how to be gentle again.",
-  repeat: "The forge is always warm if your blade needs tending. Go on — the road is waiting.",
-};
+/** Act I's guide hands this over — there is no forge and no practice blade. */
+export const DEFAULT_WEAPON = "spark-wand";
 
 export const ACT_GUIDES: Record<ZoneId, { name: string; weapon: string; line: string }> = {
   sunlit_shores: {
