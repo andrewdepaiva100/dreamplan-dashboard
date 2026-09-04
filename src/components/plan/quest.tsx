@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+const Quest3D = lazy(() => import("./quest3d/Quest3D"));
 import type Phaser from "phaser";
 import {
   ANDREW_AFFIRMATIONS,
@@ -687,6 +689,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
   const [showArmory, setShowArmory] = useState(false);
   const [actBanner, setActBanner] = useState<string | null>(null);
   const [muted, setMuted] = useState(true);
+  const [realm3d, setRealm3d] = useState(false);
 
   useActMusic(screen === "playing" ? hud?.zone : undefined, muted);
 
@@ -850,6 +853,21 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
     [modal],
   );
 
+  // ---------------- 3D realm --------------------------------------------
+  if (realm3d) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-[60vh] items-center justify-center rounded-2xl border border-rose-gold/30 bg-[#0b1e3d] text-sm text-white">
+            Entering the 3D realm…
+          </div>
+        }
+      >
+        <Quest3D onExit={() => setRealm3d(false)} />
+      </Suspense>
+    );
+  }
+
   // ---------------- title screen ----------------------------------------
   if (screen === "title") {
     return (
@@ -903,6 +921,13 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                 className="rounded-xl border border-rose-gold/40 bg-white/10 px-5 py-3.5 text-sm font-semibold text-blush backdrop-blur-sm transition hover:border-gold/60 hover:bg-white/15 active:scale-[0.98]"
               >
                 How to Play &amp; Story
+              </button>
+              <button
+                type="button"
+                onClick={() => setRealm3d(true)}
+                className="rounded-xl border border-teal/50 bg-teal/15 px-5 py-3.5 text-sm font-bold text-teal backdrop-blur-sm transition hover:bg-teal/25 active:scale-[0.98]"
+              >
+                ✦ Enter the 3D Realm — Beta
               </button>
               <button
                 type="button"
