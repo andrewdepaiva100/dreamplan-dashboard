@@ -2194,6 +2194,20 @@ export class QuestScene extends Phaser.Scene {
         this.removeInteractable(it);
         this.openModal({ type: "envelope", envelopeId: it.id! });
         break;
+      case "legendary": {
+        const pick = LEGENDARY_PICKUPS.find((l) => l.weapon === it.id);
+        this.removeKeyBeacon(`legend-${it.id}`);
+        this.removeInteractable(it);
+        if (it.id) this.grantWeapon(it.id);
+        if (pick) {
+          this.openModal({
+            type: "info",
+            title: WEAPON_BY_ID[pick.weapon]?.name ?? "Legendary weapon",
+            body: pick.body,
+          });
+        }
+        break;
+      }
       case "boots":
         this.removeInteractable(it);
         this.save.swift_boots = true;
