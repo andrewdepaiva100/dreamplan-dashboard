@@ -113,60 +113,119 @@ export class QuestHouseScene extends Phaser.Scene {
       pool.fillRect(wx - 60, fy + 6, 120, 110);
     }
 
-    // ---- rug, table, shelf, picture --------------------------------------
+    // ---- stone fireplace on the back wall --------------------------------
+    const fp = this.add.graphics().setDepth(2);
+    const fpx = cx;
+    // chimney stack
+    fp.fillStyle(0x9aa0a6, 1);
+    fp.fillRect(fpx - 34, oy - 4, 68, 46);
+    fp.fillStyle(0x7d848a, 1);
+    fp.fillRect(fpx - 40, oy + 34, 80, 12);
+    // mantel body, widening down
+    fp.fillStyle(0xb3b9be, 1);
+    fp.fillRect(fpx - 62, oy + 46, 124, 40);
+    fp.fillStyle(0x9aa0a6, 1);
+    fp.fillRect(fpx - 78, oy + 76, 156, 42);
+    // stone seams
+    fp.fillStyle(0x767c82, 1);
+    for (let r = 0; r < 5; r++) fp.fillRect(fpx - 78, oy + 8 + r * 22, 156, 2);
+    for (let c = -3; c <= 3; c++) fp.fillRect(fpx + c * 24, oy + 8, 2, 108);
+    // firebox
+    fp.fillStyle(0x8a2f2a, 1);
+    fp.fillRect(fpx - 42, oy + 52, 84, 60);
+    fp.fillStyle(0x140d09, 1);
+    fp.fillRect(fpx - 36, oy + 58, 72, 54);
+    // flames + log bed
+    fp.fillStyle(0xff8a2b, 1);
+    fp.fillEllipse(fpx, oy + 98, 42, 26);
+    fp.fillStyle(0xffd166, 1);
+    fp.fillEllipse(fpx, oy + 100, 24, 16);
+    fp.fillStyle(0x5b3f26, 1);
+    fp.fillRect(fpx - 36, oy + 106, 72, 8);
+
+    // ---- green woven rug with a fringed border ---------------------------
     const rug = this.add.graphics().setDepth(3);
-    rug.fillStyle(0x7d2f43, 1);
-    rug.fillEllipse(cx, fy + 210, 300, 150);
-    rug.fillStyle(0xc9a44c, 1);
-    rug.fillEllipse(cx, fy + 210, 250, 118);
-    rug.fillStyle(0x8f3550, 1);
-    rug.fillEllipse(cx, fy + 210, 214, 96);
-    rug.fillStyle(0xf0e0c0, 0.85);
-    rug.fillEllipse(cx, fy + 210, 120, 52);
-    rug.fillStyle(0x8f3550, 1);
-    rug.fillEllipse(cx, fy + 210, 92, 36);
+    const rw = 150;
+    const rh = 250;
+    const rx = cx - 190;
+    const ry = fy + 90;
+    rug.fillStyle(0xe8dfc0, 1);
+    rug.fillRect(rx - 5, ry - 5, rw + 10, rh + 10);
+    rug.fillStyle(0x3f7a3f, 1);
+    rug.fillRect(rx, ry, rw, rh);
+    rug.fillStyle(0x4d9147, 1);
+    rug.fillRect(rx + 6, ry + 6, rw - 12, rh - 12);
+    rug.fillStyle(0x3f7a3f, 0.8);
+    rug.fillRect(rx, ry + rh / 2 - 2, rw, 4);
 
-    // little side table with a candle and a mug
-    const tbl = this.add.graphics().setDepth(9);
-    tbl.fillStyle(0x6b4a2c, 1);
-    tbl.fillRect(ox + 96, fy + 118, 96, 12);
-    tbl.fillRect(ox + 104, fy + 130, 10, 40);
-    tbl.fillRect(ox + 174, fy + 130, 10, 40);
-    tbl.fillStyle(0xf1e3c6, 1);
-    tbl.fillRect(ox + 128, fy + 96, 9, 24);
-    tbl.fillStyle(0xffb347, 1);
-    tbl.fillEllipse(ox + 132.5, fy + 92, 9, 14);
-    tbl.fillStyle(0xd8dbe0, 1);
-    tbl.fillRect(ox + 156, fy + 104, 16, 14);
+    // ---- fur pelt on the boards ------------------------------------------
+    const pelt = this.add.graphics().setDepth(3);
+    pelt.fillStyle(0x6d4527, 1);
+    pelt.fillEllipse(cx + 90, fy + 200, 190, 96);
+    pelt.fillEllipse(cx + 10, fy + 178, 70, 56);
+    pelt.fillEllipse(cx + 170, fy + 226, 66, 44);
+    pelt.fillStyle(0x845732, 1);
+    pelt.fillEllipse(cx + 96, fy + 196, 120, 54);
 
-    // hanging shelf + framed picture on the wall
-    const shelf = this.add.graphics().setDepth(2);
-    shelf.fillStyle(0x6b4a2c, 1);
-    shelf.fillRect(cx - 70, oy + 74, 140, 8);
-    shelf.fillStyle(0x9c6b3a, 1);
-    shelf.fillRect(cx - 54, oy + 58, 14, 16);
-    shelf.fillStyle(0xc36a7c, 1);
-    shelf.fillRect(cx - 26, oy + 60, 12, 14);
-    shelf.fillStyle(0x7fa88a, 1);
-    shelf.fillRect(cx + 4, oy + 56, 16, 18);
-    const pic = this.add.graphics().setDepth(2);
-    pic.fillStyle(0xc9a44c, 1);
-    pic.fillRect(cx + 120, oy + 34, 62, 48);
-    pic.fillStyle(0x35507a, 1);
-    pic.fillRect(cx + 126, oy + 40, 50, 36);
-    pic.fillStyle(0xf2cf8e, 1);
-    pic.fillCircle(cx + 151, oy + 54, 9);
+    // ---- bookshelf + potted tree -----------------------------------------
+    const bs = this.add.graphics().setDepth(9);
+    const bx = ox + 250;
+    bs.fillStyle(0xc79a5b, 1);
+    bs.fillRect(bx - 44, fy - 62, 88, 22);
+    bs.fillStyle(0x9c6b3a, 1);
+    bs.fillRect(bx - 40, fy - 40, 80, 62);
+    bs.fillStyle(0x6b4a2c, 1);
+    bs.fillRect(bx - 40, fy - 14, 80, 5);
+    const bookCols = [0xd94f4f, 0x4f7fd9, 0x4fd97f, 0xe0c14a, 0xb06fd0];
+    for (let r = 0; r < 2; r++)
+      for (let i = 0; i < 5; i++) {
+        bs.fillStyle(bookCols[(i + r) % bookCols.length]!, 1);
+        bs.fillRect(bx - 34 + i * 14, fy - 36 + r * 26, 10, 20);
+      }
+    const pot = this.add.graphics().setDepth(9);
+    pot.fillStyle(0x2f6b3a, 1);
+    pot.fillTriangle(bx + 96, fy - 54, bx + 74, fy - 8, bx + 118, fy - 8);
+    pot.fillStyle(0x3f8a4a, 1);
+    pot.fillTriangle(bx + 96, fy - 40, bx + 80, fy - 10, bx + 112, fy - 10);
+    pot.fillStyle(0xa8603a, 1);
+    pot.fillRect(bx + 82, fy - 10, 28, 18);
+
+    // ---- framed pictures on the wall -------------------------------------
+    for (const [px, tone] of [
+      [ox + 70, 0x6fa8dc],
+      [cx + 190, 0x8fbf6f],
+    ] as [number, number][]) {
+      const pic = this.add.graphics().setDepth(2);
+      pic.fillStyle(0x6b4a2c, 1);
+      pic.fillRect(px - 32, oy + 34, 64, 48);
+      pic.fillStyle(tone, 1);
+      pic.fillRect(px - 26, oy + 40, 52, 36);
+      pic.fillStyle(0x3f7a3f, 1);
+      pic.fillRect(px - 26, oy + 62, 52, 14);
+      pic.fillStyle(0xf2cf8e, 1);
+      pic.fillCircle(px + 12, oy + 50, 7);
+    }
+
+    // small framed cluster low on the wall
+    const cluster = this.add.graphics().setDepth(2);
+    for (let i = 0; i < 4; i++) {
+      cluster.fillStyle(0x9c6b3a, 1);
+      cluster.fillRect(cx - 320 + (i % 2) * 34, oy + 60 + Math.floor(i / 2) * 26, 24, 20);
+      cluster.fillStyle(0xdfe6ea, 1);
+      cluster.fillRect(cx - 316 + (i % 2) * 34, oy + 64 + Math.floor(i / 2) * 26, 16, 12);
+    }
 
     // ---- furniture -------------------------------------------------------
-    this.furniture(ox + 120, fy + 60, "hearth", 1.7, "hearth", "Cook at the hearth");
-    this.furniture(ox + ROOM_W - 150, fy + 60, "chest", 1.6, "chest", "Open the chest");
-    this.furniture(ox + ROOM_W - 140, fy + 250, "bed", 1.8, "bed", "Sleep until morning");
+    this.furniture(cx, fy + 34, "hearth", 1.5, "hearth", "Cook at the hearth");
+    this.furniture(ox + 96, fy + 210, "chest", 1.6, "chest", "Open the chest");
+    this.furniture(ox + 104, fy + 90, "bed", 1.8, "bed", "Sleep until morning");
 
-    // ---- warm light: fire glow + candle, small and soft ------------------
+    // ---- warm light: fire glow + soft lamp, small and soft ---------------
     for (const [lx, ly, sc, a] of [
-      [ox + 120, fy + 66, 1.5, 0.34],
-      [ox + 132, fy + 92, 0.8, 0.26],
+      [cx, oy + 100, 1.6, 0.34],
+      [ox + 250, fy - 30, 0.7, 0.18],
     ] as [number, number, number, number][]) {
+
       const l = this.add
         .sprite(lx, ly, "light-warm")
         .setDepth(30)

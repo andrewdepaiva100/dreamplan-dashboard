@@ -317,16 +317,43 @@ function ItemGrid({
   slots = 20,
   selected,
   onPick,
+  dragGroup,
+  onDropIn,
 }: {
   items: Record<string, number>;
   slots?: number;
   selected?: string | null;
   onPick?: (id: string) => void;
+  /** Shared key so two grids can drag items between each other. */
+  dragGroup?: string;
+  onDropIn?: (id: string, from: string) => void;
 }) {
+  const [over, setOver] = useState(false);
   const filled = Object.entries(items).filter(([, n]) => n > 0);
   const cells = Array.from({ length: Math.max(slots, filled.length) }, (_, i) => filled[i] ?? null);
+  const dropProps = onDropIn
+    ? {
+        onDragOver: (e: import("react").DragEvent) => {
+          e.preventDefault();
+          setOver(true);
+        },
+        onDragLeave: () => setOver(false),
+        onDrop: (e: import("react").DragEvent) => {
+          e.preventDefault();
+          setOver(false);
+          const raw = e.dataTransfer.getData("text/plain");
+          const [from, id] = raw.split("|");
+          if (id && from && from !== dragGroup) onDropIn(id, from);
+        },
+      }
+    : {};
   return (
-    <div className="grid grid-cols-5 gap-1.5">
+    <div
+      {...dropProps}
+      className={`grid grid-cols-5 gap-1.5 rounded-xl p-1 transition ${
+        over ? "bg-gold/20 ring-2 ring-gold" : ""
+      }`}
+    >
       {cells.map((cell, i) => {
         const food = cell ? FOOD_BY_ID[cell[0]] : undefined;
         const on = cell && selected === cell[0];
@@ -335,6 +362,10 @@ function ItemGrid({
             key={i}
             type="button"
             disabled={!cell}
+            draggable={Boolean(cell && dragGroup)}
+            onDragStart={(e) => {
+              if (cell && dragGroup) e.dataTransfer.setData("text/plain", `${dragGroup}|${cell[0]}`);
+            }}
             onClick={() => cell && onPick?.(cell[0])}
             title={food?.name ?? "Empty slot"}
             className={`relative flex aspect-square items-center justify-center rounded-lg border text-xl transition ${
@@ -1570,8 +1601,8 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       {showBag ? (
         <GlassPanel title="Backpack" onClose={() => setShowBag(false)}>
           <p className="text-xs text-navy/70">
-            Everything you've gathered. Tap an item to eat it — raw meat has to be cooked on the
-            hearth at home first.
+            Everything you've gathered. Tap an item to eat it — raw meat can be cooked right here,
+            any time.
           </p>
           <div className="mt-3">
             <ItemGrid
@@ -1581,6 +1612,25 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                 emit(EV.item, { action: "eat", id });
               }}
             />
+          </div>
+          <div className="mt-3 space-y-2">
+            {FOOD_ITEMS.filter((f) => f.cookedId && (hud?.inventory?.[f.id] ?? 0) > 0).map((f) => (
+              <button
+                key={`cook-${f.id}`}
+                type="button"
+                onClick={() => {
+                  buzz();
+                  emit(EV.item, { action: "cook", id: f.id });
+                }}
+                className="flex w-full items-center gap-3 rounded-xl border border-gold/50 bg-white/80 p-3 text-left"
+              >
+                <span className="text-2xl">{f.icon}</span>
+                <span className="flex-1 text-sm font-bold text-navy">
+                  Cook {f.name} ({hud?.inventory?.[f.id] ?? 0})
+                </span>
+                <span className="text-lg">🔥</span>
+              </button>
+            ))}
           </div>
           <div className="mt-3 space-y-1">
             {FOOD_ITEMS.map((f) => (
@@ -1596,7 +1646,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       {modal?.type === "chest" ? (
         <GlassPanel title="Home Chest" onClose={closeModal} wide>
           <p className="text-xs text-navy/70">
-            Tap in the backpack to store, tap in the chest to take it back out.
+            Drag an item across to move it — or just tap it.
           </p>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
             <div>
@@ -1606,6 +1656,11 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
               <ItemGrid
                 items={modal.inventory}
                 slots={10}
+                dragGroup="bag"
+                onDropIn={(id) => {
+                  buzz();
+                  emit(EV.item, { action: "take", id });
+                }}
                 onPick={(id) => {
                   buzz();
                   emit(EV.item, { action: "stash", id });
@@ -1619,6 +1674,11 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
               <ItemGrid
                 items={modal.chest}
                 slots={10}
+                dragGroup="chest"
+                onDropIn={(id) => {
+                  buzz();
+                  emit(EV.item, { action: "stash", id });
+                }}
                 onPick={(id) => {
                   buzz();
                   emit(EV.item, { action: "take", id });
@@ -1632,10 +1692,11 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       {modal?.type === "hearth" ? (
         <GlassPanel title="The Hearth" onClose={closeModal}>
           <p className="text-xs text-navy/70">
-            The fire is warm. Cook what you brought home — cooked meat restores two hearts.
+            The fire is warm. Cooked meat restores two hearts — you can also cook straight from
+            your backpack anywhere.
           </p>
           <div className="mt-3 space-y-2">
-            {FOOD_ITEMS.filter((f) => f.cookedId).map((f) => {
+            {FOOD_ITEMS.filter((f) => f.cookedId && (modal.inventory[f.id] ?? 0) > 0).map((f) => {
               const have = modal.inventory[f.id] ?? 0;
               return (
                 <button

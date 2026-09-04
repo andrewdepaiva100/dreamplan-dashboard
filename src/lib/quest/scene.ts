@@ -150,6 +150,8 @@ export class QuestScene extends Phaser.Scene {
   private hearts!: Phaser.Physics.Arcade.Group;
   private hand: Phaser.GameObjects.Sprite | null = null;
   private bossDialogueDone = false;
+  /** True from the moment a boss conversation opens — keeps battle music playing. */
+  private bossTalking = false;
   private bossHalo: Phaser.GameObjects.Arc | null = null;
   private bossSlow = 1;
   /** 2.5D: grounded contact shadows that follow moving actors. */
@@ -246,6 +248,7 @@ export class QuestScene extends Phaser.Scene {
     this.traveling = false;
     this.hand = null;
     this.bossDialogueDone = false;
+    this.bossTalking = false;
     this.bossSlow = 1;
     this.bossHalo = null;
     this.shadows = [];
@@ -2477,7 +2480,7 @@ export class QuestScene extends Phaser.Scene {
       const food = FOOD_BY_ID[id];
       if (!food || (this.save.inventory[id] ?? 0) <= 0) return;
       if (food.raw) {
-        this.emitToast("Raw — cook it on the hearth at home first.");
+        this.emitToast("Raw — cook it first (tap Cook in your backpack).");
         return;
       }
       this.addItem(id, -1);
@@ -2487,6 +2490,14 @@ export class QuestScene extends Phaser.Scene {
       this.pushHud(true);
       this.floatText(this.player.x, this.player.y - 20, `+${this.save.player_health - before} ♥`, "#ff9ec4", true);
       this.emitToast(`${food.name} eaten.`);
+    } else if (msg.action === "cook") {
+      const food = FOOD_BY_ID[id];
+      if (!food?.cookedId || (this.save.inventory[id] ?? 0) <= 0) return;
+      this.addItem(id, -1);
+      this.addItem(food.cookedId, 1);
+      this.emitSave();
+      this.pushHud(true);
+      this.emitToast(`${food.name} cooked into ${FOOD_BY_ID[food.cookedId]?.name}.`);
     }
   }
 
@@ -2889,6 +2900,9 @@ export class QuestScene extends Phaser.Scene {
     const cfg = ACT_BOSSES[this.save.current_zone];
     if (!cfg) return;
     this.bossDialogueDone = true;
+    this.bossTalking = true;
+    this.musicMode = "battle";
+    this.game.events.emit(EV.music, "battle");
     this.boss.setVelocity(0, 0);
     this.openModal({
       type: "boss",
@@ -3270,7 +3284,7 @@ export class QuestScene extends Phaser.Scene {
     this.updateDayNight(delta);
     const fighting = Boolean(
       this.boss?.active &&
-        this.bossPhase === 1 &&
+        (this.bossPhase === 1 || this.bossTalking) &&
         Phaser.Math.Distance.Between(this.boss.x, this.boss.y, this.player.x, this.player.y) < 620,
     );
     const mode = fighting ? "battle" : "explore";
