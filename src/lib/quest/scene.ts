@@ -17,6 +17,9 @@ import {
   SWIFT_SANDALS,
   LOVE_SWORD,
   SECOND_BOSSES,
+  WEDDING_GUESTS,
+  FAMILY_GUESTS,
+  type GuestInfo,
   type BossConfig,
   ZONES,
   type ZoneId,
@@ -939,13 +942,13 @@ export class QuestScene extends Phaser.Scene {
     // three music sheets are never far from the fountain.
     const dims =
       zone === "sunlit_shores"
-        ? 62
+        ? 50
         : zone === "wedding_garden"
-          ? 70
+          ? 56
           : zone === "the_haven"
-            ? 62
+            ? 50
             : zone === "starry_ascent"
-              ? 44
+              ? 35
               : 30;
     this.mapW = dims;
     this.mapH = dims;
@@ -1121,52 +1124,8 @@ export class QuestScene extends Phaser.Scene {
       border: true,
     });
 
-    // river gates puzzle: 3 plates on the west bank, 3 blocks to push
-    this.blocks = this.physics.add.group();
-    const plateTiles: [number, number][] = [
-      [42, 24],
-      [42, 51],
-      [42, 78],
-    ];
-    const plates: Phaser.GameObjects.Sprite[] = plateTiles.map(([x, y]) =>
-      this.add.sprite(this.wx(x!), this.wy(y!), "plate").setDepth(4).setAlpha(0.75),
-    );
-    const blockTiles: [number, number][] = [
-      [24, 22],
-      [26, 51],
-      [22, 76],
-    ];
-    for (const [x, y] of blockTiles) {
-      const b = this.blocks.create(this.wx(x!), this.wy(y!), "block") as Phaser.Physics.Arcade.Sprite;
-      b.setImmovable(false).setDepth(11);
-      b.setDrag(1400, 1400);
-      (b.body as Phaser.Physics.Arcade.Body).setMass(6);
-      b.setCollideWorldBounds(true);
-    }
-    this.physics.add.collider(this.blocks, this.layer);
-    this.physics.add.collider(this.blocks, this.blocks);
-    this.time.addEvent({
-      delay: 220,
-      loop: true,
-      callback: () => {
-        if (this.zoneState["gatesOpen"]) return;
-        let solved = 0;
-        plates.forEach((p, i) => {
-          const near = (this.blocks.getChildren() as Phaser.Physics.Arcade.Sprite[]).some(
-            (b) => Phaser.Math.Distance.Between(b.x, b.y, p.x, p.y) < 24,
-          );
-          p.setAlpha(near ? 1 : 0.75);
-          p.setTint(near ? 0xfff0bf : 0xffffff);
-          if (near) solved++;
-          void i;
-        });
-        this.objective = `The River Gates — ${solved}/3 stones on the plates.`;
-        if (solved === 3) {
-          this.zoneState["gatesOpen"] = true;
-          this.openRiverGates();
-        }
-      },
-    });
+    // Act I is intentionally straightforward: follow the road east to the
+    // grotto, calm the Warden, and take the Lantern onward.
 
     // waterfall envelope
     if (!this.has(this.save.secret_envelopes_found, "waterfall")) {
