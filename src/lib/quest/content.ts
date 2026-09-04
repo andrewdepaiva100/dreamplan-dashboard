@@ -288,15 +288,6 @@ export type Weapon = {
 
 export const WEAPONS: Weapon[] = [
   {
-    id: "wooden-sword",
-    name: "Wooden Sword",
-    icon: "🗡️",
-    damage: 1,
-    reach: 54,
-    color: 0xc99a5b,
-    blurb: "A practice blade from the village forge. Light, honest, and always enough to start.",
-  },
-  {
     id: "spark-wand",
     name: "Radiant Spark Wand",
     icon: "✨",
