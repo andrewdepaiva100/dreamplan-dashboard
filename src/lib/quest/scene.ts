@@ -8,6 +8,11 @@ import {
   RELICS,
   WEAPON_BY_ID,
   REST_STONE_LINES,
+  AEGIS,
+  SIGNPOST_DIRECTIONS,
+  SIGNPOST_HEADER,
+  HEART_PICKUP_TEXT,
+  GOLDEN_HEART_TEXT,
   ZONES,
   type ZoneId,
 } from "./content";
@@ -24,7 +29,6 @@ import {
 
 export { EV } from "./events";
 export type { HudState, ModalPayload } from "./events";
-import { AEGIS, SIGNPOST_DIRECTIONS, SIGNPOST_HEADER } from "./content";
 import { EV, type HudState, type ModalPayload } from "./events";
 
 type Interactable = {
@@ -110,6 +114,11 @@ export class QuestScene extends Phaser.Scene {
   private bossName = "";
   private bossHitAt = 0;
   private swingAt = 0;
+  private gatewayObj: Phaser.GameObjects.Sprite | null = null;
+  private traveling = false;
+  private hearts!: Phaser.Physics.Arcade.Group;
+  private hand: Phaser.GameObjects.Sprite | null = null;
+  private bossDialogueDone = false;
 
   constructor() {
     super("quest");
@@ -137,6 +146,10 @@ export class QuestScene extends Phaser.Scene {
     this.bossHp = 0;
     this.bossMax = 0;
     this.bossName = "";
+    this.gatewayObj = null;
+    this.traveling = false;
+    this.hand = null;
+    this.bossDialogueDone = false;
     if (this.save.weapons.length === 0) this.save.weapons = [];
     this.animals = [];
     this.landmark = null;
