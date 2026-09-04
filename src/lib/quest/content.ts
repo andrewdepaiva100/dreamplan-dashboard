@@ -156,6 +156,66 @@ export const CEREMONY_CHOICES: DialogueChoice[] = [
 export const FINAL_PROPOSAL =
   "Maria, you gathered these relics, but the truth is... you brought all this peace into my life from the start. I see every effort, I cherish every quiet moment, and I see the incredible woman you are. You brought me absolute peace—now let me spend forever making sure you always feel that same peace with me.";
 
+/** One beat of the church ceremony: a spoken line, or a choice for Maria. */
+export type CeremonyBeat =
+  | { speaker: string; text: string }
+  | { choices: DialogueChoice[] };
+
+/** The full wedding inside the little church — priest, vows, rings, kiss. */
+export const CEREMONY_SCRIPT: CeremonyBeat[] = [
+  {
+    speaker: "Father Elias",
+    text: "Dearly beloved, we are gathered here in the sight of God and in the presence of these witnesses, to join together Andrew and Maria in holy matrimony. Please, come forward and take each other's hands.",
+  },
+  {
+    speaker: "Andrew",
+    text: "Maria... my hands are shaking a little. Not from fear — from how much this means. You look like every prayer I ever whispered, standing right in front of me.",
+  },
+  { choices: CEREMONY_CHOICES },
+  {
+    speaker: "Father Elias",
+    text: "Love is patient, love is kind. It does not envy, it does not boast, it is not proud. It always protects, always trusts, always hopes, always perseveres. Love never fails. This is the covenant you enter today — not a feeling, but a promise renewed every morning.",
+  },
+  {
+    speaker: "Father Elias",
+    text: "Andrew, will you have this woman to be your wedded wife — to love her, comfort her, honour and keep her, in sickness and in health, in plenty and in want, and forsaking all others be faithful to her as long as you both shall live?",
+  },
+  { speaker: "Andrew", text: "I will. With everything I am, I will." },
+  {
+    speaker: "Father Elias",
+    text: "Maria, will you have this man to be your wedded husband — to love him, comfort him, honour and keep him, in sickness and in health, in plenty and in want, and forsaking all others be faithful to him as long as you both shall live?",
+  },
+  { speaker: "Maria", text: "I will. Today, tomorrow, and every day after." },
+  {
+    speaker: "Father Elias",
+    text: "Then speak now the vows you have written for one another.",
+  },
+  {
+    speaker: "Andrew",
+    text: "Maria — I promise to be the calm in your loud days and the joy in your quiet ones. I promise to listen before I answer, to choose you when it is easy and to choose you louder when it is not. I promise to pray over our home, to work for our future, and to never let a day pass without telling you what you are to me. You are my peace. I take you as my wife.",
+  },
+  {
+    speaker: "Maria",
+    text: "Andrew — I promise to walk beside you, not behind you and not ahead. I promise to be gentle with your heart, honest with my own, and faithful when the road is long. I promise laughter in our kitchen, grace in our arguments, and God at the centre of everything we build. You are my home. I take you as my husband.",
+  },
+  {
+    speaker: "Father Elias",
+    text: "The rings, please. A circle without beginning and without end — as your love is to be. Andrew, place the ring on her finger and say: with this ring, I thee wed.",
+  },
+  { speaker: "Andrew", text: "With this ring, I thee wed. All that I have is yours." },
+  { speaker: "Maria", text: "With this ring, I thee wed. All that I am is yours." },
+  {
+    speaker: "Father Elias",
+    text: "Inasmuch as Andrew and Maria have consented together in holy wedlock and have witnessed the same before God and this company, by the authority entrusted to me, I pronounce them husband and wife. What God has joined together, let no one separate.",
+  },
+  { speaker: "Father Elias", text: "Andrew — you may kiss your bride." },
+  {
+    speaker: "The Church",
+    text: "The whole church rises. Bells ring out over the golden realm, petals fall from the rafters, and every friend you have ever loved is on their feet.",
+  },
+];
+
+
 export const ANDREW_AFFIRMATIONS = [
   "Take a breath, my love. You're doing beautifully.",
   "You don't have to rush. I'm not going anywhere.",
