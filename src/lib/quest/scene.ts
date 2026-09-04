@@ -1,6 +1,8 @@
 import * as Phaser from "phaser";
 import {
   ACT_BOSSES,
+  BOON_BY_FLAVOR,
+
   ACT_GUIDES,
   BLACKSMITH,
   MAX_DOG,
@@ -472,7 +474,9 @@ export class QuestScene extends Phaser.Scene {
   private spawnAnimals(seed: number, specs: [string, number, number, number][]) {
     const rnd = irnd(seed);
     for (const [key, tx, ty, count] of specs) {
-      for (let i = 0; i < count; i++) {
+      // 15% fewer animals per act, but never fewer than one of a species.
+      const total = Math.max(1, Math.round(count * 0.85));
+      for (let i = 0; i < total; i++) {
         const x = this.wx(tx + (rnd() - 0.5) * 12);
         const y = this.wy(ty + (rnd() - 0.5) * 8);
         const a = this.add.sprite(x, y, key).setDepth(9);
@@ -817,9 +821,11 @@ export class QuestScene extends Phaser.Scene {
     const farFromTrees = (tx: number, ty: number) =>
       trees.every(([ax, ay]) => Math.hypot(ax - tx, ay - ty) >= MIN_TREE_GAP);
     for (const [x, y, n] of opts.groves ?? []) {
+      // 15% fewer trees per grove — airier realms, same spacing rules.
+      const target = Math.max(1, Math.round(n * 0.85));
       let placed = 0;
       let guard = 0;
-      while (placed < n && guard++ < 400) {
+      while (placed < target && guard++ < 400) {
         const tx = Math.round(x + (rnd() - 0.5) * 24);
         const ty = Math.round(y + (rnd() - 0.5) * 20);
         if (tx < 4 || ty < 4 || tx > DESIGN_W - 4 || ty > DESIGN_H - 4) continue;
@@ -829,6 +835,7 @@ export class QuestScene extends Phaser.Scene {
         placed++;
       }
     }
+
     for (const [x, y] of opts.lamps ?? []) solid(x, y, "lamp", 0.22);
     for (const [x, y] of opts.benches ?? []) solid(x, y, "bench", 0.5);
     for (const [x, y, n] of opts.fences ?? []) {
@@ -850,12 +857,12 @@ export class QuestScene extends Phaser.Scene {
         .setScale(0.8 + rnd() * 0.6);
     }
     if (opts.border) {
-      // Sparse, evenly spaced border trees — one every 6 design units.
-      for (let x = 2; x < DESIGN_W - 2; x += 6) {
+      // Sparse, evenly spaced border trees — 15% fewer than before.
+      for (let x = 2; x < DESIGN_W - 2; x += 7) {
         solid(x, 1.4, "tree", 0.28);
         solid(x + 3, DESIGN_H - 2.2, "tree", 0.28);
       }
-      for (let y = 5; y < DESIGN_H - 3; y += 6) {
+      for (let y = 5; y < DESIGN_H - 3; y += 7) {
         solid(1.4, y, "tree", 0.28);
         solid(DESIGN_W - 2.2, y + 3, "tree", 0.28);
       }
@@ -2489,31 +2496,36 @@ export class QuestScene extends Phaser.Scene {
       type: "boss",
       name: cfg.name,
       art: cfg.art,
+      role: cfg.role ?? "",
       intro: cfg.intro,
       demon: cfg.demon,
       mariaLine: cfg.mariaLine,
-      choices: cfg.replies.map((r) => ({ id: r.id, text: r.text })),
+      slides: cfg.slides.map((s) => ({
+        boss: s.boss,
+        replies: s.replies.map((r) => ({ id: r.id, text: r.text, answer: r.answer })),
+      })),
     });
   }
 
-  /** Maria's answer decides how the fight opens. */
+  /** Maria's dominant tone across the confrontation decides how the fight opens. */
   private onBossChoice(id: string) {
     const cfg = ACT_BOSSES[this.save.current_zone];
     this.onResume();
     if (!cfg || !this.boss) return;
-    const reply = cfg.replies.find((r) => r.id === id) ?? cfg.replies[0]!;
+    const flavor = (id in BOON_BY_FLAVOR ? id : "bold") as keyof typeof BOON_BY_FLAVOR;
+    const reply = BOON_BY_FLAVOR[flavor];
     try {
       const raw = localStorage.getItem("quest-boss-choices");
       const all = raw ? (JSON.parse(raw) as Record<string, string>) : {};
-      all[this.save.current_zone] = reply.id;
+      all[this.save.current_zone] = flavor;
       localStorage.setItem("quest-boss-choices", JSON.stringify(all));
     } catch {
       /* storage is optional */
     }
     this.bossPhase = 1;
     this.objective = `${cfg.name} — swing your weapon until its worry lifts.`;
-    this.emitToast(`${cfg.name}: "${reply.answer}"`);
-    this.time.delayedCall(2600, () => this.emitToast(reply.boonText));
+    this.emitToast(reply.boonText);
+
     if (reply.boon === "stamina") {
       this.stamina = 100;
       this.dashReadyAt = 0;

@@ -43,6 +43,12 @@ import portraitAndre from "@/assets/quest/portrait-andre.jpg";
 import portraitPhillip from "@/assets/quest/portrait-phillip.jpg";
 import portraitItalo from "@/assets/quest/portrait-italo.jpg";
 import portraitGabe from "@/assets/quest/portrait-gabe.jpg";
+import bossWater from "@/assets/quest/boss-water.png";
+import bossGarden from "@/assets/quest/boss-garden.png";
+import bossHaven from "@/assets/quest/boss-haven.png";
+import bossStar from "@/assets/quest/boss-star.png";
+import bossHollow from "@/assets/quest/boss-hollow.png";
+
 
 
 const GUEST_PORTRAITS: Record<string, string> = {
@@ -278,7 +284,7 @@ function GuestDialogue({
 }: {
   id: string;
   name: string;
-  role?: string;
+  role?: string | undefined;
   lines: string[];
   onClose: () => void;
 }) {
@@ -374,6 +380,170 @@ function GuestDialogue({
     </div>
   );
 }
+
+type BossSlideUI = { boss: string; replies: { id: string; text: string; answer: string }[] };
+
+const BOSS_ART: Record<string, string> = {
+  "boss-water": bossWater,
+  "boss-garden": bossGarden,
+  "boss-haven": bossHaven,
+  "boss-star": bossStar,
+  "boss-hollow": bossHollow,
+};
+
+/**
+ * Five-beat boss confrontation: the creature speaks, Maria answers, it answers
+ * back. Whichever tone she uses most decides the boon she carries into combat.
+ */
+function BossDialogue({
+  name,
+  role,
+  art,
+  demon,
+  mariaLine,
+  slides,
+  onDone,
+}: {
+  name: string;
+  role?: string | undefined;
+  art: string;
+  demon: string;
+  mariaLine: string;
+  slides: BossSlideUI[];
+  onDone: (flavor: string) => void;
+}) {
+  const [idx, setIdx] = useState(0);
+  const [answer, setAnswer] = useState<string | null>(null);
+  const [typed, setTyped] = useState("");
+  const picks = useRef<string[]>([]);
+  const slide = slides[Math.min(idx, slides.length - 1)];
+  const line = answer ?? slide?.boss ?? "";
+  const done = typed.length >= line.length;
+  const portrait = BOSS_ART[art];
+  const last = idx >= slides.length - 1;
+
+  useEffect(() => {
+    setTyped("");
+    let i = 0;
+    const t = window.setInterval(() => {
+      i += 1;
+      setTyped(line.slice(0, i));
+      if (i >= line.length) window.clearInterval(t);
+    }, 16);
+    return () => window.clearInterval(t);
+  }, [line]);
+
+  const finish = () => {
+    const tally: Record<string, number> = {};
+    for (const p of picks.current) tally[p] = (tally[p] ?? 0) + 1;
+    const best = Object.entries(tally).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "bold";
+    onDone(best);
+  };
+
+  const choose = (r: { id: string; answer: string }) => {
+    buzz(24);
+    picks.current.push(r.id);
+    setAnswer(r.answer);
+  };
+
+  const advance = () => {
+    buzz();
+    if (!done) {
+      setTyped(line);
+      return;
+    }
+    if (answer === null) return;
+    if (last) finish();
+    else {
+      setAnswer(null);
+      setIdx((i) => i + 1);
+    }
+  };
+
+  return (
+    <div className="absolute inset-0 z-40 flex items-end justify-center bg-[rgba(2,3,10,0.86)] p-3 backdrop-blur-[3px] sm:items-center">
+      <div className="w-full max-w-3xl overflow-hidden rounded-2xl border-2 border-[#7d1b2b] bg-[rgba(8,7,14,0.97)] shadow-[0_0_60px_rgba(160,20,40,0.35)]">
+        <div className="flex items-start gap-3 border-b border-[#7d1b2b]/60 bg-[rgba(30,6,12,0.75)] p-3">
+          {portrait ? (
+            <img
+              src={portrait}
+              alt={name}
+              width={128}
+              height={128}
+              className="h-20 w-20 shrink-0 animate-pulse rounded-xl border-2 border-[#a8253c] bg-black/50 object-contain p-1"
+              style={{ imageRendering: "pixelated" }}
+            />
+          ) : null}
+          <div className="min-w-0">
+            <p className="font-display text-xl font-bold tracking-wide text-[#ff5a6e]">{name}</p>
+            {role ? (
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/45">{role}</p>
+            ) : null}
+            <p className="mt-1 text-[11px] leading-snug text-white/50">{demon}</p>
+          </div>
+        </div>
+
+        <div className="max-h-[52vh] overflow-y-auto p-4">
+          <p className="min-h-[4.5rem] font-serif-italic text-[15px] italic leading-relaxed text-[#ffd7dc]">
+            “{typed}
+            {done ? "”" : ""}
+          </p>
+
+          {answer === null && done ? (
+            <div className="mt-4">
+              {idx === 0 ? (
+                <p className="mb-2 font-serif-italic text-[13px] italic text-white/70">
+                  Maria: “{mariaLine}”
+                </p>
+              ) : null}
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold">
+                How does Maria answer?
+              </p>
+              <div className="mt-2 grid gap-2">
+                {(slide?.replies ?? []).map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => choose(r)}
+                    className="rounded-xl border border-gold/35 bg-white/5 p-3 text-left text-sm font-medium text-white/90 transition hover:border-gold hover:bg-gold/15"
+                  >
+                    “{r.text}”
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {answer !== null ? (
+            <button
+              type="button"
+              onClick={advance}
+              className="mt-4 w-full rounded-xl bg-[#7d1b2b] px-4 py-3 text-sm font-semibold text-white"
+            >
+              {last ? "Draw your weapon" : "Continue"}
+            </button>
+          ) : null}
+
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex gap-1.5">
+              {slides.map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 w-5 rounded-full ${i <= idx ? "bg-[#ff5a6e]" : "bg-white/15"}`}
+                />
+              ))}
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
+              {Math.min(idx + 1, slides.length)} / {slides.length}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 
 /** Ambient background canvas: drifting gold motes and falling rose petals. */
 function AmbientCanvas() {
@@ -1179,42 +1349,20 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       ) : null}
 
       {modal?.type === "boss" ? (
-        <GlassPanel
-          title={modal.name}
-          onClose={() => {
-            const first = modal.choices[0];
-            if (first) {
-              setModal(null);
-              emit(EV.bosschoice, first.id);
-            }
+        <BossDialogue
+          name={modal.name}
+          role={modal.role}
+          art={modal.art}
+          demon={modal.demon}
+          mariaLine={modal.mariaLine}
+          slides={modal.slides.length ? modal.slides : [{ boss: modal.intro, replies: [] }]}
+          onDone={(flavor) => {
+            setModal(null);
+            emit(EV.bosschoice, flavor);
           }}
-        >
-          <p className="font-serif-italic italic text-navy">“{modal.intro}”</p>
-          <div className="mt-3">
-            <MariaPortrait caption="Maria stands her ground" />
-          </div>
-          <p className="mt-3 font-serif-italic italic text-navy/85">“{modal.mariaLine}”</p>
-          <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-gold">
-            How does Maria answer?
-          </p>
-          <div className="mt-2 grid gap-2">
-            {modal.choices.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => {
-                  buzz();
-                  setModal(null);
-                  emit(EV.bosschoice, c.id);
-                }}
-                className="rounded-xl border border-gold/40 bg-white/80 p-3 text-left text-sm font-medium text-navy transition hover:border-gold hover:bg-gold/15"
-              >
-                “{c.text}”
-              </button>
-            ))}
-          </div>
-        </GlassPanel>
+        />
       ) : null}
+
 
       {modal?.type === "guide" ? (
         <GlassPanel title="Realm Map" onClose={closeModal} wide>
