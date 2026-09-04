@@ -2332,7 +2332,13 @@ export class QuestScene extends Phaser.Scene {
           Object.values(WEDDING_GUESTS).find((g) => g?.id === it.id) ??
           FAMILY_GUESTS.find((g) => g.id === it.id);
         if (!guest) break;
-        this.openModal({ type: "guest", name: guest.name, lines: guest.lines });
+        this.openModal({
+          type: "guest",
+          id: guest.id,
+          name: guest.name,
+          ...(guest.role ? { role: guest.role } : {}),
+          lines: guest.lines,
+        });
         break;
       }
       case "dog":

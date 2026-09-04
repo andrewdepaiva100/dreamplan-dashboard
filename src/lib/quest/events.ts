@@ -50,7 +50,7 @@ export type ModalPayload =
   | { type: "guide" }
   | { type: "weapon"; weaponId: string; speaker: string; line: string }
   | { type: "directions"; title: string; lines: string[] }
-  | { type: "guest"; name: string; lines: string[] }
+  | { type: "guest"; id: string; name: string; role?: string; lines: string[] }
   | { type: "companion"; name: string; body: string; owned: boolean }
   | {
       type: "boss";
