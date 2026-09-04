@@ -2415,6 +2415,8 @@ export class QuestScene extends Phaser.Scene {
 
   /** Day runs 7:00 AM to 7:00 PM; night is everything else. 0 = day, 1 = night. */
   private nightFactor() {
+    // The wedding day never darkens.
+    if (this.save.current_zone === "cathedral") return 0;
     const h = this.dayT * 24;
     if (h >= 7.5 && h <= 18.5) return 0;
     if (h > 18.5 && h < 19.5) return Phaser.Math.Clamp((h - 18.5) / 1, 0, 1);
@@ -2423,8 +2425,12 @@ export class QuestScene extends Phaser.Scene {
   }
 
   private updateDayNight(delta: number) {
-    this.dayT = (this.dayT + delta / DAY_MS) % 1;
-    this.save.time_of_day = this.dayT;
+    if (this.save.current_zone === "cathedral") {
+      this.dayT = 0.5;
+    } else {
+      this.dayT = (this.dayT + delta / DAY_MS) % 1;
+      this.save.time_of_day = this.dayT;
+    }
     const n = this.nightFactor();
     const cam = this.cameras.main;
     if (this.nightVeil) {
