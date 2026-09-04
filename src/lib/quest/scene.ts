@@ -1515,7 +1515,9 @@ export class QuestScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.boss, () => {
       if (this.bossPhase === 1) this.hurtPlayerDirect();
     });
-    this.objective = `${cfg.name} waits ahead — walk up and hear it out.`;
+    this.objective = cfg.silent
+      ? `${cfg.name} attacks — swing your weapon until it lifts.`
+      : `${cfg.name} waits ahead — walk up and hear it out.`;
     // gentle waves of minions; never overwhelming
     this.bossTimer = this.time.addEvent({
       delay: zone === "the_haven" ? 3200 : 5200,
