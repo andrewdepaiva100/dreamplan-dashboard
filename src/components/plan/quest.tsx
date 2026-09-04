@@ -1134,42 +1134,58 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
       {ceremony ? (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-[rgba(6,10,24,0.88)] p-4">
           <div className="w-full max-w-lg max-h-full overflow-y-auto rounded-2xl border border-gold/60 bg-[#fdfaf3] p-6 text-center">
-            {ceremony.step === "opening" ? (
-              <>
-                <h3 className="font-display text-xl font-bold text-navy">Andrew</h3>
-                <p className="mt-3 text-sm leading-relaxed text-navy/85">{CEREMONY_OPENING}</p>
-                <div className="mt-5 space-y-2 text-left">
-                  {CEREMONY_CHOICES.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setCeremony({ step: "reply", choice: c.id })}
-                      className="w-full rounded-xl border border-navy/20 bg-white px-4 py-3 text-sm font-medium text-navy"
-                    >
-                      {c.player}
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : null}
+            {ceremony.phase === "script"
+              ? (() => {
+                  const beat = CEREMONY_SCRIPT[ceremony.i]!;
+                  const advance = () =>
+                    setCeremony(
+                      ceremony.i + 1 < CEREMONY_SCRIPT.length
+                        ? { phase: "script", i: ceremony.i + 1 }
+                        : { phase: "proposal", i: ceremony.i },
+                    );
+                  if ("choices" in beat && !ceremony.reply) {
+                    return (
+                      <>
+                        <h3 className="font-display text-xl font-bold text-navy">Maria</h3>
+                        <div className="mt-4 space-y-2 text-left">
+                          {beat.choices.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() =>
+                                setCeremony({ phase: "script", i: ceremony.i, reply: c.andrew })
+                              }
+                              className="w-full rounded-xl border border-navy/20 bg-white px-4 py-3 text-sm font-medium text-navy"
+                            >
+                              {c.player}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  }
+                  const speaker = "choices" in beat ? "Andrew" : beat.speaker;
+                  const text = "choices" in beat ? ceremony.reply! : beat.text;
+                  return (
+                    <>
+                      <h3 className="font-display text-xl font-bold text-navy">{speaker}</h3>
+                      <p className="mt-3 text-sm leading-relaxed text-navy/85">{text}</p>
+                      <p className="mt-4 text-[11px] uppercase tracking-[0.2em] text-gold">
+                        {ceremony.i + 1} / {CEREMONY_SCRIPT.length}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={advance}
+                        className="mt-4 w-full rounded-xl bg-navy px-4 py-3 text-sm font-semibold text-white"
+                      >
+                        Continue
+                      </button>
+                    </>
+                  );
+                })()
+              : null}
 
-            {ceremony.step === "reply" ? (
-              <>
-                <h3 className="font-display text-xl font-bold text-navy">Andrew</h3>
-                <p className="mt-3 font-serif-italic text-sm italic text-navy/85">
-                  “{CEREMONY_CHOICES.find((c) => c.id === ceremony.choice)?.andrew}”
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setCeremony({ step: "proposal" })}
-                  className="mt-6 w-full rounded-xl bg-navy px-4 py-3 text-sm font-semibold text-white"
-                >
-                  Take his hand
-                </button>
-              </>
-            ) : null}
-
-            {ceremony.step === "proposal" ? (
+            {ceremony.phase === "proposal" ? (
               <>
                 <img
                   src={PHOTO_SRC}
@@ -1184,7 +1200,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                       | { completeWedding: () => void }
                       | undefined;
                     scene?.completeWedding();
-                    setCeremony({ step: "finale" });
+                    setCeremony({ phase: "finale", i: 0 });
                   }}
                   className="mt-6 w-full rounded-xl bg-gold px-4 py-3 text-sm font-bold text-navy"
                 >
@@ -1193,7 +1209,8 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
               </>
             ) : null}
 
-            {ceremony.step === "finale" ? (
+            {ceremony.phase === "finale" ? (
+
               <>
                 <h3 className="font-display text-2xl font-extrabold text-navy">
                   Realm of the Golden Ring
