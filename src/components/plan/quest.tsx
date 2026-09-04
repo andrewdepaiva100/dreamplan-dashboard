@@ -1127,14 +1127,6 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
         </div>
       ) : null}
 
-      {/* prompt */}
-      {hud?.prompt ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-48 z-20 flex justify-center">
-          <span className="rounded-full bg-gold px-4 py-1.5 text-xs font-bold text-navy">
-            {hud.prompt}
-          </span>
-        </div>
-      ) : null}
 
       {toast ? (
         <div className="pointer-events-none absolute inset-x-0 top-24 z-30 flex justify-center px-6">

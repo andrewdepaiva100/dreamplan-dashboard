@@ -505,10 +505,10 @@ export class QuestScene extends Phaser.Scene {
     this.promptText = this.add
       .text(this.player.x, this.player.y - 36, "", {
         fontFamily: "system-ui, sans-serif",
-        fontSize: "11px",
+        fontSize: "8px",
         color: "#0b1e3d",
-        backgroundColor: "#ffd977",
-        padding: { x: 6, y: 3 },
+        backgroundColor: "#ffffff",
+        padding: { x: 4, y: 2 },
       })
       .setOrigin(0.5, 1)
       .setDepth(60)
