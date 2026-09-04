@@ -15,6 +15,9 @@ import {
   HEART_PICKUP_TEXT,
   GOLDEN_HEART_TEXT,
   SWIFT_SANDALS,
+  LOVE_SWORD,
+  SECOND_BOSSES,
+  type BossConfig,
   ZONES,
   type ZoneId,
 } from "./content";
@@ -111,6 +114,8 @@ export class QuestScene extends Phaser.Scene {
   private pingUntil = 0;
   private keyBeacons: Map<string, Phaser.GameObjects.Container> = new Map();
   private companion: Phaser.GameObjects.Sprite | null = null;
+  private allyBlade: Phaser.GameObjects.Sprite | null = null;
+  private allySwingAt = 0;
   private dog: Phaser.Physics.Arcade.Sprite | null = null;
   private dogArmed = false;
   private dogBiteAt = 0;
@@ -177,6 +182,8 @@ export class QuestScene extends Phaser.Scene {
     this.pingUntil = 0;
     this.pingMarker = null;
     this.companion = null;
+    this.allyBlade = null;
+    this.allySwingAt = 0;
     this.dog = null;
     this.dogArmed = false;
     // These are lazily created; a reloaded realm must never reuse objects that
@@ -472,12 +479,54 @@ export class QuestScene extends Phaser.Scene {
 
   /** Andrew walks with Maria once the ceremony is complete (free roam). */
   private spawnCompanion() {
-    if (!this.save.wedding_completed || this.save.current_zone === "cathedral") return;
+    const allied = this.save.weapons.includes("love-sword");
+    if ((!this.save.wedding_completed && !allied) || this.save.current_zone === "cathedral") return;
     this.companion = this.add
       .sprite(this.player.x - 40, this.player.y + 12, "andrew-down-0")
       .setDepth(19)
       .setScale(1.1);
     this.companion.anims.play("andrew-idle-down");
+    if (this.save.weapons.includes("love-sword") && this.textures.exists("hand-ally-blade")) {
+      this.allyBlade = this.add
+        .sprite(this.companion.x, this.companion.y, "hand-ally-blade")
+        .setDepth(22);
+    }
+  }
+
+  /** Andrew swings his blue blade — exactly half as strong as Maria's. */
+  private updateAlly(time: number) {
+    const c = this.companion;
+    if (!c) return;
+    if (this.allyBlade) this.allyBlade.setPosition(c.x + 12, c.y + 2).setDepth(c.depth + 1);
+    if (!this.save.weapons.includes("love-sword")) return;
+    if (time < this.allySwingAt) return;
+    const power = Math.max(1, Math.round(this.equippedWeapon().damage / 2));
+    let hit = false;
+    (this.enemies.getChildren() as Phaser.Physics.Arcade.Sprite[]).forEach((e) => {
+      if (!hit && e.active && Phaser.Math.Distance.Between(e.x, e.y, c.x, c.y) < 74) {
+        this.transformEnemy(e);
+        hit = true;
+      }
+    });
+    if (!hit && this.boss?.active && this.bossPhase === 1) {
+      if (Phaser.Math.Distance.Between(this.boss.x, this.boss.y, c.x, c.y) < 96) {
+        this.bossHitAt = 0;
+        this.damageBoss(power);
+        hit = true;
+      }
+    }
+    if (!hit) return;
+    this.allySwingAt = time + 900;
+    this.spawnSparkle(c.x + 14, c.y, 0x6fb6ff, 6);
+    if (this.allyBlade) {
+      this.tweens.add({
+        targets: this.allyBlade,
+        angle: { from: -35, to: 45 },
+        duration: 200,
+        yoyo: true,
+        onComplete: () => this.allyBlade?.setAngle(0),
+      });
+    }
   }
 
   private updateCompanion() {
@@ -654,6 +703,12 @@ export class QuestScene extends Phaser.Scene {
   ) {
     const obj = this.add.sprite(x, y, texture).setDepth(opts.depth ?? 12);
     if (texture.startsWith("andrew")) obj.setScale(1.1);
+    // Hidden love letters get a tall rose beacon and a generous reach so they
+    // are always findable from across a realm.
+    if (kind === "envelope") {
+      obj.setScale(1.35);
+      this.addKeyBeacon(x, y, `env-${opts.id ?? label}`, 0xff8fc0);
+    }
     this.tweens.add({
       targets: obj,
       y: y - 3,
@@ -666,7 +721,7 @@ export class QuestScene extends Phaser.Scene {
       obj,
       kind,
       label,
-      radius: opts.radius ?? 46,
+      radius: opts.radius ?? (kind === "envelope" ? 84 : 46),
       enabled: true,
       ...(opts.id !== undefined ? { id: opts.id } : {}),
       ...(opts.data !== undefined ? { data: opts.data } : {}),
@@ -871,7 +926,15 @@ export class QuestScene extends Phaser.Scene {
     // Act I is a compact, welcoming realm; Act II is a small open garden so the
     // four seasonal keys stay findable; later acts sprawl at full size.
     const dims =
-      zone === "sunlit_shores" ? 62 : zone === "wedding_garden" ? 70 : zone === "the_haven" ? 126 : MAP_W;
+      zone === "sunlit_shores"
+        ? 62
+        : zone === "wedding_garden"
+          ? 70
+          : zone === "the_haven"
+            ? 95
+            : zone === "starry_ascent"
+              ? 56
+              : MAP_W;
     this.mapW = dims;
     this.mapH = dims;
     this.sxF = this.mapW / DESIGN_W;
@@ -1430,10 +1493,10 @@ export class QuestScene extends Phaser.Scene {
     return need.length > 0 && need.every((n) => this.save.relics_collected.includes(n));
   }
 
-  private spawnActBoss(tx: number, ty: number) {
+  private spawnActBoss(tx: number, ty: number, override?: BossConfig) {
     const zone = this.save.current_zone;
-    const cfg = ACT_BOSSES[zone];
-    if (!cfg || this.boss || this.zoneRelicsDone(zone)) return;
+    const cfg = override ?? ACT_BOSSES[zone];
+    if (!cfg || this.boss || (!override && this.zoneRelicsDone(zone))) return;
     const x = this.wx(tx);
     const y = this.wy(ty);
     const artKey = this.textures.exists(cfg.art) ? cfg.art : "spectre";
@@ -1465,7 +1528,7 @@ export class QuestScene extends Phaser.Scene {
     this.objective = `${cfg.name} waits ahead — walk up and hear it out.`;
     // gentle waves of minions; never overwhelming
     this.bossTimer = this.time.addEvent({
-      delay: 5200,
+      delay: zone === "the_haven" ? 3200 : 5200,
       loop: true,
       callback: () => {
         if (!this.boss?.active) return;
@@ -1523,6 +1586,17 @@ export class QuestScene extends Phaser.Scene {
     });
     this.cameras.main.flash(500, 255, 215, 229);
     this.emitToast(`${this.bossName} softens into blossoms.`);
+    const second = SECOND_BOSSES[zone];
+    if (second && this.zoneState["secondBoss"] !== true) {
+      this.zoneState["secondBoss"] = true;
+      this.time.delayedCall(900, () => {
+        this.spawnActBoss(0, 0, second);
+        if (this.boss) this.boss.setPosition(bx, by);
+        if (this.bossHalo) this.bossHalo.setPosition(bx, by);
+        this.emitToast(second.taunt);
+      });
+      return;
+    }
     const need = RELICS.filter((r) => r.zone === zone).map((r) => r.id);
     const missing = need.filter((n) => !this.save.relics_collected.includes(n));
     if (missing.length === 0) {
@@ -2088,6 +2162,7 @@ export class QuestScene extends Phaser.Scene {
         this.collectRelic(it);
         break;
       case "envelope":
+        this.removeKeyBeacon(`env-${it.id ?? it.label}`);
         if (it.id && !this.save.secret_envelopes_found.includes(it.id)) {
           this.save.secret_envelopes_found = [...this.save.secret_envelopes_found, it.id];
           this.emitSave();
@@ -2602,7 +2677,8 @@ export class QuestScene extends Phaser.Scene {
       const bd = Phaser.Math.Distance.Between(this.boss.x, this.boss.y, this.player.x, this.player.y);
       if (bd < 420 && time > this.bossHitAt) {
         const ba = Math.atan2(this.player.y - this.boss.y, this.player.x - this.boss.x);
-        this.boss.setVelocity(Math.cos(ba) * 46 * this.bossSlow, Math.sin(ba) * 46 * this.bossSlow);
+        const bspd = this.save.current_zone === "the_haven" ? 78 : 46;
+        this.boss.setVelocity(Math.cos(ba) * bspd * this.bossSlow, Math.sin(ba) * bspd * this.bossSlow);
       } else if (bd >= 420) this.boss.setVelocity(0, 0);
       this.boss.setAlpha(0.85 + 0.15 * Math.sin(time / 300));
     }
