@@ -1231,8 +1231,22 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
         >
           <div className="rounded-xl bg-[rgba(11,30,61,0.72)] px-3 py-2 backdrop-blur">
             <div className="text-lg leading-none tracking-widest text-[#ff6b7a]">
-              {HEART.repeat(hud.health)}
-              <span className="text-white/25">{HEART.repeat(hud.maxHealth - hud.health)}</span>
+              {Array.from({ length: hud.maxHealth }, (_, i) => {
+                const fill = Math.max(0, Math.min(1, hud.health - i));
+                return (
+                  <span key={i} className="relative inline-block">
+                    <span className="text-white/25">{HEART}</span>
+                    {fill > 0 ? (
+                      <span
+                        className="absolute inset-y-0 left-0 overflow-hidden text-[#ff6b7a]"
+                        style={{ width: `${fill * 100}%` }}
+                      >
+                        {HEART}
+                      </span>
+                    ) : null}
+                  </span>
+                );
+              })}
             </div>
             <div className="mt-2 h-1.5 w-24 overflow-hidden rounded-full bg-white/20">
               <div className="h-full bg-teal" style={{ width: `${hud.stamina}%` }} />
