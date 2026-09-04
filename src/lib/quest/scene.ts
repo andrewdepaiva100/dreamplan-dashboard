@@ -168,6 +168,12 @@ export class QuestScene extends Phaser.Scene {
     this.pingUntil = 0;
     this.pingMarker = null;
     this.companion = null;
+    // These are lazily created; a reloaded realm must never reuse objects that
+    // belonged to the previous scene instance (they are already destroyed).
+    this.solidDecor = this.physics.add.staticGroup();
+    this.arrow = undefined as unknown as Phaser.GameObjects.Triangle;
+
+
 
     try {
       this.buildZone(this.save.current_zone);
