@@ -238,6 +238,10 @@ export const HOW_TO_PLAY = [
     title: "Interact",
     body: "Walk near glowing people, stones, doors, or letters and tap TALK (or E / ENTER) to read, rest, collect relics, and open new paths.",
   },
+  {
+    title: "Weapons",
+    body: "Each act's guide gives Maria that act's own weapon when their conversation ends. Every weapon stays in the belt on the right and can be switched at any time.",
+  },
 ];
 
 export const REALM_LANDMARKS: { direction: string; name: string; act: string; zone: ZoneId }[] = [
@@ -269,6 +273,10 @@ export const CONTROLS_HELP: { title: string; body: string }[] = [
   {
     title: "Objective Arrow",
     body: "The glowing gold arrow circling Maria points toward the current act's goal. It fades once you are close.",
+  },
+  {
+    title: "Ping Objective",
+    body: "Tap PING OBJECTIVE under the objective tracker: a gold pulse ripples out from Maria and a large compass marker shows the exact direction for a few seconds. You always steer yourself.",
   },
 ];
 
