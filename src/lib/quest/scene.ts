@@ -927,14 +927,15 @@ export class QuestScene extends Phaser.Scene {
   private buildZone(zone: ZoneId) {
     this.objective = ZONES[zone].objective;
     // Act I is a compact, welcoming realm; Act II is a small open garden so the
-    // four seasonal keys stay findable; later acts sprawl at full size.
+    // four seasonal keys stay findable; Act III is a cozy town square so the
+    // three music sheets are never far from the fountain.
     const dims =
       zone === "sunlit_shores"
         ? 62
         : zone === "wedding_garden"
           ? 70
           : zone === "the_haven"
-            ? 95
+            ? 62
             : zone === "starry_ascent"
               ? 18
               : MAP_W;
@@ -1620,25 +1621,25 @@ export class QuestScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("#cfe3f7");
     this.makeMap(T.MARBLE, 303, (d) => {
       this.rect(d, 1, 1, DESIGN_W - 2, DESIGN_H - 2, T.MARBLE);
-      // grand central fountain
-      this.rect(d, 54, 46, 24, 16, T.WATER);
-      this.rect(d, 53, 45, 26, 1, T.WALL);
-      this.rect(d, 53, 62, 26, 1, T.WALL);
-      this.rect(d, 53, 46, 1, 16, T.WALL);
-      this.rect(d, 79, 46, 1, 16, T.WALL);
+      // grand central fountain (scaled down for the cozy square)
+      this.rect(d, 58, 44, 18, 14, T.WATER);
+      this.rect(d, 57, 43, 20, 1, T.WALL);
+      this.rect(d, 57, 58, 20, 1, T.WALL);
+      this.rect(d, 57, 44, 1, 14, T.WALL);
+      this.rect(d, 77, 44, 1, 14, T.WALL);
       // coffee patio southwest
-      this.rect(d, 8, 12, 28, 18, T.PATH);
-      this.rect(d, 7, 11, 30, 1, T.WALL);
-      this.rect(d, 7, 30, 30, 1, T.WALL);
-      this.rect(d, 7, 12, 1, 18, T.WALL);
-      this.rect(d, 37, 12, 1, 18, T.WALL);
+      this.rect(d, 8, 12, 24, 16, T.PATH);
+      this.rect(d, 7, 11, 26, 1, T.WALL);
+      this.rect(d, 7, 28, 26, 1, T.WALL);
+      this.rect(d, 7, 12, 1, 16, T.WALL);
+      this.rect(d, 33, 12, 1, 16, T.WALL);
       // flower beds along the north
-      this.rect(d, 12, 8, 108, 4, T.BLOOM);
+      this.rect(d, 12, 8, 80, 4, T.BLOOM);
       // quiet chapel corner southeast
-      this.rect(d, 96, 78, 28, 16, T.PATH);
-      this.rect(d, 95, 77, 30, 1, T.WALL);
-      this.rect(d, 95, 94, 30, 1, T.WALL);
-      this.rect(d, 95, 78, 1, 16, T.WALL);
+      this.rect(d, 76, 74, 24, 14, T.PATH);
+      this.rect(d, 75, 73, 26, 1, T.WALL);
+      this.rect(d, 75, 88, 26, 1, T.WALL);
+      this.rect(d, 75, 74, 1, 14, T.WALL);
       // cobblestone streets of Haven Town
       this.road(d, [
         [14, 51],
@@ -1650,8 +1651,8 @@ export class QuestScene extends Phaser.Scene {
         [22, 88],
       ], 3);
       this.road(d, [
-        [110, 20],
-        [110, 88],
+        [96, 20],
+        [96, 88],
       ], 3);
     });
     this.addPlayer(18, 51);
@@ -1660,14 +1661,14 @@ export class QuestScene extends Phaser.Scene {
         [16, 40],
         [26, 68],
         [40, 34],
-        [88, 30],
-        [100, 62],
+        [82, 30],
+        [88, 62],
         [46, 74],
       ],
       groves: [
-        [70, 88, 7],
+        [60, 88, 7],
         [22, 92, 6],
-        [116, 46, 6],
+        [100, 46, 6],
       ],
       lamps: [
         [48, 42],
@@ -1683,7 +1684,7 @@ export class QuestScene extends Phaser.Scene {
       ],
       fences: [
         [12, 46, 6],
-        [96, 70, 6],
+        [84, 70, 6],
       ],
       flowers: 260,
       border: true,
@@ -1705,22 +1706,26 @@ export class QuestScene extends Phaser.Scene {
     this.spawnActBoss(66, 28);
     this.spawnAnimals(3303, [
       ["dog", 50, 60, 3],
-      ["cat", 90, 60, 3],
+      ["cat", 80, 60, 3],
       ["bird", 66, 40, 6],
       ["duck", 66, 54, 4],
     ]);
 
     this.zoneState["sheets"] = 0;
+    // Three music sheets placed right along the main roads and fountain so
+    // Maria spots them naturally while exploring the square.
     const sheetSpots: [number, number][] = [
-      [18, 18],
-      [105, 22],
-      [102, 86],
+      [20, 52], // near spawn on the main road
+      [66, 64], // beside the fountain
+      [92, 50], // along the eastern road
     ];
-    sheetSpots.forEach(([x, y], i) =>
-      this.addInteractable(this.wx(x), this.wy(y), "sheet", "sheet", "Pick up the music sheet", {
+    sheetSpots.forEach(([x, y], i) => {
+      const it = this.addInteractable(this.wx(x), this.wy(y), "sheet", "sheet", "Pick up the music sheet", {
         id: String(i),
-      }),
-    );
+      });
+      // tall golden beacon so each sheet is visible from across the square
+      this.addKeyBeacon(it.obj.x, it.obj.y, `sheet-${i}`, 0xffe6a8);
+    });
 
     this.addInteractable(this.wx(26), this.wy(55), "andrew", "andrew", "Talk with Andrew", {
       radius: 54,
@@ -1733,10 +1738,10 @@ export class QuestScene extends Phaser.Scene {
         id: "patio",
       });
     if ((this.zoneState["keyTaken"] as boolean) !== true && this.save.vault_keys_count < 3)
-      this.addInteractable(this.wx(111), this.wy(16), "key", "vault-key", "Take the Golden Vault Key", {
+      this.addInteractable(this.wx(92), this.wy(16), "key", "vault-key", "Take the Golden Vault Key", {
         id: "haven",
       });
-    this.addInteractable(this.wx(90), this.wy(54), "rest-stone", "rest", "Rest here");
+    this.addInteractable(this.wx(82), this.wy(54), "rest-stone", "rest", "Rest here");
 
     if (this.save.relics_collected.includes("shield")) this.spawnGateway(this.wx(66), this.wy(18));
   }
@@ -2215,6 +2220,7 @@ export class QuestScene extends Phaser.Scene {
         this.openModal({ type: "memory" });
         break;
       case "sheet": {
+        this.removeKeyBeacon(`sheet-${it.id ?? ""}`);
         this.removeInteractable(it);
         const n = ((this.zoneState["sheets"] as number) ?? 0) + 1;
         this.zoneState["sheets"] = n;
