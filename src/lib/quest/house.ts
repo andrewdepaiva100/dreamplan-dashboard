@@ -420,9 +420,12 @@ export class QuestHouseScene extends Phaser.Scene {
       this.save.inventory = inv;
       this.game.events.emit(EV.toast, `${food.name} cooked into ${FOOD_BY_ID[food.cookedId]?.name}.`);
     } else if (msg.action === "sleep") {
-      this.save.time_of_day = 0.12;
+      // Always wake at 7:00 AM, whatever hour Maria lay down.
+      this.save.time_of_day = 7 / 24;
       this.save.player_health = 5;
-      this.game.events.emit(EV.toast, "You slept through the night. Full hearts, new morning.");
+      this.parentScene.save.time_of_day = 7 / 24;
+      this.parentScene.save.player_health = 5;
+      this.game.events.emit(EV.toast, "You slept until morning. Full hearts, 7:00 AM.");
     } else {
       return;
     }
