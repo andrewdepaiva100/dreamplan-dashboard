@@ -41,7 +41,8 @@ export class QuestHouseScene extends Phaser.Scene {
     this.frozen = false;
     this.spots = [];
     this.cameras.main.fadeIn(320, 0, 0, 0);
-    this.cameras.main.setBackgroundColor("#140d0a");
+    this.cameras.main.setBackgroundColor("#241710");
+    this.cameras.main.setZoom(Math.min(2, Math.max(1, Math.min(this.scale.width / ROOM_W, this.scale.height / ROOM_H) * 0.95)));
 
     const ox = (this.scale.width - ROOM_W) / 2;
     const oy = (this.scale.height - ROOM_H) / 2;
@@ -49,18 +50,18 @@ export class QuestHouseScene extends Phaser.Scene {
 
     // ---- room shell -----------------------------------------------------
     const floor = this.add.graphics().setDepth(0);
-    floor.fillStyle(0x6b4a2a, 1);
+    floor.fillStyle(0x9a6d3f, 1);
     floor.fillRect(ox, oy + 70, ROOM_W, ROOM_H - 70);
-    floor.fillStyle(0x7d5731, 1);
+    floor.fillStyle(0xb0824d, 1);
     for (let y = 0; y < 12; y++) {
       for (let x = 0; x < 16; x++) {
         if ((x + y) % 2 === 0) floor.fillRect(ox + x * 40, oy + 70 + y * 30, 40, 30);
       }
     }
     const wall = this.add.graphics().setDepth(1);
-    wall.fillStyle(0x4a3524, 1);
+    wall.fillStyle(0x6d5036, 1);
     wall.fillRect(ox, oy, ROOM_W, 70);
-    wall.fillStyle(0x3a2a1c, 1);
+    wall.fillStyle(0x543c27, 1);
     wall.fillRect(ox, oy + 62, ROOM_W, 10);
     wall.lineStyle(6, 0x2a1d12, 1);
     wall.strokeRect(ox, oy, ROOM_W, ROOM_H);
@@ -81,10 +82,10 @@ export class QuestHouseScene extends Phaser.Scene {
         .setDepth(30)
         .setBlendMode(Phaser.BlendModes.ADD)
         .setScale(sc)
-        .setAlpha(0.24);
+        .setAlpha(0.4);
       this.tweens.add({
         targets: l,
-        alpha: { from: 0.2, to: 0.34 },
+        alpha: { from: 0.34, to: 0.5 },
         duration: 2200,
         yoyo: true,
         repeat: -1,
