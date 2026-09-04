@@ -333,7 +333,10 @@ function GlassPanel({
   );
 }
 
-/** Minecraft-style slot grid. Empty slots stay visible so the bag reads as a bag. */
+/**
+ * Minecraft-style slot grid with press-and-move dragging that works with a
+ * finger, a mouse or a trackpad. Tapping a slot still acts instantly.
+ */
 function ItemGrid({
   items,
   slots = 20,
@@ -351,63 +354,126 @@ function ItemGrid({
   onDropIn?: (id: string, from: string) => void;
 }) {
   const [over, setOver] = useState(false);
+  const [ghost, setGhost] = useState<{ x: number; y: number; icon: string; name: string } | null>(
+    null,
+  );
   const filled = Object.entries(items).filter(([, n]) => n > 0);
   const cells = Array.from({ length: Math.max(slots, filled.length) }, (_, i) => filled[i] ?? null);
-  const dropProps = onDropIn
-    ? {
-        onDragOver: (e: import("react").DragEvent) => {
-          e.preventDefault();
-          setOver(true);
-        },
-        onDragLeave: () => setOver(false),
-        onDrop: (e: import("react").DragEvent) => {
-          e.preventDefault();
-          setOver(false);
-          const raw = e.dataTransfer.getData("text/plain");
-          const [from, id] = raw.split("|");
-          if (id && from && from !== dragGroup) onDropIn(id, from);
-        },
+
+  // Another grid asks us to accept an item / highlight while hovered.
+  useEffect(() => {
+    if (!dragGroup) return;
+    const onDrop = (e: Event) => {
+      const d = (e as CustomEvent<{ to: string; from: string; id: string }>).detail;
+      setOver(false);
+      if (d.to === dragGroup && d.from !== dragGroup) onDropIn?.(d.id, d.from);
+    };
+    const onOver = (e: Event) => {
+      const d = (e as CustomEvent<{ to: string | null; from: string }>).detail;
+      setOver(d.to === dragGroup && d.from !== dragGroup);
+    };
+    window.addEventListener("quest-slot-drop", onDrop);
+    window.addEventListener("quest-slot-over", onOver);
+    return () => {
+      window.removeEventListener("quest-slot-drop", onDrop);
+      window.removeEventListener("quest-slot-over", onOver);
+    };
+  }, [dragGroup, onDropIn]);
+
+  const startDrag = (id: string, e: import("react").PointerEvent) => {
+    if (!dragGroup) return;
+    const food = FOOD_BY_ID[id];
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let moved = false;
+    const groupAt = (x: number, y: number) => {
+      const el = document.elementFromPoint(x, y) as HTMLElement | null;
+      return el?.closest<HTMLElement>("[data-slot-group]")?.dataset["slotGroup"] ?? null;
+    };
+    const move = (ev: PointerEvent) => {
+      if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) < 8) return;
+      moved = true;
+      setGhost({ x: ev.clientX, y: ev.clientY, icon: food?.icon ?? "📦", name: food?.name ?? id });
+      window.dispatchEvent(
+        new CustomEvent("quest-slot-over", {
+          detail: { to: groupAt(ev.clientX, ev.clientY), from: dragGroup },
+        }),
+      );
+    };
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      setGhost(null);
+      window.dispatchEvent(
+        new CustomEvent("quest-slot-over", { detail: { to: null, from: dragGroup } }),
+      );
+      if (!moved) {
+        onPick?.(id);
+        return;
       }
-    : {};
-  return (
-    <div
-      {...dropProps}
-      className={`grid grid-cols-5 gap-1.5 rounded-xl p-1 transition ${
-        over ? "bg-gold/20 ring-2 ring-gold" : ""
-      }`}
-    >
-      {cells.map((cell, i) => {
-        const food = cell ? FOOD_BY_ID[cell[0]] : undefined;
-        const on = cell && selected === cell[0];
-        return (
-          <button
-            key={i}
-            type="button"
-            disabled={!cell}
-            draggable={Boolean(cell && dragGroup)}
-            onDragStart={(e) => {
-              if (cell && dragGroup) e.dataTransfer.setData("text/plain", `${dragGroup}|${cell[0]}`);
-            }}
-            onClick={() => cell && onPick?.(cell[0])}
-            title={food?.name ?? "Empty slot"}
-            className={`relative flex aspect-square items-center justify-center rounded-lg border text-xl transition ${
-              on
-                ? "border-gold bg-gold/30"
-                : cell
-                  ? "border-navy/25 bg-white/80 hover:bg-gold/15"
-                  : "border-navy/10 bg-navy/5"
-            }`}
-          >
-            <span>{food?.icon ?? ""}</span>
-            {cell && cell[1] > 1 ? (
-              <span className="absolute bottom-0.5 right-1 text-[10px] font-bold text-navy">
-                {cell[1]}
-              </span>
-            ) : null}
-          </button>
+      const to = groupAt(ev.clientX, ev.clientY);
+      if (to && to !== dragGroup) {
+        window.dispatchEvent(
+          new CustomEvent("quest-slot-drop", { detail: { to, from: dragGroup, id } }),
         );
-      })}
-    </div>
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  return (
+    <>
+      <div
+        data-slot-group={dragGroup}
+        className={`grid grid-cols-5 gap-1.5 rounded-xl p-1 transition ${
+          over ? "bg-gold/20 ring-2 ring-gold" : ""
+        }`}
+      >
+        {cells.map((cell, i) => {
+          const food = cell ? FOOD_BY_ID[cell[0]] : undefined;
+          const on = cell && selected === cell[0];
+          return (
+            <button
+              key={i}
+              type="button"
+              disabled={!cell}
+              onPointerDown={(e) => {
+                if (!cell) return;
+                if (dragGroup) startDrag(cell[0], e);
+              }}
+              onClick={() => {
+                if (cell && !dragGroup) onPick?.(cell[0]);
+              }}
+              title={food?.name ?? "Empty slot"}
+              className={`relative flex aspect-square touch-none select-none items-center justify-center rounded-lg border text-xl transition ${
+                on
+                  ? "border-gold bg-gold/30"
+                  : cell
+                    ? "border-navy/25 bg-white/80 hover:bg-gold/15"
+                    : "border-navy/10 bg-navy/5"
+              }`}
+            >
+              <span>{food?.icon ?? ""}</span>
+              {cell && cell[1] > 1 ? (
+                <span className="absolute bottom-0.5 right-1 text-[10px] font-bold text-navy">
+                  {cell[1]}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+      {ghost ? (
+        <div
+          className="pointer-events-none fixed z-[60] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-gold bg-white/95 px-2 py-1 text-center shadow-xl"
+          style={{ left: ghost.x, top: ghost.y }}
+        >
+          <span className="text-xl">{ghost.icon}</span>
+          <span className="ml-1 text-[10px] font-bold text-navy">{ghost.name}</span>
+        </div>
+      ) : null}
+    </>
   );
 }
 
