@@ -42,7 +42,6 @@ export class QuestHouseScene extends Phaser.Scene {
     this.spots = [];
     this.cameras.main.fadeIn(320, 0, 0, 0);
     this.cameras.main.setBackgroundColor("#241710");
-    this.cameras.main.setZoom(Math.min(2, Math.max(1, Math.min(this.scale.width / ROOM_W, this.scale.height / ROOM_H) * 0.95)));
 
     const ox = (this.scale.width - ROOM_W) / 2;
     const oy = (this.scale.height - ROOM_H) / 2;
