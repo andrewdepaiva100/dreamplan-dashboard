@@ -119,6 +119,8 @@ export class QuestScene extends Phaser.Scene {
   private hearts!: Phaser.Physics.Arcade.Group;
   private hand: Phaser.GameObjects.Sprite | null = null;
   private bossDialogueDone = false;
+  private bossHalo: Phaser.GameObjects.Arc | null = null;
+  private bossSlow = 1;
 
   constructor() {
     super("quest");
@@ -150,6 +152,8 @@ export class QuestScene extends Phaser.Scene {
     this.traveling = false;
     this.hand = null;
     this.bossDialogueDone = false;
+    this.bossSlow = 1;
+    this.bossHalo = null;
     if (this.save.weapons.length === 0) this.save.weapons = [];
     this.animals = [];
     this.landmark = null;
@@ -1208,19 +1212,33 @@ export class QuestScene extends Phaser.Scene {
     if (!cfg || this.boss || this.zoneRelicsDone(zone)) return;
     const x = this.wx(tx);
     const y = this.wy(ty);
-    this.boss = this.physics.add.sprite(x, y, "spectre").setDepth(18).setScale(1.5);
+    const artKey = this.textures.exists(cfg.art) ? cfg.art : "spectre";
+    this.boss = this.physics.add.sprite(x, y, artKey).setDepth(18).setScale(cfg.scale);
+    const halo = this.add.circle(x, y, 54, cfg.color, 0.18).setDepth(17);
+    this.tweens.add({
+      targets: halo,
+      alpha: { from: 0.1, to: 0.28 },
+      scale: { from: 0.92, to: 1.1 },
+      duration: 1400,
+      yoyo: true,
+      repeat: -1,
+    });
+    this.bossHalo = halo;
     const bb = this.boss.body as Phaser.Physics.Arcade.Body;
     bb.setAllowGravity(false);
     this.boss.setCollideWorldBounds(true);
     this.boss.setCircle(20, 4, 4);
     this.bossHits = 0;
-    this.bossPhase = 1;
+    // Phase 0 = dormant: the boss waits, speaks, and only fights after Maria answers.
+    this.bossPhase = 0;
+    this.bossDialogueDone = false;
     this.bossHp = cfg.hp;
     this.bossMax = cfg.hp;
     this.bossName = cfg.name;
-    this.physics.add.overlap(this.player, this.boss, () => this.hurtPlayerDirect());
-    this.objective = `${cfg.name} — swing your weapon until its worry lifts.`;
-    this.emitToast(cfg.taunt);
+    this.physics.add.overlap(this.player, this.boss, () => {
+      if (this.bossPhase === 1) this.hurtPlayerDirect();
+    });
+    this.objective = `${cfg.name} waits ahead — walk up and hear it out.`;
     // gentle waves of minions; never overwhelming
     this.bossTimer = this.time.addEvent({
       delay: 5200,
@@ -1272,6 +1290,8 @@ export class QuestScene extends Phaser.Scene {
       this.spawnSparkle(bx, by, 0xffd7e5, 30);
       this.boss.destroy();
       this.boss = null;
+      this.bossHalo?.destroy();
+      this.bossHalo = null;
       this.add.sprite(bx, by, "arbor").setDepth(6);
     }
     (this.enemies.getChildren() as Phaser.Physics.Arcade.Sprite[]).forEach((e) => {
@@ -1959,6 +1979,68 @@ export class QuestScene extends Phaser.Scene {
     }
   }
 
+  /** Portals now work by walking into them — no button press required. */
+  private checkPortal() {
+    if (this.traveling || this.frozen) return;
+    const g = this.gatewayObj;
+    if (!g?.active) return;
+    if (Phaser.Math.Distance.Between(this.player.x, this.player.y, g.x, g.y) > 34) return;
+    this.traveling = true;
+    this.cameras.main.flash(240, 255, 240, 191);
+    this.advanceZone();
+  }
+
+  /** Walking up to a dormant boss starts its dialogue. */
+  private checkBossEncounter() {
+    if (!this.boss?.active || this.bossPhase !== 0 || this.bossDialogueDone || this.frozen) return;
+    if (Phaser.Math.Distance.Between(this.boss.x, this.boss.y, this.player.x, this.player.y) > 210)
+      return;
+    const cfg = ACT_BOSSES[this.save.current_zone];
+    if (!cfg) return;
+    this.bossDialogueDone = true;
+    this.boss.setVelocity(0, 0);
+    this.openModal({
+      type: "boss",
+      name: cfg.name,
+      art: cfg.art,
+      intro: cfg.intro,
+      choices: cfg.replies.map((r) => ({ id: r.id, text: r.text })),
+    });
+  }
+
+  /** Maria's answer decides how the fight opens. */
+  private onBossChoice(id: string) {
+    const cfg = ACT_BOSSES[this.save.current_zone];
+    this.onResume();
+    if (!cfg || !this.boss) return;
+    const reply = cfg.replies.find((r) => r.id === id) ?? cfg.replies[0]!;
+    try {
+      const raw = localStorage.getItem("quest-boss-choices");
+      const all = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+      all[this.save.current_zone] = reply.id;
+      localStorage.setItem("quest-boss-choices", JSON.stringify(all));
+    } catch {
+      /* storage is optional */
+    }
+    this.bossPhase = 1;
+    this.objective = `${cfg.name} — swing your weapon until its worry lifts.`;
+    this.emitToast(`${cfg.name}: "${reply.answer}"`);
+    this.time.delayedCall(2600, () => this.emitToast(reply.boonText));
+    if (reply.boon === "stamina") {
+      this.stamina = 100;
+      this.dashReadyAt = 0;
+    } else if (reply.boon === "slow") {
+      this.bossSlow = 0.55;
+    } else {
+      this.save.player_health = Math.min(5, this.save.player_health + 1);
+      this.emitSave();
+    }
+    this.cameras.main.flash(320, 255, 240, 191);
+    this.spawnSparkle(this.player.x, this.player.y, cfg.color, 20);
+    this.emitToast(cfg.taunt);
+    this.pushHud(true);
+  }
+
   private hurtPlayerDirect() {
     const now = this.time.now;
     if (now < this.invulnUntil) return;
@@ -2227,11 +2309,12 @@ export class QuestScene extends Phaser.Scene {
     }
 
     // boss drifts toward Maria at a fair, readable pace
+    if (this.boss?.active) this.bossHalo?.setPosition(this.boss.x, this.boss.y);
     if (this.boss?.active && this.bossPhase === 1) {
       const bd = Phaser.Math.Distance.Between(this.boss.x, this.boss.y, this.player.x, this.player.y);
       if (bd < 420 && time > this.bossHitAt) {
         const ba = Math.atan2(this.player.y - this.boss.y, this.player.x - this.boss.x);
-        this.boss.setVelocity(Math.cos(ba) * 46, Math.sin(ba) * 46);
+        this.boss.setVelocity(Math.cos(ba) * 46 * this.bossSlow, Math.sin(ba) * 46 * this.bossSlow);
       } else if (bd >= 420) this.boss.setVelocity(0, 0);
       this.boss.setAlpha(0.85 + 0.15 * Math.sin(time / 300));
     }
