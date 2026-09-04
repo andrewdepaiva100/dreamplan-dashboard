@@ -43,6 +43,12 @@ import portraitAndre from "@/assets/quest/portrait-andre.jpg";
 import portraitPhillip from "@/assets/quest/portrait-phillip.jpg";
 import portraitItalo from "@/assets/quest/portrait-italo.jpg";
 import portraitGabe from "@/assets/quest/portrait-gabe.jpg";
+import bossWater from "@/assets/quest/boss-water.png";
+import bossGarden from "@/assets/quest/boss-garden.png";
+import bossHaven from "@/assets/quest/boss-haven.png";
+import bossStar from "@/assets/quest/boss-star.png";
+import bossHollow from "@/assets/quest/boss-hollow.png";
+
 
 
 const GUEST_PORTRAITS: Record<string, string> = {
