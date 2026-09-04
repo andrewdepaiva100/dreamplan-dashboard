@@ -242,7 +242,7 @@ export const ZONES: Record<ZoneId, ZoneInfo> = {
     id: "sunlit_shores",
     act: "Act I",
     title: "The Sunlit Shores & Sunken Grotto",
-    objective: "Push three stones onto the pressure plates to divert the river, then claim the Lantern.",
+    objective: "Follow the road east to the Sunken Grotto, calm the Warden, and claim the Lantern.",
   },
   wedding_garden: {
     id: "wedding_garden",
@@ -430,9 +430,10 @@ export const SECOND_BOSSES: Partial<Record<ZoneId, BossConfig>> = {
     name: "The Hollow of Doubtful Nights",
     hp: 6,
     taunt: "A second shadow peels off the stars — The Hollow of Doubtful Nights.",
-    art: "boss-star",
-    color: 0x6f8bff,
-    scale: 1.15,
+    art: "boss-hollow",
+    color: 0x27336e,
+    scale: 1.2,
+    silent: true,
     intro:
       "Weariness was only the first of us. I am every three-in-the-morning thought you have ever had. Still climbing?",
     replies: [
@@ -528,6 +529,8 @@ export type BossConfig = {
   /** Line the boss speaks before the fight begins. */
   intro: string;
   replies: BossReply[];
+  /** When true the boss fights immediately — no intro dialogue. */
+  silent?: boolean;
 };
 
 const REPLY_BOONS: Record<BossReply["boon"], string> = {
