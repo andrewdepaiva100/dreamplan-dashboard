@@ -20,12 +20,15 @@ The relic popup is redesigned: gold-framed card, glowing relic emblem, ornate di
 - Entering the house in any act saves a checkpoint. Respawn puts her just outside that house with full health.
 - If she never entered a house in that act, she restarts at the act's beginning.
 
+## 7. Act 5 friend introductions
+Friends in Act 5 no longer show a descriptive line under their names. Three exceptions keep one: Gabriel — "Closest Friend", Phillip — "Lifelong Friend", Gianluca — "Best Man".
+
 ## Also
 - 10% more lamps and torches across Acts I–IV for a warmer, better-lit world.
 - The grey enemies get colour — tinted, more characterful variants instead of flat grey blobs.
 
 ## Technical notes
-- `src/lib/quest/content.ts`: boss `demon`/`role` text, Alicia line, Bram weapon + line, new sword entry with damage, weapon blurbs with damage values.
+- `src/lib/quest/content.ts`: boss `demon`/`role` text, Alicia line, Bram weapon + line, new sword entry with damage, weapon blurbs with damage values, Act 5 guest `role` fields blanked except Gabriel/Phillip/Gianluca.
 - `src/lib/quest/scene.ts`: water tiles + collision near the Act I envelope, extra lamp coordinates in four zones, enemy tint palette, death flow replacing the `player_health <= 0` auto-heal, checkpoint stored on house entry (zone + door position) in the save.
 - `src/lib/quest/save.ts`: checkpoint fields with safe defaults for existing saves.
 - `src/components/plan/quest.tsx`: Game Over overlay, restyled relic/envelope cards.
