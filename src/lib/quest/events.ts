@@ -16,6 +16,7 @@ export const EV = {
   travel: "quest:travel",
   guideme: "quest:guideme",
   equip: "quest:equip",
+  bosschoice: "quest:bosschoice",
 } as const;
 
 export type HudState = {
@@ -35,6 +36,7 @@ export type HudState = {
   weapons: string[];
   equipped: string | null;
   boss: { name: string; hp: number; max: number } | null;
+  shield: { owned: boolean; ready: boolean } | null;
 };
 
 export type ModalPayload =
@@ -45,4 +47,12 @@ export type ModalPayload =
   | { type: "vault" }
   | { type: "info"; title: string; body: string }
   | { type: "guide" }
-  | { type: "weapon"; weaponId: string; speaker: string; line: string };
+  | { type: "weapon"; weaponId: string; speaker: string; line: string }
+  | { type: "directions"; title: string; lines: string[] }
+  | {
+      type: "boss";
+      name: string;
+      art: string;
+      intro: string;
+      choices: { id: string; text: string }[];
+    };
