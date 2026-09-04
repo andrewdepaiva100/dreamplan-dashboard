@@ -247,7 +247,6 @@ export class QuestScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, this.mapW * TILE, this.mapH * TILE);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     this.cameras.main.setZoom(this.scale.width < 620 ? 1.1 : 1.45);
-    this.cameras.main.fadeIn(500, 8, 12, 30);
 
     // warm romantic sunlight wash across the whole scene
     const sunlight = this.add.rectangle(
