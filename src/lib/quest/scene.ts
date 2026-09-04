@@ -977,9 +977,12 @@ export class QuestScene extends Phaser.Scene {
       s.setDepth(this.dsort(s.y + s.displayHeight * 0.3));
       this.bakeShadow(s.x, s.y + s.displayHeight * 0.36, s.displayWidth * 0.66, 0.2);
       const b = s.body as Phaser.Physics.Arcade.StaticBody;
-      const h = Math.max(10, s.height * footH);
-      b.setSize(s.width * 0.7, h);
-      b.setOffset(s.width * 0.15, s.height - h);
+      // Slim footprints: only the base of a prop blocks Maria, so the world
+      // never feels like a grid of invisible boxes.
+      const h = Math.max(6, s.height * footH * 0.5);
+      const w = s.width * 0.42;
+      b.setSize(w, h);
+      b.setOffset((s.width - w) / 2, s.height - h);
       b.updateFromGameObject?.();
       return s;
     };
