@@ -530,7 +530,11 @@ export class QuestScene extends Phaser.Scene {
       });
     for (const it of this.interactables) {
       if (!it.enabled || !it.obj.active) continue;
-      if (!["relic", "gateway", "guide", "vault", "andrew", "andrew-ceremony"].includes(it.kind))
+      if (
+        !["relic", "gateway", "guide", "vault", "andrew", "andrew-ceremony", "season-key"].includes(
+          it.kind,
+        )
+      )
         continue;
       pins.push({
         x: it.obj.x / (this.mapW * TILE),
@@ -597,7 +601,13 @@ export class QuestScene extends Phaser.Scene {
       return;
     }
     this.pingUntil = this.time.now + 5200;
-    this.emitToast("A golden compass marks the way.");
+    const targetIt = this.interactables.find((i) => i.obj === target);
+    if (targetIt?.kind === "season-key") {
+      const found = (this.zoneState["keysFound"] as number) ?? 0;
+      this.emitToast(`The compass seeks the ${targetIt.id} key — ${4 - found} of 4 still hidden.`);
+    } else {
+      this.emitToast("A golden compass marks the way.");
+    }
   }
 
   /** Fires once when Maria first reaches the act's flagship landmark. */
