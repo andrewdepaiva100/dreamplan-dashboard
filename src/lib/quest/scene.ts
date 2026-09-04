@@ -166,10 +166,24 @@ export class QuestScene extends Phaser.Scene {
     this.landmark = null;
     this.cutscenePlayed = false;
     this.pingUntil = 0;
+    this.pingMarker = null;
     this.companion = null;
 
-    this.buildZone(this.save.current_zone);
+    try {
+      this.buildZone(this.save.current_zone);
+    } catch (err) {
+      console.error("[quest] realm build failed", err);
+      // Never strand the player on a black screen: fall back to Act I.
+      if (this.save.current_zone !== "sunlit_shores") {
+        this.save.current_zone = "sunlit_shores";
+        this.buildZone("sunlit_shores");
+        this.emitToast("The path shimmered oddly — you're back on the Sunlit Shores.");
+      } else {
+        throw err;
+      }
+    }
     this.spawnCompanion();
+
 
     // ---- groups (pooled) -------------------------------------------------
     this.enemies = this.physics.add.group({ maxSize: 60, runChildUpdate: false });
