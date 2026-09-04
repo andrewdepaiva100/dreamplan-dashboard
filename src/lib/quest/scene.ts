@@ -1209,7 +1209,6 @@ export class QuestScene extends Phaser.Scene {
 
   /** Max the dog — an optional companion Maria can adopt beside the forge. */
   private addDogOffer(tx: number, ty: number) {
-    void 0;
     if (this.dogAdopted()) {
       this.spawnDog(this.wx(tx), this.wy(ty));
       return;
