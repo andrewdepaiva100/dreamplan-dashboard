@@ -789,14 +789,16 @@ export class QuestScene extends Phaser.Scene {
     for (const [x, y] of opts.bridges ?? []) {
       this.add.sprite(this.wx(x), this.wy(y), "bridge").setDepth(3).setAlpha(0.96);
     }
+    const flowerTints = [0xffffff, 0xffd7e5, 0xfff0bf, 0xd7e0ff, 0xffc2a1];
     for (let i = 0; i < (opts.flowers ?? 0); i++) {
       const tx = 4 + rnd() * (DESIGN_W - 8);
       const ty = 4 + rnd() * (DESIGN_H - 8);
       this.add
         .sprite(this.wx(tx), this.wy(ty), "flowers")
         .setDepth(4)
-        .setAlpha(0.9)
-        .setScale(0.8 + rnd() * 0.5);
+        .setAlpha(0.92)
+        .setTint(flowerTints[Math.floor(rnd() * flowerTints.length)]!)
+        .setScale(0.8 + rnd() * 0.6);
     }
     if (opts.border) {
       for (let x = 2; x < DESIGN_W - 2; x += 2) {
