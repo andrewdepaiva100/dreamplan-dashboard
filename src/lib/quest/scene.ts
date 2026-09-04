@@ -135,8 +135,15 @@ export class QuestScene extends Phaser.Scene {
   }
 
   create() {
+    // Clear any leftover fade from the previous realm FIRST — a black screen
+    // must never survive into a new scene, even if setup below hiccups.
+    this.cameras.main.resetFX();
+    this.cameras.main.setAlpha(1);
+    this.cameras.main.fadeIn(500, 8, 12, 30);
+
     buildTileset(this);
     buildSprites(this);
+
 
     this.frozen = false;
     this.stamina = 100;
