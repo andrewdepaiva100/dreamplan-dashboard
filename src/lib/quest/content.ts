@@ -238,6 +238,10 @@ export const HOW_TO_PLAY = [
     title: "Interact",
     body: "Walk near glowing people, stones, doors, or letters and tap TALK (or E / ENTER) to read, rest, collect relics, and open new paths.",
   },
+  {
+    title: "Weapons",
+    body: "Each act's guide gives Maria that act's own weapon when their conversation ends. Every weapon stays in the belt on the right and can be switched at any time.",
+  },
 ];
 
 export const REALM_LANDMARKS: { direction: string; name: string; act: string; zone: ZoneId }[] = [
@@ -270,10 +274,14 @@ export const CONTROLS_HELP: { title: string; body: string }[] = [
     title: "Objective Arrow",
     body: "The glowing gold arrow circling Maria points toward the current act's goal. It fades once you are close.",
   },
+  {
+    title: "Ping Objective",
+    body: "Tap PING OBJECTIVE under the objective tracker: a gold pulse ripples out from Maria and a large compass marker shows the exact direction for a few seconds. You always steer yourself.",
+  },
 ];
 
 // =========================================================================
-// WEAPONS, BLACKSMITH, ACT GUIDES & BOSSES
+// WEAPONS, ACT GUIDES & BOSSES
 // =========================================================================
 
 export type Weapon = {
@@ -287,15 +295,6 @@ export type Weapon = {
 };
 
 export const WEAPONS: Weapon[] = [
-  {
-    id: "wooden-sword",
-    name: "Wooden Sword",
-    icon: "🗡️",
-    damage: 1,
-    reach: 54,
-    color: 0xc99a5b,
-    blurb: "A practice blade from the village forge. Light, honest, and always enough to start.",
-  },
   {
     id: "spark-wand",
     name: "Radiant Spark Wand",
@@ -325,7 +324,7 @@ export const WEAPONS: Weapon[] = [
   },
   {
     id: "starlight-censer",
-    name: "Starlight Censer",
+    name: "Celestial Stave",
     icon: "🌟",
     damage: 5,
     reach: 96,
@@ -334,12 +333,12 @@ export const WEAPONS: Weapon[] = [
   },
   {
     id: "ring-of-dawn",
-    name: "Ring of Dawn",
-    icon: "💍",
+    name: "Vow Shield / Peace Blade",
+    icon: "🛡️",
     damage: 6,
     reach: 104,
     color: 0xffe6a8,
-    blurb: "The first light of forever, worn on your hand.",
+    blurb: "A shield that guards the promise and a blade that never needs to be drawn in anger.",
   },
 ];
 
@@ -347,14 +346,8 @@ export const WEAPON_BY_ID: Record<string, Weapon> = Object.fromEntries(
   WEAPONS.map((w) => [w.id, w]),
 );
 
-export const DEFAULT_WEAPON = "wooden-sword";
-
-export const BLACKSMITH = {
-  name: "Tobias the Blacksmith",
-  weapon: DEFAULT_WEAPON,
-  line: "Maria! You can't walk the realm empty-handed. Here — a wooden sword from my own bench. Swing it with the ATTACK button; nothing here truly dies, it just remembers how to be gentle again.",
-  repeat: "The forge is always warm if your blade needs tending. Go on — the road is waiting.",
-};
+/** Act I's guide hands this over — there is no forge and no practice blade. */
+export const DEFAULT_WEAPON = "spark-wand";
 
 export const ACT_GUIDES: Record<ZoneId, { name: string; weapon: string; line: string }> = {
   sunlit_shores: {
@@ -416,7 +409,7 @@ const REPLY_BOONS: Record<BossReply["boon"], string> = {
 export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   sunlit_shores: {
     name: "Warden of Rushing Water",
-    hp: 10,
+    hp: 6,
     taunt: "The Warden of Rushing Water rises from the river. Steady — you have crossed worse.",
     art: "boss-water",
     color: 0x4ec9d6,
@@ -449,7 +442,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   wedding_garden: {
     name: "The Stress Spectre",
-    hp: 14,
+    hp: 7,
     taunt: "The Stress Spectre unfurls above the glass roof. Breathe. Swing.",
     art: "boss-garden",
     color: 0xb79cf0,
@@ -482,7 +475,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   the_haven: {
     name: "The Clamour of Doubt",
-    hp: 16,
+    hp: 8,
     taunt: "The Clamour of Doubt clatters across the square. Answer it with your blade of light.",
     art: "boss-haven",
     color: 0xd9a441,
@@ -515,7 +508,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   starry_ascent: {
     name: "The Weight of Weariness",
-    hp: 18,
+    hp: 9,
     taunt: "The Weight of Weariness settles over the summit. Show it what rest looks like.",
     art: "boss-star",
     color: 0x8f9bff,
@@ -570,7 +563,7 @@ export const SIGNPOST_HEADER = "Weathered Signpost";
 
 export const SIGNPOST_DIRECTIONS: Record<ZoneId, string[]> = {
   sunlit_shores: [
-    "NORTH-WEST — The Blacksmith's forge. Ask for a blade; he never sends anyone away empty-handed.",
+    "NEARBY — Your realm guide. Speak with them; they will place this act's weapon in your hands.",
     "SOUTH — Your guide waits by the meadow trail with a gift for the road.",
     "EAST — The River Gates. Push the three stones onto the three plates to open the water.",
     "FAR EAST — The Grotto Temple and the shining gateway onward.",

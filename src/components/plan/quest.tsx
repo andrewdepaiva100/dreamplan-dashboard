@@ -27,6 +27,7 @@ import {
 } from "@/lib/quest/save";
 import { EV, type HudState, type ModalPayload } from "@/lib/quest/events";
 import type { ZoneId } from "@/lib/quest/content";
+import mariaPortrait from "@/assets/quest/maria-portrait.png";
 
 type MapSnapshot = {
   rows: string[];
@@ -159,6 +160,26 @@ type TitleOverlay = null | "story" | "guide";
 
 const HEART = "♥";
 
+/** Maria's dialogue portrait — her expression carries the scene. */
+function MariaPortrait({ caption }: { caption?: string }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-rose-gold/40 bg-white/70 p-2">
+      <img
+        src={mariaPortrait}
+        alt="Maria smiling"
+        width={256}
+        height={256}
+        loading="lazy"
+        className="h-20 w-20 shrink-0 rounded-lg border border-gold/40 bg-blush/20 object-cover"
+        style={{ imageRendering: "pixelated" }}
+      />
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">
+        {caption ?? "Maria"}
+      </p>
+    </div>
+  );
+}
+
 function GlassPanel({
   children,
   onClose,
@@ -173,11 +194,15 @@ function GlassPanel({
   compact?: boolean;
 }) {
   return (
-    <div className="absolute inset-0 z-40 flex items-center justify-center bg-[rgba(6,10,24,0.72)] p-4 backdrop-blur-sm">
+    <div
+      className={`absolute inset-0 z-40 flex items-center justify-center p-4 ${
+        compact ? "bg-[rgba(6,10,24,0.42)] backdrop-blur-[2px]" : "bg-[rgba(6,10,24,0.72)] backdrop-blur-sm"
+      }`}
+    >
       <div
         className={`${
           compact
-            ? "w-[68vw] min-w-[300px] max-w-lg max-h-[70vh] p-4"
+            ? "w-[64vw] min-w-[290px] max-w-md max-h-[66vh] p-4"
             : `w-full ${wide ? "max-w-2xl" : "max-w-md"} max-h-full p-6`
         } overflow-y-auto rounded-2xl border border-rose-gold/40 bg-[rgba(253,250,243,0.92)] shadow-2xl`}
       >
@@ -622,6 +647,16 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
             <p className="mt-1 text-[11px] text-sky">
               Relics {hud.relics.length}/5 · Letters {hud.envelopes.length}/5 · Keys {hud.keys}/3
             </p>
+            <button
+              type="button"
+              onClick={() => {
+                buzz();
+                emit(EV.ping);
+              }}
+              className="pointer-events-auto mt-2 w-full rounded-lg border border-gold/60 bg-gold/20 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-gold"
+            >
+              📡 Ping objective
+            </button>
           </div>
 
           <div className="pointer-events-auto flex flex-col gap-2">
@@ -820,6 +855,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
 
       {modal?.type === "andrew" ? (
         <GlassPanel title="Andrew" onClose={closeModal}>
+          <MariaPortrait caption="Maria listens" />
           <p className="font-serif-italic italic">“{modal.line}”</p>
           <p className="text-xs text-navy/60">
             {ANDREW_AFFIRMATIONS[Math.floor(Math.random() * ANDREW_AFFIRMATIONS.length)]}
@@ -846,6 +882,7 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
 
       {modal?.type === "weapon" ? (
         <GlassPanel title={modal.speaker} onClose={closeModal}>
+          <MariaPortrait caption="Maria receives a gift" />
           <p className="font-serif-italic italic">“{modal.line}”</p>
           {(() => {
             const w = WEAPON_BY_ID[modal.weaponId];
@@ -891,6 +928,9 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
           }}
         >
           <p className="font-serif-italic italic text-navy">“{modal.intro}”</p>
+          <div className="mt-3">
+            <MariaPortrait caption="Maria stands her ground" />
+          </div>
           <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-gold">
             How does Maria answer?
           </p>
@@ -967,17 +1007,6 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
                 Rose marker: you. Gold marker: this act&apos;s landmark. White markers: relics,
                 guides and portals.
               </p>
-              <button
-                type="button"
-                onClick={() => {
-                  buzz();
-                  emit(EV.guideme);
-                  setShowMap(false);
-                }}
-                className="w-full rounded-xl bg-gradient-to-r from-gold to-gold-glow px-4 py-3 text-sm font-bold text-navy"
-              >
-                ✨ Guide Me to my objective
-              </button>
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-wider text-gold">
                   Fast travel

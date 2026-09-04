@@ -2,7 +2,6 @@ import * as Phaser from "phaser";
 import {
   ACT_BOSSES,
   ACT_GUIDES,
-  BLACKSMITH,
   DEFAULT_WEAPON,
   ENVELOPES,
   RELICS,
@@ -104,7 +103,8 @@ export class QuestScene extends Phaser.Scene {
   private animals: Phaser.GameObjects.Sprite[] = [];
   private landmark: { sprite: Phaser.GameObjects.Sprite; title: string; body: string } | null = null;
   private cutscenePlayed = false;
-  private autopilot: Phaser.Math.Vector2 | null = null;
+  private pingMarker: Phaser.GameObjects.Triangle | null = null;
+  private pingUntil = 0;
   private companion: Phaser.GameObjects.Sprite | null = null;
   private bossPhase = 0;
   private bossHits = 0;
@@ -158,7 +158,7 @@ export class QuestScene extends Phaser.Scene {
     this.animals = [];
     this.landmark = null;
     this.cutscenePlayed = false;
-    this.autopilot = null;
+    this.pingUntil = 0;
     this.companion = null;
 
     this.buildZone(this.save.current_zone);
@@ -204,7 +204,7 @@ export class QuestScene extends Phaser.Scene {
     g.on(EV.interact, this.interact, this);
     g.on(EV.resume, this.onResume, this);
     g.on(EV.travel, this.travelTo, this);
-    g.on(EV.guideme, this.startAutopilot, this);
+    g.on(EV.ping, this.pingObjective, this);
     g.on(EV.equip, this.equipWeapon, this);
     g.on(EV.bosschoice, this.onBossChoice, this);
 
@@ -215,7 +215,7 @@ export class QuestScene extends Phaser.Scene {
       g.off(EV.interact, this.interact, this);
       g.off(EV.resume, this.onResume, this);
       g.off(EV.travel, this.travelTo, this);
-      g.off(EV.guideme, this.startAutopilot, this);
+      g.off(EV.ping, this.pingObjective, this);
       g.off(EV.equip, this.equipWeapon, this);
       g.off(EV.bosschoice, this.onBossChoice, this);
       this.bossTimer?.remove();
@@ -536,20 +536,40 @@ export class QuestScene extends Phaser.Scene {
     this.time.delayedCall(420, () => this.scene.restart({ save: this.save }));
   }
 
-  /** "Guide Me": Maria walks herself toward the current objective. */
-  private startAutopilot() {
+  /**
+   * "Radar Ping": a soft gold pulse ripples out from Maria and a glowing
+   * compass marker points at her objective for a few seconds. Movement stays
+   * entirely in the player's hands.
+   */
+  private pingObjective() {
     this.onResume();
     const target = this.objectiveTarget();
+
+    // pulse wave from Maria
+    for (let i = 0; i < 3; i++) {
+      this.time.delayedCall(i * 180, () => {
+        if (!this.player?.active) return;
+        const ring = this.add
+          .circle(this.player.x, this.player.y, 18, 0xffd977, 0)
+          .setDepth(18)
+          .setStrokeStyle(3, 0xffe6a8, 0.85);
+        this.tweens.add({
+          targets: ring,
+          radius: 190,
+          alpha: 0,
+          duration: 900,
+          ease: "Sine.easeOut",
+          onComplete: () => ring.destroy(),
+        });
+      });
+    }
+
     if (!target) {
-      this.emitToast("No path to trace right now — explore a little further.");
+      this.emitToast("The ping fades — nothing to point to just yet.");
       return;
     }
-    this.autopilot = new Phaser.Math.Vector2(target.x, target.y);
-    this.emitToast("A path of petals unfolds toward your goal.");
-  }
-
-  private cancelAutopilot() {
-    this.autopilot = null;
+    this.pingUntil = this.time.now + 5200;
+    this.emitToast("A golden compass marks the way.");
   }
 
   /** Fires once when Maria first reaches the act's flagship landmark. */
@@ -559,7 +579,6 @@ export class QuestScene extends Phaser.Scene {
     if (Phaser.Math.Distance.Between(this.player.x, this.player.y, l.sprite.x, l.sprite.y) > 230)
       return;
     this.cutscenePlayed = true;
-    this.autopilot = null;
     this.frozen = true;
     this.player.setVelocity(0, 0);
     this.physics.pause();
@@ -730,6 +749,7 @@ export class QuestScene extends Phaser.Scene {
     const target = this.objectiveTarget();
     if (!target) {
       this.arrow.setVisible(false);
+      this.pingMarker?.setVisible(false);
       return;
     }
     const dist = Phaser.Math.Distance.Between(
@@ -740,6 +760,7 @@ export class QuestScene extends Phaser.Scene {
     );
     if (dist < 90) {
       this.arrow.setVisible(false);
+      this.pingMarker?.setVisible(false);
       return;
     }
     const cam = this.cameras.main;
@@ -752,14 +773,38 @@ export class QuestScene extends Phaser.Scene {
       .setPosition(px + Math.cos(angle) * r, py + Math.sin(angle) * r);
     this.arrow.setRotation(angle + Math.PI / 2);
     this.arrow.setAlpha(0.6 + 0.25 * Math.sin(this.time.now / 320));
+    this.updatePingMarker(angle, px, py);
+  }
+
+  /** Big glowing gold compass marker, visible only for a few seconds after a ping. */
+  private updatePingMarker(angle: number, px: number, py: number) {
+    if (!this.pingMarker) {
+      this.pingMarker = this.add
+        .triangle(0, 0, 0, 26, 15, -18, -15, -18, 0xffe6a8, 0.95)
+        .setDepth(96)
+        .setScrollFactor(0)
+        .setVisible(false);
+      this.pingMarker.setStrokeStyle(3, 0xfff7de, 1);
+    }
+    if (this.time.now > this.pingUntil) {
+      this.pingMarker.setVisible(false);
+      return;
+    }
+    const r = 104;
+    this.pingMarker
+      .setVisible(true)
+      .setPosition(px + Math.cos(angle) * r, py + Math.sin(angle) * r);
+    this.pingMarker.setRotation(angle + Math.PI / 2);
+    this.pingMarker.setScale(1 + 0.12 * Math.sin(this.time.now / 180));
+    this.pingMarker.setAlpha(0.75 + 0.25 * Math.sin(this.time.now / 200));
   }
 
   private buildZone(zone: ZoneId) {
     this.objective = ZONES[zone].objective;
     // Act I is a compact, welcoming realm (~1/3 the area of the later acts).
     const small = zone === "sunlit_shores";
-    this.mapW = small ? 104 : MAP_W;
-    this.mapH = small ? 104 : MAP_H;
+    this.mapW = small ? 62 : MAP_W;
+    this.mapH = small ? 62 : MAP_H;
     this.sxF = this.mapW / DESIGN_W;
     this.syF = this.mapH / DESIGN_H;
     if (zone === "sunlit_shores") this.buildAct1();
@@ -827,7 +872,7 @@ export class QuestScene extends Phaser.Scene {
   }
 
   // ---------------- WEAPON IN HAND ----------------------------------------
-  /** Shows the equipped weapon in Maria's hand (nothing before the forge). */
+  /** Shows the equipped weapon in Maria's hand (nothing until a guide gifts one). */
   private refreshHand() {
     const id = this.save.equipped_weapon;
     const owned = !!id && this.save.weapons.includes(id);
@@ -893,7 +938,6 @@ export class QuestScene extends Phaser.Scene {
 
     this.addPlayer(18, 51);
     this.spawnGuideAndSignpost(22, 48);
-    this.spawnBlacksmith(28, 40);
     this.spawnActGuide(24, 56);
     this.scatterDecor(11, {
       village: [
@@ -1063,29 +1107,6 @@ export class QuestScene extends Phaser.Scene {
       radius: 92,
     });
     this.tweens.add({ targets: it.obj, y: it.obj.y - 3, duration: 1400, yoyo: true, repeat: -1 });
-  }
-
-  /** Act I forge: a large blacksmith building with a smith who gifts the wooden sword. */
-  private spawnBlacksmith(tx: number, ty: number) {
-    if (!this.solidDecor) this.solidDecor = this.physics.add.staticGroup();
-    const b = this.solidDecor.create(this.wx(tx), this.wy(ty), "blacksmith") as Phaser.Physics.Arcade.Sprite;
-    b.setDepth(12);
-    const body = b.body as Phaser.Physics.Arcade.StaticBody;
-    body.setSize(b.width * 0.82, b.height * 0.42);
-    body.setOffset(b.width * 0.09, b.height * 0.55);
-    body.updateFromGameObject?.();
-    const glow = this.add.sprite(b.x - 14, b.y + 18, "glow").setDepth(11).setScale(2).setAlpha(0.4);
-    glow.setBlendMode(Phaser.BlendModes.ADD);
-    this.tweens.add({ targets: glow, alpha: { from: 0.25, to: 0.55 }, duration: 900, yoyo: true, repeat: -1 });
-    const it = this.addInteractable(
-      b.x + 44,
-      b.y + 58,
-      "blacksmith-npc",
-      "blacksmith",
-      `Talk to ${BLACKSMITH.name}`,
-      { radius: 96 },
-    );
-    this.tweens.add({ targets: it.obj, y: it.obj.y - 3, duration: 1200, yoyo: true, repeat: -1 });
   }
 
   // ---------------- ACT II -------------------------------------------------
@@ -1664,7 +1685,7 @@ export class QuestScene extends Phaser.Scene {
   private attack() {
     if (this.frozen || !this.player.active) return;
     if (!this.save.weapons.includes(this.save.equipped_weapon ?? "")) {
-      this.emitToast("You have no weapon yet — find the Blacksmith for a wooden sword.");
+      this.emitToast("No weapon yet — speak with this act's guide to receive yours.");
       return;
     }
     const now = this.time.now;
@@ -1929,16 +1950,6 @@ export class QuestScene extends Phaser.Scene {
           this.zoneState["stairs"] = true;
           this.openStaircase();
         }
-        break;
-      }
-      case "blacksmith": {
-        const fresh = this.grantWeapon(BLACKSMITH.weapon);
-        this.openModal({
-          type: fresh ? "weapon" : "info",
-          ...(fresh
-            ? { weaponId: BLACKSMITH.weapon, speaker: BLACKSMITH.name, line: BLACKSMITH.line }
-            : { title: BLACKSMITH.name, body: BLACKSMITH.repeat }),
-        } as ModalPayload);
         break;
       }
       case "act-guide": {
@@ -2233,24 +2244,7 @@ export class QuestScene extends Phaser.Scene {
     if (this.cursors.right.isDown || k["D"]!.isDown) vx += 1;
     if (this.cursors.up.isDown || k["W"]!.isDown) vy -= 1;
     if (this.cursors.down.isDown || k["S"]!.isDown) vy += 1;
-    let len = Math.hypot(vx, vy);
-    if (len > 0.05) this.cancelAutopilot();
-    if (len < 0.05 && this.autopilot) {
-      const d = Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
-        this.autopilot.x,
-        this.autopilot.y,
-      );
-      if (d < 70) this.cancelAutopilot();
-      else {
-        const a = Math.atan2(this.autopilot.y - this.player.y, this.autopilot.x - this.player.x);
-        vx = Math.cos(a);
-        vy = Math.sin(a);
-        len = 1;
-        if (time - this.lastAura > 120) this.auraTrail(true);
-      }
-    }
+    const len = Math.hypot(vx, vy);
     if (len > 1) {
       vx /= len;
       vy /= len;

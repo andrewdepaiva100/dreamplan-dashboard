@@ -14,7 +14,7 @@ export const EV = {
   guide: "quest:guide",
   act: "quest:act",
   travel: "quest:travel",
-  guideme: "quest:guideme",
+  ping: "quest:ping",
   equip: "quest:equip",
   bosschoice: "quest:bosschoice",
 } as const;

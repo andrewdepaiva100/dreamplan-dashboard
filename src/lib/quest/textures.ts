@@ -61,8 +61,6 @@ import imgDog from "@/assets/quest/dog.png";
 import imgBird from "@/assets/quest/bird.png";
 import imgDeer from "@/assets/quest/deer.png";
 import imgDuck from "@/assets/quest/duck.png";
-import imgBlacksmith from "@/assets/quest/blacksmith.png";
-import imgBlacksmithNpc from "@/assets/quest/blacksmith-npc.png";
 import imgGuideAct from "@/assets/quest/guide-act.png";
 import imgBossWater from "@/assets/quest/boss-water.png";
 import imgBossGarden from "@/assets/quest/boss-garden.png";
@@ -136,8 +134,6 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   arbor: [imgArbor, 40, 44],
   guest: [imgGuest, 20, 30],
   guide: [imgGuide, 22, 32],
-  blacksmith: [imgBlacksmith, 96, 115],
-  "blacksmith-npc": [imgBlacksmithNpc, 24, 32],
   "guide-act": [imgGuideAct, 24, 34],
   signpost: [imgSignpost, 24, 32],
   fountain: [imgFountain, 34, 38],
@@ -289,8 +285,6 @@ export function buildSprites(scene: Phaser.Scene) {
     ["arbor", "arbor"],
     ["guest", "guest"],
     ["guide", "guide"],
-    ["blacksmith", "blacksmith"],
-    ["blacksmith-npc", "blacksmith-npc"],
     ["guide-act", "guide-act"],
     ["signpost", "signpost"],
     ["fountain", "fountain"],
@@ -342,7 +336,10 @@ export function buildSprites(scene: Phaser.Scene) {
 
   // ---- WEAPON-IN-HAND overlays (procedural, tinted per weapon) -----------
   const HAND: Record<string, { blade: string; grip: string; kind: "sword" | "wand" | "bow" | "ring" }> = {
-    "wooden-sword": { blade: "#c79a5e", grip: "#7a5230", kind: "sword" },
+    "spark-wand": { blade: "#ffd977", grip: "#8a6a34", kind: "wand" },
+    "floral-bow": { blade: "#ff9ec4", grip: "#6d4d2c", kind: "bow" },
+    lightblade: { blade: "#bfe3ff", grip: "#c8a24a", kind: "sword" },
+    "starlight-censer": { blade: "#a9b6ff", grip: "#9aa4c4", kind: "wand" },
     "blade-of-vows": { blade: "#f2f0e4", grip: "#c8a24a", kind: "sword" },
     "lantern-wand": { blade: "#ffd977", grip: "#8a6a34", kind: "wand" },
     "bow-of-patience": { blade: "#e6cfa4", grip: "#6d4d2c", kind: "bow" },

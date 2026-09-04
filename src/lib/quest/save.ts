@@ -27,12 +27,26 @@ export const EMPTY_SAVE: QuestSave = {
 
 const LOCAL_KEY = "marias-quest-save-v1";
 
+/** The blacksmith's practice blade is gone — older saves inherit the Act I wand. */
+export function migrateWeapons(save: QuestSave): QuestSave {
+  if (!save.weapons.includes("wooden-sword") && save.equipped_weapon !== "wooden-sword") {
+    return save;
+  }
+  const weapons = save.weapons.filter((w) => w !== "wooden-sword");
+  if (!weapons.includes("spark-wand")) weapons.push("spark-wand");
+  const equipped =
+    save.equipped_weapon && save.equipped_weapon !== "wooden-sword"
+      ? save.equipped_weapon
+      : "spark-wand";
+  return { ...save, weapons, equipped_weapon: equipped };
+}
+
 function readLocal(): QuestSave | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(LOCAL_KEY);
     if (!raw) return null;
-    return { ...EMPTY_SAVE, ...(JSON.parse(raw) as Partial<QuestSave>) };
+    return migrateWeapons({ ...EMPTY_SAVE, ...(JSON.parse(raw) as Partial<QuestSave>) });
   } catch {
     return null;
   }
@@ -72,8 +86,9 @@ export async function loadSave(): Promise<QuestSave | null> {
       weapons: Array.isArray(data.weapons) ? (data.weapons as string[]) : [],
       equipped_weapon: (data.equipped_weapon as string | null) ?? null,
     };
-    writeLocal(remote);
-    return remote;
+    const migrated = migrateWeapons(remote);
+    writeLocal(migrated);
+    return migrated;
   } catch (e) {
     console.error("[quest] load failed, using local save", e);
     return readLocal();
