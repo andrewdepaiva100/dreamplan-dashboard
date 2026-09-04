@@ -328,17 +328,17 @@ function ItemGrid({
   dragGroup?: string;
   onDropIn?: (id: string, from: string) => void;
 }) {
-  const [over, setOver] = React.useState(false);
+  const [over, setOver] = useState(false);
   const filled = Object.entries(items).filter(([, n]) => n > 0);
   const cells = Array.from({ length: Math.max(slots, filled.length) }, (_, i) => filled[i] ?? null);
   const dropProps = onDropIn
     ? {
-        onDragOver: (e: React.DragEvent) => {
+        onDragOver: (e: import("react").DragEvent) => {
           e.preventDefault();
           setOver(true);
         },
         onDragLeave: () => setOver(false),
-        onDrop: (e: React.DragEvent) => {
+        onDrop: (e: import("react").DragEvent) => {
           e.preventDefault();
           setOver(false);
           const raw = e.dataTransfer.getData("text/plain");
