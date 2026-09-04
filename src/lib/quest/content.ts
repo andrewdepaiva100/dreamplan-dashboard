@@ -910,7 +910,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
 export const AEGIS = {
   id: "aegis",
   name: "Aegis of Unshakable Faith",
-  line: "One more thing, and this one is very special. The Aegis of Unshakable Faith. Keep it close — when you are down to your last heart, it will wake on its own, push back everything near you, and hold you safe for a moment. It only rests a little while between guards.",
+  line: "One more thing, and this one is special. The Aegis of Unshakable Faith. You never have to use it — the moment you're down to your last heart it wakes on its own, throws a ring of gold out around you, knocks back everything standing close and holds you safe for a few seconds so you can breathe and get clear. Then it sleeps for a short while before it can guard you again. Remember that when the Conservatory doors open: the Stress Spectre inside is fast, and she counts on you panicking at your last heart. You won't be alone at that moment.",
   trigger: "The Aegis wakes — a ring of gold pushes the worry back.",
 };
 
