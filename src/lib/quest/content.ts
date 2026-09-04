@@ -410,6 +410,71 @@ export const WEAPONS: Weapon[] = [
     color: 0xffe6a8,
     blurb: "A shield that guards the promise and a blade that never needs to be drawn in anger.",
   },
+  {
+    id: "eternal-vow",
+    name: "Ring of Eternal Vow",
+    icon: "💍",
+    damage: 9,
+    reach: 116,
+    color: 0xffd977,
+    blurb: "A vow made metal. Legendary — it ends most arguments in a single swing.",
+  },
+  {
+    id: "seraph-edge",
+    name: "Seraph's Edge",
+    icon: "🗡️",
+    damage: 8,
+    reach: 132,
+    color: 0xbfe3ff,
+    blurb: "Feather-light and impossibly fast. Legendary — it sweeps wide enough to clear a crowd.",
+  },
+  {
+    id: "golden-crown",
+    name: "Crown of the Golden Ring",
+    icon: "👑",
+    damage: 12,
+    reach: 150,
+    color: 0xffb347,
+    blurb: "The realm's own crown. Legendary — nothing that stands against love survives two strikes of it.",
+  },
+];
+
+/** Hidden legendary pickups — one each in Acts I, III and IV. */
+export const LEGENDARY_PICKUPS: {
+  zone: ZoneId;
+  weapon: string;
+  x: number;
+  y: number;
+  prompt: string;
+  body: string;
+}[] = [
+  {
+    zone: "sunlit_shores",
+    weapon: "eternal-vow",
+    x: 18,
+    y: 88,
+    prompt: "Take the Ring of Eternal Vow",
+    body:
+      "Half buried in the shore grass, still warm. The Ring of Eternal Vow is yours — swing it and doubt simply stops. Equip it any time from the weapon list.",
+  },
+  {
+    zone: "the_haven",
+    weapon: "seraph-edge",
+    x: 108,
+    y: 92,
+    prompt: "Take the Seraph's Edge",
+    body:
+      "Left behind a market stall, wrapped in white cloth. The Seraph's Edge is yours — faster and wider than anything you have carried. Equip it any time from the weapon list.",
+  },
+  {
+    zone: "starry_ascent",
+    weapon: "golden-crown",
+    x: 44,
+    y: 92,
+    prompt: "Take the Crown of the Golden Ring",
+    body:
+      "Resting on a fallen star. The Crown of the Golden Ring is yours — the strongest thing in any realm, and it answers only to you. Equip it any time from the weapon list.",
+  },
 ];
 
 export const WEAPON_BY_ID: Record<string, Weapon> = Object.fromEntries(
