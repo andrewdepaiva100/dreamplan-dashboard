@@ -811,7 +811,6 @@ export function MariasQuest({ onExit }: { onExit: () => void }) {
         const host = hostRef.current;
         if (!host || gameRef.current) return;
         const game = createQuestGame(host, save);
-        (window as unknown as { __quest?: unknown }).__quest = game;
         gameRef.current = game;
 
 

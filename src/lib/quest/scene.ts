@@ -159,7 +159,7 @@ export class QuestScene extends Phaser.Scene {
   private vel = { x: 0, y: 0 };
   private bobPhase = 0;
   /** 0..1 through the day; 0 = dawn, 0.5 = dusk. */
-  private dayT = 0.15;
+  private dayT = 0.38;
   private nightVeil: Phaser.GameObjects.Rectangle | null = null;
   private warmLights: Phaser.GameObjects.Sprite[] = [];
   private bolts!: Phaser.Physics.Arcade.Group;
@@ -252,7 +252,7 @@ export class QuestScene extends Phaser.Scene {
     this.shadowGfx = undefined;
     this.vel = { x: 0, y: 0 };
     this.bobPhase = 0;
-    this.dayT = ((this.save.time_of_day ?? 0.15) % 1 + 1) % 1;
+    this.dayT = ((this.save.time_of_day ?? 0.38) % 1 + 1) % 1;
     this.nightVeil = null;
     this.warmLights = [];
     this.musicMode = "";

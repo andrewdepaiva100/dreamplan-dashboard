@@ -31,7 +31,7 @@ export const EMPTY_SAVE: QuestSave = {
   weapons: [],
   equipped_weapon: null,
   swift_boots: false,
-  time_of_day: 0.15,
+  time_of_day: 0.38,
   inventory: {},
   chest: {},
 };
@@ -107,7 +107,7 @@ export async function loadSave(): Promise<QuestSave | null> {
       weapons: Array.isArray(data.weapons) ? (data.weapons as string[]) : [],
       equipped_weapon: (data.equipped_weapon as string | null) ?? null,
       swift_boots: Boolean(data.swift_boots),
-      time_of_day: typeof data.time_of_day === "number" ? data.time_of_day : 0.15,
+      time_of_day: typeof data.time_of_day === "number" ? data.time_of_day : 0.38,
       inventory: asCounts(data.inventory),
       chest: asCounts(data.chest),
     };
