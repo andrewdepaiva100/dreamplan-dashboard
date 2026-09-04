@@ -2969,10 +2969,6 @@ export class QuestScene extends Phaser.Scene {
       case "pillar": {
         const arr = this.zoneState["pillars"] as number[];
         const i = Number(it.id);
-        if (this.boss?.active || this.bossTalking) {
-          this.emitToast("Not while something is still fighting you.");
-          break;
-        }
         const next = ((arr[i] ?? 0) + 1) % 3;
         it.obj.setTint([0x8fa6ff, 0xfff0bf, 0xffd7e5][next]!);
         this.spawnSparkle(it.obj.x, it.obj.y, 0xd7e0ff, 8);
@@ -2980,8 +2976,12 @@ export class QuestScene extends Phaser.Scene {
         // counts as aligned once that guardian is defeated.
         const guardiansBeaten = (this.zoneState["guardians"] as number[]) ?? [];
         if (next === 1 && !guardiansBeaten.includes(i)) {
-          this.zoneState["pendingPillar"] = i;
           arr[i] = 1;
+          if (this.boss?.active || this.bossTalking) {
+            this.emitToast("The pillar glows gold — finish this fight, then touch it again.");
+            break;
+          }
+          this.zoneState["pendingPillar"] = i;
           const cfg = PILLAR_GUARDIANS[i] ?? PILLAR_GUARDIANS[0]!;
           this.spawnActBoss(0, 0, cfg);
           if (this.boss) this.boss.setPosition(it.obj.x + 90, it.obj.y);
