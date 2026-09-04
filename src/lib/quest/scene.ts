@@ -163,6 +163,7 @@ export class QuestScene extends Phaser.Scene {
     this.bossHalo = null;
     if (this.save.weapons.length === 0) this.save.weapons = [];
     this.animals = [];
+    this.keyBeacons = new Map();
     this.landmark = null;
     this.cutscenePlayed = false;
     this.pingUntil = 0;
