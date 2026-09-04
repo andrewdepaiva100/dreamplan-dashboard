@@ -14,6 +14,7 @@ import {
   SIGNPOST_HEADER,
   HEART_PICKUP_TEXT,
   GOLDEN_HEART_TEXT,
+  SWIFT_SANDALS,
   ZONES,
   type ZoneId,
 } from "./content";
