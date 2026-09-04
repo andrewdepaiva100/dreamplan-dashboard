@@ -235,7 +235,7 @@ function GuestDialogue({
   const line = lines[Math.min(idx, lines.length - 1)] ?? "";
   const last = idx >= lines.length - 1;
   return (
-    <GlassPanel title={name} onClose={last ? onClose : undefined}>
+    <GlassPanel title={name} {...(last ? { onClose } : {})}>
       <p className="font-serif-italic italic text-navy">“{line}”</p>
       {last ? null : (
         <button
