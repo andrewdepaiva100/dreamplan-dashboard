@@ -494,6 +494,10 @@ export const LOVE_SWORD = {
 export const SECOND_BOSSES: Partial<Record<ZoneId, BossConfig>> = {
   starry_ascent: {
     name: "The Hollow of Doubtful Nights",
+    demon:
+      "This is what finds Andrew at three in the morning — the what-if he can never argue down.",
+    mariaLine:
+      "I've felt him lie awake with this. It doesn't get him tonight.",
     hp: 10,
     taunt: "The stars go cold. A second shadow rises — The Hollow of Doubtful Nights.",
     art: "boss-hollow",
@@ -594,6 +598,10 @@ export type BossConfig = {
   /** Aura colour for the boss glow. */
   color: number;
   scale: number;
+  /** Which of Andrew's real struggles this creature actually is. */
+  demon: string;
+  /** Maria's quiet recognition, spoken before she answers. */
+  mariaLine: string;
   /** Line the boss speaks before the fight begins. */
   intro: string;
   replies: BossReply[];
@@ -610,6 +618,10 @@ const REPLY_BOONS: Record<BossReply["boon"], string> = {
 export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   sunlit_shores: {
     name: "Warden of Rushing Water",
+    demon:
+      "This is Andrew's fear of not being enough to provide — the current he wakes up fighting.",
+    mariaLine:
+      "I know this one. This is what he carries when he thinks he has to hold the whole river back alone. He doesn't. Not anymore.",
     hp: 10,
     taunt: "The river swells and darkens. The Warden of Rushing Water rises to block the crossing — it has never let anyone through.",
     art: "boss-water",
@@ -643,6 +655,10 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   wedding_garden: {
     name: "The Stress Spectre",
+    demon:
+      "This is the pressure Andrew lives under — every plan, every bill, every thing he thinks depends on him.",
+    mariaLine:
+      "He never says it out loud, but I've watched this sit on his chest. Tonight it answers to me.",
     hp: 12,
     taunt: "The glass above you darkens. The Stress Spectre descends — it has been waiting for you.",
     art: "boss-garden",
@@ -676,6 +692,10 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   the_haven: {
     name: "The Clamour of Doubt",
+    demon:
+      "This is Andrew's doubt about himself — the voice telling him he won't be the husband he promised to be.",
+    mariaLine:
+      "He whispers this one to himself when he thinks I'm asleep. He's wrong about himself, and I'll prove it here.",
     hp: 27,
     taunt: "The square falls silent. The Clamour of Doubt turns toward you — this one will not fall quickly.",
     art: "boss-haven",
@@ -709,6 +729,10 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   starry_ascent: {
     name: "The Weight of Weariness",
+    demon:
+      "This is Andrew's exhaustion — the burnout he pushes through and never complains about.",
+    mariaLine:
+      "He's been tired for so long. Let me carry it for a while — that's what I'm walking up this mountain to say.",
     hp: 9,
     taunt: "The summit dims. The Weight of Weariness presses down — it wants you to stop climbing, forever.",
     art: "boss-star",
