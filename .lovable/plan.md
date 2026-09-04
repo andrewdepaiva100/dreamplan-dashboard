@@ -29,7 +29,7 @@ Every act ends in an approachable boss encounter instead of an item puzzle:
 
 - A boss health bar pinned to the top of the screen with the boss name and a smooth depleting fill.
 - The boss drifts toward Maria on a slow pattern and periodically summons a few weak shadow/stress minions that dissolve into petals when hit.
-- Tuned easy: Maria's current act weapon deals heavy damage, so a boss goes down in a handful of bursts; contact damage is light and there are heart pickups in the arena.
+- Tuned easy: Maria's current weapon deals heavy damage, so a boss goes down in a handful of swings; contact damage is light and there are heart pickups in the arena.
 - On defeat: petal burst, the act's relic drops, the act completes and the next portal opens. The old puzzle objects stay in the world as optional flavour but are no longer required.
 
 ## 4. Smaller Act I map
