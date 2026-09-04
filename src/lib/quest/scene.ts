@@ -1001,6 +1001,16 @@ export class QuestScene extends Phaser.Scene {
       for (let i = 0; i < n; i++) solid(x + i * 1.25, y, "fence", 0.6);
     }
     for (const [x, y] of opts.bridges ?? []) {
+      // Carve a walkable stone crossing under the bridge so the now-solid
+      // water still has a way over it.
+      const tx = Math.round((x * this.sxF * TILE) / TILE);
+      const ty = Math.round((y * this.syF * TILE) / TILE);
+      for (let i = -12; i <= 12; i++) {
+        for (let j = -1; j <= 1; j++) {
+          const t = this.layer.getTileAt(tx + i, ty + j);
+          if (t && t.index === T.WATER) this.layer.putTileAt(T.PATH, tx + i, ty + j);
+        }
+      }
       this.add.sprite(this.wx(x), this.wy(y), "bridge").setDepth(3).setAlpha(0.96);
     }
     // purple, red, white and pink only
