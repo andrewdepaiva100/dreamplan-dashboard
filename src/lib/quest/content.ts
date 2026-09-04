@@ -368,7 +368,7 @@ export const LOVE_SWORD = {
 export const SECOND_BOSSES: Partial<Record<ZoneId, BossConfig>> = {
   starry_ascent: {
     name: "The Hollow of Doubtful Nights",
-    hp: 12,
+    hp: 6,
     taunt: "A second shadow peels off the stars — The Hollow of Doubtful Nights.",
     art: "boss-star",
     color: 0x6f8bff,
@@ -578,7 +578,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   starry_ascent: {
     name: "The Weight of Weariness",
-    hp: 9,
+    hp: 5,
     taunt: "The Weight of Weariness settles over the summit. Show it what rest looks like.",
     art: "boss-star",
     color: 0x8f9bff,
