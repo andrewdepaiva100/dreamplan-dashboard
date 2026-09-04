@@ -20,7 +20,11 @@ Change Pedro's opening line from "MARI!..." to "MARIA! Are you getting married f
 ## 5. Aisle runner colour
 Repaint the centre aisle runner and side aisles in the cathedral with a light white/beige floor instead of the dark purple candle tile, so the nave reads clean and bright.
 
+## 6. Distinct music per act
+Each act gets its own clearly different theme instead of five variations of the same tune: Act I a bright open seaside melody, Act II a light waltz, Act III a warm folky town tune, Act IV a slow airy night-sky theme with sparse high notes, Act V a solemn organ-like processional. Tempo, tone and octave differ per act so they're instantly recognisable. Battle and home music stay as they are.
+
 ## Technical notes
 - `src/lib/quest/content.ts`: Pedro line, Andrew's music-sheet dialogue text.
 - `src/lib/quest/scene.ts`: sheet placement/beacons, companion gate in `spawnCompanion`, pillar mini-boss spawning + second Act IV boss in `buildAct4`/boss defeat handling, `checkCutscene` guard against active boss, Act V build using a light tile for the runner, `houseSpot` returning null for `cathedral`, day/night forced for `cathedral`.
+- `src/components/plan/quest.tsx`: per-act melody, tempo and tone in the music hook.
 - No database or schema changes.
