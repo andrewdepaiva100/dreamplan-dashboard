@@ -414,7 +414,7 @@ export const WEAPONS: Weapon[] = [
     id: "eternal-vow",
     name: "Ring of Eternal Vow",
     icon: "💍",
-    damage: 9,
+    damage: 7,
     reach: 116,
     color: 0xffd977,
     blurb: "A vow made metal. Legendary — it ends most arguments in a single swing.",
@@ -423,7 +423,7 @@ export const WEAPONS: Weapon[] = [
     id: "seraph-edge",
     name: "Seraph's Edge",
     icon: "🗡️",
-    damage: 8,
+    damage: 6,
     reach: 132,
     color: 0xbfe3ff,
     blurb: "Feather-light and impossibly fast. Legendary — it sweeps wide enough to clear a crowd.",
@@ -432,7 +432,7 @@ export const WEAPONS: Weapon[] = [
     id: "golden-crown",
     name: "Crown of the Golden Ring",
     icon: "👑",
-    damage: 12,
+    damage: 10,
     reach: 150,
     color: 0xffb347,
     blurb: "The realm's own crown. Legendary — nothing that stands against love survives two strikes of it.",
@@ -494,7 +494,7 @@ export const LOVE_SWORD = {
 export const SECOND_BOSSES: Partial<Record<ZoneId, BossConfig>> = {
   starry_ascent: {
     name: "The Hollow of Doubtful Nights",
-    hp: 8,
+    hp: 10,
     taunt: "The stars go cold. A second shadow rises — The Hollow of Doubtful Nights.",
     art: "boss-hollow",
     color: 0x27336e,
@@ -565,7 +565,7 @@ export const ACT_GUIDES: Record<ZoneId, { name: string; weapon: string; line: st
   starry_ascent: {
     name: "Astra the Stargazer",
     weapon: "starlight-censer",
-    line: "Climb the islands to the Observatory at the peak. The Weight of Weariness circles it. Swing this Starlight Censer and it will remember how to rest.",
+    line: "Listen closely, this peak has a lock on it. Three crystal pillars stand across the plateau, and each one turns through three colours: blue, gold, then rose. Only when all three burn warm gold at the same time does the Celestial Staircase form and the Seal of Perfect Peace become reachable — that Seal is the only thing that opens the way to the cathedral. So: turn a pillar, check its colour, move to the next, and come back around until all three are gold. The Weight of Weariness will circle you the whole time; swing this Starlight Censer and it will remember how to rest.",
   },
   cathedral: {
     name: "Sister Lumen",
@@ -610,7 +610,7 @@ const REPLY_BOONS: Record<BossReply["boon"], string> = {
 export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   sunlit_shores: {
     name: "Warden of Rushing Water",
-    hp: 8,
+    hp: 10,
     taunt: "The river swells and darkens. The Warden of Rushing Water rises to block the crossing — it has never let anyone through.",
     art: "boss-water",
     color: 0x4ec9d6,
@@ -643,7 +643,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   wedding_garden: {
     name: "The Stress Spectre",
-    hp: 9,
+    hp: 12,
     taunt: "The glass above you darkens. The Stress Spectre descends — it has been waiting for you.",
     art: "boss-garden",
     color: 0xb79cf0,
@@ -676,7 +676,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   the_haven: {
     name: "The Clamour of Doubt",
-    hp: 21,
+    hp: 27,
     taunt: "The square falls silent. The Clamour of Doubt turns toward you — this one will not fall quickly.",
     art: "boss-haven",
     color: 0xd9a441,
@@ -709,7 +709,7 @@ export const ACT_BOSSES: Record<ZoneId, BossConfig | null> = {
   },
   starry_ascent: {
     name: "The Weight of Weariness",
-    hp: 7,
+    hp: 9,
     taunt: "The summit dims. The Weight of Weariness presses down — it wants you to stop climbing, forever.",
     art: "boss-star",
     color: 0x8f9bff,
@@ -925,8 +925,8 @@ export const CATHEDRAL_FRIENDS: GuestInfo[] = [
     role: "Andrew\u2019s best friend",
     prompt: "Greet Andre",
     lines: [
-      "There he is. Suit and everything. I have known this guy since we were kids and I have never seen him this calm.",
-      "Maria, you did something to him. In the best way.",
+      "There he is. Suit and everything, and somehow the calmest man in the building.",
+      "This is the day he has been waiting on. I would not miss it for anything.",
       "I am so excited for this wedding I could not sleep last night. Let's get you two married.",
     ],
   },
@@ -934,10 +934,10 @@ export const CATHEDRAL_FRIENDS: GuestInfo[] = [
     id: "phillip",
     name: "Phillip",
     art: "phillip",
-    role: "Groomsman",
+    role: "Andrew’s friend since childhood",
     prompt: "Greet Phillip",
     lines: [
-      "Okay, everybody is seated, the candles are lit, and I only cried once so far.",
+      "Andrew and I have known each other since we were kids — scraped knees, bad haircuts, all of it. And now this.",
       "You two are the real deal. Everyone in this room knows it.",
       "So excited for you both. Go on — he is waiting up front.",
     ],
@@ -949,19 +949,19 @@ export const CATHEDRAL_FRIENDS: GuestInfo[] = [
     role: "Groomsman",
     prompt: "Greet Italo",
     lines: [
-      "Maria! You look unbelievable. Andrew is going to forget every word he practised.",
-      "We have been waiting for this day for years, honestly.",
-      "I am so excited for the wedding. Save me a dance, alright?",
+      "Today is finally here. I have been counting down to this one for months.",
+      "Andrew has not stopped talking about this day since he decided to ask.",
+      "I am so excited for this wedding. Let's get it started.",
     ],
   },
   {
     id: "gabe",
     name: "Gabe",
     art: "gabe",
-    role: "Groomsman",
+    role: "Andrew’s friend of six years",
     prompt: "Greet Gabe",
     lines: [
-      "Big day. Huge day. I have the rings, I checked four times, we are fine.",
+      "Six years I have known this guy, and today is easily the best day of them. I have the rings, checked four times, we are fine.",
       "You two make the rest of us believe in this stuff, you know that?",
       "I am so excited for the wedding. Best day of the year, easy.",
     ],
