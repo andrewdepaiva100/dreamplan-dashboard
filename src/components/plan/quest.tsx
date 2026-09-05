@@ -347,6 +347,61 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
 }
 
 
+/**
+ * Per-weapon swing sounds at a quarter of the music volume. Each weapon gets
+ * its own sweep direction, pitch and timbre so it is recognisable by ear.
+ */
+let swingCtx: AudioContext | null = null;
+function playSwing(id: string) {
+  const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AC) return;
+  const ctx = (swingCtx ??= new AC());
+  void ctx.resume();
+  const SWING = 0.0165; // 1/4 of the 0.066 music master
+  // f0 -> f1 sweep, duration, waveform, optional high chime frequency
+  const VOICES: Record<string, [number, number, number, OscillatorType, number?]> = {
+    "spark-wand": [900, 380, 0.14, "triangle", 1800],
+    "ember-blade": [520, 160, 0.2, "sawtooth"],
+    "floral-bow": [1400, 700, 0.1, "square", 2100],
+    lightblade: [1200, 500, 0.16, "triangle", 2400],
+    "love-sword": [1050, 420, 0.18, "triangle", 1570],
+    "starlight-censer": [760, 300, 0.22, "sine", 1900],
+    "blade-of-vows": [640, 200, 0.2, "sawtooth", 1280],
+    "lantern-wand": [840, 340, 0.15, "triangle", 1680],
+    "bow-of-patience": [1300, 620, 0.1, "square"],
+    "censer-of-calm": [700, 280, 0.22, "sine", 1400],
+    "ring-of-dawn": [1560, 780, 0.24, "sine", 2340],
+    "eternal-vow": [1800, 900, 0.26, "sine", 2700],
+    "seraph-edge": [1500, 480, 0.2, "triangle", 3000],
+    "golden-crown": [980, 180, 0.3, "sawtooth", 1960],
+  };
+  const [f0, f1, dur, type, chime] = VOICES[id] ?? [700, 300, 0.16, "triangle"];
+  const at = ctx.currentTime;
+  const o = ctx.createOscillator();
+  o.type = type;
+  o.frequency.setValueAtTime(f0, at);
+  o.frequency.exponentialRampToValueAtTime(f1, at + dur);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.linearRampToValueAtTime(SWING, at + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  o.connect(g).connect(ctx.destination);
+  o.start(at);
+  o.stop(at + dur + 0.05);
+  if (chime) {
+    const c = ctx.createOscillator();
+    c.type = "sine";
+    c.frequency.value = chime;
+    const cg = ctx.createGain();
+    cg.gain.setValueAtTime(0.0001, at);
+    cg.gain.linearRampToValueAtTime(SWING * 0.5, at + 0.015);
+    cg.gain.exponentialRampToValueAtTime(0.0001, at + dur * 0.7);
+    c.connect(cg).connect(ctx.destination);
+    c.start(at);
+    c.stop(at + dur);
+  }
+}
+
 function buzz(ms = 18) {
   try {
     navigator.vibrate?.(ms);
@@ -1123,6 +1178,7 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
           saverRef.current.queue(s);
         });
         game.events.on(EV.music, (m: MusicMode) => setMusicMode(m));
+        game.events.on(EV.swing, (id: string) => playSwing(id));
         game.events.on(EV.toast, (m: string) => setToast(m));
         game.events.on(EV.ceremony, () => setCeremony({ phase: "script", i: 0 }));
       });
