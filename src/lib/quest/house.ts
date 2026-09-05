@@ -24,6 +24,9 @@ export class QuestHouseScene extends Phaser.Scene {
   private promptText!: Phaser.GameObjects.Text;
   private stick = { x: 0, y: 0 };
   private frozen = false;
+  /** Which house panel is currently open, so transfers can refresh it. */
+  private panel: "chest" | "hearth" | "bed" | null = null;
+
   private lastDir: "down" | "up" | "side" = "down";
   private facing = 1;
 
@@ -384,8 +387,10 @@ export class QuestHouseScene extends Phaser.Scene {
 
   private onResume() {
     this.frozen = false;
+    this.panel = null;
     this.physics.resume();
   }
+
 
   private nearest() {
     let best: (typeof this.spots)[number] | null = null;
@@ -410,6 +415,7 @@ export class QuestHouseScene extends Phaser.Scene {
     }
     this.frozen = true;
     this.physics.pause();
+    this.panel = near.kind === "chest" ? "chest" : near.kind === "hearth" ? "hearth" : "bed";
     if (near.kind === "chest") {
       this.game.events.emit(EV.modal, {
         type: "chest",
@@ -463,6 +469,17 @@ export class QuestHouseScene extends Phaser.Scene {
     }
     this.game.events.emit(EV.save, { ...this.save });
     this.pushHud();
+    // Refresh the open panel so the grids show the new contents immediately.
+    if (this.panel === "chest" && (msg.action === "stash" || msg.action === "take")) {
+      this.game.events.emit(EV.modal, {
+        type: "chest",
+        inventory: { ...this.save.inventory },
+        chest: { ...this.save.chest },
+      });
+    } else if (this.panel === "hearth" && msg.action === "cook") {
+      this.game.events.emit(EV.modal, { type: "hearth", inventory: { ...this.save.inventory } });
+    }
+
   }
 
   private leave() {
