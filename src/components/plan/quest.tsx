@@ -253,7 +253,7 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
     const master = ctx.createGain();
     master.gain.value = 0.0001;
     master.connect(ctx.destination);
-    master.gain.exponentialRampToValueAtTime(mode === "battle" ? 0.075 : 0.06, ctx.currentTime + 2.5);
+    master.gain.exponentialRampToValueAtTime(mode === "battle" ? 0.0825 : 0.066, ctx.currentTime + 2.5);
 
     // warm, soft-felt tone: heavy low-pass so nothing sounds pixelated
     const soft = ctx.createBiquadFilter();
@@ -1537,7 +1537,7 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
       >
         <div
           ref={stickRef}
-          className="relative h-32 w-32 rounded-full border border-white/25 bg-white/10 backdrop-blur"
+          className="relative h-[147px] w-[147px] rounded-full border border-white/25 bg-white/10 backdrop-blur"
           onPointerDown={(e) => {
             pointerId.current = e.pointerId;
             e.currentTarget.setPointerCapture(e.pointerId);
@@ -1550,7 +1550,7 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
           onPointerCancel={endStick}
         >
           <div
-            className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70"
+            className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70"
             style={{ transform: `translate(calc(-50% + ${knob.x}px), calc(-50% + ${knob.y}px))` }}
           />
         </div>
