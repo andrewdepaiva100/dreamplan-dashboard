@@ -1,4 +1,5 @@
 import * as Phaser from "phaser";
+import { WEAPONS, WEAPON_BY_ID } from "./content";
 import { T } from "./textures";
 
 type SceneLike = Phaser.Scene & Record<string, any>;
@@ -13,16 +14,41 @@ type GuestBeat = {
 };
 
 const STORAGE_KEY = "marias-quest-last-crossing-v1";
+const CROSSING_BLADE_ID = "crossing-blade";
 const BLADE_DAMAGE = 350;
 const VILLAGE_SAFE_RADIUS = 310;
 
-// Reuse existing in-game portrait + overworld sprite pairs so these three
-// immediately match the same art direction, proportions, and dialogue UI as
-// Lorena and the other established NPCs.
-const VILLAGER_ART: Record<VillagerId, { art: string; portraitId: string; name: string; role: string }> = {
-  elara: { art: "adriel", portraitId: "adriel", name: "Elara", role: "Former Knight" },
-  pip: { art: "pedro", portraitId: "pedro", name: "Pip", role: "Inventor" },
-  maeve: { art: "alicia", portraitId: "alicia", name: "Maeve", role: "Healer" },
+const VILLAGER_ART: Record<
+  VillagerId,
+  { baseArt: string; art: string; portraitId: string; name: string; role: string; outfit: string; accent: string }
+> = {
+  elara: {
+    baseArt: "adriel",
+    art: "last-crossing-elara",
+    portraitId: "adriel",
+    name: "Elara",
+    role: "Former Knight",
+    outfit: "#7b3045",
+    accent: "#9da5b4",
+  },
+  pip: {
+    baseArt: "pedro",
+    art: "last-crossing-pip",
+    portraitId: "pedro",
+    name: "Pip",
+    role: "Inventor",
+    outfit: "#287582",
+    accent: "#d4a93f",
+  },
+  maeve: {
+    baseArt: "alicia",
+    art: "last-crossing-maeve",
+    portraitId: "alicia",
+    name: "Maeve",
+    role: "Healer",
+    outfit: "#718b5c",
+    accent: "#eee0bb",
+  },
 };
 
 const PRE_DIALOGUE: Record<VillagerId, string[]> = {
@@ -136,6 +162,31 @@ function writeState(state: ReturnType<typeof readState>) {
   }
 }
 
+function registerCrossingBladeWeapon() {
+  const state = readState();
+  let blade = WEAPON_BY_ID[CROSSING_BLADE_ID];
+  if (!blade) {
+    blade = {
+      id: CROSSING_BLADE_ID,
+      name: "The Crossing Blade",
+      icon: "🗡️",
+      damage: state.wardenDefeated ? 0 : BLADE_DAMAGE,
+      reach: 84,
+      color: 0x9ee7f2,
+      blurb: state.wardenDefeated
+        ? "Three failed journeys, carried across by a fourth. Its Warden-bound power has faded; it remains as a keepsake."
+        : "Reforged from three failed crossings. Deals 350 damage to the Warden of Rushing Water only; powerless elsewhere.",
+    };
+    WEAPON_BY_ID[CROSSING_BLADE_ID] = blade;
+    if (!WEAPONS.some((w) => w.id === CROSSING_BLADE_ID)) WEAPONS.push(blade);
+  } else {
+    blade.damage = state.wardenDefeated ? 0 : BLADE_DAMAGE;
+    blade.blurb = state.wardenDefeated
+      ? "Three failed journeys, carried across by a fourth. Its Warden-bound power has faded; it remains as a keepsake."
+      : "Reforged from three failed crossings. Deals 350 damage to the Warden of Rushing Water only; powerless elsewhere.";
+  }
+}
+
 function ensureBladeTexture(scene: SceneLike) {
   if (scene.textures.exists("last-crossing-blade")) return;
   const tex = scene.textures.createCanvas("last-crossing-blade", 20, 34)!;
@@ -155,6 +206,33 @@ function ensureBladeTexture(scene: SceneLike) {
   ctx.fillRect(12, 4, 2, 14);
   ctx.fillStyle = "#5e8195";
   ctx.fillRect(7, 20, 3, 2);
+  tex.refresh();
+}
+
+function ensureVillagerTexture(scene: SceneLike, id: VillagerId) {
+  const cfg = VILLAGER_ART[id];
+  if (scene.textures.exists(cfg.art) || !scene.textures.exists(cfg.baseArt)) return;
+  const frame = scene.textures.getFrame(cfg.baseArt);
+  if (!frame) return;
+  const w = Math.max(1, Math.round(frame.width));
+  const h = Math.max(1, Math.round(frame.height));
+  const tex = scene.textures.createCanvas(cfg.art, w, h)!;
+  const ctx = tex.getContext();
+  const src = scene.textures.get(cfg.baseArt).getSourceImage() as CanvasImageSource;
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, w, h);
+  ctx.drawImage(src, 0, 0, w, h);
+
+  // Preserve the existing face/hair pixels and recolour only the lower outfit.
+  ctx.save();
+  ctx.globalCompositeOperation = "source-atop";
+  ctx.globalAlpha = 0.82;
+  ctx.fillStyle = cfg.outfit;
+  ctx.fillRect(0, Math.floor(h * 0.43), w, Math.ceil(h * 0.57));
+  ctx.globalAlpha = 0.68;
+  ctx.fillStyle = cfg.accent;
+  ctx.fillRect(Math.floor(w * 0.2), Math.floor(h * 0.48), Math.ceil(w * 0.6), Math.max(2, Math.ceil(h * 0.12)));
+  ctx.restore();
   tex.refresh();
 }
 
@@ -226,10 +304,23 @@ function addVillageInteractable(
 function drawVillage(scene: SceneLike) {
   if (scene.save?.current_zone !== "sunlit_shores" || scene.__lastCrossingBuilt) return;
   scene.__lastCrossingBuilt = true;
+  registerCrossingBladeWeapon();
   ensureBladeTexture(scene);
+  ensureVillagerTexture(scene, "elara");
+  ensureVillagerTexture(scene, "pip");
+  ensureVillagerTexture(scene, "maeve");
 
-  // Bottom-right meadow: intentionally compact, with a natural road connection
-  // instead of the oversized translucent oval used in the first pass.
+  const state = readState();
+  if (state.forged && !scene.save?.weapons?.includes(CROSSING_BLADE_ID) && !state.wardenDefeated) {
+    // Migration from the first implementation: let Maria collect the blade properly.
+    state.forged = false;
+    writeState(state);
+  }
+  if (state.forged && state.wardenDefeated && !scene.save?.weapons?.includes(CROSSING_BLADE_ID)) {
+    scene.save.weapons = [...(scene.save.weapons ?? []), CROSSING_BLADE_ID];
+    scene.emitSave?.();
+  }
+
   const cx = Math.round((scene.mapW ?? 55) * 32 * 0.79);
   const cy = Math.round((scene.mapH ?? 50) * 32 * 0.78);
   clearVillageSpace(scene, cx, cy);
@@ -239,7 +330,6 @@ function drawVillage(scene: SceneLike) {
   addHouse(scene, cx + 118, cy - 86, 0xc9d8dd);
   addHouse(scene, cx + 18, cy + 116, 0xd6ddbd);
 
-  // Central square using only established scenery sprites.
   addDecor(scene, "fountain", cx, cy + 8, 0.82);
   addBlocker(scene, cx, cy + 18, 0.78, 0.48);
   addDecor(scene, "bench", cx - 84, cy + 34, 0.9);
@@ -251,7 +341,6 @@ function drawVillage(scene: SceneLike) {
   addDecor(scene, "flowers", cx + 118, cy + 55, 1.0);
   addDecor(scene, "flowers", cx + 148, cy + 62, 0.9);
 
-  // Tiny garden plots and fence edges — no clutter in the walking lanes.
   for (const [x, y] of [
     [cx - 186, cy + 72],
     [cx - 146, cy + 72],
@@ -259,14 +348,13 @@ function drawVillage(scene: SceneLike) {
     [cx + 190, cy - 8],
   ] as [number, number][]) addDecor(scene, "fence", x, y, 0.88);
 
-  // Failed expedition corner: recognizable game props instead of giant vector rings.
   const cart = addDecor(scene, "stall", cx + 210, cy + 82, 0.72, 0x8b6f59).setAngle(-8);
   addDecor(scene, "bench", cx + 170, cy + 105, 0.72, 0x76533e).setAngle(12);
   addDecor(scene, "fence", cx + 230, cy + 120, 0.72, 0x76533e).setAngle(-18);
   addBlocker(scene, cart.x, cart.y + 8, 0.9, 0.55);
 
   const sign = addDecor(scene, "signpost", cx - 252, cy + 112, 0.9);
-  const label = scene.add
+  scene.add
     .text(sign.x + 26, sign.y - 5, "THE LAST CROSSING", {
       fontFamily: "system-ui, sans-serif",
       fontSize: "7px",
@@ -277,7 +365,6 @@ function drawVillage(scene: SceneLike) {
     })
     .setOrigin(0, 0.5)
     .setDepth(12);
-  void label;
 
   addVillageInteractable(scene, cx - 92, cy - 2, VILLAGER_ART.elara.art, "elara", "Talk to Elara");
   addVillageInteractable(scene, cx + 95, cy - 2, VILLAGER_ART.pip.art, "pip", "Talk to Pip");
@@ -315,11 +402,160 @@ function refreshForgeInteractable(scene: SceneLike) {
   scene.interactables.push({
     obj,
     kind: "last-crossing-forge",
-    id: "crossing-blade",
+    id: CROSSING_BLADE_ID,
     label: "Receive the Crossing Blade",
     radius: 82,
     enabled: true,
   });
+}
+
+function drawPopupSword(canvas: HTMLCanvasElement) {
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, 128, 128);
+  ctx.save();
+  ctx.translate(64, 64);
+  ctx.rotate(-Math.PI / 4);
+  ctx.fillStyle = "#6b4a2f";
+  ctx.fillRect(-6, 24, 12, 30);
+  ctx.fillStyle = "#d8ad55";
+  ctx.fillRect(-24, 18, 48, 10);
+  ctx.fillRect(-8, 8, 16, 14);
+  ctx.fillStyle = "#6f9fb4";
+  ctx.fillRect(-10, -50, 20, 60);
+  ctx.fillStyle = "#dff7ff";
+  ctx.fillRect(-5, -56, 10, 65);
+  ctx.fillStyle = "#fff1a4";
+  ctx.fillRect(4, -50, 4, 52);
+  ctx.restore();
+}
+
+function showBladeRewardPopup(scene: SceneLike) {
+  if (scene.__crossingBladePopupOpen || readState().wardenDefeated) return;
+  const parent = scene.game.canvas?.parentElement;
+  if (!parent) return;
+  scene.__crossingBladePopupOpen = true;
+  scene.frozen = true;
+  scene.physics.pause();
+
+  const overlay = document.createElement("div");
+  Object.assign(overlay.style, {
+    position: "absolute",
+    inset: "0",
+    zIndex: "10000",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "16px",
+    background: "rgba(5, 9, 22, 0.72)",
+    backdropFilter: "blur(5px)",
+    boxSizing: "border-box",
+  });
+
+  const card = document.createElement("div");
+  Object.assign(card.style, {
+    width: "min(92vw, 430px)",
+    maxHeight: "min(88vh, 560px)",
+    overflow: "auto",
+    boxSizing: "border-box",
+    border: "2px solid rgba(218, 181, 94, 0.82)",
+    borderRadius: "20px",
+    background: "linear-gradient(145deg, rgba(12,22,43,.98), rgba(18,25,44,.98))",
+    boxShadow: "0 24px 70px rgba(0,0,0,.48)",
+    color: "#f8f3e7",
+    textAlign: "center",
+    padding: "22px",
+    fontFamily: "system-ui, sans-serif",
+  });
+
+  const eyebrow = document.createElement("div");
+  eyebrow.textContent = "SPECIAL QUEST WEAPON";
+  Object.assign(eyebrow.style, {
+    color: "#d8b45e",
+    fontSize: "10px",
+    letterSpacing: ".22em",
+    fontWeight: "800",
+  });
+
+  const canvas = document.createElement("canvas");
+  drawPopupSword(canvas);
+  Object.assign(canvas.style, {
+    width: "112px",
+    height: "112px",
+    margin: "12px auto 4px",
+    imageRendering: "pixelated",
+    display: "block",
+  });
+
+  const title = document.createElement("div");
+  title.textContent = "The Crossing Blade";
+  Object.assign(title.style, {
+    color: "#f0cf77",
+    fontFamily: "Georgia, serif",
+    fontSize: "26px",
+    fontWeight: "700",
+  });
+
+  const stats = document.createElement("div");
+  stats.textContent = "350 DAMAGE · WARDEN ONLY";
+  Object.assign(stats.style, {
+    marginTop: "7px",
+    color: "#9ee7f2",
+    fontSize: "12px",
+    letterSpacing: ".12em",
+    fontWeight: "800",
+  });
+
+  const body = document.createElement("p");
+  body.textContent = "Reforged from Elara, Pip, and Maeve's failed crossings. Its magic recognizes only the Warden of Rushing Water. After he falls, the blade remains with Maria as a powerless keepsake.";
+  Object.assign(body.style, {
+    margin: "14px auto 18px",
+    maxWidth: "340px",
+    color: "rgba(248,243,231,.78)",
+    fontFamily: "Georgia, serif",
+    fontStyle: "italic",
+    fontSize: "14px",
+    lineHeight: "1.55",
+  });
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = "Add to Inventory";
+  Object.assign(button.style, {
+    width: "100%",
+    minHeight: "48px",
+    border: "1px solid #e2c16c",
+    borderRadius: "14px",
+    background: "linear-gradient(90deg, #c99e42, #e4c86f)",
+    color: "#142039",
+    fontSize: "14px",
+    fontWeight: "900",
+    cursor: "pointer",
+  });
+
+  button.addEventListener("click", () => {
+    const state = readState();
+    state.forged = true;
+    writeState(state);
+    registerCrossingBladeWeapon();
+    if (!scene.save.weapons.includes(CROSSING_BLADE_ID)) {
+      scene.save.weapons = [...scene.save.weapons, CROSSING_BLADE_ID];
+    }
+    scene.emitSave?.();
+    scene.pushHud?.(true);
+    scene.game.events.emit("quest:toast", "The Crossing Blade was added to your weapon inventory.");
+    scene.__crossingBladePending = false;
+    scene.__crossingBladePopupOpen = false;
+    overlay.remove();
+    scene.onResume?.();
+  });
+
+  card.append(eyebrow, canvas, title, stats, body, button);
+  overlay.append(card);
+  parent.append(overlay);
 }
 
 function handleVillager(scene: SceneLike, id: VillagerId) {
@@ -346,13 +582,11 @@ function handleForge(scene: SceneLike, it: any) {
   const state = readState();
   if (state.forged || state.wardenDefeated || state.talked.length < 3) return;
 
-  state.forged = true;
-  writeState(state);
   it.enabled = false;
   it.obj?.destroy?.();
   scene.interactables = (scene.interactables ?? []).filter((x: any) => x !== it);
+  scene.__crossingBladePending = true;
   queueGuestSequence(scene, FORGE_DIALOGUE);
-  scene.game.events.emit("quest:toast", `The Crossing Blade is ready — ${BLADE_DAMAGE} damage against the Warden only.`);
 }
 
 function updateBladeVisual(scene: SceneLike) {
@@ -384,6 +618,7 @@ export function installLastCrossing(QuestScene: SceneCtor) {
   const proto = QuestScene.prototype;
   if (proto.__lastCrossingInstalled) return;
   proto.__lastCrossingInstalled = true;
+  registerCrossingBladeWeapon();
 
   const originalCreate = proto.create;
   proto.create = function lastCrossingCreate(this: SceneLike, ...args: any[]) {
@@ -417,8 +652,33 @@ export function installLastCrossing(QuestScene: SceneCtor) {
       this.time.delayedCall(20, () => openGuest(this, next));
     } else {
       this.__lastCrossingGuestQueue = undefined;
+      if (this.__crossingBladePending && !this.__crossingBladePopupOpen) {
+        this.time.delayedCall(30, () => showBladeRewardPopup(this));
+      }
     }
     return result;
+  };
+
+  const originalEquip = proto.equipWeapon;
+  proto.equipWeapon = function lastCrossingEquip(this: SceneLike, id: string, ...args: any[]) {
+    if (id === CROSSING_BLADE_ID) {
+      const state = readState();
+      const wardenFight =
+        this.save?.current_zone === "sunlit_shores" &&
+        this.bossName === "Warden of Rushing Water" &&
+        this.bossPhase === 1 &&
+        !state.wardenDefeated;
+      if (!wardenFight) {
+        this.game.events.emit(
+          "quest:toast",
+          state.wardenDefeated
+            ? "The Crossing Blade is a keepsake now — its power ended with the Warden."
+            : "The Crossing Blade only wakes in the Warden of Rushing Water fight.",
+        );
+        return;
+      }
+    }
+    return originalEquip.call(this, id, ...args);
   };
 
   const originalBossChoice = proto.onBossChoice;
@@ -429,6 +689,7 @@ export function installLastCrossing(QuestScene: SceneCtor) {
       this.save?.current_zone === "sunlit_shores" &&
       this.bossName === "Warden of Rushing Water" &&
       state.forged &&
+      this.save?.weapons?.includes(CROSSING_BLADE_ID) &&
       !state.wardenDefeated
     ) {
       this.__crossingBladeActive = true;
@@ -446,6 +707,7 @@ export function installLastCrossing(QuestScene: SceneCtor) {
       this.bossName === "Warden of Rushing Water" &&
       this.bossPhase === 1 &&
       state.forged &&
+      this.save?.weapons?.includes(CROSSING_BLADE_ID) &&
       !state.wardenDefeated;
     return originalDamageBoss.call(this, useBlade ? BLADE_DAMAGE : amount);
   };
@@ -458,6 +720,7 @@ export function installLastCrossing(QuestScene: SceneCtor) {
       const state = readState();
       state.wardenDefeated = true;
       writeState(state);
+      registerCrossingBladeWeapon();
       this.__crossingBladeActive = false;
       this.__crossingBladeSprite?.destroy?.();
       this.__crossingBladeSprite = undefined;
@@ -467,6 +730,7 @@ export function installLastCrossing(QuestScene: SceneCtor) {
           "The Crossing Blade goes quiet. Its 350-damage blessing ended with the Warden.",
         );
       }
+      this.pushHud?.(true);
     }
     return result;
   };
