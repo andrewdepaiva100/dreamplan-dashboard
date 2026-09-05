@@ -5,11 +5,19 @@ import type { ZoneId } from "./content";
 // this events module for the shared event names below.
 if (typeof window !== "undefined") {
   queueMicrotask(() => {
-    void Promise.all([import("./scene"), import("./upgrades"), import("./visualRemaster")])
-      .then(([sceneModule, upgrades, visualRemaster]) => {
+    void Promise.all([
+      import("./scene"),
+      import("./house"),
+      import("./upgrades"),
+      import("./visualRemaster"),
+      import("./homeRemaster"),
+    ])
+      .then(([sceneModule, houseModule, upgrades, visualRemaster, homeRemaster]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
+        const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
         upgrades.installQuestUpgrades(QuestScene);
         visualRemaster.installVisualRemaster(QuestScene);
+        homeRemaster.installHomeRemaster(QuestScene, QuestHouseScene);
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
   });
