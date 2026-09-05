@@ -107,7 +107,8 @@ function drawBrokenHouse(scene: SceneLike, x: number, y: number, variant: number
   // Invisible collision footprint through the existing solid scenery group.
   if (scene.solidDecor) {
     const blocker = scene.solidDecor.create(x, y + 13, "block") as Phaser.Physics.Arcade.Sprite;
-    blocker.setVisible(false).setAlpha(0.001).setScale(2.7, 1.35).refreshBody?.();
+    blocker.setVisible(false).setAlpha(0.001).setScale(2.7, 1.35);
+    (blocker as any).refreshBody?.();
   }
 }
 
