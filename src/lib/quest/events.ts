@@ -6,7 +6,9 @@ import type { ZoneId } from "./content";
 if (typeof window !== "undefined") {
   queueMicrotask(() => {
     void Promise.all([import("./scene"), import("./upgrades")])
-      .then(([sceneModule, upgrades]) => upgrades.installQuestUpgrades(sceneModule.QuestScene))
+      .then(([sceneModule, upgrades]) =>
+        upgrades.installQuestUpgrades(sceneModule.QuestScene as unknown as any),
+      )
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
   });
 }
