@@ -24,6 +24,7 @@ import {
   FAMILY_GUESTS,
   CATHEDRAL_FRIENDS,
   PASTOR_ADRIEL,
+  PASTOR_ALCIR,
   LEGENDARY_PICKUPS,
   FOOD_BY_ID,
   ANIMAL_HP,
@@ -2246,7 +2247,7 @@ export class QuestScene extends Phaser.Scene {
     // gilded altarpiece, altar and celebrant at the head of the nave
     this.add.sprite(this.wx(66), this.wy(12), "altarpiece").setDepth(5);
     this.add.sprite(this.wx(66), this.wy(22), "altar").setDepth(6);
-    this.add.sprite(this.wx(54), this.wy(30), "priest").setDepth(7);
+    this.addGuest(PASTOR_ALCIR, 54, 30);
     // candelabra flanking the altar
     for (const cx of [52, 80]) {
       const flame = this.add.circle(this.wx(cx), this.wy(20), 7, 0xffd58a, 0.85).setDepth(7);

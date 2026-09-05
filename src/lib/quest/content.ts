@@ -1134,9 +1134,24 @@ export const WEDDING_GUESTS: Partial<Record<ZoneId, GuestInfo>> = {
 /** Pastor Adriel — a supportive pastor cheering on Maria & Andrew in Act IV. */
 export const PASTOR_ADRIEL: GuestInfo = {
   id: "adriel",
-  name: "Pastor Alcir",
+  name: "Pastor Adriel",
   art: "adriel",
   role: "A pastor who has prayed for your love story",
+  prompt: "Speak with Pastor Adriel",
+  lines: [
+    "Maria — you climbed all the way up here under the stars. I knew you would.",
+    "I have prayed over you and Andrew since the day he first told me about you. Seeing you this close to the altar is an answered prayer standing right in front of me.",
+    "Turn those pillars to gold, child. Heaven is already leaning in to watch.",
+    "And when you reach the church, my old friend Pastor Alcir will be waiting at the altar. You are in good hands.",
+  ],
+};
+
+/** Pastor Alcir — Andrew's grandfather, waiting by the altar in Act V. */
+export const PASTOR_ALCIR: GuestInfo = {
+  id: "alcir",
+  name: "Pastor Alcir",
+  art: "priest",
+  role: "Andrew's grandfather, and your officiant",
   prompt: "Speak with Pastor Alcir",
   lines: [
     "Maria, Andrew — look at the two of you. I am so proud of the love you have built, and even prouder that you kept God at the center of it.",
