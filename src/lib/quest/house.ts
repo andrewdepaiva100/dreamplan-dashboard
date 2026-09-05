@@ -24,6 +24,9 @@ export class QuestHouseScene extends Phaser.Scene {
   private promptText!: Phaser.GameObjects.Text;
   private stick = { x: 0, y: 0 };
   private frozen = false;
+  /** Which house panel is currently open, so transfers can refresh it. */
+  private panel: "chest" | "hearth" | "bed" | null = null;
+
   private lastDir: "down" | "up" | "side" = "down";
   private facing = 1;
 
