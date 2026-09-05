@@ -61,7 +61,7 @@ import imgGuide from "@/assets/quest/guide.png";
 import imgSignpost from "@/assets/quest/signpost.png";
 import imgFountain from "@/assets/quest/fountain.png";
 import imgHouse from "@/assets/quest/house.png";
-import imgCottage from "@/assets/quest/cottage.png";
+
 import imgTree from "@/assets/quest/tree.png";
 import imgFence from "@/assets/quest/fence.png";
 import imgFlowers from "@/assets/quest/flowers.png";
@@ -184,7 +184,7 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   signpost: [imgSignpost, 24, 32],
   fountain: [imgFountain, 34, 38],
   house: [imgHouse, 64, 56],
-  cottage: [imgCottage, 56, 50],
+  
   tree: [imgTree, 40, 46],
   fence: [imgFence, 40, 18],
   flowers: [imgFlowers, 22, 16],
@@ -361,7 +361,7 @@ export function buildSprites(scene: Phaser.Scene) {
     ["signpost", "signpost"],
     ["fountain", "fountain"],
     ["house", "house"],
-    ["cottage", "cottage"],
+    
     ["tree", "tree"],
     ["fence", "fence"],
     ["flowers", "flowers"],
