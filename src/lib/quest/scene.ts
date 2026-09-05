@@ -3161,7 +3161,8 @@ export class QuestScene extends Phaser.Scene {
           Object.values(WEDDING_GUESTS).find((g) => g?.id === it.id) ??
           FAMILY_GUESTS.find((g) => g.id === it.id) ??
           CATHEDRAL_FRIENDS.find((g) => g.id === it.id) ??
-          (PASTOR_ADRIEL.id === it.id ? PASTOR_ADRIEL : undefined);
+          (PASTOR_ADRIEL.id === it.id ? PASTOR_ADRIEL : undefined) ??
+          (PASTOR_ALCIR.id === it.id ? PASTOR_ALCIR : undefined);
         if (!guest) break;
         this.openModal({
           type: "guest",
