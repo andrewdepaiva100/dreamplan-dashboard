@@ -61,7 +61,7 @@ import imgGuide from "@/assets/quest/guide.png";
 import imgSignpost from "@/assets/quest/signpost.png";
 import imgFountain from "@/assets/quest/fountain.png";
 import imgHouse from "@/assets/quest/house.png";
-import imgCottage from "@/assets/quest/cottage.png";
+
 import imgTree from "@/assets/quest/tree.png";
 import imgFence from "@/assets/quest/fence.png";
 import imgFlowers from "@/assets/quest/flowers.png";
@@ -184,7 +184,7 @@ const SPRITE_ART: Record<string, [string, number, number]> = {
   signpost: [imgSignpost, 24, 32],
   fountain: [imgFountain, 34, 38],
   house: [imgHouse, 64, 56],
-  cottage: [imgCottage, 56, 50],
+  
   tree: [imgTree, 40, 46],
   fence: [imgFence, 40, 18],
   flowers: [imgFlowers, 22, 16],
@@ -313,6 +313,83 @@ export function buildSprites(scene: Phaser.Scene) {
   tinted(scene, "enemy-weariness", "enemy", 22, 22, "#4fb08a");
   scaled(scene, "spectre", "spectre", 48, 48);
 
+  // ---- MARIA'S COTTAGE (procedural pixel-art: stone roof, wood planks, ----
+  // ---- glowing windows, chimney) -----------------------------------------
+  drawTo(scene, "cottage", 56, 50, (ctx) => {
+    // chimney
+    ctx.fillStyle = "#7a6a5f";
+    ctx.fillRect(40, 2, 6, 12);
+    ctx.fillStyle = "#8d7c6f";
+    ctx.fillRect(40, 2, 6, 2);
+    // stone-tile roof with shading
+    ctx.fillStyle = "#5d6b7d";
+    ctx.beginPath();
+    ctx.moveTo(2, 22);
+    ctx.lineTo(28, 6);
+    ctx.lineTo(54, 22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#4c5867";
+    for (let r = 0; r < 4; r++) {
+      const y = 20 - r * 4;
+      for (let x = 4 + (r % 2) * 3; x < 52; x += 6) {
+        const half = (22 - y) * 1.6;
+        if (Math.abs(x - 28) < 26 - half * 0) ctx.fillRect(x, y, 5, 3);
+      }
+    }
+    ctx.strokeStyle = "#3a4450";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(2, 22);
+    ctx.lineTo(28, 6);
+    ctx.lineTo(54, 22);
+    ctx.stroke();
+    // warm wood-plank walls
+    ctx.fillStyle = "#b98a5e";
+    ctx.fillRect(6, 22, 44, 24);
+    ctx.fillStyle = "#a67a52";
+    for (let y = 26; y < 46; y += 4) ctx.fillRect(6, y, 44, 1);
+    ctx.fillStyle = "rgba(90,60,35,0.35)";
+    for (let y = 24; y < 46; y += 4)
+      for (let x = 8 + ((y / 4) % 2) * 6; x < 48; x += 12) ctx.fillRect(x, y, 1, 3);
+    // timber frame corners
+    ctx.fillStyle = "#7c5a3a";
+    ctx.fillRect(6, 22, 2, 24);
+    ctx.fillRect(48, 22, 2, 24);
+    ctx.fillRect(6, 22, 44, 2);
+    // arched door
+    ctx.fillStyle = "#5c3a22";
+    ctx.fillRect(24, 32, 9, 14);
+    ctx.beginPath();
+    ctx.arc(28.5, 32, 4.5, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = "#ffd977";
+    ctx.fillRect(31, 38, 1.6, 1.6);
+    // glowing windows with cross frames
+    for (const wx of [11, 38]) {
+      ctx.fillStyle = "#ffe9a8";
+      ctx.fillRect(wx, 27, 8, 8);
+      const g = ctx.createRadialGradient(wx + 4, 31, 1, wx + 4, 31, 7);
+      g.addColorStop(0, "rgba(255,224,138,0.85)");
+      g.addColorStop(1, "rgba(255,224,138,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(wx - 3, 24, 14, 14);
+      ctx.fillStyle = "#7c5a3a";
+      ctx.fillRect(wx + 3.4, 27, 1.2, 8);
+      ctx.fillRect(wx, 30.4, 8, 1.2);
+      ctx.strokeStyle = "#5c3a22";
+      ctx.strokeRect(wx - 0.6, 26.4, 9.2, 9.2);
+    }
+    // stone foundation
+    ctx.fillStyle = "#8d8d94";
+    ctx.fillRect(4, 46, 48, 3);
+    ctx.fillStyle = "#707078";
+    ctx.fillRect(10, 46, 1, 3);
+    ctx.fillRect(22, 46, 1, 3);
+    ctx.fillRect(34, 46, 1, 3);
+    ctx.fillRect(46, 46, 1, 3);
+  });
+
   // ---- PICKUPS / PROPS / NPCS -------------------------------------------
   const plain: [string, string][] = [
     ["petal", "petal"],
@@ -361,7 +438,7 @@ export function buildSprites(scene: Phaser.Scene) {
     ["signpost", "signpost"],
     ["fountain", "fountain"],
     ["house", "house"],
-    ["cottage", "cottage"],
+    
     ["tree", "tree"],
     ["fence", "fence"],
     ["flowers", "flowers"],
