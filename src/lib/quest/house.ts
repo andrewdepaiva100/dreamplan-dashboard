@@ -54,41 +54,36 @@ export class QuestHouseScene extends Phaser.Scene {
     const fy = oy + WALL_H;
     const fh = ROOM_H - WALL_H;
 
-    // ---- plank floor -----------------------------------------------------
-    const floor = this.add.graphics().setDepth(0);
-    floor.fillStyle(0x7d5730, 1);
-    floor.fillRect(ox, fy, ROOM_W, fh);
-    const boards = [0x8a613a, 0x835c35, 0x91683e, 0x7f5932];
-    const bh = 34;
-    for (let i = 0; i * bh < fh; i++) {
-      floor.fillStyle(boards[i % boards.length]!, 1);
-      floor.fillRect(ox, fy + i * bh, ROOM_W, bh - 2);
-      // seam
-      floor.fillStyle(0x5d3f21, 0.5);
-      floor.fillRect(ox, fy + i * bh + bh - 2, ROOM_W, 2);
-      // staggered board joints
-      const off = (i % 2) * 130;
-      for (let x = off; x < ROOM_W; x += 260) {
-        floor.fillStyle(0x5d3f21, 0.4);
-        floor.fillRect(ox + x, fy + i * bh, 2, bh - 2);
-      }
-      // grain
-      floor.fillStyle(0x000000, 0.05);
-      floor.fillRect(ox, fy + i * bh + 8, ROOM_W, 2);
+    // ---- tiled plank floor ----------------------------------------------
+    this.add.tileSprite(ox, fy, ROOM_W, fh, "floor-wood").setOrigin(0, 0).setDepth(0);
+    // worn path down the middle of the boards
+    const wear = this.add.graphics().setDepth(0);
+    for (let i = 6; i > 0; i--) {
+      wear.fillStyle(0xffe0b0, 0.012);
+      wear.fillEllipse(cx, fy + fh * 0.6, i * 110, i * 40);
     }
 
-    // ---- plaster wall with timber beams ----------------------------------
+    // ---- tiled stone wall with plaster above and timber beams ------------
+    const STONE_H = 62;
+    this.add
+      .tileSprite(ox, oy, ROOM_W, WALL_H - STONE_H, "wall-plaster")
+      .setOrigin(0, 0)
+      .setDepth(1);
+    this.add
+      .tileSprite(ox, oy + WALL_H - STONE_H, ROOM_W, STONE_H, "wall-stone")
+      .setOrigin(0, 0)
+      .setDepth(1);
     const wall = this.add.graphics().setDepth(1);
-    wall.fillStyle(0xc9ab86, 1);
-    wall.fillRect(ox, oy, ROOM_W, WALL_H);
-    wall.fillStyle(0xb99973, 0.55);
-    wall.fillRect(ox, oy, ROOM_W, 26);
+    // timber beams, ceiling shade, baseboard
     wall.fillStyle(0x4a3320, 1);
     for (let x = 0; x <= ROOM_W - 22; x += 176) wall.fillRect(ox + x, oy, 22, WALL_H);
     wall.fillRect(ox, oy, ROOM_W, 16);
-    // baseboard where wall meets floor
+    wall.fillStyle(0x000000, 0.18);
+    wall.fillRect(ox, oy + 16, ROOM_W, 10);
     wall.fillStyle(0x5b3f26, 1);
     wall.fillRect(ox, fy - 16, ROOM_W, 16);
+    wall.fillStyle(0x8a6238, 1);
+    wall.fillRect(ox, fy - 16, ROOM_W, 3);
     wall.fillStyle(0x2a1d12, 0.35);
     wall.fillRect(ox, fy, ROOM_W, 5);
     wall.lineStyle(6, 0x2a1d12, 1);

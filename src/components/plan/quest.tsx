@@ -156,9 +156,21 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
     if (!zone || muted) return;
     const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return;
-    const ctx = ctxRef.current ?? new AC();
+    let ctx = ctxRef.current;
+    // A context torn down by a previous unmount can never make sound again.
+    if (!ctx || ctx.state === "closed") ctx = new AC();
     ctxRef.current = ctx;
     void ctx.resume();
+    // Browsers keep audio suspended until the player interacts with the page.
+    const wake = () => void ctx.resume();
+    for (const ev of ["pointerdown", "keydown", "touchstart"] as const) {
+      window.addEventListener(ev, wake, { passive: true });
+    }
+    const unwake = () => {
+      for (const ev of ["pointerdown", "keydown", "touchstart"] as const) {
+        window.removeEventListener(ev, wake);
+      }
+    };
 
     // semitone -> Hz, A4 = 440
     const hz = (n: number) => 440 * Math.pow(2, (n - 9) / 12);
@@ -328,6 +340,7 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
     const timer = window.setInterval(tick, 400);
 
     stopRef.current = () => {
+      unwake();
       window.clearInterval(timer);
       master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
       setTimeout(() => {
@@ -343,7 +356,9 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
     };
     return () => stopRef.current?.();
   }, [zone, muted, mode]);
-  useEffect(() => () => void ctxRef.current?.close(), []);
+  // Deliberately never close the context here: React remounts (and StrictMode's
+  // double-invoke) would leave a dead context behind and silence the score.
+
 }
 
 
@@ -1114,12 +1129,20 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
   const [showMemories, setShowMemories] = useState(false);
   const [showArmory, setShowArmory] = useState(false);
   const [actBanner, setActBanner] = useState<string | null>(null);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("quest-muted") === "1";
+  });
+
   const [realm3d, setRealm3d] = useState(false);
   const [showBag, setShowBag] = useState(false);
   const [musicMode, setMusicMode] = useState<MusicMode>("explore");
 
   useActMusic(screen === "playing" ? hud?.zone : undefined, muted, musicMode);
+
+  useEffect(() => {
+    window.localStorage.setItem("quest-muted", muted ? "1" : "0");
+  }, [muted]);
 
   // lock page scroll while the full-screen game is up
   useEffect(() => {
