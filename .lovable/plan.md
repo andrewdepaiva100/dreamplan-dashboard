@@ -19,6 +19,10 @@ A small polish pass on Maria's Quest, kept tight on credits.
 - Overall music volume up 10%.
 - Boss music reworked to be scarier and more dramatic: lower, heavier bass drone, dissonant minor motif, a pulsing drum-like hit on the beat, and a rising tension line as the fight goes on.
 
+## Weapon swing sounds
+- Every weapon gets its own distinct swing sound, played each time Maria attacks — lighter woosh for the starting wand, brighter chime for the Love Sword, deeper shimmer for the legendaries, and so on.
+- Swing sounds play at one quarter of the music volume so they sit under the score.
+
 ## Technical notes
 - `src/components/plan/quest.tsx`: joystick sizing; music gain and battle-mode voice in `useActMusic`.
 - `src/lib/quest/content.ts`: boss `hp` values ×1.2; new coordinates for `LEGENDARY_PICKUPS`.
