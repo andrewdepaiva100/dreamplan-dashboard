@@ -413,6 +413,7 @@ export class QuestHouseScene extends Phaser.Scene {
     }
     this.frozen = true;
     this.physics.pause();
+    this.panel = near.kind === "chest" ? "chest" : near.kind === "hearth" ? "hearth" : "bed";
     if (near.kind === "chest") {
       this.game.events.emit(EV.modal, {
         type: "chest",
@@ -467,13 +468,13 @@ export class QuestHouseScene extends Phaser.Scene {
     this.game.events.emit(EV.save, { ...this.save });
     this.pushHud();
     // Refresh the open panel so the grids show the new contents immediately.
-    if (msg.action === "stash" || msg.action === "take") {
+    if (this.panel === "chest" && (msg.action === "stash" || msg.action === "take")) {
       this.game.events.emit(EV.modal, {
         type: "chest",
         inventory: { ...this.save.inventory },
         chest: { ...this.save.chest },
       });
-    } else if (msg.action === "cook") {
+    } else if (this.panel === "hearth" && msg.action === "cook") {
       this.game.events.emit(EV.modal, { type: "hearth", inventory: { ...this.save.inventory } });
     }
 
