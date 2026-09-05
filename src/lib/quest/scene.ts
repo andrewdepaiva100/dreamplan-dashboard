@@ -895,12 +895,13 @@ export class QuestScene extends Phaser.Scene {
       if (this.save.weapons.includes(l.weapon)) continue;
       const x = this.wx(l.x);
       const y = this.wy(l.y);
+      // OP weapons stay hidden: no beacon, no glow, small sprite, and the
+      // prompt only appears when Maria is practically standing on them.
       const it = this.addInteractable(x, y, "relic", "legendary", l.prompt, {
         id: l.weapon,
-        radius: 84,
+        radius: 40,
       });
-      it?.obj.setTint(0xffd977).setScale(1.4);
-      this.addKeyBeacon(x, y, `legend-${l.weapon}`, 0xffd977);
+      it?.obj.setScale(0.7).setAlpha(0.85);
     }
   }
 
@@ -2452,6 +2453,7 @@ export class QuestScene extends Phaser.Scene {
     this.dogArmed = true;
     if (this.stamina >= 6) this.stamina -= 6;
     const w = this.equippedWeapon();
+    this.game.events.emit(EV.swing, w.id);
     const dir =
       this.lastDir === "up"
         ? -Math.PI / 2
