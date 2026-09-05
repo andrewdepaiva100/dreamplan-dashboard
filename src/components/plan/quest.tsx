@@ -240,13 +240,14 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
         swing: 0,
       },
     };
-    const BATTLE = [-5, -5, 2, 3, -5, 7, 6, 3, -5, -5, 2, 3, 10, 7, 3, 2];
+    // Battle: low, dissonant minor motif with a tritone — menacing, not heroic.
+    const BATTLE = [-7, -7, -6, -7, -2, -1, -7, -13, -7, -7, -6, -7, 0, -1, -2, -6];
     const HOME = [0, 4, 7, 4, 5, 2, 0, -5, 0, 4, 9, 7, 5, 4, 2, 0];
     const act = VOICES[zone] ?? VOICES["sunlit_shores"]!;
     const melody = mode === "battle" ? BATTLE : mode === "home" ? HOME : act.melody;
-    const bassRoot = mode === "battle" ? -17 : mode === "home" ? -12 : act.bass;
+    const bassRoot = mode === "battle" ? -26 : mode === "home" ? -12 : act.bass;
     const step = mode === "battle" ? 0.34 : mode === "home" ? 1.5 : act.step;
-    const noteDur = mode === "battle" ? 0.9 : mode === "home" ? 3.4 : act.dur;
+    const noteDur = mode === "battle" ? 0.7 : mode === "home" ? 3.4 : act.dur;
     const density = mode === "explore" ? act.density : 1;
     const swing = mode === "explore" ? act.swing : 0.6;
 
@@ -291,11 +292,26 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
     padOsc.connect(padGain).connect(soft);
     padOsc.start();
 
+    // Battle drums: a heavy low thud on every beat keeps the dread driving.
+    const thud = (at: number) => {
+      const o = ctx.createOscillator();
+      o.type = "sine";
+      o.frequency.setValueAtTime(110, at);
+      o.frequency.exponentialRampToValueAtTime(36, at + 0.18);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.5, at);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.24);
+      o.connect(g).connect(master);
+      o.start(at);
+      o.stop(at + 0.28);
+    };
+
     let i = 0;
     let next = ctx.currentTime + 0.6;
     const tick = () => {
       const horizon = ctx.currentTime + 1.2;
       while (next < horizon) {
+        if (mode === "battle") thud(next);
         const n = melody[i % melody.length]!;
         const rest = mode === "battle" ? 0 : Math.random();
         // let phrases breathe: sometimes simply hold the silence
