@@ -11,13 +11,15 @@ if (typeof window !== "undefined") {
       import("./upgrades"),
       import("./visualRemaster"),
       import("./homeRemaster"),
+      import("./act1WorldRemaster"),
     ])
-      .then(([sceneModule, houseModule, upgrades, visualRemaster, homeRemaster]) => {
+      .then(([sceneModule, houseModule, upgrades, visualRemaster, homeRemaster, act1WorldRemaster]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
         const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
         upgrades.installQuestUpgrades(QuestScene);
         visualRemaster.installVisualRemaster(QuestScene);
         homeRemaster.installHomeRemaster(QuestScene, QuestHouseScene);
+        act1WorldRemaster.installAct1WorldRemaster(QuestScene);
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
   });
