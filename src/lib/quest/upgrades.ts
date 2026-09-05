@@ -5,7 +5,9 @@ import type { ZoneId } from "./content";
 type QuestSceneLike = Phaser.Scene & Record<string, any>;
 type QuestSceneCtor = { prototype: QuestSceneLike };
 
-const NORMAL_POPULATION_MULTIPLIER = 0.85;
+// The existing scene already runs at 80% of authored roaming counts. Applying
+// the requested additional 15% reduction yields 0.80 * 0.85 = 0.68.
+const NORMAL_POPULATION_MULTIPLIER = 0.68;
 const BRUTE_SPAWN_CHANCE = 0.75;
 const BRUTE_SLOT_DIVISOR = 4;
 const BRUTE_HP = 3;
@@ -210,7 +212,8 @@ export function installQuestUpgrades(QuestScene: QuestSceneCtor) {
     const c = config[zone];
     if (!c) return;
 
-    // Existing normal mobs: exactly 15% below their authored population.
+    // The live game was already at 80% of authored roaming mobs; this applies
+    // the requested additional 15% reduction to that current population.
     const normalTarget = Math.max(1, Math.round(c.count * NORMAL_POPULATION_MULTIPLIER));
     const rnd = seededRandom(zone.length * 37 + 11);
     const solid = SOLID_TILES as readonly number[];
@@ -329,8 +332,9 @@ export function installQuestUpgrades(QuestScene: QuestSceneCtor) {
     if (!player?.active || this.frozen) return result;
 
     const velocity = this.vel as { x: number; y: number } | undefined;
-    const vx = velocity?.x ?? player.body?.velocity.x ?? 0;
-    const vy = velocity?.y ?? player.body?.velocity.y ?? 0;
+    const body = player.body as Phaser.Physics.Arcade.Body | null;
+    const vx = velocity?.x ?? body?.velocity.x ?? 0;
+    const vy = velocity?.y ?? body?.velocity.y ?? 0;
     const speed = Math.hypot(vx, vy);
     const move01 = Phaser.Math.Clamp(speed / 120, 0, 1.6);
 
@@ -402,8 +406,8 @@ export function installQuestUpgrades(QuestScene: QuestSceneCtor) {
         enemy.setScale(BRUTE_SCALE + pulse * 0.13).setTint(0xffbdc8);
       } else {
         enemy.clearTint();
-        const body = enemy.body as Phaser.Physics.Arcade.Body | null;
-        const ex = body?.velocity.x ?? 0;
+        const enemyBody = enemy.body as Phaser.Physics.Arcade.Body | null;
+        const ex = enemyBody?.velocity.x ?? 0;
         enemy.setFlipX(ex < -2);
         const weight = Math.sin(time / 185 + enemy.x * 0.01);
         enemy.setScale(BRUTE_SCALE + weight * 0.025).setAngle(weight * 1.4);
