@@ -1,0 +1,411 @@
+/* Nightmare boss dialogue skin. Gameplay and dialogue logic stay in quest.tsx;
+   this layer only transforms presentation for every boss portrait. */
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) {
+  --boss-accent: #ff315f;
+  --boss-accent-rgb: 255, 49, 95;
+  --boss-glow: #ff8098;
+  --boss-void: #030206;
+  --boss-panel: #09060b;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(var(--boss-accent-rgb), 0.09) 0 16%, transparent 48%),
+    radial-gradient(circle at 8% 12%, rgba(var(--boss-accent-rgb), 0.12), transparent 31%),
+    radial-gradient(circle at 90% 82%, rgba(var(--boss-accent-rgb), 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(1, 1, 4, 0.88), rgba(5, 2, 7, 0.97));
+  backdrop-filter: blur(8px) saturate(0.55) contrast(1.12);
+  -webkit-backdrop-filter: blur(8px) saturate(0.55) contrast(1.12);
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-water"]) {
+  --boss-accent: #62d9ee;
+  --boss-accent-rgb: 98, 217, 238;
+  --boss-glow: #c5f8ff;
+  --boss-panel: #031015;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-garden"]) {
+  --boss-accent: #e84c84;
+  --boss-accent-rgb: 232, 76, 132;
+  --boss-glow: #b8e878;
+  --boss-panel: #10070d;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-haven"]) {
+  --boss-accent: #e58b4b;
+  --boss-accent-rgb: 229, 139, 75;
+  --boss-glow: #ffd68f;
+  --boss-panel: #110a05;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-star"]) {
+  --boss-accent: #9b72ff;
+  --boss-accent-rgb: 155, 114, 255;
+  --boss-glow: #ddd0ff;
+  --boss-panel: #080613;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-hollow"]) {
+  --boss-accent: #c8c5d2;
+  --boss-accent-rgb: 200, 197, 210;
+  --boss-glow: #ff526f;
+  --boss-panel: #070609;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"])::before,
+div.absolute.inset-0.z-40:has(img[src*="boss-"])::after {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  pointer-events: none;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"])::before {
+  z-index: 0;
+  opacity: 0.33;
+  background:
+    repeating-linear-gradient(97deg, transparent 0 44px, rgba(var(--boss-accent-rgb), 0.08) 45px, transparent 47px 91px),
+    repeating-linear-gradient(7deg, transparent 0 73px, rgba(255,255,255,0.025) 74px, transparent 76px 137px);
+  transform-origin: center;
+  animation: quest-nightmare-drift 8s linear infinite;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"])::after {
+  z-index: 1;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, transparent 32%, rgba(0,0,0,0.45) 67%, rgba(0,0,0,0.9) 100%),
+    linear-gradient(90deg, rgba(var(--boss-accent-rgb),0.04), transparent 28% 72%, rgba(var(--boss-accent-rgb),0.04));
+  animation: quest-nightmare-breathe 4.2s ease-in-out infinite;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative {
+  z-index: 3;
+  max-width: 920px;
+  overflow: visible !important;
+  border: 1px solid rgba(var(--boss-accent-rgb), 0.74) !important;
+  border-radius: 4px !important;
+  background:
+    linear-gradient(120deg, rgba(var(--boss-accent-rgb),0.08), transparent 23%),
+    linear-gradient(180deg, rgba(11,7,12,0.985), rgba(3,3,6,0.995)) !important;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.9),
+    0 0 34px rgba(var(--boss-accent-rgb), 0.28),
+    0 28px 90px rgba(0,0,0,0.88),
+    inset 0 0 80px rgba(0,0,0,0.56) !important;
+  clip-path: polygon(0 9px, 9px 0, 34% 0, 35% 5px, 66% 5px, 67% 0, calc(100% - 9px) 0, 100% 9px, 100% calc(100% - 13px), calc(100% - 13px) 100%, 72% 100%, 71% calc(100% - 5px), 28% calc(100% - 5px), 27% 100%, 13px 100%, 0 calc(100% - 13px));
+  animation: quest-nightmare-enter 360ms cubic-bezier(.16,.84,.3,1.18) both;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative::before {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  z-index: -1;
+  border: 1px solid rgba(var(--boss-accent-rgb), 0.19);
+  clip-path: polygon(0 16px,16px 0,23% 0,24% 7px,76% 7px,77% 0,calc(100% - 16px) 0,100% 16px,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%);
+  box-shadow: 0 0 25px rgba(var(--boss-accent-rgb), 0.12);
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative::after {
+  content: "";
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  height: 1px;
+  top: 12%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(var(--boss-accent-rgb),0.55), transparent);
+  opacity: 0.55;
+  animation: quest-nightmare-scan 5.8s linear infinite;
+}
+
+/* Close control becomes a small danger sigil rather than a friendly pill. */
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > button[aria-label="Skip dialogue"] {
+  right: 14px !important;
+  top: 14px !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 3px !important;
+  border-color: rgba(var(--boss-accent-rgb),0.55) !important;
+  color: var(--boss-glow) !important;
+  background: rgba(0,0,0,0.78) !important;
+  box-shadow: inset 0 0 18px rgba(var(--boss-accent-rgb),0.12), 0 0 16px rgba(var(--boss-accent-rgb),0.12);
+  transform: rotate(45deg);
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > button[aria-label="Skip dialogue"]:hover {
+  background: rgba(var(--boss-accent-rgb),0.17) !important;
+  box-shadow: 0 0 24px rgba(var(--boss-accent-rgb),0.35);
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > button[aria-label="Skip dialogue"]::first-letter {
+  transform: rotate(-45deg);
+}
+
+/* Header: portrait becomes the threatening focal point. */
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:first-of-type {
+  min-height: 144px;
+  gap: 20px !important;
+  padding: 20px 64px 18px 22px !important;
+  border-bottom: 1px solid rgba(var(--boss-accent-rgb),0.32) !important;
+  background:
+    radial-gradient(circle at 88px 65px, rgba(var(--boss-accent-rgb),0.17), transparent 130px),
+    linear-gradient(90deg, rgba(var(--boss-accent-rgb),0.10), transparent 56%, rgba(0,0,0,0.35)) !important;
+  position: relative;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:first-of-type::after {
+  content: "ENTITY // FEAR MANIFEST";
+  position: absolute;
+  right: 64px;
+  bottom: 11px;
+  color: rgba(var(--boss-accent-rgb),0.36);
+  font: 700 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .25em;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) img[src*="boss-"] {
+  width: 116px !important;
+  height: 116px !important;
+  padding: 5px !important;
+  border-radius: 2px !important;
+  border: 1px solid rgba(var(--boss-accent-rgb),0.82) !important;
+  background:
+    radial-gradient(circle, rgba(var(--boss-accent-rgb),0.12), transparent 64%),
+    #020204 !important;
+  image-rendering: pixelated !important;
+  filter: saturate(.75) contrast(1.2) brightness(.82) drop-shadow(0 0 9px rgba(var(--boss-accent-rgb),.55));
+  box-shadow:
+    0 0 0 5px rgba(0,0,0,.7),
+    0 0 0 6px rgba(var(--boss-accent-rgb),.25),
+    0 0 32px rgba(var(--boss-accent-rgb),.35) !important;
+  animation: quest-nightmare-portrait 3.4s ease-in-out infinite !important;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:first-of-type > div > p:first-child {
+  margin-top: 7px;
+  color: var(--boss-glow) !important;
+  font-size: clamp(1.45rem, 3vw, 2.2rem) !important;
+  line-height: .95 !important;
+  letter-spacing: .025em !important;
+  text-transform: uppercase;
+  text-shadow: 0 0 18px rgba(var(--boss-accent-rgb),.55), 2px 2px 0 #000;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:first-of-type > div > p:not(:first-child) {
+  max-width: 580px;
+  color: rgba(255,255,255,.46) !important;
+  letter-spacing: .12em;
+}
+
+/* Main dialogue area. */
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:last-of-type {
+  position: relative;
+  max-height: 58vh !important;
+  padding: 26px 26px 22px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.012), transparent 30%),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(var(--boss-accent-rgb),.018) 32px, transparent 33px);
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:last-of-type > p:first-child {
+  min-height: 6rem !important;
+  max-width: 760px;
+  margin: 2px auto 18px;
+  color: #f0e9ea !important;
+  font-size: clamp(1.05rem, 2.25vw, 1.42rem) !important;
+  line-height: 1.65 !important;
+  text-align: center;
+  text-shadow: 0 0 20px rgba(var(--boss-accent-rgb),.18);
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:last-of-type > p:first-child::before,
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:last-of-type > p:first-child::after {
+  color: rgba(var(--boss-accent-rgb),.7);
+  font-style: normal;
+}
+
+/* Maria stays human and warm against the corrupted frame. */
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:last-of-type p[class*="text-white/70"] {
+  padding: 10px 14px;
+  border-left: 2px solid rgba(241,197,154,.7);
+  background: linear-gradient(90deg, rgba(241,197,154,.07), transparent);
+  color: rgba(255,240,222,.78) !important;
+}
+
+/* Prompt label becomes an omen. */
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:last-of-type p[class*="uppercase"][class*="text-gold"] {
+  margin-top: 16px;
+  color: var(--boss-accent) !important;
+  font-size: 9px !important;
+  letter-spacing: .34em !important;
+  text-shadow: 0 0 12px rgba(var(--boss-accent-rgb),.45);
+}
+
+/* Fractured response panels. */
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) button[class*="border-gold/35"] {
+  position: relative;
+  min-height: 58px;
+  padding: 14px 18px 14px 22px !important;
+  border: 1px solid rgba(var(--boss-accent-rgb),.25) !important;
+  border-radius: 0 !important;
+  background:
+    linear-gradient(90deg, rgba(var(--boss-accent-rgb),.075), transparent 38%),
+    rgba(255,255,255,.018) !important;
+  color: rgba(245,241,242,.88) !important;
+  clip-path: polygon(0 8px,8px 0,97% 0,100% 10px,100% calc(100% - 6px),calc(100% - 6px) 100%,5% 100%,0 86%);
+  box-shadow: inset 3px 0 0 rgba(var(--boss-accent-rgb),.22);
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, box-shadow 120ms ease !important;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) button[class*="border-gold/35"]::before {
+  content: "◆";
+  margin-right: 12px;
+  color: rgba(var(--boss-accent-rgb),.58);
+  font-size: 8px;
+  vertical-align: 2px;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) button[class*="border-gold/35"]:hover,
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) button[class*="border-gold/35"]:focus-visible {
+  transform: translateX(7px) skewX(-1deg);
+  border-color: rgba(var(--boss-accent-rgb),.78) !important;
+  background: linear-gradient(90deg, rgba(var(--boss-accent-rgb),.18), rgba(var(--boss-accent-rgb),.025)) !important;
+  box-shadow: inset 5px 0 0 var(--boss-accent), 0 0 24px rgba(var(--boss-accent-rgb),.12) !important;
+  outline: none;
+}
+
+/* Continue / draw weapon is a ritual seal. */
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) button[class*="mt-4"][class*="w-full"] {
+  border: 1px solid rgba(var(--boss-accent-rgb),.7) !important;
+  border-radius: 2px !important;
+  background: linear-gradient(90deg, rgba(var(--boss-accent-rgb),.42), rgba(var(--boss-accent-rgb),.17), rgba(var(--boss-accent-rgb),.42)) !important;
+  color: #fff !important;
+  text-transform: uppercase;
+  letter-spacing: .16em;
+  box-shadow: 0 0 28px rgba(var(--boss-accent-rgb),.16), inset 0 0 24px rgba(0,0,0,.45);
+  clip-path: polygon(0 7px,7px 0,calc(100% - 7px) 0,100% 7px,100% calc(100% - 7px),calc(100% - 7px) 100%,7px 100%,0 calc(100% - 7px));
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) button[class*="mt-4"][class*="w-full"]:hover {
+  filter: brightness(1.2);
+  box-shadow: 0 0 36px rgba(var(--boss-accent-rgb),.32), inset 0 0 24px rgba(0,0,0,.35);
+}
+
+/* Progress becomes corruption sigils instead of friendly pills. */
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:last-of-type > div:last-child > div:first-child {
+  align-items: center;
+  gap: 11px !important;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:last-of-type > div:last-child > div:first-child > span {
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 1px !important;
+  transform: rotate(45deg);
+  border: 1px solid rgba(var(--boss-accent-rgb),.4);
+  background: rgba(255,255,255,.055) !important;
+  box-shadow: inset 0 0 6px rgba(0,0,0,.8);
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:last-of-type > div:last-child > div:first-child > span[class*="bg-[#ff5a6e]"] {
+  background: var(--boss-accent) !important;
+  border-color: var(--boss-glow);
+  box-shadow: 0 0 12px rgba(var(--boss-accent-rgb),.68), inset 0 0 5px rgba(255,255,255,.45);
+  animation: quest-nightmare-sigil 1.8s ease-in-out infinite;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:last-of-type > div:last-child > span:last-child {
+  font-size: 0 !important;
+  color: transparent !important;
+}
+
+div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:last-of-type > div:last-child > span:last-child::after {
+  content: "SIGILS OF FEAR";
+  font: 700 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .25em;
+  color: rgba(var(--boss-accent-rgb),.45);
+}
+
+@keyframes quest-nightmare-enter {
+  0% { opacity: 0; transform: scale(.965) translateY(12px); filter: blur(7px); }
+  72% { opacity: 1; transform: scale(1.006) translateY(-2px); filter: blur(0); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+@keyframes quest-nightmare-drift {
+  0% { transform: translate3d(-1.5%,0,0) skewX(0deg); }
+  48% { transform: translate3d(1.5%,-1%,0) skewX(.3deg); }
+  52% { transform: translate3d(-.8%,1%,0) skewX(-.45deg); }
+  100% { transform: translate3d(-1.5%,0,0) skewX(0deg); }
+}
+
+@keyframes quest-nightmare-breathe {
+  0%,100% { opacity: .78; }
+  50% { opacity: 1; }
+}
+
+@keyframes quest-nightmare-scan {
+  0% { top: 13%; opacity: 0; }
+  8% { opacity: .5; }
+  92% { opacity: .2; }
+  100% { top: 92%; opacity: 0; }
+}
+
+@keyframes quest-nightmare-portrait {
+  0%,100% { transform: translateY(0) scale(1); filter: saturate(.72) contrast(1.2) brightness(.82) drop-shadow(0 0 8px rgba(var(--boss-accent-rgb),.45)); }
+  48% { transform: translateY(-2px) scale(1.025); filter: saturate(.82) contrast(1.26) brightness(.9) drop-shadow(0 0 15px rgba(var(--boss-accent-rgb),.7)); }
+  51% { transform: translate(1px,-1px) scale(1.018); }
+  53% { transform: translate(-1px,-2px) scale(1.025); }
+}
+
+@keyframes quest-nightmare-sigil {
+  0%,100% { transform: rotate(45deg) scale(.9); opacity: .72; }
+  50% { transform: rotate(45deg) scale(1.12); opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  div.absolute.inset-0.z-40:has(img[src*="boss-"]) {
+    padding: 8px !important;
+  }
+
+  div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:first-of-type {
+    min-height: 112px;
+    gap: 13px !important;
+    padding: 15px 52px 13px 14px !important;
+  }
+
+  div.absolute.inset-0.z-40:has(img[src*="boss-"]) img[src*="boss-"] {
+    width: 82px !important;
+    height: 82px !important;
+  }
+
+  div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:first-of-type::after {
+    display: none;
+  }
+
+  div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:last-of-type {
+    max-height: 65vh !important;
+    padding: 18px 14px 16px !important;
+  }
+
+  div.absolute.inset-0.z-40:has(img[src*="boss-"]) > div.relative > div:last-of-type > p:first-child {
+    min-height: 4.7rem !important;
+    font-size: 1rem !important;
+  }
+
+  div.absolute.inset-0.z-40:has(img[src*="boss-"]) button[class*="border-gold/35"] {
+    min-height: 52px;
+    padding: 12px 13px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  div.absolute.inset-0.z-40:has(img[src*="boss-"]) *,
+  div.absolute.inset-0.z-40:has(img[src*="boss-"])::before,
+  div.absolute.inset-0.z-40:has(img[src*="boss-"])::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
