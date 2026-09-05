@@ -6,6 +6,11 @@ type SceneCtor = { prototype: SceneLike };
 const HOUSE_CLEAR_RADIUS = 280;
 const TREE_KEEP_RATE = 0.9;
 const RUIN_COUNT = 3;
+const DESIGN_W = 132;
+const DESIGN_H = 102;
+// Base Act I is 50 x 50 tiles. 55 x 50 is exactly 10% more playable area.
+const ACT1_EXPANDED_W = 55;
+const ACT1_EXPANDED_H = 50;
 
 function seeded(seed: number) {
   let s = seed >>> 0;
@@ -153,6 +158,18 @@ export function installAct1WorldRemaster(QuestScene: SceneCtor) {
   const proto = QuestScene.prototype;
   if (proto.__act1WorldRemasterInstalled) return;
   proto.__act1WorldRemasterInstalled = true;
+
+  // buildZone sets Act I to 50x50 immediately before calling buildAct1. Wrap
+  // buildAct1 itself so the authored realm is generated into a 55x50 map:
+  // 2,750 tiles vs 2,500 tiles = exactly 10% more roaming area.
+  const originalBuildAct1 = proto.buildAct1;
+  proto.buildAct1 = function expandedAct1(this: SceneLike, ...args: any[]) {
+    this.mapW = ACT1_EXPANDED_W;
+    this.mapH = ACT1_EXPANDED_H;
+    this.sxF = this.mapW / DESIGN_W;
+    this.syF = this.mapH / DESIGN_H;
+    return originalBuildAct1.apply(this, args);
+  };
 
   const originalCreate = proto.create;
   proto.create = function act1WorldRemasteredCreate(this: SceneLike, ...args: any[]) {
