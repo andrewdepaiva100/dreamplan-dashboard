@@ -283,7 +283,7 @@ export const ZONES: Record<ZoneId, ZoneInfo> = {
     id: "starry_ascent",
     act: "Act IV",
     title: "The Realm of Rest & The Starry Ascent",
-    objective: "Align the three crystal pillars, then reach the Altar of Joy at the summit.",
+    objective: "Align the five crystal pillars, then reach the Altar of Joy at the summit.",
   },
   cathedral: {
     id: "cathedral",
@@ -687,12 +687,12 @@ export const ACT_GUIDES: Record<
   starry_ascent: {
     name: "Astra the Stargazer",
     weapon: "starlight-censer",
-    line: "Listen closely, this peak has a lock on it. Three crystal pillars stand across the plateau, and each one turns through three colours: blue, gold, then rose. Only when all three burn warm gold at the same time does the Celestial Staircase form and the Seal of Perfect Peace become reachable — that Seal is the only thing that opens the way to the cathedral. So: turn a pillar, check its colour, move to the next, and come back around until all three are gold. The Weight of Weariness will circle you the whole time; swing this Starlight Censer and it will remember how to rest.",
+    line: "Listen closely, this peak has a lock on it. Five crystal pillars stand across the plateau, and each one turns through three colours: blue, gold, then rose. Only when all five burn warm gold at the same time does the Celestial Staircase form and the Seal of Perfect Peace become reachable — that Seal is the only thing that opens the way to the cathedral. So: turn a pillar, check its colour, move to the next, and come back around until all five are gold. The Weight of Weariness will circle you the whole time; swing this Starlight Censer and it will remember how to rest.",
     pages: [
       "Careful on the ledge. I'm Astra — I watch the sky from this plateau, and I've watched you climb the whole way up. Fourth land. You are very nearly there.",
       "This peak is made of the nights Andrew couldn't sleep for thinking about you. That's why the stars are so close here. Every one of them is a thought he had at two in the morning that he never quite managed to say out loud.",
       "The Seal of Perfect Peace is at the top, and it is the only thing that opens the road to the cathedral. No Seal, no wedding. So listen carefully to the lock.",
-      "Three crystal pillars stand across the plateau. Each one turns through three colours when you touch it: blue, then gold, then rose, then back to blue. The Celestial Staircase only forms when all three are burning warm gold at the same moment. Turn one, check it, walk to the next, and keep circling until they match.",
+      "Five crystal pillars stand across the plateau. Each one turns through three colours when you touch it: blue, then gold, then rose, then back to blue. The Celestial Staircase only forms when all five are burning warm gold at the same moment. Turn one, check it, walk to the next, and keep circling until they match.",
       "The Weight of Weariness circles you the entire time. It's exhaustion given a body — it gets heavier the longer you fight it, which is exactly how the real thing works. Don't out-muscle it. Out-last it.",
       "Take the Starlight Censer. Swing it and everything it touches remembers how to rest, including you. The fourth envelope is at the summit — read it up there, with the sky right on top of you. That's how it was meant to be read.",
     ],
