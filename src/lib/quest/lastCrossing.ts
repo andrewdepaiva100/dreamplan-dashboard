@@ -14,6 +14,7 @@ type GuestBeat = {
 };
 
 const STORAGE_KEY = "marias-quest-last-crossing-v1";
+const SILAS_STORAGE_KEY = "marias-quest-silas-v1";
 const CROSSING_BLADE_ID = "crossing-blade";
 const BLADE_DAMAGE = 350;
 const VILLAGE_SAFE_RADIUS = 310;
@@ -112,7 +113,7 @@ const FORGE_DIALOGUE: GuestBeat[] = [
     role: "Healer",
     lines: [
       "Repairing the blade isn't enough. The crossing remembers us — our fear, our failures, every time we turned back.",
-      "I bound that memory to one enemy. The blade will recognize the Warden of Rushing Water and no one else.",
+      "The blessing will hold from the moment you take it until the Warden falls. Use it on the road if you need to — once he is gone, so is its power.",
     ],
   },
   {
@@ -120,8 +121,8 @@ const FORGE_DIALOGUE: GuestBeat[] = [
     name: "Elara",
     role: "Former Knight",
     lines: [
-      "Listen carefully. That sword belongs to the crossing.",
-      "Each clean strike against the Warden deals 350 damage. Once he falls, the blade's strength dies with him.",
+      "Listen carefully. Every clean strike carries 350 damage.",
+      "Carry it. Practice with it. Clear the road with it. But after the Warden falls, it becomes ordinary steel forever.",
     ],
   },
   {
@@ -129,9 +130,8 @@ const FORGE_DIALOGUE: GuestBeat[] = [
     name: "Maeve",
     role: "Healer",
     lines: [
-      "You may carry the steel afterward, but not its power.",
-      "We're not giving you a weapon, Maria. We're giving you the attempt we never finished.",
-      "The Crossing Blade is yours. 350 damage — Warden only.",
+      "We're not giving you a weapon forever, Maria. We're giving you the attempt we never finished.",
+      "The Crossing Blade is yours. Three hundred and fifty damage — until the Warden falls.",
     ],
   },
 ];
@@ -174,16 +174,16 @@ function registerCrossingBladeWeapon() {
       reach: 84,
       color: 0x9ee7f2,
       blurb: state.wardenDefeated
-        ? "Three failed journeys, carried across by a fourth. Its Warden-bound power has faded; it remains as a keepsake."
-        : "Reforged from three failed crossings. Deals 350 damage to the Warden of Rushing Water only; powerless elsewhere.",
+        ? "Three failed journeys, carried across by a fourth. Its power faded when the Warden fell; it remains as a keepsake."
+        : "Reforged from three failed crossings. Deals 350 damage from the moment Maria receives it until the Warden of Rushing Water falls.",
     };
     WEAPON_BY_ID[CROSSING_BLADE_ID] = blade;
     if (!WEAPONS.some((w) => w.id === CROSSING_BLADE_ID)) WEAPONS.push(blade);
   } else {
     blade.damage = state.wardenDefeated ? 0 : BLADE_DAMAGE;
     blade.blurb = state.wardenDefeated
-      ? "Three failed journeys, carried across by a fourth. Its Warden-bound power has faded; it remains as a keepsake."
-      : "Reforged from three failed crossings. Deals 350 damage to the Warden of Rushing Water only; powerless elsewhere.";
+      ? "Three failed journeys, carried across by a fourth. Its power faded when the Warden fell; it remains as a keepsake."
+      : "Reforged from three failed crossings. Deals 350 damage from the moment Maria receives it until the Warden of Rushing Water falls.";
   }
 }
 
@@ -222,8 +222,6 @@ function ensureVillagerTexture(scene: SceneLike, id: VillagerId) {
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, w, h);
   ctx.drawImage(src, 0, 0, w, h);
-
-  // Preserve the existing face/hair pixels and recolour only the lower outfit.
   ctx.save();
   ctx.globalCompositeOperation = "source-atop";
   ctx.globalAlpha = 0.82;
@@ -234,6 +232,62 @@ function ensureVillagerTexture(scene: SceneLike, id: VillagerId) {
   ctx.fillRect(Math.floor(w * 0.2), Math.floor(h * 0.48), Math.ceil(w * 0.6), Math.max(2, Math.ceil(h * 0.12)));
   ctx.restore();
   tex.refresh();
+}
+
+function ensureSilasTexture(scene: SceneLike) {
+  if (scene.textures.exists("last-crossing-silas")) return;
+  const tex = scene.textures.createCanvas("last-crossing-silas", 24, 35)!;
+  const ctx = tex.getContext();
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, 24, 35);
+  ctx.fillStyle = "rgba(20,20,25,.22)";
+  ctx.fillRect(5, 32, 14, 2);
+  ctx.fillStyle = "#6a482d";
+  ctx.fillRect(8, 2, 9, 4);
+  ctx.fillStyle = "#8a6040";
+  ctx.fillRect(6, 5, 12, 4);
+  ctx.fillStyle = "#d9aa7f";
+  ctx.fillRect(7, 8, 10, 8);
+  ctx.fillStyle = "#2c2524";
+  ctx.fillRect(8, 10, 2, 2);
+  ctx.fillRect(14, 10, 2, 2);
+  ctx.fillStyle = "#223a5a";
+  ctx.fillRect(5, 16, 14, 12);
+  ctx.fillStyle = "#a84d38";
+  ctx.fillRect(5, 16, 14, 3);
+  ctx.fillRect(15, 18, 4, 7);
+  ctx.fillStyle = "#b88a55";
+  ctx.fillRect(4, 20, 3, 9);
+  ctx.fillRect(17, 23, 3, 6);
+  ctx.fillStyle = "#4f3a2d";
+  ctx.fillRect(6, 28, 5, 6);
+  ctx.fillRect(14, 28, 5, 6);
+  ctx.fillStyle = "#d9bd76";
+  ctx.fillRect(4, 19, 2, 8);
+  ctx.fillRect(19, 18, 2, 10);
+  tex.refresh();
+}
+
+function silasPortraitDataUrl() {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 448">
+    <defs>
+      <radialGradient id="bg" cx="35%" cy="25%"><stop offset="0" stop-color="#d7c29e"/><stop offset="1" stop-color="#314258"/></radialGradient>
+      <linearGradient id="coat" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#294c70"/><stop offset="1" stop-color="#172b45"/></linearGradient>
+    </defs>
+    <rect width="448" height="448" fill="url(#bg)"/>
+    <circle cx="224" cy="188" r="116" fill="#d8a67c"/>
+    <path d="M110 186c4-98 61-143 121-143 74 0 125 52 126 141-34-23-58-71-77-99-30 36-80 64-170 101Z" fill="#5d422e"/>
+    <path d="M122 177c5-65 43-106 82-120-58 11-92 59-92 121Z" fill="#7a5739" opacity=".9"/>
+    <ellipse cx="181" cy="199" rx="14" ry="10" fill="#26211f"/><ellipse cx="267" cy="199" rx="14" ry="10" fill="#26211f"/>
+    <path d="M176 172q28-16 55 0M239 171q25-13 50 2" stroke="#5d422e" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M201 249q25 18 49 0" stroke="#8e5848" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M102 448c7-112 49-166 122-166s119 55 126 166Z" fill="url(#coat)"/>
+    <path d="M135 309l78 70-48 69h-66c4-55 12-98 36-139Zm178 0-78 70 48 69h66c-4-55-12-98-36-139Z" fill="#18334f"/>
+    <path d="M132 304c29 15 57 22 91 22 38 0 67-8 94-23l-24 41c-25 11-44 16-70 16-27 0-49-5-73-16Z" fill="#a74f3b"/>
+    <rect x="311" y="300" width="72" height="92" rx="10" fill="#b38b55" transform="rotate(8 311 300)"/>
+    <path d="M326 316h42M327 335h39M329 354h35" stroke="#5e4b35" stroke-width="5"/>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 function addBlocker(scene: SceneLike, x: number, y: number, sx: number, sy: number) {
@@ -301,6 +355,25 @@ function addVillageInteractable(
   return obj;
 }
 
+function addSilas(scene: SceneLike) {
+  if (scene.save?.current_zone !== "sunlit_shores") return;
+  ensureSilasTexture(scene);
+  // Wren starts around design tile 50,56. Silas waits roughly fifty tiles east.
+  const x = scene.wx?.(100) ?? 100 * 32;
+  const y = scene.wy?.(56) ?? 56 * 32;
+  const obj = scene.add.sprite(x, y, "last-crossing-silas").setDepth(scene.dsort?.(y) ?? 11);
+  scene.interactables.push({
+    obj,
+    kind: "last-crossing-silas",
+    id: "silas",
+    label: "Talk to Silas",
+    radius: 84,
+    enabled: true,
+  });
+  scene.tweens.add({ targets: obj, y: y - 2, duration: 1700, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+  addDecor(scene, "signpost", x - 34, y + 8, 0.78);
+}
+
 function drawVillage(scene: SceneLike) {
   if (scene.save?.current_zone !== "sunlit_shores" || scene.__lastCrossingBuilt) return;
   scene.__lastCrossingBuilt = true;
@@ -312,7 +385,6 @@ function drawVillage(scene: SceneLike) {
 
   const state = readState();
   if (state.forged && !scene.save?.weapons?.includes(CROSSING_BLADE_ID) && !state.wardenDefeated) {
-    // Migration from the first implementation: let Maria collect the blade properly.
     state.forged = false;
     writeState(state);
   }
@@ -473,80 +545,40 @@ function showBladeRewardPopup(scene: SceneLike) {
 
   const eyebrow = document.createElement("div");
   eyebrow.textContent = "SPECIAL QUEST WEAPON";
-  Object.assign(eyebrow.style, {
-    color: "#d8b45e",
-    fontSize: "10px",
-    letterSpacing: ".22em",
-    fontWeight: "800",
-  });
+  Object.assign(eyebrow.style, { color: "#d8b45e", fontSize: "10px", letterSpacing: ".22em", fontWeight: "800" });
 
   const canvas = document.createElement("canvas");
   drawPopupSword(canvas);
-  Object.assign(canvas.style, {
-    width: "112px",
-    height: "112px",
-    margin: "12px auto 4px",
-    imageRendering: "pixelated",
-    display: "block",
-  });
+  Object.assign(canvas.style, { width: "112px", height: "112px", margin: "12px auto 4px", imageRendering: "pixelated", display: "block" });
 
   const title = document.createElement("div");
   title.textContent = "The Crossing Blade";
-  Object.assign(title.style, {
-    color: "#f0cf77",
-    fontFamily: "Georgia, serif",
-    fontSize: "26px",
-    fontWeight: "700",
-  });
+  Object.assign(title.style, { color: "#f0cf77", fontFamily: "Georgia, serif", fontSize: "26px", fontWeight: "700" });
 
   const stats = document.createElement("div");
-  stats.textContent = "350 DAMAGE · WARDEN ONLY";
-  Object.assign(stats.style, {
-    marginTop: "7px",
-    color: "#9ee7f2",
-    fontSize: "12px",
-    letterSpacing: ".12em",
-    fontWeight: "800",
-  });
+  stats.textContent = "350 DAMAGE · ACTIVE UNTIL THE WARDEN FALLS";
+  Object.assign(stats.style, { marginTop: "7px", color: "#9ee7f2", fontSize: "11px", letterSpacing: ".1em", fontWeight: "800" });
 
   const body = document.createElement("p");
-  body.textContent = "Reforged from Elara, Pip, and Maeve's failed crossings. Its magic recognizes only the Warden of Rushing Water. After he falls, the blade remains with Maria as a powerless keepsake.";
-  Object.assign(body.style, {
-    margin: "14px auto 18px",
-    maxWidth: "340px",
-    color: "rgba(248,243,231,.78)",
-    fontFamily: "Georgia, serif",
-    fontStyle: "italic",
-    fontSize: "14px",
-    lineHeight: "1.55",
-  });
+  body.textContent = "Reforged from Elara, Pip, and Maeve's failed crossings. Equip and use it immediately anywhere on the road to the Warden. The instant the Warden of Rushing Water falls, its power disappears forever and the blade becomes a keepsake.";
+  Object.assign(body.style, { margin: "14px auto 18px", maxWidth: "340px", color: "rgba(248,243,231,.78)", fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "14px", lineHeight: "1.55" });
 
   const button = document.createElement("button");
   button.type = "button";
   button.textContent = "Add to Inventory";
-  Object.assign(button.style, {
-    width: "100%",
-    minHeight: "48px",
-    border: "1px solid #e2c16c",
-    borderRadius: "14px",
-    background: "linear-gradient(90deg, #c99e42, #e4c86f)",
-    color: "#142039",
-    fontSize: "14px",
-    fontWeight: "900",
-    cursor: "pointer",
-  });
+  Object.assign(button.style, { width: "100%", minHeight: "48px", border: "1px solid #e2c16c", borderRadius: "14px", background: "linear-gradient(90deg, #c99e42, #e4c86f)", color: "#142039", fontSize: "14px", fontWeight: "900", cursor: "pointer" });
 
   button.addEventListener("click", () => {
     const state = readState();
     state.forged = true;
     writeState(state);
     registerCrossingBladeWeapon();
-    if (!scene.save.weapons.includes(CROSSING_BLADE_ID)) {
-      scene.save.weapons = [...scene.save.weapons, CROSSING_BLADE_ID];
-    }
+    if (!scene.save.weapons.includes(CROSSING_BLADE_ID)) scene.save.weapons = [...scene.save.weapons, CROSSING_BLADE_ID];
+    scene.save.equipped_weapon = CROSSING_BLADE_ID;
     scene.emitSave?.();
     scene.pushHud?.(true);
-    scene.game.events.emit("quest:toast", "The Crossing Blade was added to your weapon inventory.");
+    scene.refreshHand?.();
+    scene.game.events.emit("quest:toast", "The Crossing Blade is equipped — 350 damage until the Warden falls.");
     scene.__crossingBladePending = false;
     scene.__crossingBladePopupOpen = false;
     overlay.remove();
@@ -558,6 +590,235 @@ function showBladeRewardPopup(scene: SceneLike) {
   parent.append(overlay);
 }
 
+function hasMetSilas() {
+  try {
+    return window.localStorage.getItem(SILAS_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markSilasMet() {
+  try {
+    window.localStorage.setItem(SILAS_STORAGE_KEY, "1");
+  } catch {
+    // Dialogue remains available even if storage is blocked.
+  }
+}
+
+function showSilasDialogue(scene: SceneLike) {
+  if (scene.__silasDialogueOpen) return;
+  const parent = scene.game.canvas?.parentElement;
+  if (!parent) return;
+  scene.__silasDialogueOpen = true;
+  scene.frozen = true;
+  scene.physics.pause();
+
+  const crossing = readState();
+  const alreadyMet = hasMetSilas();
+  const discovered = crossing.talked.length > 0 || crossing.forged;
+  const defeated = crossing.wardenDefeated;
+  const firstConversation = !alreadyMet && !defeated && !discovered;
+
+  const overlay = document.createElement("div");
+  Object.assign(overlay.style, {
+    position: "absolute",
+    inset: "0",
+    zIndex: "10020",
+    display: "flex",
+    alignItems: window.innerWidth < 700 ? "flex-end" : "center",
+    justifyContent: "center",
+    padding: "clamp(10px, 3vw, 28px)",
+    background: "rgba(6,10,24,.62)",
+    backdropFilter: "blur(4px)",
+    boxSizing: "border-box",
+  });
+
+  const wrap = document.createElement("div");
+  Object.assign(wrap.style, {
+    width: "min(96vw, 1120px)",
+    display: "grid",
+    gridTemplateColumns: window.innerWidth < 700 ? "86px 1fr" : "minmax(210px, 300px) 1fr",
+    gap: window.innerWidth < 700 ? "10px" : "18px",
+    alignItems: "stretch",
+    position: "relative",
+  });
+
+  const portrait = document.createElement("img");
+  portrait.src = silasPortraitDataUrl();
+  portrait.alt = "Silas";
+  Object.assign(portrait.style, {
+    width: "100%",
+    height: window.innerWidth < 700 ? "86px" : "100%",
+    minHeight: window.innerWidth < 700 ? "86px" : "280px",
+    objectFit: "cover",
+    border: "3px solid rgba(210,175,91,.75)",
+    borderRadius: window.innerWidth < 700 ? "14px" : "24px",
+    boxShadow: "0 18px 45px rgba(0,0,0,.38)",
+    boxSizing: "border-box",
+  });
+
+  const panel = document.createElement("div");
+  Object.assign(panel.style, {
+    position: "relative",
+    minHeight: window.innerWidth < 700 ? "210px" : "280px",
+    maxHeight: "78vh",
+    overflow: "auto",
+    border: "3px solid rgba(210,175,91,.7)",
+    borderRadius: window.innerWidth < 700 ? "16px" : "26px",
+    background: "linear-gradient(145deg, rgba(13,19,38,.98), rgba(11,17,34,.98))",
+    boxShadow: "0 18px 48px rgba(0,0,0,.42)",
+    padding: window.innerWidth < 700 ? "16px" : "28px 32px",
+    color: "white",
+    boxSizing: "border-box",
+  });
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.textContent = "×";
+  Object.assign(close.style, {
+    position: "absolute",
+    right: "12px",
+    top: "10px",
+    width: "38px",
+    height: "38px",
+    borderRadius: "50%",
+    border: "1px solid rgba(210,175,91,.7)",
+    background: "#0d162b",
+    color: "#e3c16d",
+    fontSize: "24px",
+    cursor: "pointer",
+    zIndex: "2",
+  });
+
+  const heading = document.createElement("div");
+  heading.innerHTML = `<span style="font-family:Georgia,serif;font-size:${window.innerWidth < 700 ? 21 : 30}px;font-weight:700;color:#dfbd68">Silas</span><span style="margin-left:14px;font-size:11px;letter-spacing:.2em;color:rgba(255,255,255,.58);font-weight:700">CARTOGRAPHER</span>`;
+
+  const line = document.createElement("div");
+  Object.assign(line.style, {
+    marginTop: "20px",
+    minHeight: "74px",
+    color: "rgba(255,255,255,.96)",
+    fontFamily: "Georgia, serif",
+    fontStyle: "italic",
+    fontSize: window.innerWidth < 700 ? "15px" : "19px",
+    lineHeight: "1.55",
+  });
+
+  const choices = document.createElement("div");
+  Object.assign(choices.style, { display: "grid", gap: "9px", marginTop: "14px" });
+
+  const response = document.createElement("div");
+  Object.assign(response.style, { marginTop: "14px" });
+
+  panel.append(close, heading, line, choices, response);
+  wrap.append(portrait, panel);
+  overlay.append(wrap);
+  parent.append(overlay);
+
+  let timer: number | undefined;
+  const type = (text: string, target: HTMLElement, done?: () => void) => {
+    if (timer) window.clearInterval(timer);
+    target.textContent = "“";
+    let i = 0;
+    timer = window.setInterval(() => {
+      i += 1;
+      target.textContent = `“${text.slice(0, i)}${i >= text.length ? "”" : ""}`;
+      if (i >= text.length) {
+        window.clearInterval(timer);
+        timer = undefined;
+        done?.();
+      }
+    }, 18);
+  };
+
+  const finish = () => {
+    if (timer) window.clearInterval(timer);
+    overlay.remove();
+    scene.__silasDialogueOpen = false;
+    scene.frozen = false;
+    scene.physics.resume();
+    markSilasMet();
+  };
+  close.addEventListener("click", finish);
+
+  if (defeated) {
+    type("You crossed the river. Then I suppose I need a new map.", line);
+    return;
+  }
+  if (discovered || alreadyMet) {
+    type(
+      crossing.forged
+        ? "You found the three — and judging by what you're carrying, they trusted you with something they never trusted themselves to finish. Don't waste that faith."
+        : "You found the settlement. Good. Listen to those three before you face the Warden; they know the crossing better than any map ever could.",
+      line,
+    );
+    return;
+  }
+
+  const opening = "Going toward the river? Then don't follow the old road straight there. Everyone who does comes back wearing the same expression.";
+  type(opening, line, () => {
+    const options = [
+      {
+        maria: "I'm still crossing. Tell me what you know.",
+        silas: "Good. Southeast of here is a little settlement called The Last Crossing. Three people live there. All three challenged the Warden. All three came back. Talk to them before you decide you're ready.",
+      },
+      {
+        maria: "Are you trying to scare me away?",
+        silas: "No. Fear makes terrible maps. I'm trying to keep you from walking into the same mistake three other people already survived. Follow the old stone road southeast. When the lamps start appearing, you're close.",
+      },
+      {
+        maria: "Why should I trust three people who failed?",
+        silas: "Because failure is expensive knowledge. They know where the current pulls, when the Warden closes distance, and what courage looks like after it breaks. You want the other side? Start with the people who came back alive.",
+      },
+    ];
+
+    options.forEach((opt) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = `“${opt.maria}”`;
+      Object.assign(b.style, {
+        width: "100%",
+        border: "1px solid rgba(218,181,94,.38)",
+        borderRadius: "12px",
+        padding: "11px 13px",
+        background: "rgba(255,255,255,.055)",
+        color: "rgba(255,255,255,.94)",
+        textAlign: "left",
+        fontSize: window.innerWidth < 700 ? "13px" : "14px",
+        cursor: "pointer",
+        transition: "transform .14s ease, background .14s ease, border-color .14s ease",
+      });
+      b.addEventListener("mouseenter", () => {
+        b.style.transform = "translateX(3px)";
+        b.style.background = "rgba(218,181,94,.12)";
+        b.style.borderColor = "rgba(218,181,94,.8)";
+      });
+      b.addEventListener("mouseleave", () => {
+        b.style.transform = "translateX(0)";
+        b.style.background = "rgba(255,255,255,.055)";
+        b.style.borderColor = "rgba(218,181,94,.38)";
+      });
+      b.addEventListener("click", () => {
+        choices.innerHTML = "";
+        const maria = document.createElement("div");
+        maria.textContent = `Maria: “${opt.maria}”`;
+        Object.assign(maria.style, { color: "rgba(255,255,255,.72)", fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "13px", marginBottom: "10px" });
+        const silas = document.createElement("div");
+        Object.assign(silas.style, { color: "#f5ead0", fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: window.innerWidth < 700 ? "14px" : "17px", lineHeight: "1.5" });
+        const done = document.createElement("button");
+        done.type = "button";
+        done.textContent = "Continue";
+        Object.assign(done.style, { display: "none", marginTop: "14px", width: "100%", minHeight: "44px", borderRadius: "12px", border: "1px solid #d7b45f", background: "rgba(215,180,95,.14)", color: "#e6c871", fontWeight: "800", cursor: "pointer" });
+        done.addEventListener("click", finish);
+        response.append(maria, silas, done);
+        type(opt.silas, silas, () => { done.style.display = "block"; });
+      });
+      choices.append(b);
+    });
+  });
+}
+
 function handleVillager(scene: SceneLike, id: VillagerId) {
   const state = readState();
   const who = VILLAGER_ART[id];
@@ -565,13 +826,11 @@ function handleVillager(scene: SceneLike, id: VillagerId) {
     openGuest(scene, { id: who.portraitId, name: who.name, role: who.role, lines: POST_DIALOGUE[id] });
     return;
   }
-
   if (!state.talked.includes(id)) {
     state.talked.push(id);
     writeState(state);
   }
   openGuest(scene, { id: who.portraitId, name: who.name, role: who.role, lines: PRE_DIALOGUE[id] });
-
   if (state.talked.length === 3 && !state.forged) {
     scene.game.events.emit("quest:toast", "The three villagers have shared their stories. Something waits by the fountain.");
     refreshForgeInteractable(scene);
@@ -581,7 +840,6 @@ function handleVillager(scene: SceneLike, id: VillagerId) {
 function handleForge(scene: SceneLike, it: any) {
   const state = readState();
   if (state.forged || state.wardenDefeated || state.talked.length < 3) return;
-
   it.enabled = false;
   it.obj?.destroy?.();
   scene.interactables = (scene.interactables ?? []).filter((x: any) => x !== it);
@@ -590,11 +848,12 @@ function handleForge(scene: SceneLike, it: any) {
 }
 
 function updateBladeVisual(scene: SceneLike) {
+  const state = readState();
   const active = Boolean(
-    scene.__crossingBladeActive &&
+    !state.wardenDefeated &&
       scene.save?.current_zone === "sunlit_shores" &&
-      scene.boss?.active &&
-      scene.bossPhase === 1,
+      scene.save?.equipped_weapon === CROSSING_BLADE_ID &&
+      scene.save?.weapons?.includes(CROSSING_BLADE_ID),
   );
   let blade = scene.__crossingBladeSprite as Phaser.GameObjects.Sprite | undefined;
   if (!active) {
@@ -624,6 +883,7 @@ export function installLastCrossing(QuestScene: SceneCtor) {
   proto.create = function lastCrossingCreate(this: SceneLike, ...args: any[]) {
     const result = originalCreate.apply(this, args);
     drawVillage(this);
+    addSilas(this);
     return result;
   };
 
@@ -639,6 +899,10 @@ export function installLastCrossing(QuestScene: SceneCtor) {
       handleForge(this, it);
       return;
     }
+    if (it?.kind === "last-crossing-silas") {
+      showSilasDialogue(this);
+      return;
+    }
     return originalInteract.apply(this, args);
   };
 
@@ -652,31 +916,16 @@ export function installLastCrossing(QuestScene: SceneCtor) {
       this.time.delayedCall(20, () => openGuest(this, next));
     } else {
       this.__lastCrossingGuestQueue = undefined;
-      if (this.__crossingBladePending && !this.__crossingBladePopupOpen) {
-        this.time.delayedCall(30, () => showBladeRewardPopup(this));
-      }
+      if (this.__crossingBladePending && !this.__crossingBladePopupOpen) this.time.delayedCall(30, () => showBladeRewardPopup(this));
     }
     return result;
   };
 
   const originalEquip = proto.equipWeapon;
   proto.equipWeapon = function lastCrossingEquip(this: SceneLike, id: string, ...args: any[]) {
-    if (id === CROSSING_BLADE_ID) {
-      const state = readState();
-      const wardenFight =
-        this.save?.current_zone === "sunlit_shores" &&
-        this.bossName === "Warden of Rushing Water" &&
-        this.bossPhase === 1 &&
-        !state.wardenDefeated;
-      if (!wardenFight) {
-        this.game.events.emit(
-          "quest:toast",
-          state.wardenDefeated
-            ? "The Crossing Blade is a keepsake now — its power ended with the Warden."
-            : "The Crossing Blade only wakes in the Warden of Rushing Water fight.",
-        );
-        return;
-      }
+    if (id === CROSSING_BLADE_ID && readState().wardenDefeated) {
+      this.game.events.emit("quest:toast", "The Crossing Blade is a keepsake now — its power ended with the Warden.");
+      return;
     }
     return originalEquip.call(this, id, ...args);
   };
@@ -684,32 +933,15 @@ export function installLastCrossing(QuestScene: SceneCtor) {
   const originalBossChoice = proto.onBossChoice;
   proto.onBossChoice = function lastCrossingBossChoice(this: SceneLike, ...args: any[]) {
     const result = originalBossChoice.apply(this, args);
-    const state = readState();
     if (
       this.save?.current_zone === "sunlit_shores" &&
       this.bossName === "Warden of Rushing Water" &&
-      state.forged &&
-      this.save?.weapons?.includes(CROSSING_BLADE_ID) &&
-      !state.wardenDefeated
+      this.save?.equipped_weapon === CROSSING_BLADE_ID &&
+      !readState().wardenDefeated
     ) {
-      this.__crossingBladeActive = true;
-      this.game.events.emit("quest:toast", `The Crossing Blade wakes — ${BLADE_DAMAGE} damage per hit.`);
+      this.game.events.emit("quest:toast", `The Crossing Blade is already awake — ${BLADE_DAMAGE} damage per hit.`);
     }
     return result;
-  };
-
-  const originalDamageBoss = proto.damageBoss;
-  proto.damageBoss = function lastCrossingDamageBoss(this: SceneLike, amount: number) {
-    const state = readState();
-    const useBlade =
-      this.__crossingBladeActive === true &&
-      this.save?.current_zone === "sunlit_shores" &&
-      this.bossName === "Warden of Rushing Water" &&
-      this.bossPhase === 1 &&
-      state.forged &&
-      this.save?.weapons?.includes(CROSSING_BLADE_ID) &&
-      !state.wardenDefeated;
-    return originalDamageBoss.call(this, useBlade ? BLADE_DAMAGE : amount);
   };
 
   const originalDefeatBoss = proto.defeatActBoss;
@@ -721,14 +953,16 @@ export function installLastCrossing(QuestScene: SceneCtor) {
       state.wardenDefeated = true;
       writeState(state);
       registerCrossingBladeWeapon();
-      this.__crossingBladeActive = false;
       this.__crossingBladeSprite?.destroy?.();
       this.__crossingBladeSprite = undefined;
+      if (this.save?.equipped_weapon === CROSSING_BLADE_ID) {
+        const fallback = (this.save.weapons ?? []).find((id: string) => id !== CROSSING_BLADE_ID && WEAPON_BY_ID[id]);
+        this.save.equipped_weapon = fallback ?? null;
+        this.refreshHand?.();
+        this.emitSave?.();
+      }
       if (state.forged) {
-        this.game.events.emit(
-          "quest:toast",
-          "The Crossing Blade goes quiet. Its 350-damage blessing ended with the Warden.",
-        );
+        this.game.events.emit("quest:toast", "The Crossing Blade goes quiet. Its 350-damage power ended with the Warden.");
       }
       this.pushHud?.(true);
     }
