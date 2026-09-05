@@ -657,34 +657,143 @@ export function buildHomeSprites(scene: Phaser.Scene) {
     ctx.stroke();
   });
 
-  // storage chest
-  drawTo(scene, "chest", 34, 28, (ctx) => {
-    ctx.fillStyle = "#7a4d24";
-    ctx.fillRect(2, 10, 30, 16);
-    ctx.fillStyle = "#96632f";
-    ctx.beginPath();
-    ctx.moveTo(2, 11);
-    ctx.quadraticCurveTo(17, 0, 32, 11);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = "#d8a94e";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(3, 11, 28, 14);
-    ctx.fillStyle = "#e6c065";
-    ctx.fillRect(15, 12, 4, 8);
-    ctx.fillStyle = "#3a2410";
-    ctx.fillRect(16, 15, 2, 3);
+  // ---- tileable interior surfaces -------------------------------------
+  // seamless wooden floorboard tile: grain, knots, nail heads, dark seams
+  drawTo(scene, "floor-wood", 128, 68, (ctx) => {
+    const planks = ["#8a613a", "#7f5932", "#916840", "#835c35"];
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = planks[i]!;
+      ctx.fillRect(0, i * 17, 128, 17);
+      // grain streaks
+      ctx.strokeStyle = "rgba(60,38,18,0.20)";
+      ctx.lineWidth = 1;
+      for (let g = 0; g < 3; g++) {
+        const y = i * 17 + 4 + g * 4.5;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.bezierCurveTo(32, y - 1.4, 84, y + 1.4, 128, y);
+        ctx.stroke();
+      }
+      // knot
+      ctx.fillStyle = "rgba(60,36,16,0.35)";
+      ctx.beginPath();
+      ctx.ellipse(24 + i * 31, i * 17 + 9, 3.4, 2.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // board seam + highlight
+      ctx.fillStyle = "rgba(48,30,14,0.75)";
+      ctx.fillRect(0, i * 17 + 16, 128, 1.6);
+      ctx.fillStyle = "rgba(255,228,180,0.10)";
+      ctx.fillRect(0, i * 17, 128, 1);
+      // staggered butt joint with nail heads
+      const jx = (i % 2) * 64;
+      ctx.fillStyle = "rgba(48,30,14,0.7)";
+      ctx.fillRect(jx, i * 17, 1.6, 16);
+      ctx.fillStyle = "rgba(226,204,168,0.5)";
+      ctx.fillRect(jx + 5, i * 17 + 6, 1.6, 1.6);
+      ctx.fillRect(jx + 54, i * 17 + 6, 1.6, 1.6);
+    }
   });
 
-  // hearth / fireplace
+  // seamless stone-block wall tile with mortar and chipped edges
+  drawTo(scene, "wall-stone", 128, 64, (ctx) => {
+    ctx.fillStyle = "#5a5048";
+    ctx.fillRect(0, 0, 128, 64);
+    const tones = ["#8e857a", "#847a6f", "#978d81", "#7c7269"];
+    for (let r = 0; r < 4; r++) {
+      const off = (r % 2) * 21;
+      for (let c = -1; c < 4; c++) {
+        const x = off + c * 42;
+        const y = r * 16;
+        ctx.fillStyle = tones[(r + c + 8) % tones.length]!;
+        ctx.fillRect(x + 1.5, y + 1.5, 39, 13);
+        // top highlight, bottom shade, chipped corner
+        ctx.fillStyle = "rgba(255,246,226,0.16)";
+        ctx.fillRect(x + 1.5, y + 1.5, 39, 2);
+        ctx.fillStyle = "rgba(30,24,18,0.22)";
+        ctx.fillRect(x + 1.5, y + 11.5, 39, 3);
+        ctx.fillStyle = "rgba(40,32,24,0.18)";
+        ctx.fillRect(x + 34, y + 2, 5, 2.5);
+      }
+    }
+  });
+
+  // warm plaster tile for the upper wall
+  drawTo(scene, "wall-plaster", 96, 96, (ctx) => {
+    ctx.fillStyle = "#c9ab86";
+    ctx.fillRect(0, 0, 96, 96);
+    for (let i = 0; i < 140; i++) {
+      const x = (i * 37) % 96;
+      const y = (i * 61) % 96;
+      ctx.fillStyle = i % 3 ? "rgba(255,240,215,0.10)" : "rgba(120,92,60,0.09)";
+      ctx.fillRect(x, y, 2, 2);
+    }
+  });
+
+  // storage chest — dark oak, iron bands, brass lock
+  drawTo(scene, "chest", 34, 28, (ctx) => {
+    // body with plank shading
+    ctx.fillStyle = "#6b4321";
+    ctx.fillRect(2, 11, 30, 15);
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = i % 2 ? "#784c26" : "#5f3b1d";
+      ctx.fillRect(3 + i * 7, 12, 6, 13);
+    }
+    // domed lid
+    ctx.fillStyle = "#8a5a2e";
+    ctx.beginPath();
+    ctx.moveTo(2, 12);
+    ctx.quadraticCurveTo(17, 0, 32, 12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,220,160,0.28)";
+    ctx.beginPath();
+    ctx.moveTo(5, 10);
+    ctx.quadraticCurveTo(17, 2, 29, 10);
+    ctx.quadraticCurveTo(17, 5, 5, 10);
+    ctx.fill();
+    // iron bands + corner studs
+    ctx.fillStyle = "#4a4a52";
+    for (const bx of [6, 25]) {
+      ctx.fillRect(bx, 3, 3, 23);
+    }
+    ctx.fillStyle = "#6d6d78";
+    for (const bx of [6, 25]) ctx.fillRect(bx, 3, 1, 23);
+    ctx.fillStyle = "#3b3b43";
+    ctx.fillRect(1, 24, 32, 3);
+    ctx.fillStyle = "#8d8d99";
+    for (const [sx, sy] of [[2, 24], [31, 24], [2, 12], [31, 12]] as [number, number][]) {
+      ctx.fillRect(sx, sy, 2, 2);
+    }
+    // brass lock plate
+    ctx.fillStyle = "#e0b552";
+    ctx.fillRect(15, 10, 5, 9);
+    ctx.fillStyle = "#f6dd9a";
+    ctx.fillRect(15, 10, 5, 2);
+    ctx.fillStyle = "#2c1c0c";
+    ctx.fillRect(17, 14, 2, 3);
+    // ground shadow
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.fillRect(3, 26, 28, 2);
+  });
+
+  // hearth / fireplace — stone surround, mantel, logs, live flame
   drawTo(scene, "hearth", 44, 40, (ctx) => {
-    ctx.fillStyle = "#6d6a66";
-    ctx.fillRect(1, 4, 42, 34);
-    ctx.fillStyle = "#8b8781";
-    for (let y = 0; y < 5; y++)
-      for (let x = 0; x < 6; x++)
-        ctx.fillRect(3 + x * 7 + (y % 2 ? 3 : 0), 6 + y * 6, 6, 5);
-    ctx.fillStyle = "#231a14";
+    // stone surround with mortar
+    ctx.fillStyle = "#5d564e";
+    ctx.fillRect(1, 6, 42, 32);
+    const tone = ["#8e857a", "#7c7269", "#978d81"];
+    for (let r = 0; r < 5; r++)
+      for (let c = 0; c < 6; c++) {
+        ctx.fillStyle = tone[(r + c) % 3]!;
+        ctx.fillRect(2.5 + c * 7 + (r % 2 ? 3 : 0), 7.5 + r * 6, 6, 5);
+      }
+    // mantel shelf
+    ctx.fillStyle = "#6b4a2c";
+    ctx.fillRect(0, 2, 44, 5);
+    ctx.fillStyle = "#8a6238";
+    ctx.fillRect(0, 2, 44, 1.6);
+    // firebox
+    ctx.fillStyle = "#1b120c";
     ctx.beginPath();
     ctx.moveTo(11, 38);
     ctx.lineTo(11, 22);
@@ -692,30 +801,78 @@ export function buildHomeSprites(scene: Phaser.Scene) {
     ctx.lineTo(33, 38);
     ctx.closePath();
     ctx.fill();
-    const g = ctx.createLinearGradient(0, 38, 0, 22);
-    g.addColorStop(0, "#ffd166");
+    // log bed
+    ctx.fillStyle = "#54341c";
+    ctx.fillRect(13, 33, 18, 4);
+    ctx.fillStyle = "#6b4526";
+    ctx.fillRect(15, 31, 14, 3);
+    // flame
+    const g = ctx.createLinearGradient(0, 37, 0, 21);
+    g.addColorStop(0, "#ffe9a8");
+    g.addColorStop(0.5, "#ffb03a");
     g.addColorStop(1, "#e2542a");
     ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.moveTo(15, 38);
-    ctx.quadraticCurveTo(16, 26, 22, 22);
-    ctx.quadraticCurveTo(28, 26, 29, 38);
+    ctx.moveTo(15, 36);
+    ctx.quadraticCurveTo(16, 26, 22, 21);
+    ctx.quadraticCurveTo(28, 26, 29, 36);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,246,208,0.85)";
+    ctx.beginPath();
+    ctx.moveTo(20, 36);
+    ctx.quadraticCurveTo(21, 29, 22, 26);
+    ctx.quadraticCurveTo(24, 29, 24.5, 36);
     ctx.closePath();
     ctx.fill();
   });
 
-  // bed
+  // bed — carved headboard, stitched quilt, pillow
   drawTo(scene, "bed", 48, 34, (ctx) => {
-    ctx.fillStyle = "#6b4526";
+    // shadow + frame
+    ctx.fillStyle = "rgba(0,0,0,0.22)";
+    ctx.fillRect(3, 31, 43, 3);
+    ctx.fillStyle = "#5d3a1e";
     ctx.fillRect(1, 6, 46, 26);
+    ctx.fillStyle = "#7b4f2a";
+    ctx.fillRect(1, 6, 46, 2);
+    // carved headboard
     ctx.fillStyle = "#8a5a31";
-    ctx.fillRect(1, 2, 8, 30);
+    ctx.fillRect(0, 1, 9, 31);
+    ctx.fillStyle = "#a06a3a";
+    ctx.beginPath();
+    ctx.ellipse(4.5, 3, 4, 3, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = "rgba(60,34,14,0.5)";
+    ctx.fillRect(3, 8, 3, 20);
+    // pillow
     ctx.fillStyle = "#f6efe2";
-    ctx.fillRect(9, 9, 12, 14);
-    ctx.fillStyle = "#c2405a";
-    ctx.fillRect(20, 9, 26, 20);
-    ctx.fillStyle = "#e0708a";
+    ctx.fillRect(10, 9, 12, 14);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(10, 9, 12, 4);
+    ctx.fillStyle = "rgba(160,140,110,0.35)";
+    ctx.fillRect(10, 22, 12, 1.5);
+    // quilt with stitched squares
+    ctx.fillStyle = "#b23a55";
+    ctx.fillRect(20, 9, 26, 21);
+    ctx.fillStyle = "#cf4f6c";
     ctx.fillRect(20, 9, 26, 5);
+    ctx.strokeStyle = "rgba(255,225,235,0.45)";
+    ctx.lineWidth = 1;
+    for (let x = 24; x < 46; x += 6) {
+      ctx.beginPath();
+      ctx.moveTo(x, 9);
+      ctx.lineTo(x, 30);
+      ctx.stroke();
+    }
+    for (let y = 15; y < 30; y += 6) {
+      ctx.beginPath();
+      ctx.moveTo(20, y);
+      ctx.lineTo(46, y);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(70,20,32,0.35)";
+    ctx.fillRect(20, 28, 26, 2);
   });
 
   // small round rug
