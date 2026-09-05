@@ -5,10 +5,12 @@ import type { ZoneId } from "./content";
 // this events module for the shared event names below.
 if (typeof window !== "undefined") {
   queueMicrotask(() => {
-    void Promise.all([import("./scene"), import("./upgrades")])
-      .then(([sceneModule, upgrades]) =>
-        upgrades.installQuestUpgrades(sceneModule.QuestScene as unknown as any),
-      )
+    void Promise.all([import("./scene"), import("./upgrades"), import("./visualRemaster")])
+      .then(([sceneModule, upgrades, visualRemaster]) => {
+        const QuestScene = sceneModule.QuestScene as unknown as any;
+        upgrades.installQuestUpgrades(QuestScene);
+        visualRemaster.installVisualRemaster(QuestScene);
+      })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
   });
 }
@@ -99,4 +101,3 @@ export type ModalPayload =
         replies: { id: string; text: string; answer: string }[];
       }[];
     };
-
