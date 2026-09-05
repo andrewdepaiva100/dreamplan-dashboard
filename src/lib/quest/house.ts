@@ -387,8 +387,10 @@ export class QuestHouseScene extends Phaser.Scene {
 
   private onResume() {
     this.frozen = false;
+    this.panel = null;
     this.physics.resume();
   }
+
 
   private nearest() {
     let best: (typeof this.spots)[number] | null = null;
