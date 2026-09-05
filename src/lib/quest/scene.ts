@@ -3086,12 +3086,16 @@ export class QuestScene extends Phaser.Scene {
       case "pillar": {
         const arr = this.zoneState["pillars"] as number[];
         const i = Number(it.id);
-        const next = ((arr[i] ?? 0) + 1) % 3;
+        const guardiansBeaten = (this.zoneState["guardians"] as number[]) ?? [];
+        const cur = arr[i] ?? 0;
+        // A pillar already gold but whose guardian still sleeps stays gold —
+        // touching it again retries waking the guardian instead of cycling.
+        const retryGuardian = cur === 1 && !guardiansBeaten.includes(i);
+        const next = retryGuardian ? 1 : (cur + 1) % 3;
         it.obj.setTint([0x8fa6ff, 0xfff0bf, 0xffd7e5][next]!);
         this.spawnSparkle(it.obj.x, it.obj.y, 0xd7e0ff, 8);
         // Turning a pillar gold wakes its shard guardian; the pillar only
         // counts as aligned once that guardian is defeated.
-        const guardiansBeaten = (this.zoneState["guardians"] as number[]) ?? [];
         if (next === 1 && !guardiansBeaten.includes(i)) {
           arr[i] = 1;
           if (this.boss?.active || this.bossTalking) {
@@ -3107,7 +3111,8 @@ export class QuestScene extends Phaser.Scene {
           break;
         }
         arr[i] = next;
-        const aligned = arr.every((v, k) => v === 1 && guardiansBeaten.includes(k));
+        const alignedCount = arr.filter((v, k) => v === 1 && guardiansBeaten.includes(k)).length;
+        const aligned = arr.length > 0 && alignedCount === arr.length;
         this.emitToast(
           aligned
             ? "All five pillars burn gold — the staircase forms."
@@ -3115,7 +3120,8 @@ export class QuestScene extends Phaser.Scene {
         );
         this.objective = aligned
           ? "The pillars align."
-          : `The Celestial Staircase — align all five pillars to warm gold (${arr.filter((v) => v === 1).length}/5).`;
+          : `The Celestial Staircase — align all five pillars to warm gold (${alignedCount}/5).`;
+
         if (aligned && !this.zoneState["stairs"]) {
           this.zoneState["stairs"] = true;
           this.openStaircase();
