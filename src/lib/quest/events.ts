@@ -15,8 +15,9 @@ if (typeof window !== "undefined") {
       import("./act1WorldRemaster"),
       import("./lastCrossing"),
       import("./silasPolish"),
+      import("./silasPlacementFix"),
     ])
-      .then(([sceneModule, houseModule, upgrades, visualRemaster, homeRemaster, act1WorldRemaster, lastCrossing, silasPolish]) => {
+      .then(([sceneModule, houseModule, upgrades, visualRemaster, homeRemaster, act1WorldRemaster, lastCrossing, silasPolish, silasPlacementFix]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
         const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
         upgrades.installQuestUpgrades(QuestScene);
@@ -25,6 +26,7 @@ if (typeof window !== "undefined") {
         act1WorldRemaster.installAct1WorldRemaster(QuestScene);
         lastCrossing.installLastCrossing(QuestScene);
         silasPolish.installSilasPolish(QuestScene);
+        silasPlacementFix.installSilasPlacementFix(QuestScene);
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
   });
