@@ -57,7 +57,6 @@ function premiumGrade(scene: QuestSceneLike, key: string, maria = false) {
     let b = data[i + 2]!;
     const luma = r * 0.299 + g * 0.587 + b * 0.114;
 
-    // Cooler, quieter shadows and warmer readable highlights.
     if (luma < 92) {
       r *= maria ? 0.94 : 0.91;
       g *= maria ? 0.93 : 0.92;
@@ -72,7 +71,6 @@ function premiumGrade(scene: QuestSceneLike, key: string, maria = false) {
       b *= 1.005;
     }
 
-    // Keep saturation controlled so details read without harsh neon noise.
     const avg = (r + g + b) / 3;
     const sat = maria ? 0.94 : 0.91;
     r = avg + (r - avg) * sat;
@@ -85,7 +83,6 @@ function premiumGrade(scene: QuestSceneLike, key: string, maria = false) {
   }
   sctx.putImageData(image, 0, 0);
 
-  // One-pixel silhouette outline improves readability against detailed maps.
   const silhouette = document.createElement("canvas");
   silhouette.width = src.width;
   silhouette.height = src.height;
@@ -112,7 +109,6 @@ function premiumGrade(scene: QuestSceneLike, key: string, maria = false) {
   ctx.globalAlpha = 1;
   ctx.drawImage(src, 0, 0);
 
-  // A restrained top-left rim catches forms without changing the sprite design.
   const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const p = pixels.data;
   for (let y = 1; y < canvas.height; y++) {
@@ -141,7 +137,6 @@ function drawLeaf(ctx: CanvasRenderingContext2D, x: number, y: number, flip = fa
   ctx.fillRect(x + (flip ? 3 : 0), y + 1, 1, 2);
 }
 
-/** Completely replaces the old blob silhouette while preserving the enemy key. */
 function drawForestSpirit(scene: QuestSceneLike, key: string) {
   const entry = getCanvasTexture(scene, key);
   if (!entry) return;
@@ -159,14 +154,12 @@ function drawForestSpirit(scene: QuestSceneLike, key: string) {
   };
   const c = palettes[key] ?? palettes["enemy-distraction"]!;
 
-  // Root feet.
   ctx.fillStyle = c.dark;
   ctx.fillRect(5, 17, 5, 2);
   ctx.fillRect(12, 17, 5, 2);
   ctx.fillRect(3, 19, 6, 2);
   ctx.fillRect(13, 19, 6, 2);
 
-  // Seed / bark body with an uneven organic silhouette.
   ctx.fillStyle = c.dark;
   ctx.fillRect(5, 7, 12, 11);
   ctx.fillRect(7, 5, 8, 15);
@@ -177,7 +170,6 @@ function drawForestSpirit(scene: QuestSceneLike, key: string) {
   ctx.fillRect(8, 7, 2, 7);
   ctx.fillRect(11, 6, 1, 4);
 
-  // Twig crown and leaves.
   ctx.fillStyle = c.dark;
   ctx.fillRect(8, 2, 2, 6);
   ctx.fillRect(13, 1, 2, 7);
@@ -190,7 +182,6 @@ function drawForestSpirit(scene: QuestSceneLike, key: string) {
   ctx.fillRect(4, 1, 3, 2);
   ctx.fillRect(16, 0, 2, 2);
 
-  // Expressive glowing face/core.
   ctx.fillStyle = c.glow;
   ctx.fillRect(8, 10, 2, 2);
   ctx.fillRect(13, 10, 2, 2);
@@ -203,7 +194,6 @@ function drawForestSpirit(scene: QuestSceneLike, key: string) {
   texture.refresh?.();
 }
 
-/** Ancient Root Guardian under the existing enemy-brute texture key. */
 function drawRootGuardian(scene: QuestSceneLike) {
   const entry = getCanvasTexture(scene, "enemy-brute");
   if (!entry) return;
@@ -220,14 +210,12 @@ function drawRootGuardian(scene: QuestSceneLike) {
   const leaf = "#8fa263";
   const glow = "#ed7fb2";
 
-  // Wide rooted stance.
   ctx.fillStyle = barkDark;
   ctx.fillRect(6, 34, 14, 5);
   ctx.fillRect(24, 34, 14, 5);
   ctx.fillRect(2, 39, 17, 4);
   ctx.fillRect(25, 39, 17, 4);
 
-  // Heavy trunk and shoulders.
   ctx.fillStyle = barkDark;
   ctx.fillRect(10, 11, 24, 27);
   ctx.fillRect(5, 17, 9, 17);
@@ -240,7 +228,6 @@ function drawRootGuardian(scene: QuestSceneLike) {
   ctx.fillRect(14, 15, 4, 17);
   ctx.fillRect(28, 18, 2, 13);
 
-  // Branch-antler crown.
   ctx.fillStyle = barkDark;
   ctx.fillRect(12, 4, 4, 12);
   ctx.fillRect(28, 3, 4, 13);
@@ -253,7 +240,6 @@ function drawRootGuardian(scene: QuestSceneLike) {
   drawLeaf(ctx, 10, 5);
   drawLeaf(ctx, 29, 7, true);
 
-  // Moss plates and flowers make the silhouette unmistakably forest-born.
   ctx.fillStyle = moss;
   ctx.fillRect(8, 15, 9, 4);
   ctx.fillRect(27, 14, 9, 4);
@@ -266,7 +252,6 @@ function drawRootGuardian(scene: QuestSceneLike) {
   ctx.fillRect(36, 10, 2, 2);
   ctx.fillRect(33, 28, 2, 2);
 
-  // Cracked heart/core = attack readability anchor.
   ctx.fillStyle = "#4a3142";
   ctx.fillRect(17, 19, 11, 10);
   ctx.fillStyle = glow;
@@ -276,7 +261,6 @@ function drawRootGuardian(scene: QuestSceneLike) {
   ctx.fillRect(21, 21, 2, 5);
   ctx.fillRect(23, 24, 2, 2);
 
-  // Face tucked above the core.
   ctx.fillStyle = "#f3cadb";
   ctx.fillRect(17, 15, 3, 2);
   ctx.fillRect(25, 15, 3, 2);
@@ -309,16 +293,12 @@ export function installVisualRemaster(QuestScene: QuestSceneCtor) {
 
     remasterAllRuntimeSprites(this);
 
-    // Maria option 1 + 4: retain the directional sprite keys and original body,
-    // but present her at roughly a 30x43 visual footprint instead of 24x34.
     const player = this.player as Phaser.Physics.Arcade.Sprite | undefined;
     if (player?.active) {
       player.setData("visualRemasterMaria", true);
       player.setData("visualRemasterScale", 1.145);
     }
 
-    // Tile walls were already collidable. The missing piece was solid scenery:
-    // enemies now collide with the same static decor group Maria uses.
     if (this.enemies && this.solidDecor) {
       this.physics.add.collider(this.enemies, this.solidDecor);
     }
@@ -353,9 +333,7 @@ export function installVisualRemaster(QuestScene: QuestSceneCtor) {
     const result = originalUpdate.call(this, time, delta);
 
     const player = this.player as Phaser.Physics.Arcade.Sprite | undefined;
-    if (player?.active && player.getData("visualRemasterMaria")) {
-      // The premium animation layer owns the base pose; this only increases
-      // Maria's visual resolution/readability without enlarging her physics body.
+    if (!this.frozen && player?.active && player.getData("visualRemasterMaria")) {
       const boost = (player.getData("visualRemasterScale") as number) ?? 1.145;
       player.scaleX *= boost;
       player.scaleY *= boost;
