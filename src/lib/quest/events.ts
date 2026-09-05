@@ -9,6 +9,8 @@ export const EV = {
   resume: "quest:resume",
   stick: "quest:stick",
   action: "quest:action",
+  /** Scene -> React: Maria swung a weapon (payload: weapon id) — play its swing sound. */
+  swing: "quest:swing",
   dash: "quest:dash",
   interact: "quest:interact",
   guide: "quest:guide",
