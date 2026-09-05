@@ -1,4 +1,5 @@
 import type { ZoneId } from "./content";
+import "./bossNightmare.css";
 
 // Install the optional scene polish after the scene module finishes evaluating.
 // Dynamic loading avoids a circular static dependency because scene.ts imports
