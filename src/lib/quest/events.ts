@@ -1,5 +1,16 @@
 import type { ZoneId } from "./content";
 
+// Install the optional scene polish after the scene module finishes evaluating.
+// Dynamic loading avoids a circular static dependency because scene.ts imports
+// this events module for the shared event names below.
+if (typeof window !== "undefined") {
+  queueMicrotask(() => {
+    void Promise.all([import("./scene"), import("./upgrades")])
+      .then(([sceneModule, upgrades]) => upgrades.installQuestUpgrades(sceneModule.QuestScene))
+      .catch((error) => console.error("[quest] premium upgrade install failed", error));
+  });
+}
+
 export const EV = {
   hud: "quest:hud",
   modal: "quest:modal",
