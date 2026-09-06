@@ -14,49 +14,42 @@ function buildBridgeTexture(scene: SceneLike) {
   const ctx = tex.getContext();
   ctx.imageSmoothingEnabled = false;
 
-  // Shadow under the deck.
-  ctx.fillStyle = "rgba(31,22,17,.28)";
-  ctx.fillRect(7, 10, w - 14, h - 8);
-
-  // Deck body.
+  // Deck shadow and body run cleanly into both banks so the entrances feel open.
+  ctx.fillStyle = "rgba(31,22,17,.24)";
+  ctx.fillRect(0, 13, w, h - 20);
   ctx.fillStyle = "#7a4e2b";
-  ctx.fillRect(9, 13, w - 18, h - 18);
+  ctx.fillRect(0, 14, w, h - 22);
   ctx.fillStyle = "#a26b3a";
-  ctx.fillRect(11, 15, w - 22, h - 23);
+  ctx.fillRect(0, 16, w, h - 26);
 
-  // Vertical planks across the full river width.
   const plankW = 18;
-  for (let x = 12, i = 0; x < w - 12; x += plankW, i++) {
+  for (let x = 0, i = 0; x < w; x += plankW, i++) {
     ctx.fillStyle = i % 2 === 0 ? "#a66d3a" : "#946036";
-    ctx.fillRect(x, 16, plankW - 2, h - 26);
+    ctx.fillRect(x, 16, Math.min(plankW - 2, w - x), h - 26);
     ctx.fillStyle = "rgba(255,220,160,.13)";
     ctx.fillRect(x + 2, 18, 2, h - 31);
     ctx.fillStyle = "rgba(45,26,16,.34)";
-    ctx.fillRect(x + plankW - 3, 16, 2, h - 26);
-    // Small grain marks so the bridge reads as timber, not a flat rectangle.
+    ctx.fillRect(Math.min(w - 2, x + plankW - 3), 16, 2, h - 26);
     ctx.fillStyle = "rgba(66,38,22,.34)";
     ctx.fillRect(x + 5, 26 + ((i * 7) % 12), 6, 1);
     ctx.fillRect(x + 7, 39 + ((i * 5) % 7), 5, 1);
   }
 
-  // Dark end beams.
-  ctx.fillStyle = "#4a301f";
-  ctx.fillRect(7, 12, 8, h - 15);
-  ctx.fillRect(w - 15, 12, 8, h - 15);
-
-  // Rails run across the entire bridge, matching the approved horizontal design.
+  // Side rails deliberately begin inside the bridge instead of blocking the entrances.
+  const railInset = 22;
+  const railW = w - railInset * 2;
   ctx.fillStyle = "#4b3020";
-  ctx.fillRect(8, 7, w - 16, 7);
-  ctx.fillRect(8, h - 16, w - 16, 7);
+  ctx.fillRect(railInset, 7, railW, 7);
+  ctx.fillRect(railInset, h - 16, railW, 7);
   ctx.fillStyle = "#805331";
-  ctx.fillRect(10, 8, w - 20, 3);
-  ctx.fillRect(10, h - 15, w - 20, 3);
+  ctx.fillRect(railInset + 2, 8, railW - 4, 3);
+  ctx.fillRect(railInset + 2, h - 15, railW - 4, 3);
   ctx.fillStyle = "#2e2119";
-  ctx.fillRect(9, 15, w - 18, 3);
-  ctx.fillRect(9, h - 22, w - 18, 3);
+  ctx.fillRect(railInset + 1, 15, railW - 2, 3);
+  ctx.fillRect(railInset + 1, h - 22, railW - 2, 3);
 
-  // Evenly spaced square support posts.
-  const posts = [8, 52, 96, 140, 184, 208];
+  // Interior support posts only — no closed end posts or end beams.
+  const posts = [28, 66, 104, 142, 180, 196];
   for (const x of posts) {
     ctx.fillStyle = "#3e2b20";
     ctx.fillRect(x - 5, 3, 11, h - 5);
@@ -69,7 +62,6 @@ function buildBridgeTexture(scene: SceneLike) {
     ctx.fillRect(x - 5, h - 17, 11, 3);
   }
 
-  // Bolts / joinery details.
   ctx.fillStyle = "#cfaa68";
   for (const x of posts) {
     ctx.fillRect(x - 1, 9, 2, 2);
@@ -80,7 +72,6 @@ function buildBridgeTexture(scene: SceneLike) {
 }
 
 function bridgeWidth(scene: SceneLike) {
-  // Act I river is 12 design units wide. Span beyond both banks so no water seam is exposed.
   if (typeof scene.wx === "function") {
     const left = Number(scene.wx(51));
     const right = Number(scene.wx(69));
@@ -106,7 +97,7 @@ function remasterAct1Bridges(scene: SceneLike) {
   if (!scene.textures?.exists?.(BRIDGE_KEY)) return;
 
   const bridges = (scene.children?.list ?? []).filter(
-    (obj: any) => obj?.active && obj?.texture?.key === "bridge",
+    (obj: any) => obj?.active && (obj?.texture?.key === "bridge" || obj?.getData?.("act1-wood-bridge") === true),
   ) as Phaser.GameObjects.Sprite[];
 
   const targetW = bridgeWidth(scene);
@@ -119,14 +110,15 @@ function remasterAct1Bridges(scene: SceneLike) {
       .setOrigin(0.5, 0.5)
       .setAlpha(1)
       .clearTint();
-    bridge.setDepth(scene.dsort?.(bridge.y + targetH * 0.28) ?? 6);
+
+    // Keep the bridge floor beneath Maria so she stays visible while crossing.
+    bridge.setDepth(4);
     bridge.setData("act1-wood-bridge", true);
 
-    // Small bank shadows help the bridge feel seated into the path instead of pasted over water.
     const shadow = scene.add
-      .ellipse(bridge.x, bridge.y + targetH * 0.33, targetW * 0.91, 12, 0x2c261f, 0.16)
-      .setDepth(Math.max(2, bridge.depth - 1));
-    shadow.setData("act1-wood-bridge", true);
+      .ellipse(bridge.x, bridge.y + targetH * 0.33, targetW * 0.91, 12, 0x2c261f, 0.14)
+      .setDepth(3);
+    shadow.setData("act1-wood-bridge-shadow", true);
   }
 }
 
