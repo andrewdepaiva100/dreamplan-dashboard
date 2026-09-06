@@ -1,0 +1,40 @@
+@media (pointer: coarse), (max-width: 768px) {
+  [class~="h-[147px]"][class~="w-[147px]"] {
+    width: 118px !important;
+    height: 118px !important;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    overscroll-behavior: contain;
+  }
+
+  [class~="h-[147px]"][class~="w-[147px]"] > [class~="h-16"][class~="w-16"] {
+    width: 48px !important;
+    height: 48px !important;
+    will-change: transform;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  }
+}
+
+@keyframes quest-talk-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 216, 77, 0.55);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 10px rgba(255, 216, 77, 0);
+  }
+}
+
+.quest-tutorial-talk {
+  outline: 3px solid rgba(255, 216, 77, 0.92) !important;
+  outline-offset: 3px;
+  animation: quest-talk-pulse 0.85s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quest-tutorial-talk {
+    animation: none;
+  }
+}
