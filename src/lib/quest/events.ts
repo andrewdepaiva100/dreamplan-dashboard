@@ -1,5 +1,6 @@
 import type { ZoneId } from "./content";
 import "./bossNightmare.css";
+import "./questMobilePolish.css";
 
 // Install the optional scene polish after the scene module finishes evaluating.
 // Dynamic loading avoids a circular static dependency because scene.ts imports
@@ -17,6 +18,7 @@ if (typeof window !== "undefined") {
       import("./silasPolish"),
       import("./silasPlacementFix"),
       import("./lastCrossingLifecycle"),
+      import("./act1GameplayPolish"),
     ])
       .then(([
         sceneModule,
@@ -29,6 +31,7 @@ if (typeof window !== "undefined") {
         silasPolish,
         silasPlacementFix,
         lastCrossingLifecycle,
+        act1GameplayPolish,
       ]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
         const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
@@ -40,6 +43,7 @@ if (typeof window !== "undefined") {
         silasPolish.installSilasPolish(QuestScene);
         silasPlacementFix.installSilasPlacementFix(QuestScene);
         lastCrossingLifecycle.installLastCrossingLifecycle(QuestScene);
+        act1GameplayPolish.installAct1GameplayPolish(QuestScene);
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
   });
