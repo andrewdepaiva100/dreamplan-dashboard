@@ -1,46 +1,78 @@
 @media (hover: hover) and (pointer: fine) {
-  [class~="h-[147px]"][class~="w-[147px]"] {
-    display: none !important;
-  }
+  [class~="h-[147px]"][class~="w-[147px]"] { display: none !important; }
 }
 
 @media (pointer: coarse), (max-width: 768px) {
-  [class~="h-[147px]"][class~="w-[147px]"] {
-    width: 118px !important;
-    height: 118px !important;
-    touch-action: none;
-    -webkit-user-select: none;
-    user-select: none;
-    overscroll-behavior: contain;
-  }
-
-  [class~="h-[147px]"][class~="w-[147px]"] > [class~="h-16"][class~="w-16"] {
-    width: 48px !important;
-    height: 48px !important;
-    will-change: transform;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  }
+  [class~="h-[147px]"][class~="w-[147px]"] { width: 118px !important; height: 118px !important; touch-action: none; -webkit-user-select: none; user-select: none; overscroll-behavior: contain; }
+  [class~="h-[147px]"][class~="w-[147px]"] > [class~="h-16"][class~="w-16"] { width: 48px !important; height: 48px !important; will-change: transform; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
 }
 
-@keyframes quest-talk-pulse {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(255, 216, 77, 0.55);
-  }
-  50% {
-    transform: scale(1.08);
-    box-shadow: 0 0 0 10px rgba(255, 216, 77, 0);
-  }
-}
+@keyframes quest-talk-pulse { 0%,100% { transform:scale(1); box-shadow:0 0 0 0 rgba(255,216,77,.55); } 50% { transform:scale(1.08); box-shadow:0 0 0 10px rgba(255,216,77,0); } }
+.quest-tutorial-talk { outline:3px solid rgba(255,216,77,.92)!important; outline-offset:3px; animation:quest-talk-pulse .85s ease-in-out infinite; }
 
-.quest-tutorial-talk {
-  outline: 3px solid rgba(255, 216, 77, 0.92) !important;
-  outline-offset: 3px;
-  animation: quest-talk-pulse 0.85s ease-in-out infinite;
+/* Universal weapon-reveal treatment. Both guide gifts and normal weapon modals
+   use this exact card signature, so every future weapon inherits the reveal. */
+@keyframes quest-weapon-reveal { 0% { opacity:0; transform:translateY(18px) scale(.9); filter:brightness(1.8); } 55% { opacity:1; transform:translateY(-3px) scale(1.035); } 100% { transform:translateY(0) scale(1); filter:brightness(1); } }
+@keyframes quest-weapon-icon { 0%,100% { transform:translateY(0) scale(1) rotate(-2deg); text-shadow:0 0 18px rgba(255,216,77,.55); } 50% { transform:translateY(-7px) scale(1.12) rotate(2deg); text-shadow:0 0 34px rgba(255,235,150,.95); } }
+@keyframes quest-weapon-shine { from { transform:translateX(-170%) rotate(18deg); } to { transform:translateX(280%) rotate(18deg); } }
+
+[class~="rounded-xl"][class~="border-gold/40"][class~="bg-gold/10"][class~="text-center"] {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  border:1px solid rgba(240,203,105,.78)!important;
+  border-radius:22px!important;
+  padding:24px!important;
+  color:#fff8dc;
+  background:radial-gradient(circle at 50% 28%,rgba(255,220,116,.23),transparent 28%),linear-gradient(145deg,#071a35 0%,#0b2850 54%,#151a39 100%)!important;
+  box-shadow:0 18px 45px rgba(4,12,28,.32),inset 0 0 0 1px rgba(255,255,255,.06),0 0 32px rgba(201,162,75,.18);
+  animation:quest-weapon-reveal .55s cubic-bezier(.2,.9,.25,1.15) both;
+}
+[class~="rounded-xl"][class~="border-gold/40"][class~="bg-gold/10"][class~="text-center"]::before {
+  content:"WEAPON UNLOCKED";
+  display:block;
+  margin:0 auto 16px;
+  font-size:10px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.32em;
+  color:#f4cf70;
+}
+[class~="rounded-xl"][class~="border-gold/40"][class~="bg-gold/10"][class~="text-center"]::after {
+  content:"";
+  pointer-events:none;
+  position:absolute;
+  z-index:-1;
+  top:-35%; bottom:-35%; width:28%; left:0;
+  background:linear-gradient(90deg,transparent,rgba(255,244,197,.18),transparent);
+  animation:quest-weapon-shine 2.8s ease-in-out infinite 1s;
+}
+[class~="rounded-xl"][class~="border-gold/40"][class~="bg-gold/10"][class~="text-center"] > p:first-child {
+  font-size:58px!important;
+  line-height:1.1!important;
+  margin:4px 0 10px!important;
+  animation:quest-weapon-icon 2.2s ease-in-out infinite;
+}
+[class~="rounded-xl"][class~="border-gold/40"][class~="bg-gold/10"][class~="text-center"] > p:nth-child(2) {
+  color:#fff4cf!important;
+  font-size:24px!important;
+  text-shadow:0 2px 14px rgba(0,0,0,.35);
+}
+[class~="rounded-xl"][class~="border-gold/40"][class~="bg-gold/10"][class~="text-center"] > p:nth-child(3) { color:rgba(236,243,255,.76)!important; font-size:13px!important; max-width:390px; margin-left:auto; margin-right:auto; }
+[class~="rounded-xl"][class~="border-gold/40"][class~="bg-gold/10"][class~="text-center"] > p:last-child {
+  display:inline-block;
+  margin-top:15px!important;
+  padding:7px 12px;
+  border:1px solid rgba(240,203,105,.45);
+  border-radius:999px;
+  background:rgba(240,203,105,.1);
+  color:#f4cf70!important;
+  letter-spacing:.14em!important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .quest-tutorial-talk {
-    animation: none;
-  }
+  .quest-tutorial-talk,
+  [class~="rounded-xl"][class~="border-gold/40"][class~="bg-gold/10"][class~="text-center"],
+  [class~="rounded-xl"][class~="border-gold/40"][class~="bg-gold/10"][class~="text-center"]::after,
+  [class~="rounded-xl"][class~="border-gold/40"][class~="bg-gold/10"][class~="text-center"] > p:first-child { animation:none; }
 }
