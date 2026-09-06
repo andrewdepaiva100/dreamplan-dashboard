@@ -21,6 +21,7 @@ if (typeof window !== "undefined") {
       import("./act1GameplayPolish"),
       import("./fallenCrossingShrine"),
       import("./fallenCrossingJournalBook"),
+      import("./wardenCombat"),
     ])
       .then(([
         sceneModule,
@@ -36,6 +37,7 @@ if (typeof window !== "undefined") {
         act1GameplayPolish,
         fallenCrossingShrine,
         fallenCrossingJournalBook,
+        wardenCombat,
       ]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
         const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
@@ -50,6 +52,7 @@ if (typeof window !== "undefined") {
         act1GameplayPolish.installAct1GameplayPolish(QuestScene);
         fallenCrossingShrine.installFallenCrossingShrine(QuestScene);
         fallenCrossingJournalBook.installFallenCrossingJournalBook(QuestScene);
+        wardenCombat.installWardenCombat(QuestScene);
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
   });
