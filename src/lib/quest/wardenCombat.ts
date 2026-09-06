@@ -312,12 +312,6 @@ function enterPhaseTwo(scene: SceneLike) {
   }
 }
 
-function freezeEnemiesBeforeFight(scene: SceneLike) {
-  if (!isWarden(scene) || scene.bossPhase === 1) return;
-  const children = (scene.enemies?.getChildren?.() ?? []) as Phaser.Physics.Arcade.Sprite[];
-  for (const e of children) if (e?.active) e.setVelocity?.(0, 0);
-}
-
 function updateWarden(scene: SceneLike, time: number) {
   if (!isWarden(scene)) return;
 
@@ -329,7 +323,8 @@ function updateWarden(scene: SceneLike, time: number) {
     scene.__bossStompRing = undefined;
   }
 
-  freezeEnemiesBeforeFight(scene);
+  // Do not alter normal roaming enemies before the Warden dialogue. They now
+  // continue using the base scene's standard movement/AI exactly as usual.
   if (!combatReady(scene)) return;
 
   if (!scene.__wardenNextStompAt) scene.__wardenNextStompAt = time + STOMP_EVERY_MS;
@@ -351,7 +346,6 @@ function updateWarden(scene: SceneLike, time: number) {
     return;
   }
 
-  // Never stack water lanes immediately on top of the stomp warning.
   if (time >= Number(scene.__wardenNextWaterAt)) {
     const untilStomp = Number(scene.__wardenNextStompAt) - time;
     if (untilStomp < 1800) scene.__wardenNextWaterAt = Number(scene.__wardenNextStompAt) + 1700;
