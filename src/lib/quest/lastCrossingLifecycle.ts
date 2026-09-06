@@ -32,6 +32,28 @@ function readState() {
   }
 }
 
+function ensureBladeTexture(scene: SceneLike) {
+  if (scene.textures?.exists?.("last-crossing-blade")) return true;
+  const tex = scene.textures?.createCanvas?.("last-crossing-blade", 20, 34);
+  if (!tex) return false;
+  const ctx = tex.getContext();
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, 20, 34);
+  ctx.fillStyle = "#6b4a2f";
+  ctx.fillRect(7, 25, 5, 7);
+  ctx.fillStyle = "#d8ad55";
+  ctx.fillRect(4, 23, 12, 3);
+  ctx.fillRect(8, 20, 4, 4);
+  ctx.fillStyle = "#dff7ff";
+  ctx.fillRect(9, 4, 4, 17);
+  ctx.fillStyle = "#8ed7e8";
+  ctx.fillRect(7, 7, 3, 15);
+  ctx.fillStyle = "#fff2a8";
+  ctx.fillRect(12, 4, 2, 14);
+  tex.refresh();
+  return true;
+}
+
 function track(scene: SceneLike, obj: any) {
   if (!obj) return obj;
   obj.setData?.("lastCrossingLifecycle", true);
@@ -117,16 +139,69 @@ function cleanupLifecycleCopies(scene: SceneLike) {
   }
 }
 
+function ensureCrossingBlade(scene: SceneLike, cx: number, cy: number) {
+  const state = readState();
+  if (state.wardenDefeated) return;
+
+  if (state.forged && scene.save) {
+    scene.save.weapons = Array.isArray(scene.save.weapons) ? scene.save.weapons : [];
+    if (!scene.save.weapons.includes(CROSSING_BLADE_ID)) {
+      scene.save.weapons = [...scene.save.weapons, CROSSING_BLADE_ID];
+      scene.save.equipped_weapon = CROSSING_BLADE_ID;
+      scene.emitSave?.();
+      scene.pushHud?.(true);
+      scene.refreshHand?.();
+    }
+    return;
+  }
+
+  if (state.talked.length !== 3 || !Array.isArray(scene.interactables)) return;
+  const existing = scene.interactables.find(
+    (it: any) => it?.kind === "last-crossing-forge" && it?.obj?.active !== false,
+  );
+  if (existing || !ensureBladeTexture(scene)) return;
+
+  scene.interactables = scene.interactables.filter(
+    (it: any) => it?.kind !== "last-crossing-forge" || it?.obj?.active !== false,
+  );
+
+  const obj = track(
+    scene,
+    scene.add.sprite(cx, cy - 42, "last-crossing-blade").setDepth(18).setScale(1.15),
+  );
+  scene.tweens.add({
+    targets: obj,
+    y: obj.y - 4,
+    alpha: { from: 0.78, to: 1 },
+    duration: 900,
+    yoyo: true,
+    repeat: -1,
+  });
+  scene.interactables.push({
+    obj,
+    kind: "last-crossing-forge",
+    id: CROSSING_BLADE_ID,
+    label: "Receive the Crossing Blade",
+    radius: 82,
+    enabled: true,
+  });
+}
+
 function restoreVillage(scene: SceneLike) {
   if (scene.save?.current_zone !== "sunlit_shores") return;
 
+  const fallbackCx = Math.round((scene.mapW ?? 55) * 32 * 0.79);
+  const fallbackCy = Math.round((scene.mapH ?? 50) * 32 * 0.78);
+  const knownCenter = scene.__lastCrossingCenter ?? { x: fallbackCx, y: fallbackCy };
+
   // If the normal Last Crossing installer already rebuilt all three villagers,
-  // leave that complete instance alone. This prevents duplicates on initial create.
+  // leave that complete instance alone, but still repair the blade if necessary.
   const existingNpcs = (scene.interactables ?? []).filter(
     (it: any) => it?.kind === "last-crossing-npc" && it?.obj?.active !== false,
   );
   if (existingNpcs.length >= 3) {
     scene.__lastCrossingBuilt = true;
+    ensureCrossingBlade(scene, knownCenter.x, knownCenter.y);
     return;
   }
 
@@ -135,8 +210,8 @@ function restoreVillage(scene: SceneLike) {
     (it: any) => !["last-crossing-npc", "last-crossing-forge"].includes(it?.kind),
   );
 
-  const cx = Math.round((scene.mapW ?? 55) * 32 * 0.79);
-  const cy = Math.round((scene.mapH ?? 50) * 32 * 0.78);
+  const cx = fallbackCx;
+  const cy = fallbackCy;
   clearVillageSpace(scene, cx, cy);
   paintGround(scene, cx, cy);
 
@@ -189,24 +264,7 @@ function restoreVillage(scene: SceneLike) {
 
   scene.__lastCrossingCenter = { x: cx, y: cy };
   scene.__lastCrossingBuilt = true;
-
-  const state = readState();
-  const swordReady = state.talked.length === 3 && !state.forged && !state.wardenDefeated;
-  if (swordReady && scene.textures.exists("last-crossing-blade")) {
-    const obj = track(
-      scene,
-      scene.add.sprite(cx, cy - 42, "last-crossing-blade").setDepth(18).setScale(1.15),
-    );
-    scene.tweens.add({ targets: obj, y: obj.y - 4, alpha: { from: 0.78, to: 1 }, duration: 900, yoyo: true, repeat: -1 });
-    scene.interactables.push({
-      obj,
-      kind: "last-crossing-forge",
-      id: CROSSING_BLADE_ID,
-      label: "Receive the Crossing Blade",
-      radius: 82,
-      enabled: true,
-    });
-  }
+  ensureCrossingBlade(scene, cx, cy);
 }
 
 export function installLastCrossingLifecycle(QuestScene: SceneCtor) {
