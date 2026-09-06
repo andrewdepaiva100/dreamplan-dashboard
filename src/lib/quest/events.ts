@@ -32,6 +32,7 @@ if (typeof window !== "undefined") {
       import("./majesticPortal"),
       import("./relicPresentation"),
       import("./act2Enemies"),
+      import("./act2GardenKeeper"),
       import("./desktopActSelector"),
       import("./desktopControlsPolish"),
     ])
@@ -57,6 +58,7 @@ if (typeof window !== "undefined") {
         majesticPortal,
         relicPresentation,
         act2Enemies,
+        act2GardenKeeper,
         desktopActSelector,
         desktopControlsPolish,
       ]) => {
@@ -81,6 +83,7 @@ if (typeof window !== "undefined") {
         majesticPortal.installMajesticPortal(QuestScene);
         relicPresentation.installRelicPresentation();
         act2Enemies.installAct2Enemies(QuestScene);
+        act2GardenKeeper.installAct2GardenKeeper(QuestScene);
         desktopActSelector.installDesktopActSelector(QuestScene);
         desktopControlsPolish.installDesktopControlsPolish();
       })
