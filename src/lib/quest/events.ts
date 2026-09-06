@@ -32,6 +32,7 @@ if (typeof window !== "undefined") {
       import("./majesticPortal"),
       import("./relicPresentation"),
       import("./act2Enemies"),
+      import("./desktopActSelector"),
       import("./desktopControlsPolish"),
     ])
       .then(([
@@ -56,6 +57,7 @@ if (typeof window !== "undefined") {
         majesticPortal,
         relicPresentation,
         act2Enemies,
+        desktopActSelector,
         desktopControlsPolish,
       ]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
@@ -79,6 +81,7 @@ if (typeof window !== "undefined") {
         majesticPortal.installMajesticPortal(QuestScene);
         relicPresentation.installRelicPresentation();
         act2Enemies.installAct2Enemies(QuestScene);
+        desktopActSelector.installDesktopActSelector(QuestScene);
         desktopControlsPolish.installDesktopControlsPolish();
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
