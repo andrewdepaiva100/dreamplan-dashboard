@@ -23,7 +23,8 @@ if (typeof window !== "undefined") {
       import("./fallenCrossingJournalBook"),
       import("./wardenCombat"),
       import("./act1WoodenBridges"),
-      import("./wardenStompSafety"),
+      import("./wardenTidalRings"),
+      import("./desktopControlsPolish"),
     ])
       .then(([
         sceneModule,
@@ -41,7 +42,8 @@ if (typeof window !== "undefined") {
         fallenCrossingJournalBook,
         wardenCombat,
         act1WoodenBridges,
-        wardenStompSafety,
+        wardenTidalRings,
+        desktopControlsPolish,
       ]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
         const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
@@ -58,7 +60,8 @@ if (typeof window !== "undefined") {
         fallenCrossingJournalBook.installFallenCrossingJournalBook(QuestScene);
         wardenCombat.installWardenCombat(QuestScene);
         act1WoodenBridges.installAct1WoodenBridges(QuestScene);
-        wardenStompSafety.installWardenStompSafety(QuestScene);
+        wardenTidalRings.installWardenTidalRings(QuestScene);
+        desktopControlsPolish.installDesktopControlsPolish();
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
   });
