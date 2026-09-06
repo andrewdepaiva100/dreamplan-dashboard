@@ -4,7 +4,7 @@ type HelpEntry = { title: string; body: string };
 
 const KEYBOARD_HELP: HelpEntry = {
   title: "Mac / desktop controls",
-  body: "Move: WASD or Arrow Keys · Talk / Interact: E or Enter · Attack: Space or J · Dash: Shift or K. Touch buttons are hidden on desktop so the game stays clear and keyboard-first.",
+  body: "Move: WASD or Arrow Keys · Talk / Interact: E or Enter · Attack: Space or J · Dash: Shift or K. Touch controls are hidden on desktop so the game stays clear and keyboard-first.",
 };
 
 function upsertHelp(list: HelpEntry[]) {
@@ -23,6 +23,13 @@ function polishTouchButtons() {
     const text = (button.textContent ?? "").trim().toUpperCase();
     if (!["TALK", "DASH", "ATTACK"].includes(text)) continue;
     const el = button as HTMLButtonElement;
+
+    if (text === "ATTACK") {
+      el.style.setProperty("display", "none", "important");
+      el.setAttribute("aria-hidden", "true");
+      continue;
+    }
+
     if (desktop) {
       if (!el.dataset.questDesktopHidden) el.dataset.questDesktopHidden = el.style.display || "__empty__";
       el.style.setProperty("display", "none", "important");
@@ -35,20 +42,57 @@ function polishTouchButtons() {
   }
 }
 
+const TOOLBAR_LABELS: Record<string, string> = {
+  controls: "HELP",
+  help: "HELP",
+  map: "MAP",
+  album: "ALBUM",
+  memories: "ALBUM",
+  inventory: "BAG",
+  bag: "BAG",
+  armory: "ARMORY",
+  weapons: "ARMORY",
+};
+
 function polishRightToolbar() {
-  const help = document.querySelector('button[aria-label="Controls"]') as HTMLButtonElement | null;
+  const help = document.querySelector('button[aria-label="Controls"], button[aria-label*="Help"]') as HTMLButtonElement | null;
   const stack = help?.parentElement;
   if (!stack) return;
   stack.style.gap = "10px";
+
   for (const child of Array.from(stack.children)) {
     if (!(child instanceof HTMLButtonElement)) continue;
-    child.style.width = "52px";
-    child.style.height = "52px";
-    child.style.minWidth = "52px";
-    child.style.minHeight = "52px";
+    child.style.width = "56px";
+    child.style.height = "56px";
+    child.style.minWidth = "56px";
+    child.style.minHeight = "56px";
     child.style.fontSize = "10px";
-    const icon = child.querySelector("span:first-child") as HTMLElement | null;
-    if (icon) icon.style.fontSize = "20px";
+    child.style.display = "flex";
+    child.style.flexDirection = "column";
+    child.style.alignItems = "center";
+    child.style.justifyContent = "center";
+
+    const aria = (child.getAttribute("aria-label") ?? "").toLowerCase();
+    const labelText = Object.entries(TOOLBAR_LABELS).find(([key]) => aria.includes(key))?.[1];
+    if (!labelText) continue;
+
+    let label = child.querySelector<HTMLElement>("[data-quest-toolbar-label]");
+    if (!label) {
+      label = document.createElement("span");
+      label.dataset.questToolbarLabel = "1";
+      Object.assign(label.style, {
+        display: "block",
+        fontSize: "8px",
+        lineHeight: "9px",
+        fontWeight: "900",
+        letterSpacing: ".04em",
+        marginTop: "1px",
+        whiteSpace: "nowrap",
+        pointerEvents: "none",
+      });
+      child.append(label);
+    }
+    label.textContent = labelText;
   }
 }
 
@@ -68,7 +112,9 @@ export function installDesktopControlsPolish() {
   upsertHelp(CONTROLS_HELP as HelpEntry[]);
 
   scan();
-  const observer = new MutationObserver(() => scan());
+  const observer = new MutationObserver((mutations) => {
+    if (mutations.some((m) => m.addedNodes.length || m.removedNodes.length)) scan();
+  });
   observer.observe(document.body, { childList: true, subtree: true });
   window.matchMedia?.("(hover: hover) and (pointer: fine)").addEventListener?.("change", scan);
 }
