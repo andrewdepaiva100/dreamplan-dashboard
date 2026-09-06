@@ -139,6 +139,14 @@ function cleanupLifecycleCopies(scene: SceneLike) {
   }
 }
 
+function crossingCenter(scene: SceneLike) {
+  if (scene.__lastCrossingCenter?.x != null && scene.__lastCrossingCenter?.y != null) return scene.__lastCrossingCenter;
+  return {
+    x: Math.round((scene.mapW ?? 55) * 32 * 0.79),
+    y: Math.round((scene.mapH ?? 50) * 32 * 0.78),
+  };
+}
+
 function ensureCrossingBlade(scene: SceneLike, cx: number, cy: number) {
   const state = readState();
   if (state.wardenDefeated) return;
@@ -156,18 +164,22 @@ function ensureCrossingBlade(scene: SceneLike, cx: number, cy: number) {
   }
 
   if (state.talked.length !== 3 || !Array.isArray(scene.interactables)) return;
+
+  // Remove stale forge entries first. A destroyed Phaser sprite can otherwise
+  // leave an interactable behind and prevent the real sword from respawning.
+  scene.interactables = scene.interactables.filter((it: any) => {
+    if (it?.kind !== "last-crossing-forge") return true;
+    return it?.obj?.active === true && it?.enabled !== false;
+  });
+
   const existing = scene.interactables.find(
-    (it: any) => it?.kind === "last-crossing-forge" && it?.obj?.active !== false,
+    (it: any) => it?.kind === "last-crossing-forge" && it?.obj?.active === true && it?.enabled !== false,
   );
   if (existing || !ensureBladeTexture(scene)) return;
 
-  scene.interactables = scene.interactables.filter(
-    (it: any) => it?.kind !== "last-crossing-forge" || it?.obj?.active !== false,
-  );
-
   const obj = track(
     scene,
-    scene.add.sprite(cx, cy - 42, "last-crossing-blade").setDepth(18).setScale(1.15),
+    scene.add.sprite(cx, cy - 42, "last-crossing-blade").setDepth(20).setScale(1.22),
   );
   scene.tweens.add({
     targets: obj,
@@ -182,7 +194,7 @@ function ensureCrossingBlade(scene: SceneLike, cx: number, cy: number) {
     kind: "last-crossing-forge",
     id: CROSSING_BLADE_ID,
     label: "Receive the Crossing Blade",
-    radius: 82,
+    radius: 86,
     enabled: true,
   });
 }
@@ -194,8 +206,6 @@ function restoreVillage(scene: SceneLike) {
   const fallbackCy = Math.round((scene.mapH ?? 50) * 32 * 0.78);
   const knownCenter = scene.__lastCrossingCenter ?? { x: fallbackCx, y: fallbackCy };
 
-  // If the normal Last Crossing installer already rebuilt all three villagers,
-  // leave that complete instance alone, but still repair the blade if necessary.
   const existingNpcs = (scene.interactables ?? []).filter(
     (it: any) => it?.kind === "last-crossing-npc" && it?.obj?.active !== false,
   );
@@ -267,6 +277,15 @@ function restoreVillage(scene: SceneLike) {
   ensureCrossingBlade(scene, cx, cy);
 }
 
+function refreshBladeAfterDialogue(scene: SceneLike) {
+  if (scene.save?.current_zone !== "sunlit_shores") return;
+  const state = readState();
+  if (state.talked.length !== 3 || state.forged || state.wardenDefeated) return;
+  const center = crossingCenter(scene);
+  scene.__lastCrossingCenter = center;
+  ensureCrossingBlade(scene, center.x, center.y);
+}
+
 export function installLastCrossingLifecycle(QuestScene: SceneCtor) {
   const proto = QuestScene.prototype;
   if (proto.__lastCrossingLifecycleInstalled) return;
@@ -274,15 +293,21 @@ export function installLastCrossingLifecycle(QuestScene: SceneCtor) {
 
   const originalBuildAct1 = proto.buildAct1;
   proto.buildAct1 = function lastCrossingBuildAct1(this: SceneLike, ...args: any[]) {
-    // buildZone can regenerate Act I without constructing a brand-new scene.
-    // Clear the stale guard before that regeneration so the village can return.
     this.__lastCrossingBuilt = false;
     const result = originalBuildAct1.apply(this, args);
-
-    // Wait until the current build stack finishes. On initial scene creation the
-    // original Last Crossing create wrapper wins; on later Act I rebuilds this
-    // restores the village only when those NPCs are actually missing.
     this.time.delayedCall(0, () => restoreVillage(this));
     return result;
   };
+
+  // Guest dialogue closes through onResume. Refreshing here makes the sword
+  // appear immediately after the third villager conversation instead of only
+  // after a zone rebuild or reload.
+  const originalResume = proto.onResume;
+  if (typeof originalResume === "function") {
+    proto.onResume = function lastCrossingLifecycleResume(this: SceneLike, ...args: any[]) {
+      const result = originalResume.apply(this, args);
+      this.time.delayedCall(40, () => refreshBladeAfterDialogue(this));
+      return result;
+    };
+  }
 }
