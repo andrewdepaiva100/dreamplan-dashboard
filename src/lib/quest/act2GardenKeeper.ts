@@ -1,5 +1,7 @@
 // @ts-nocheck -- Narrow runtime decorator for the Phaser quest scene.
 
+import evelynPortrait from "../../assets/quest/portrait-evelyn.svg";
+
 const ZONE = "wedding_garden";
 const KEEPER_KIND = "garden-keeper";
 const LETTER_KIND = "garden-keeper-letter";
@@ -15,8 +17,6 @@ const KEEPER_LINES = [
 ];
 
 function removeActTwoDog(scene: any) {
-  // The Act II dog offer is intentionally gone. This does not touch animal
-  // ambience in other acts or the underlying companion system.
   for (const it of [...(scene.interactables ?? [])]) {
     if (it?.kind !== "dog") continue;
     it.enabled = false;
@@ -28,21 +28,11 @@ function removeActTwoDog(scene: any) {
 function addKeeperStation(scene: any) {
   const x = scene.wx(KEEPER_X);
   const y = scene.wy(KEEPER_Y);
-
-  const keeper = scene.addInteractable(x, y, "guide-act", KEEPER_KIND, "Talk to Evelyn", {
-    id: "evelyn",
-    radius: 92,
-    depth: 9,
-  });
+  const keeper = scene.addInteractable(x, y, "guide-act", KEEPER_KIND, "Talk to Evelyn", { id: "evelyn", radius: 92, depth: 9 });
   keeper?.obj?.setTint?.(0x91aa78);
   keeper?.obj?.setScale?.(0.92);
-  if (keeper?.obj) {
-    scene.tweens.add({ targets: keeper.obj, y: keeper.obj.y - 2, duration: 1700, yoyo: true, repeat: -1 });
-  }
+  if (keeper?.obj) scene.tweens.add({ targets: keeper.obj, y: keeper.obj.y - 2, duration: 1700, yoyo: true, repeat: -1 });
 
-  // Evelyn's permanent gardening station: worktable, pots, watering can,
-  // pruning tools and a small lantern. Primitives keep this self-contained
-  // and avoid introducing another asset dependency into Act II.
   const depth = 6;
   scene.add.rectangle(x - 58, y + 38, 62, 20, 0x76513b, 1).setDepth(depth);
   scene.add.rectangle(x - 58, y + 50, 54, 7, 0x4f382d, 1).setDepth(depth);
@@ -53,10 +43,8 @@ function addKeeperStation(scene: any) {
   scene.add.circle(x - 35, y + 28, 6, 0xa95e45, 1).setDepth(depth + 1);
   scene.add.rectangle(x - 49, y + 26, 18, 5, 0xb9c1a0, 1).setAngle(-18).setDepth(depth + 2);
   scene.add.circle(x - 22, y + 29, 7, 0xd8b65d, 0.72).setDepth(depth + 1);
-
   const glow = scene.add.circle(x - 22, y + 29, 17, 0xffdc82, 0.12).setDepth(depth);
   scene.tweens.add({ targets: glow, alpha: { from: 0.06, to: 0.2 }, scale: { from: 0.85, to: 1.15 }, duration: 1400, yoyo: true, repeat: -1 });
-
   scene.__act2KeeperArt = { x, y, glow, stage: -1, seasonal: [] };
   refreshKeeperGarden(scene, true);
 }
@@ -76,7 +64,6 @@ function refreshKeeperGarden(scene: any, force = false) {
   if (!force && art.stage === n) return;
   art.stage = n;
   clearSeasonalArt(scene);
-
   const made: any[] = [];
   const { x, y } = art;
   const addFlower = (dx: number, dy: number, tint: number, scale = 0.72) => {
@@ -84,8 +71,6 @@ function refreshKeeperGarden(scene: any, force = false) {
     made.push(f);
     return f;
   };
-
-  // The station itself becomes a readable progress meter.
   if (n >= 1) {
     addFlower(-78, 20, 0x9dff70, 0.62);
     for (const [dx, dy] of [[-18, 68], [12, 74], [38, 62]]) addFlower(dx, dy, 0xb9f28f);
@@ -106,8 +91,6 @@ function refreshKeeperGarden(scene: any, force = false) {
     }
   }
   if (n >= 4) {
-    // Flowering arch and one-chair letter table: the visual payoff for
-    // restoring all four seasons.
     const archLeft = scene.add.rectangle(x + 72, y - 8, 7, 72, 0x6c8f55, 1).setDepth(5);
     const archRight = scene.add.rectangle(x + 130, y - 8, 7, 72, 0x6c8f55, 1).setDepth(5);
     const archTop = scene.add.rectangle(x + 101, y - 43, 64, 7, 0x6c8f55, 1).setDepth(5);
@@ -117,14 +100,9 @@ function refreshKeeperGarden(scene: any, force = false) {
     const leg = scene.add.rectangle(x + 101, y + 42, 6, 26, 0x51392e, 1).setDepth(4);
     const chair = scene.add.rectangle(x + 142, y + 35, 18, 28, 0x6a4936, 1).setDepth(4);
     made.push(table, leg, chair);
-
     if (!scene.__act2KeeperLetterAdded) {
       scene.__act2KeeperLetterAdded = true;
-      const letter = scene.addInteractable(x + 101, y + 20, "envelope", LETTER_KIND, "Read the letter for Maria", {
-        id: "four-seasons",
-        radius: 72,
-        depth: 8,
-      });
+      const letter = scene.addInteractable(x + 101, y + 20, "envelope", LETTER_KIND, "Read the letter for Maria", { id: "four-seasons", radius: 72, depth: 8 });
       if (letter?.obj) {
         letter.obj.setTint?.(0xffe5a8);
         scene.tweens.add({ targets: letter.obj, y: letter.obj.y - 3, duration: 1200, yoyo: true, repeat: -1 });
@@ -133,24 +111,80 @@ function refreshKeeperGarden(scene: any, force = false) {
       scene.emitToast?.("The four seasons answer together. A flowering arch opens beside Evelyn.");
     }
   }
-
   art.seasonal = made;
+}
+
+function showEvelynDialogue(scene: any, line: string) {
+  document.getElementById("quest-evelyn-dialogue")?.remove();
+  const overlay = document.createElement("div");
+  overlay.id = "quest-evelyn-dialogue";
+  overlay.style.cssText = "position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(6,10,24,.64);backdrop-filter:blur(3px);font-family:inherit";
+  overlay.innerHTML = `
+    <div style="position:relative;width:min(860px,96vw);display:flex;align-items:flex-end;gap:14px">
+      <button data-close aria-label="Skip dialogue" style="position:absolute;right:2px;top:-42px;z-index:2;width:36px;height:36px;border-radius:999px;border:1px solid rgba(240,210,125,.75);background:rgba(10,16,34,.96);color:#efd477;font-weight:800;cursor:pointer">✕</button>
+      <img src="${evelynPortrait}" alt="Evelyn" style="width:min(240px,28vw);aspect-ratio:1;object-fit:cover;border-radius:18px;border:2px solid #d7b65e;box-shadow:0 18px 50px rgba(0,0,0,.48),0 0 30px rgba(215,182,94,.18)" />
+      <button data-advance style="position:relative;flex:1;min-height:190px;text-align:left;overflow:hidden;border-radius:20px;border:2px solid rgba(215,182,94,.82);background:rgba(10,16,34,.96);box-shadow:0 20px 55px rgba(0,0,0,.48);padding:22px 24px;cursor:pointer;color:white">
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(215,182,94,.12),transparent 48%,rgba(145,170,120,.11));pointer-events:none"></div>
+        <div style="position:relative">
+          <div style="display:flex;gap:12px;align-items:baseline;flex-wrap:wrap"><strong style="font-family:Georgia,serif;font-size:23px;color:#efd477;letter-spacing:.02em">Evelyn</strong><span style="font-size:10px;color:rgba(255,255,255,.58);letter-spacing:.18em;text-transform:uppercase">Keeper of the Four Seasons</span></div>
+          <p data-text style="min-height:78px;margin:13px 0 0;font-family:Georgia,serif;font-style:italic;font-size:16px;line-height:1.65;color:rgba(255,255,255,.96)"></p>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px"><span style="display:flex;gap:6px"><i style="width:20px;height:4px;border-radius:9px;background:#d7b65e"></i><i style="width:20px;height:4px;border-radius:9px;background:rgba(255,255,255,.18)"></i><i style="width:20px;height:4px;border-radius:9px;background:rgba(255,255,255,.18)"></i></span><span data-hint style="font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#efd477">…</span></div>
+        </div>
+      </button>
+    </div>`;
+  if (window.matchMedia("(max-width: 640px)").matches) {
+    const wrap = overlay.firstElementChild as HTMLElement;
+    wrap.style.alignItems = "stretch";
+    const img = overlay.querySelector("img") as HTMLElement;
+    img.style.width = "78px";
+    img.style.height = "78px";
+    img.style.position = "absolute";
+    img.style.left = "16px";
+    img.style.top = "16px";
+    img.style.zIndex = "3";
+    const panel = overlay.querySelector("[data-advance]") as HTMLElement;
+    panel.style.padding = "20px 18px 18px 110px";
+    panel.style.minHeight = "210px";
+  }
+  document.body.appendChild(overlay);
+  const text = overlay.querySelector("[data-text]") as HTMLElement;
+  const hint = overlay.querySelector("[data-hint]") as HTMLElement;
+  let i = 0;
+  let timer = window.setInterval(() => {
+    i += 2;
+    text.textContent = `“${line.slice(0, i)}${i >= line.length ? "”" : ""}`;
+    if (i >= line.length) {
+      window.clearInterval(timer);
+      hint.textContent = "Tap to close";
+    }
+  }, 18);
+  const close = () => {
+    window.clearInterval(timer);
+    overlay.remove();
+    scene.scene?.resume?.();
+  };
+  overlay.querySelector("[data-close]")?.addEventListener("click", close);
+  overlay.querySelector("[data-advance]")?.addEventListener("click", () => {
+    if (i < line.length) {
+      i = line.length;
+      window.clearInterval(timer);
+      text.textContent = `“${line}”`;
+      hint.textContent = "Tap to close";
+    } else close();
+  });
+  scene.scene?.pause?.();
 }
 
 function talkToKeeper(scene: any) {
   const n = Math.max(0, Math.min(4, Number(scene.zoneState?.["keysFound"] ?? 0)));
   scene.zoneState["keeperMet"] = true;
   if (n === 0) scene.objective = "Restore the Four Seasons — Seasonal Keys 0/4.";
-  scene.openModal({ type: "info", title: "Evelyn — Keeper of the Four Seasons", body: KEEPER_LINES[n] });
+  showEvelynDialogue(scene, KEEPER_LINES[n]);
 }
 
 function readGardenLetter(scene: any) {
   scene.zoneState["gardenLetterRead"] = true;
-  scene.openModal({
-    type: "info",
-    title: "For Maria — In Every Season",
-    body: "Some things are beautiful because they last. Others are beautiful because we choose them again with every season.\n\nEvelyn looks toward the Conservatory. “Now you're ready to see what the garden was protecting.”",
-  });
+  scene.openModal({ type: "info", title: "For Maria — In Every Season", body: "Some things are beautiful because they last. Others are beautiful because we choose them again with every season.\n\nEvelyn looks toward the Conservatory. “Now you're ready to see what the garden was protecting.”" });
   scene.objective = "All four seasons are restored — enter the Grand Conservatory.";
 }
 
@@ -158,7 +192,6 @@ export function installAct2GardenKeeper(QuestScene: any) {
   const proto = QuestScene?.prototype;
   if (!proto || proto.__act2GardenKeeperInstalled) return;
   proto.__act2GardenKeeperInstalled = true;
-
   const originalBuildAct2 = proto.buildAct2;
   proto.buildAct2 = function act2GardenKeeperBuild() {
     const result = originalBuildAct2.call(this);
@@ -166,11 +199,9 @@ export function installAct2GardenKeeper(QuestScene: any) {
     addKeeperStation(this);
     return result;
   };
-
   const originalInteract = proto.interact;
   proto.interact = function act2GardenKeeperInteract() {
     if (this.save?.current_zone !== ZONE) return originalInteract.call(this);
-
     const nearest = this.nearest?.();
     if (nearest?.kind === KEEPER_KIND) {
       talkToKeeper(this);
@@ -180,16 +211,13 @@ export function installAct2GardenKeeper(QuestScene: any) {
       readGardenLetter(this);
       return;
     }
-
     const before = Number(this.zoneState?.["keysFound"] ?? 0);
     const result = originalInteract.call(this);
     const after = Number(this.zoneState?.["keysFound"] ?? 0);
     if (after !== before) {
       refreshKeeperGarden(this);
       if (this.zoneState?.["keeperMet"] === true) {
-        this.objective = after >= 4
-          ? "All four seasons are restored — return to Evelyn by the fountain."
-          : `Restore the Four Seasons — Seasonal Keys ${after}/4.`;
+        this.objective = after >= 4 ? "All four seasons are restored — return to Evelyn by the fountain." : `Restore the Four Seasons — Seasonal Keys ${after}/4.`;
       }
     }
     return result;
