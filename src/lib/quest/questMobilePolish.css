@@ -1,3 +1,9 @@
+@media (hover: hover) and (pointer: fine) {
+  [class~="h-[147px]"][class~="w-[147px]"] {
+    display: none !important;
+  }
+}
+
 @media (pointer: coarse), (max-width: 768px) {
   [class~="h-[147px]"][class~="w-[147px]"] {
     width: 118px !important;
