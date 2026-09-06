@@ -2,6 +2,7 @@ import type { ZoneId } from "./content";
 import "./bossNightmare.css";
 import "./questMobilePolish.css";
 import "./act1EnvelopePolish.css";
+import "./relicPresentation.css";
 
 // Install the optional scene polish after the scene module finishes evaluating.
 // Dynamic loading avoids a circular static dependency because scene.ts imports
@@ -27,6 +28,8 @@ if (typeof window !== "undefined") {
       import("./wardenTidalRings"),
       import("./act1ExplorationArt"),
       import("./lastCrossingDefense"),
+      import("./majesticPortal"),
+      import("./relicPresentation"),
       import("./desktopControlsPolish"),
     ])
       .then(([
@@ -48,6 +51,8 @@ if (typeof window !== "undefined") {
         wardenTidalRings,
         act1ExplorationArt,
         lastCrossingDefense,
+        majesticPortal,
+        relicPresentation,
         desktopControlsPolish,
       ]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
@@ -68,6 +73,8 @@ if (typeof window !== "undefined") {
         wardenTidalRings.installWardenTidalRings(QuestScene);
         act1ExplorationArt.installAct1ExplorationArt(QuestScene);
         lastCrossingDefense.installLastCrossingDefense(QuestScene);
+        majesticPortal.installMajesticPortal(QuestScene);
+        relicPresentation.installRelicPresentation();
         desktopControlsPolish.installDesktopControlsPolish();
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
