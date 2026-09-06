@@ -6,10 +6,10 @@ const ZONE = "wedding_garden";
 const KEEPER_KIND = "garden-keeper";
 const LETTER_KIND = "garden-keeper-letter";
 
-// Keep the main Act II cast deliberately separated so the Conservatory plaza
-// reads as a garden to explore instead of a crowd of NPCs around Maria's spawn.
-const KEEPER_X = 82;
-const KEEPER_Y = 70;
+// Evelyn now sits just off Maria's Act II arrival point so the Garden Keeper
+// is one of the first characters the player naturally meets.
+const KEEPER_X = 96;
+const KEEPER_Y = 56;
 const GUIDE_X = 86;
 const GUIDE_Y = 34;
 const SMITH_X = 104;
@@ -26,22 +26,18 @@ const KEEPER_LINES = [
 ];
 
 function removeActTwoDog(scene: any) {
-  // Remove both possible versions of Max: the pre-adoption interactable and
-  // the already-adopted following sprite. Act II should contain no dog at all.
   for (const it of [...(scene.interactables ?? [])]) {
     if (it?.kind !== "dog") continue;
     it.enabled = false;
     it.obj?.destroy?.();
     scene.interactables = scene.interactables.filter((entry: any) => entry !== it);
   }
-
   const offer = scene.zoneState?.["dogOffer"];
   if (offer) {
     offer.enabled = false;
     offer.obj?.destroy?.();
     scene.zoneState["dogOffer"] = undefined;
   }
-
   if (scene.dog) {
     scene.dog.destroy?.();
     scene.dog = null;
@@ -56,8 +52,6 @@ function addKeeperStation(scene: any) {
   keeper?.obj?.setScale?.(0.92);
   if (keeper?.obj) scene.tweens.add({ targets: keeper.obj, y: keeper.obj.y - 2, duration: 1700, yoyo: true, repeat: -1 });
 
-  // Give Evelyn a little breathing room: the worktable sits well to her left,
-  // while the lantern and pots form a loose garden-work triangle around her.
   const depth = 6;
   scene.add.rectangle(x - 88, y + 42, 68, 20, 0x76513b, 1).setDepth(depth);
   scene.add.rectangle(x - 88, y + 54, 58, 7, 0x4f382d, 1).setDepth(depth);
@@ -218,8 +212,6 @@ export function installAct2GardenKeeper(QuestScene: any) {
   if (!proto || proto.__act2GardenKeeperInstalled) return;
   proto.__act2GardenKeeperInstalled = true;
 
-  // Re-route only Act II's initial cast placements. Other acts still receive
-  // their original coordinates and behavior.
   const originalSpawnActGuide = proto.spawnActGuide;
   proto.spawnActGuide = function act2SpreadGuide(tx: number, ty: number) {
     if (this.save?.current_zone === ZONE) return originalSpawnActGuide.call(this, GUIDE_X, GUIDE_Y);
@@ -238,8 +230,6 @@ export function installAct2GardenKeeper(QuestScene: any) {
     return originalAddGuest.call(this, guest, tx, ty);
   };
 
-  // Prevent Act II from creating Max in the first place, including the branch
-  // that used to spawn him automatically when an older save had adopted him.
   const originalAddDogOffer = proto.addDogOffer;
   proto.addDogOffer = function noActTwoDog(tx: number, ty: number) {
     if (this.save?.current_zone === ZONE) return;
