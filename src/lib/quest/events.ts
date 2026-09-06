@@ -20,6 +20,7 @@ if (typeof window !== "undefined") {
       import("./lastCrossingLifecycle"),
       import("./act1GameplayPolish"),
       import("./fallenCrossingShrine"),
+      import("./fallenCrossingJournalBook"),
     ])
       .then(([
         sceneModule,
@@ -34,6 +35,7 @@ if (typeof window !== "undefined") {
         lastCrossingLifecycle,
         act1GameplayPolish,
         fallenCrossingShrine,
+        fallenCrossingJournalBook,
       ]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
         const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
@@ -47,6 +49,7 @@ if (typeof window !== "undefined") {
         lastCrossingLifecycle.installLastCrossingLifecycle(QuestScene);
         act1GameplayPolish.installAct1GameplayPolish(QuestScene);
         fallenCrossingShrine.installFallenCrossingShrine(QuestScene);
+        fallenCrossingJournalBook.installFallenCrossingJournalBook(QuestScene);
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
   });
