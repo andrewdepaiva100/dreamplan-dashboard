@@ -1,0 +1,157 @@
+@keyframes quest-letter-rise {
+  0% { opacity: 0; transform: translateY(18px) scale(.96) rotateX(5deg); }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotateX(0); }
+}
+
+@keyframes quest-letter-shimmer {
+  0% { background-position: -160% 0; }
+  100% { background-position: 260% 0; }
+}
+
+@keyframes quest-letter-dust {
+  0%, 100% { opacity: .28; transform: translate3d(0, 4px, 0); }
+  50% { opacity: .7; transform: translate3d(0, -8px, 0); }
+}
+
+/* Premium stationery treatment for the existing love-letter modal. */
+div:has(> .quest-letter) {
+  background:
+    radial-gradient(circle at 18% 24%, rgba(255,226,173,.08), transparent 24%),
+    radial-gradient(circle at 82% 74%, rgba(194,64,90,.08), transparent 28%),
+    rgba(4,7,15,.82) !important;
+  backdrop-filter: blur(8px) saturate(.88) !important;
+}
+
+div:has(> .quest-letter)::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 28%, rgba(255,235,180,.8) 0 1px, transparent 2px),
+    radial-gradient(circle at 67% 18%, rgba(255,247,219,.62) 0 1px, transparent 2px),
+    radial-gradient(circle at 76% 72%, rgba(255,221,180,.52) 0 1px, transparent 2px),
+    radial-gradient(circle at 31% 82%, rgba(240,190,190,.45) 0 1.5px, transparent 2.5px);
+  background-size: 72px 78px, 94px 88px, 108px 96px, 122px 106px;
+  animation: quest-letter-dust 5s ease-in-out infinite;
+}
+
+.quest-letter {
+  isolation: isolate;
+  max-height: min(88vh, 720px) !important;
+  overflow-y: auto !important;
+  padding: 5rem clamp(1.2rem, 4vw, 2.5rem) 2rem !important;
+  border: 2px solid rgba(177,132,57,.82) !important;
+  border-radius: 26px 20px 28px 22px !important;
+  clip-path: polygon(.7% 2%, 98.8% .8%, 99.6% 97.6%, 97.8% 99.2%, 1.3% 98.4%, .2% 94.8%);
+  background:
+    linear-gradient(112deg, transparent 0 36%, rgba(255,255,255,.34) 45%, transparent 54%) 0 0 / 220% 100% no-repeat,
+    radial-gradient(circle at 12% 18%, rgba(153,105,66,.07) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 79% 64%, rgba(153,105,66,.055) 0 1px, transparent 1.5px),
+    linear-gradient(180deg, rgba(255,251,237,.98), rgba(243,226,193,.98) 62%, rgba(235,211,170,.98)) !important;
+  box-shadow:
+    0 34px 90px rgba(0,0,0,.52),
+    0 0 0 7px rgba(246,225,180,.12),
+    inset 0 0 0 1px rgba(255,255,255,.7),
+    inset 0 0 58px rgba(118,77,45,.09) !important;
+  animation: quest-letter-rise .55s cubic-bezier(.2,.8,.2,1) both, quest-letter-shimmer 7s ease-in-out 1s infinite;
+}
+
+.quest-letter::before {
+  content: "LOVE LETTER";
+  position: absolute;
+  top: 1.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  color: #8d6431;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: .67rem;
+  font-weight: 800;
+  letter-spacing: .34em;
+  text-indent: .34em;
+  text-shadow: 0 1px rgba(255,255,255,.75);
+}
+
+.quest-letter::after {
+  content: "❦";
+  pointer-events: none;
+  position: absolute;
+  left: 1.2rem;
+  bottom: 1rem;
+  color: rgba(153,85,79,.25);
+  font-size: 2.4rem;
+  transform: rotate(-18deg);
+  text-shadow: calc(100% - 5rem) 0 rgba(153,85,79,.12);
+}
+
+.quest-letter > div:first-of-type {
+  position: relative;
+  width: 4.4rem !important;
+  height: 4.4rem !important;
+  margin-bottom: .7rem !important;
+  border: 2px solid rgba(116,37,53,.65);
+  background: radial-gradient(circle at 35% 28%, #d1546a 0 17%, #a63149 45%, #742536 100%) !important;
+  box-shadow: 0 8px 18px rgba(95,30,43,.28), inset 0 0 0 3px rgba(255,218,196,.08) !important;
+}
+
+.quest-letter > div:first-of-type::after {
+  content: "♥";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255,225,211,.48);
+  font-size: 1.15rem;
+  transform: translateY(9px);
+}
+
+.quest-letter > p:nth-of-type(1) {
+  color: #963b4e !important;
+  font-size: clamp(2rem, 6vw, 3rem) !important;
+  text-shadow: 0 1px #fff7e9;
+}
+
+.quest-letter > p:nth-of-type(2) {
+  color: #9a784d !important;
+  letter-spacing: .34em !important;
+  font-weight: 700;
+}
+
+.quest-letter > p:nth-of-type(3) {
+  position: relative;
+  margin-inline: auto;
+  max-width: 39rem;
+  padding: .3rem .15rem .7rem;
+  color: #3f3024 !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: clamp(.95rem, 2.5vw, 1.08rem) !important;
+  line-height: 1.95 !important;
+  text-shadow: 0 1px rgba(255,255,255,.35);
+}
+
+.quest-letter > p:nth-of-type(3)::first-letter {
+  color: #8f3949;
+  font-size: 1.7em;
+  font-weight: 700;
+}
+
+.quest-letter > button:last-child {
+  border: 1px solid rgba(133,92,39,.55) !important;
+  background: linear-gradient(180deg, #3b425e, #252d49) !important;
+  box-shadow: 0 5px 14px rgba(36,31,39,.18), inset 0 1px rgba(255,255,255,.12);
+  letter-spacing: .04em;
+}
+
+@media (max-width: 540px) {
+  .quest-letter {
+    max-height: 84vh !important;
+    padding-top: 4.3rem !important;
+    clip-path: polygon(.5% 1%, 99% .5%, 99.5% 98%, 1% 99%);
+  }
+  .quest-letter::before { top: .95rem; font-size: .6rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quest-letter, div:has(> .quest-letter)::before { animation: none !important; }
+}

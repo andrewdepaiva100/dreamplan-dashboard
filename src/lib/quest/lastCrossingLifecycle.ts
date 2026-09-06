@@ -220,11 +220,27 @@ function removeOldAct1RestStation(scene: SceneLike) {
   });
 }
 
+function removeWorldBladePickup(scene: SceneLike) {
+  if (!Array.isArray(scene.interactables)) return;
+  scene.interactables = scene.interactables.filter((it: any) => {
+    if (it?.kind !== "last-crossing-forge") return true;
+    scene.tweens?.killTweensOf?.(it.obj);
+    it.obj?.destroy?.();
+    return false;
+  });
+}
+
 function ensureCrossingBlade(scene: SceneLike, cx: number, cy: number) {
   const state = readState();
-  if (state.wardenDefeated) return;
+  if (state.wardenDefeated) {
+    removeWorldBladePickup(scene);
+    return;
+  }
 
   if (state.forged && scene.save) {
+    // Once Maria accepts the blade, the physical pickup is gone for good.
+    // Only the equipped hand sprite is allowed to remain.
+    removeWorldBladePickup(scene);
     scene.save.weapons = Array.isArray(scene.save.weapons) ? scene.save.weapons : [];
     if (!scene.save.weapons.includes(CROSSING_BLADE_ID)) {
       scene.save.weapons = [...scene.save.weapons, CROSSING_BLADE_ID];
@@ -353,7 +369,11 @@ function refreshBladeAfterDialogue(scene: SceneLike) {
   if (scene.save?.current_zone !== "sunlit_shores") return;
   repairCrossingProgress(scene);
   const state = readState();
-  if (state.talked.length !== 3 || state.forged || state.wardenDefeated) return;
+  if (state.forged || state.wardenDefeated) {
+    removeWorldBladePickup(scene);
+    return;
+  }
+  if (state.talked.length !== 3) return;
   const center = crossingCenter(scene);
   scene.__lastCrossingCenter = center;
   ensureCrossingBlade(scene, center.x, center.y);
