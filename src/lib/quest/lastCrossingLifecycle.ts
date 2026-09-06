@@ -32,6 +32,15 @@ function readState() {
   }
 }
 
+function writeState(state: ReturnType<typeof readState>) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Optional local quest-state persistence only.
+  }
+}
+
 function ensureBladeTexture(scene: SceneLike) {
   if (scene.textures?.exists?.("last-crossing-blade")) return true;
   const tex = scene.textures?.createCanvas?.("last-crossing-blade", 20, 34);
@@ -147,6 +156,70 @@ function crossingCenter(scene: SceneLike) {
   };
 }
 
+function looksLikeFreshAct1Save(scene: SceneLike) {
+  const save = scene.save;
+  if (!save || save.current_zone !== "sunlit_shores") return false;
+  const nonCrossingWeapons = (save.weapons ?? []).filter((id: string) => id !== CROSSING_BLADE_ID);
+  return Boolean(
+    (save.relics_collected?.length ?? 0) === 0 &&
+      (save.secret_envelopes_found?.length ?? 0) === 0 &&
+      Number(save.vault_keys_count ?? 0) === 0 &&
+      !save.wedding_completed &&
+      !save.checkpoint_zone &&
+      Object.keys(save.inventory ?? {}).length === 0 &&
+      nonCrossingWeapons.length === 0,
+  );
+}
+
+function removeCrossingBladeFromSave(scene: SceneLike) {
+  if (!scene.save) return;
+  const before = Array.isArray(scene.save.weapons) ? scene.save.weapons : [];
+  const next = before.filter((id: string) => id !== CROSSING_BLADE_ID);
+  const changed = next.length !== before.length || scene.save.equipped_weapon === CROSSING_BLADE_ID;
+  scene.save.weapons = next;
+  if (scene.save.equipped_weapon === CROSSING_BLADE_ID) scene.save.equipped_weapon = next[0] ?? null;
+  if (changed) {
+    scene.emitSave?.();
+    scene.pushHud?.(true);
+    scene.refreshHand?.();
+  }
+}
+
+function repairCrossingProgress(scene: SceneLike) {
+  if (scene.save?.current_zone !== "sunlit_shores") return;
+  const state = readState();
+  const realWardenDefeated = Boolean(scene.save?.relics_collected?.includes?.("lantern"));
+
+  if (looksLikeFreshAct1Save(scene)) {
+    if (state.talked.length || state.forged || state.wardenDefeated || scene.save?.weapons?.includes?.(CROSSING_BLADE_ID)) {
+      writeState({ talked: [], forged: false, wardenDefeated: false });
+      removeCrossingBladeFromSave(scene);
+    }
+    return;
+  }
+
+  let changed = false;
+  if (state.wardenDefeated !== realWardenDefeated) {
+    state.wardenDefeated = realWardenDefeated;
+    changed = true;
+  }
+  if (!realWardenDefeated && state.forged && state.talked.length < 3) {
+    state.forged = false;
+    removeCrossingBladeFromSave(scene);
+    changed = true;
+  }
+  if (changed) writeState(state);
+}
+
+function removeOldAct1RestStation(scene: SceneLike) {
+  if (scene.save?.current_zone !== "sunlit_shores" || !Array.isArray(scene.interactables)) return;
+  scene.interactables = scene.interactables.filter((it: any) => {
+    const oldRest = it?.kind === "rest" && it?.obj?.texture?.key === "rest-stone";
+    if (oldRest) it.obj?.destroy?.();
+    return !oldRest;
+  });
+}
+
 function ensureCrossingBlade(scene: SceneLike, cx: number, cy: number) {
   const state = readState();
   if (state.wardenDefeated) return;
@@ -164,9 +237,6 @@ function ensureCrossingBlade(scene: SceneLike, cx: number, cy: number) {
   }
 
   if (state.talked.length !== 3 || !Array.isArray(scene.interactables)) return;
-
-  // Remove stale forge entries first. A destroyed Phaser sprite can otherwise
-  // leave an interactable behind and prevent the real sword from respawning.
   scene.interactables = scene.interactables.filter((it: any) => {
     if (it?.kind !== "last-crossing-forge") return true;
     return it?.obj?.active === true && it?.enabled !== false;
@@ -201,6 +271,8 @@ function ensureCrossingBlade(scene: SceneLike, cx: number, cy: number) {
 
 function restoreVillage(scene: SceneLike) {
   if (scene.save?.current_zone !== "sunlit_shores") return;
+  repairCrossingProgress(scene);
+  removeOldAct1RestStation(scene);
 
   const fallbackCx = Math.round((scene.mapW ?? 55) * 32 * 0.79);
   const fallbackCy = Math.round((scene.mapH ?? 50) * 32 * 0.78);
@@ -279,6 +351,7 @@ function restoreVillage(scene: SceneLike) {
 
 function refreshBladeAfterDialogue(scene: SceneLike) {
   if (scene.save?.current_zone !== "sunlit_shores") return;
+  repairCrossingProgress(scene);
   const state = readState();
   if (state.talked.length !== 3 || state.forged || state.wardenDefeated) return;
   const center = crossingCenter(scene);
@@ -291,6 +364,13 @@ export function installLastCrossingLifecycle(QuestScene: SceneCtor) {
   if (proto.__lastCrossingLifecycleInstalled) return;
   proto.__lastCrossingLifecycleInstalled = true;
 
+  const originalCreate = proto.create;
+  proto.create = function lastCrossingLifecycleCreate(this: SceneLike, ...args: any[]) {
+    const result = originalCreate.apply(this, args);
+    this.time.delayedCall(0, () => restoreVillage(this));
+    return result;
+  };
+
   const originalBuildAct1 = proto.buildAct1;
   proto.buildAct1 = function lastCrossingBuildAct1(this: SceneLike, ...args: any[]) {
     this.__lastCrossingBuilt = false;
@@ -299,9 +379,6 @@ export function installLastCrossingLifecycle(QuestScene: SceneCtor) {
     return result;
   };
 
-  // Guest dialogue closes through onResume. Refreshing here makes the sword
-  // appear immediately after the third villager conversation instead of only
-  // after a zone rebuild or reload.
   const originalResume = proto.onResume;
   if (typeof originalResume === "function") {
     proto.onResume = function lastCrossingLifecycleResume(this: SceneLike, ...args: any[]) {
