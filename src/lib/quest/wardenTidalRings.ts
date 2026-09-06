@@ -34,7 +34,6 @@ function destroy(obj: any) {
 }
 
 function disableEveryWardenStomp(scene: SceneLike) {
-  // Generic Act I stomp controller.
   scene.__bossStompNextAt = Number.MAX_SAFE_INTEGER;
   scene.__bossStompCharging = false;
   if (scene.__bossStompRing) {
@@ -42,7 +41,6 @@ function disableEveryWardenStomp(scene: SceneLike) {
     scene.__bossStompRing = undefined;
   }
 
-  // Older dedicated Warden stomp controller.
   scene.__wardenNextStompAt = Number.MAX_SAFE_INTEGER;
   scene.__wardenStompCharging = false;
   if (scene.__wardenStompRing) {
@@ -50,7 +48,6 @@ function disableEveryWardenStomp(scene: SceneLike) {
     scene.__wardenStompRing = undefined;
   }
 
-  // Safety stomp controller from the previous iteration.
   scene.__wardenSafeNextStompAt = Number.MAX_SAFE_INTEGER;
   scene.__wardenSafeStompCharging = false;
   try {
@@ -77,6 +74,74 @@ function clearTidal(scene: SceneLike, resetClock = true) {
   scene.__wardenTidalRings = [];
   scene.__wardenTidalCharging = false;
   if (resetClock) scene.__wardenNextTidalAt = 0;
+}
+
+function clearPhaseAura(scene: SceneLike) {
+  for (const aura of (scene.__wardenPhaseAura ?? []) as any[]) destroy(aura);
+  scene.__wardenPhaseAura = [];
+  scene.__wardenPhaseAuraAnnounced = false;
+  scene.__wardenPhaseAuraSparkAt = 0;
+}
+
+function updatePhaseAura(scene: SceneLike, time: number) {
+  if (!ready(scene) || !scene.__wardenPhase2 || !scene.boss?.active) {
+    if (scene.__wardenPhaseAura?.length) clearPhaseAura(scene);
+    return;
+  }
+
+  const boss = scene.boss as Phaser.Physics.Arcade.Sprite;
+  let aura = (scene.__wardenPhaseAura ?? []) as Phaser.GameObjects.Arc[];
+  if (!aura.length || aura.some((ring) => !ring?.active)) {
+    for (const ring of aura) destroy(ring);
+    const inner = scene.add
+      .circle(boss.x, boss.y, 42, 0x54cfe9, 0.035)
+      .setStrokeStyle(3, 0x8feeff, 0.72)
+      .setDepth(958);
+    const outer = scene.add
+      .circle(boss.x, boss.y, 62, 0x54cfe9, 0.015)
+      .setStrokeStyle(2, 0xc8f8ff, 0.5)
+      .setDepth(957);
+    aura = [inner, outer];
+    scene.__wardenPhaseAura = aura;
+    scene.tweens.add({
+      targets: inner,
+      scaleX: { from: 0.94, to: 1.08 },
+      scaleY: { from: 0.94, to: 1.08 },
+      alpha: { from: 0.38, to: 0.78 },
+      duration: 760,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+    scene.tweens.add({
+      targets: outer,
+      scaleX: { from: 1.06, to: 0.96 },
+      scaleY: { from: 1.06, to: 0.96 },
+      alpha: { from: 0.22, to: 0.58 },
+      duration: 980,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+  }
+
+  for (const ring of aura) ring?.setPosition?.(boss.x, boss.y);
+
+  if (!scene.__wardenPhaseAuraAnnounced) {
+    scene.__wardenPhaseAuraAnnounced = true;
+    scene.floatText?.(boss.x, boss.y - 40, "THE TIDE RISES", "#9cecff", true);
+    scene.cameras?.main?.flash?.(180, 80, 190, 225);
+  }
+
+  if (time >= Number(scene.__wardenPhaseAuraSparkAt ?? 0)) {
+    scene.__wardenPhaseAuraSparkAt = time + 900;
+    scene.spawnSparkle?.(
+      boss.x + Phaser.Math.Between(-22, 22),
+      boss.y + Phaser.Math.Between(-18, 18),
+      0x8feeff,
+      3,
+    );
+  }
 }
 
 function currentRadii(scene: SceneLike) {
@@ -119,7 +184,6 @@ function resolveTidal(scene: SceneLike, expectedToken: number, bossX: number, bo
   scene.spawnSparkle?.(bossX, bossY, 0x8feeff, 12);
 
   if (playerOnDangerBand(scene, bossX, bossY, radii)) {
-    // One heart only. Reuse the stable core damage path; no knockback or stale callbacks.
     scene.hurtPlayerDirect?.();
   } else if (scene.player?.active) {
     scene.floatText?.(scene.player.x, scene.player.y - 12, "SAFE GAP", "#bff7ff", true);
@@ -180,10 +244,12 @@ function startTidal(scene: SceneLike) {
 function updateTidal(scene: SceneLike, time: number) {
   if (!isWarden(scene)) {
     if (scene.__wardenTidalCharging || scene.__wardenTidalRings?.length) clearTidal(scene);
+    if (scene.__wardenPhaseAura?.length) clearPhaseAura(scene);
     return;
   }
 
   disableEveryWardenStomp(scene);
+  updatePhaseAura(scene, time);
   if (!ready(scene)) {
     if (scene.__wardenTidalCharging) clearTidal(scene, false);
     return;
@@ -199,7 +265,6 @@ function updateTidal(scene: SceneLike, time: number) {
   const transitioning = time < Number(scene.__wardenPhaseTransitionUntil ?? 0);
   if (recovering || transitioning || scene.__wardenWaterCharging) return;
 
-  // Keep a safety gap between the existing water-lane attack and Tidal Rings.
   if (time >= Number(scene.__wardenNextTidalAt)) {
     const nextWater = Number(scene.__wardenNextWaterAt ?? 0);
     if (nextWater && Math.abs(nextWater - time) < 1500) {
@@ -229,6 +294,7 @@ export function installWardenTidalRings(QuestScene: SceneCtor) {
     if (isWarden(this) && this.bossPhase === 1) {
       disableEveryWardenStomp(this);
       clearTidal(this);
+      clearPhaseAura(this);
       this.__wardenNextTidalAt = this.time.now + TIDAL_EVERY_MS;
     }
     return result;
@@ -236,14 +302,20 @@ export function installWardenTidalRings(QuestScene: SceneCtor) {
 
   const originalDefeat = proto.defeatActBoss;
   proto.defeatActBoss = function wardenTidalDefeat(this: SceneLike, ...args: any[]) {
-    if (isWarden(this)) clearTidal(this);
+    if (isWarden(this)) {
+      clearTidal(this);
+      clearPhaseAura(this);
+    }
     return originalDefeat.apply(this, args);
   };
 
   const originalCreate = proto.create;
   proto.create = function wardenTidalCreate(this: SceneLike, ...args: any[]) {
     const result = originalCreate.apply(this, args);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => clearTidal(this));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      clearTidal(this);
+      clearPhaseAura(this);
+    });
     return result;
   };
 }
