@@ -24,7 +24,6 @@ if (typeof window !== "undefined") {
       import("./wardenCombat"),
       import("./act1WoodenBridges"),
       import("./wardenTidalRings"),
-      import("./crossingBladeLifecycleFix"),
       import("./desktopControlsPolish"),
     ])
       .then(([
@@ -44,7 +43,6 @@ if (typeof window !== "undefined") {
         wardenCombat,
         act1WoodenBridges,
         wardenTidalRings,
-        crossingBladeLifecycleFix,
         desktopControlsPolish,
       ]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
@@ -63,7 +61,6 @@ if (typeof window !== "undefined") {
         wardenCombat.installWardenCombat(QuestScene);
         act1WoodenBridges.installAct1WoodenBridges(QuestScene);
         wardenTidalRings.installWardenTidalRings(QuestScene);
-        crossingBladeLifecycleFix.installCrossingBladeLifecycleFix(QuestScene);
         desktopControlsPolish.installDesktopControlsPolish();
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
