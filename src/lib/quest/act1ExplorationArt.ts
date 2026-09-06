@@ -143,7 +143,56 @@ function addInvisibleBlocker(scene:SceneLike,x:number,y:number,sx:number,sy:numb
 function spawnRiverWatch(scene:SceneLike){const x=Number(scene.wx?.(78)??2496),y=Number(scene.wy?.(77)??2464);clearTrees(scene,x,y,132);paintApproach(scene,[[73,70],[75,73],[77,75],[78,77]]);const watch=track(scene.add.image(x,y,makeWatchTexture(scene)).setDepth(scene.dsort?.(y+20)??11));watch.setData("explorationName","Abandoned River Watch");addInvisibleBlocker(scene,x,y+22,1.0,.3);const note=track(scene.add.sprite(x+2,y+12,"act1-watch-note").setDepth(Number(watch.depth??11)+2));scene.interactables.push({obj:note,kind:"act1-river-watch-note",id:"river-watch-note",label:"Read the weathered note",radius:62,enabled:true});scene.tweens.add({targets:note,y:note.y-1,duration:1600,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});if(!seen(CACHE_KEY)){const cache=track(scene.add.sprite(x-25,y+24,"act1-watch-cache").setDepth(Number(watch.depth??11)+2));scene.interactables.push({obj:cache,kind:"act1-river-watch-cache",id:"river-watch-cache",label:"Inspect the tucked-away cache",radius:58,enabled:true});scene.tweens.add({targets:cache,alpha:{from:.72,to:1},duration:1250,yoyo:true,repeat:-1});}}
 
 function reactionKey(id:string){return `${REACTION_PREFIX}${id}`;}
-function oneTimeReaction(scene:SceneLike,id:string,line:string){const key=reactionKey(id);if(seen(key))return;mark(key);scene.game?.events?.emit?.("quest:toast",`Maria: “${line}”`);}
+
+function clearThoughtBubble(scene:SceneLike){
+  const bubble=scene.__act1ThoughtBubble as Phaser.GameObjects.Container|undefined;
+  if(!bubble?.active){scene.__act1ThoughtBubble=undefined;return;}
+  scene.tweens?.killTweensOf?.(bubble);
+  scene.tweens?.add?.({targets:bubble,alpha:0,y:bubble.y-4,duration:180,ease:"Sine.easeIn",onComplete:()=>{bubble.destroy?.();if(scene.__act1ThoughtBubble===bubble)scene.__act1ThoughtBubble=undefined;}});
+}
+
+function showThoughtBubble(scene:SceneLike,line:string){
+  if(!scene.player?.active)return;
+  clearThoughtBubble(scene);
+  const maxWidth=210;
+  const text=scene.add.text(0,0,line,{
+    fontFamily:'Georgia, "Times New Roman", serif',
+    fontSize:"13px",
+    color:"#24344e",
+    align:"center",
+    wordWrap:{width:maxWidth-30,useAdvancedWrap:true},
+    lineSpacing:2,
+  }).setOrigin(.5);
+  const w=Math.min(maxWidth,Math.max(112,text.width+28));
+  const h=Math.max(42,text.height+22);
+  const bg=scene.add.graphics();
+  bg.fillStyle(0x4d3b2f,.18); bg.fillRoundedRect(-w/2+2,-h/2+3,w,h,14);
+  bg.lineStyle(2,0x715b48,.9); bg.fillStyle(0xfff6df,.98); bg.fillRoundedRect(-w/2,-h/2,w,h,14); bg.strokeRoundedRect(-w/2,-h/2,w,h,14);
+  bg.lineStyle(1,0xd6bf94,.7); bg.strokeRoundedRect(-w/2+4,-h/2+4,w-8,h-8,11);
+  const dot1=scene.add.circle(-8,h/2+8,4,0xfff6df,1).setStrokeStyle(1.5,0x715b48,.85);
+  const dot2=scene.add.circle(-4,h/2+17,2.5,0xfff6df,1).setStrokeStyle(1.2,0x715b48,.8);
+  const bubble=scene.add.container(scene.player.x,scene.player.y-48,[bg,text,dot1,dot2]).setDepth(999).setAlpha(0);
+  bubble.setData(TRACK,true); bubble.setData("thought-width",w); bubble.setData("thought-height",h);
+  scene.__act1ThoughtBubble=bubble;
+  scene.tweens.add({targets:bubble,alpha:1,y:bubble.y-4,duration:190,ease:"Sine.easeOut"});
+  scene.time.delayedCall(3200,()=>{if(scene.__act1ThoughtBubble===bubble)clearThoughtBubble(scene);});
+}
+
+function updateThoughtBubble(scene:SceneLike){
+  const bubble=scene.__act1ThoughtBubble as Phaser.GameObjects.Container|undefined;
+  if(!bubble?.active||!scene.player?.active)return;
+  const cam=scene.cameras?.main;
+  if(!cam)return;
+  const w=Number(bubble.getData?.("thought-width")??160),h=Number(bubble.getData?.("thought-height")??52);
+  let x=scene.player.x;
+  let y=scene.player.y-48-h/2;
+  const left=cam.worldView.x+w/2+10,right=cam.worldView.right-w/2-10,top=cam.worldView.y+h/2+12;
+  x=Phaser.Math.Clamp(x,left,right);
+  if(y<top)y=scene.player.y+38+h/2;
+  bubble.setPosition(x,y);
+}
+
+function oneTimeReaction(scene:SceneLike,id:string,line:string){const key=reactionKey(id);if(seen(key))return;mark(key);showThoughtBubble(scene,line);}
 
 function addMicro(scene:SceneLike,x:number,y:number,kind:string,label?:string){const d=track(scene.add.container(x,y).setDepth(scene.dsort?.(y)??8));d.setData("micro-kind",kind);if(label)scene.interactables.push({obj:d,kind:"act1-micro",id:kind,label,radius:60,enabled:true});return d;}
 function drawMicroDiscoveries(scene:SceneLike){
@@ -170,11 +219,58 @@ function updateAmbientReactions(scene:SceneLike){if(!scene.player?.active)return
   ["old-road",47,43,78,"So many people must have walked this road before me."],
 ] as const;for(const [id,tx,ty,r,line] of checks){if(seen(reactionKey(id)))continue;const x=Number(scene.wx?.(tx)??tx*32),y=Number(scene.wy?.(ty)??ty*32);if(Phaser.Math.Distance.Between(scene.player.x,scene.player.y,x,y)<r){oneTimeReaction(scene,id,line);break;}}}
 
+function closeDiscoveryCard(scene:SceneLike,overlay:HTMLElement){
+  overlay.remove();
+  scene.__act1DiscoveryCardOpen=false;
+  scene.frozen=false;
+  scene.physics?.resume?.();
+}
+
+function showDiscoveryCard(scene:SceneLike,opts:{kind:"tide"|"watch"|"cache";title:string;body:string}){
+  if(scene.__act1DiscoveryCardOpen)return;
+  const parent=scene.game?.canvas?.parentElement;
+  if(!parent)return;
+  scene.__act1DiscoveryCardOpen=true;
+  scene.frozen=true;
+  scene.physics?.pause?.();
+
+  const overlay=document.createElement("div");
+  Object.assign(overlay.style,{position:"absolute",inset:"0",zIndex:"10060",display:"flex",alignItems:"center",justifyContent:"center",padding:"18px",background:"rgba(5,9,19,.56)",backdropFilter:"blur(4px)",boxSizing:"border-box",opacity:"0",transition:"opacity 200ms ease"});
+  const card=document.createElement("div");
+  Object.assign(card.style,{position:"relative",width:"min(58vw,560px)",minWidth:"min(88vw,300px)",maxHeight:"78vh",overflow:"auto",boxSizing:"border-box",padding:window.innerWidth<640?"26px 22px 22px":"30px 32px 24px",transform:"translateY(12px) scale(.96)",opacity:"0",transition:"transform 220ms cubic-bezier(.2,.8,.2,1), opacity 220ms ease",fontFamily:'Georgia, "Times New Roman", serif'});
+  if(opts.kind==="tide"){
+    Object.assign(card.style,{border:"2px solid rgba(162,136,74,.82)",borderRadius:"22px 18px 24px 20px",background:"radial-gradient(circle at 18% 18%, rgba(117,204,198,.18), transparent 35%), linear-gradient(180deg,#fff8e9,#f0e2c4)",boxShadow:"0 24px 60px rgba(0,0,0,.38), inset 0 0 0 5px rgba(255,255,255,.32)"});
+  }else{
+    Object.assign(card.style,{border:"1px solid rgba(105,73,48,.72)",borderRadius:"7px",clipPath:"polygon(1% 2%,99% 0,98.6% 97%,95% 99%,2% 98%,0 92%)",background:"radial-gradient(circle at 15% 18%,rgba(115,79,48,.1) 0 1px,transparent 2px),radial-gradient(circle at 82% 72%,rgba(83,111,117,.09),transparent 22%),linear-gradient(180deg,#e8d5ac,#d8bd8d)",boxShadow:"0 24px 60px rgba(0,0,0,.42), inset 0 0 36px rgba(94,61,38,.13)"});
+  }
+
+  const close=document.createElement("button"); close.type="button"; close.textContent="×";
+  Object.assign(close.style,{position:"absolute",right:"10px",top:"8px",border:"0",background:"transparent",color:opts.kind==="tide"?"#765f42":"#6a4a35",fontSize:"22px",fontFamily:"Georgia,serif",cursor:"pointer",padding:"4px 8px",lineHeight:"1"});
+  const icon=document.createElement("div"); icon.textContent=opts.kind==="tide"?"≋ ✦ ≋":opts.kind==="watch"?"⌁ 〰 ⌁":"✦";
+  Object.assign(icon.style,{textAlign:"center",color:opts.kind==="tide"?"#548f91":"#7a5d43",fontSize:"14px",letterSpacing:".18em",marginBottom:"8px",opacity:".8"});
+  const title=document.createElement("h3"); title.textContent=opts.title;
+  Object.assign(title.style,{margin:"0",textAlign:opts.kind==="watch"?"left":"center",color:opts.kind==="tide"?"#183a52":"#4e3527",fontSize:"clamp(22px,4vw,31px)",lineHeight:"1.08",fontWeight:"700"});
+  const divider=document.createElement("div");
+  Object.assign(divider.style,{height:"1px",width:opts.kind==="watch"?"72%":"62%",margin:"14px auto 16px",background:opts.kind==="tide"?"linear-gradient(90deg,transparent,#b69a58,transparent)":"linear-gradient(90deg,#806346,transparent)"});
+  const body=document.createElement("p"); body.textContent=opts.body;
+  Object.assign(body.style,{margin:"0",color:opts.kind==="tide"?"#2e3c4f":"#543b2c",fontSize:"clamp(14px,2.2vw,17px)",lineHeight:"1.7",fontStyle:opts.kind==="watch"?"italic":"normal",whiteSpace:"pre-line"});
+  const button=document.createElement("button"); button.type="button"; button.textContent="Continue  →";
+  Object.assign(button.style,{display:"block",margin:"20px 0 0 auto",border:opts.kind==="tide"?"1px solid #a88b4d":"1px solid #76583d",borderRadius:"999px",background:opts.kind==="tide"?"linear-gradient(180deg,#f6e6b9,#e2c781)":"rgba(255,245,220,.5)",color:opts.kind==="tide"?"#24354b":"#563d2c",padding:"9px 16px",fontFamily:"Georgia,serif",fontSize:"13px",fontWeight:"700",cursor:"pointer",boxShadow:"0 3px 9px rgba(0,0,0,.12)"});
+  if(opts.kind==="tide"){
+    const flower=document.createElement("div");flower.textContent="❀";Object.assign(flower.style,{position:"absolute",left:"18px",bottom:"12px",color:"rgba(177,102,124,.35)",fontSize:"24px",transform:"rotate(-14deg)"});card.append(flower);
+  }else{
+    const ribbon=document.createElement("div");Object.assign(ribbon.style,{position:"absolute",right:"-7px",bottom:"20px",width:"38px",height:"8px",background:"rgba(142,76,83,.45)",transform:"rotate(-8deg)",boxShadow:"0 1px 2px rgba(0,0,0,.12)"});card.append(ribbon);
+  }
+  const finish=()=>closeDiscoveryCard(scene,overlay); close.addEventListener("click",finish); button.addEventListener("click",finish);
+  card.append(close,icon,title,divider,body,button); overlay.append(card); parent.append(overlay);
+  requestAnimationFrame(()=>{overlay.style.opacity="1";card.style.opacity="1";card.style.transform="translateY(0) scale(1)";});
+}
+
 function healOne(scene:SceneLike){if(!scene.save)return false;const current=Number(scene.save.player_health??0),max=Math.max(1,Number(scene.getMaxHealth?.()??scene.maxHealth??5));if(current>=max)return false;scene.save.player_health=Math.min(max,current+1);scene.emitSave?.();scene.pushHud?.(true);scene.spawnSparkle?.(scene.player?.x??0,scene.player?.y??0,0xffe6a4,10);return true;}
 
-function interactTide(scene:SceneLike){const first=!seen(TIDE_KEY);if(first)mark(TIDE_KEY);const healed=first?healOne(scene):false;scene.openModal?.({type:"info",title:"The Whispering Tide Pool",body:first?`Maria kneels beside the glass-still water. “Still water carries the things the river forgets.”${healed?" The quiet returns one heart of strength.":" The quiet settles around her, gentle and complete."}`:"The little pool holds the sky without disturbing it. Maria stays for one quiet moment."});}
-function interactWatch(scene:SceneLike){if(!seen(WATCH_KEY))mark(WATCH_KEY);scene.openModal?.({type:"info",title:"Weathered River Watch Note",body:"The current grows meaner near the Warden. Don't fight the river. Watch where it wants to go, then move with it. The survivors went southeast — to the Last Crossing."});}
-function interactCache(scene:SceneLike,it:any){if(seen(CACHE_KEY))return;mark(CACHE_KEY);const healed=healOne(scene);scene.tweens?.killTweensOf?.(it.obj);it.obj?.destroy?.();scene.interactables=(scene.interactables??[]).filter((x:any)=>x!==it);scene.openModal?.({type:"info",title:"A Tucked-Away Cache",body:healed?"Under a loose plank, Maria finds a tiny sealed honey tonic. One heart is restored.":"Under a loose plank is a tiny honey tonic and a faded ribbon. Maria leaves the tonic for whoever needs it next."});}
+function interactTide(scene:SceneLike){const first=!seen(TIDE_KEY);if(first)mark(TIDE_KEY);const healed=first?healOne(scene):false;showDiscoveryCard(scene,{kind:"tide",title:"The Whispering Tide Pool",body:first?`Maria kneels beside the glass-still water. “Still water carries the things the river forgets.”${healed?" The quiet returns one heart of strength.":" The quiet settles around her, gentle and complete."}`:"The little pool holds the sky without disturbing it. Maria stays for one quiet moment."});}
+function interactWatch(scene:SceneLike){if(!seen(WATCH_KEY))mark(WATCH_KEY);showDiscoveryCard(scene,{kind:"watch",title:"Weathered River Watch Note",body:"The current grows meaner near the Warden. Don't fight the river. Watch where it wants to go, then move with it. The survivors went southeast — to the Last Crossing."});}
+function interactCache(scene:SceneLike,it:any){if(seen(CACHE_KEY))return;mark(CACHE_KEY);const healed=healOne(scene);scene.tweens?.killTweensOf?.(it.obj);it.obj?.destroy?.();scene.interactables=(scene.interactables??[]).filter((x:any)=>x!==it);showDiscoveryCard(scene,{kind:"cache",title:"A Tucked-Away Cache",body:healed?"Under a loose plank, Maria finds a tiny sealed honey tonic. One heart is restored.":"Under a loose plank is a tiny honey tonic and a faded ribbon. Maria leaves the tonic for whoever needs it next."});}
 function interactMicro(scene:SceneLike,it:any){const id=String(it.id??"");const text:Record<string,string>={picnic:"Two cups. One blanket. Whoever sat here expected to come back.","carved-initials":"A + M. The letters are old, but someone carved them carefully.","traveler-pack":"The straps are torn and the pack is empty. Someone left in a hurry."};const line=text[id];if(line)oneTimeReaction(scene,`micro-${id}`,line);}
 
 function spawnExploration(scene:SceneLike){cleanup(scene);if(!isAct1(scene))return;makeSmallTextures(scene);decorateWaterfallEnvelope(scene);spawnTidePool(scene);spawnRiverWatch(scene);drawMicroDiscoveries(scene);spawnWildlife(scene);}
@@ -185,5 +281,5 @@ export function installAct1ExplorationArt(QuestScene:SceneCtor){
   const originalCreate=proto.create;proto.create=function act1ExplorationCreate(this:SceneLike,...args:any[]){const result=originalCreate.apply(this,args);this.time.delayedCall(140,()=>spawnExploration(this));return result;};
   const originalBuildAct1=proto.buildAct1;proto.buildAct1=function act1ExplorationBuild(this:SceneLike,...args:any[]){const result=originalBuildAct1.apply(this,args);this.time.delayedCall(80,()=>spawnExploration(this));return result;};
   const originalInteract=proto.interact;proto.interact=function act1ExplorationInteract(this:SceneLike,...args:any[]){if(this.frozen)return;const it=this.nearest?.();if(it?.kind==="act1-tide-pool"){interactTide(this);return;}if(it?.kind==="act1-river-watch-note"){interactWatch(this);return;}if(it?.kind==="act1-river-watch-cache"){interactCache(this,it);return;}if(it?.kind==="act1-micro"){interactMicro(this,it);return;}const wasWaterfall=it?.kind==="envelope"&&it?.id==="waterfall";const result=originalInteract.apply(this,args);if(wasWaterfall)this.time.delayedCall(20,()=>cleanupEnvelopeDecor(this));return result;};
-  const originalUpdate=proto.update;proto.update=function act1ExplorationUpdate(this:SceneLike,time:number,delta:number,...args:any[]){const result=originalUpdate.call(this,time,delta,...args);if(isAct1(this)&&!this.frozen){updateWildlife(this);updateAmbientReactions(this);}return result;};
+  const originalUpdate=proto.update;proto.update=function act1ExplorationUpdate(this:SceneLike,time:number,delta:number,...args:any[]){const result=originalUpdate.call(this,time,delta,...args);if(isAct1(this)){updateThoughtBubble(this);if(!this.frozen){updateWildlife(this);updateAmbientReactions(this);}}return result;};
 }
