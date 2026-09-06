@@ -13,14 +13,14 @@ const ACTS: { label: string; subtitle: string; zone: ZoneId }[] = [
   { label: "Act V", subtitle: "Grand Cathedral", zone: "cathedral" },
 ];
 
-function isMacBookLikeDesktop() {
-  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
-  const platform = `${navigator.platform ?? ""} ${navigator.userAgent ?? ""}`;
-  return (
-    /Mac/i.test(platform) &&
-    (navigator.maxTouchPoints ?? 0) === 0 &&
-    window.matchMedia("(min-width: 900px) and (hover: hover) and (pointer: fine)").matches
-  );
+/**
+ * This is intentionally a simple desktop gate. The old version also required
+ * maxTouchPoints === 0 and several pointer capability queries; Safari can report
+ * those conservatively and hide a perfectly valid MacBook test control.
+ */
+function isDesktopTitle() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(min-width: 768px)").matches;
 }
 
 function titleIsVisible() {
@@ -54,8 +54,6 @@ function launchAct(zone: ZoneId) {
     return;
   }
 
-  // Save loading can take a moment. Keep the override one-shot and wait briefly
-  // for the normal title buttons rather than introducing a second game boot path.
   let attempts = 0;
   const timer = window.setInterval(() => {
     attempts += 1;
@@ -180,7 +178,7 @@ function openModal() {
 
 function syncButton() {
   const existing = document.getElementById(ROOT_ID);
-  if (!isMacBookLikeDesktop() || !titleIsVisible()) {
+  if (!isDesktopTitle() || !titleIsVisible()) {
     existing?.remove();
     closeModal();
     return;
@@ -194,32 +192,42 @@ function syncButton() {
   button.title = "Jump directly to any act for testing";
   Object.assign(button.style, {
     position: "fixed",
-    right: "20px",
-    bottom: "20px",
-    zIndex: "99999",
-    padding: "10px 14px",
-    border: "1px solid rgba(242, 202, 108, .72)",
+    right: "24px",
+    bottom: "24px",
+    zIndex: "2147483646",
+    padding: "12px 16px",
+    border: "2px solid #f2ca6c",
     borderRadius: "999px",
-    background: "rgba(8, 18, 38, .92)",
-    boxShadow: "0 8px 26px rgba(0,0,0,.35)",
+    background: "#081226",
+    boxShadow: "0 8px 30px rgba(0,0,0,.5), 0 0 20px rgba(242,202,108,.18)",
     color: "#f2ca6c",
     cursor: "pointer",
     fontFamily: "system-ui, sans-serif",
-    fontSize: "10px",
-    fontWeight: "800",
-    letterSpacing: ".14em",
-    backdropFilter: "blur(8px)",
+    fontSize: "11px",
+    fontWeight: "900",
+    letterSpacing: ".12em",
   });
   button.addEventListener("click", openModal);
   document.body.appendChild(button);
 }
 
+let titleObserverInstalled = false;
 function installTitleButton() {
-  syncButton();
-  const observer = new MutationObserver(syncButton);
+  if (titleObserverInstalled || typeof window === "undefined") return;
+  titleObserverInstalled = true;
+  const run = () => syncButton();
+  run();
+  window.requestAnimationFrame(run);
+  window.setTimeout(run, 100);
+  window.setTimeout(run, 500);
+  const observer = new MutationObserver(run);
   observer.observe(document.documentElement, { childList: true, subtree: true });
-  window.addEventListener("resize", syncButton, { passive: true });
+  window.addEventListener("resize", run, { passive: true });
 }
+
+// Install the visible title control as soon as this module evaluates. It no
+// longer waits for the Phaser prototype installer to finish first.
+if (typeof window !== "undefined") installTitleButton();
 
 export function installDesktopActSelector(QuestScene: any) {
   const proto = QuestScene?.prototype;
