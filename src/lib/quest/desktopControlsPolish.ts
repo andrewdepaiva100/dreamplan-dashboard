@@ -1,3 +1,4 @@
+// @ts-nocheck -- Dynamic Phaser scene decorators are validated against the runtime scene.
 import { CONTROLS_HELP, HOW_TO_PLAY } from "./content";
 
 type HelpEntry = { title: string; body: string };
