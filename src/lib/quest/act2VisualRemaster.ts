@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 
 // Wedding Garden visual-only remaster. Gameplay geometry, interactables and collisions stay in scene.ts.
 type SceneLike = Phaser.Scene & Record<string, any>;
