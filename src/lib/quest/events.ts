@@ -30,6 +30,7 @@ if (typeof window !== "undefined") {
       import("./lastCrossingDefense"),
       import("./majesticPortal"),
       import("./relicPresentation"),
+      import("./act2VisualRemaster"),
       import("./desktopControlsPolish"),
     ])
       .then(([
@@ -53,6 +54,7 @@ if (typeof window !== "undefined") {
         lastCrossingDefense,
         majesticPortal,
         relicPresentation,
+        act2VisualRemaster,
         desktopControlsPolish,
       ]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
@@ -75,6 +77,7 @@ if (typeof window !== "undefined") {
         lastCrossingDefense.installLastCrossingDefense(QuestScene);
         majesticPortal.installMajesticPortal(QuestScene);
         relicPresentation.installRelicPresentation();
+        act2VisualRemaster.installAct2VisualRemaster(QuestScene);
         desktopControlsPolish.installDesktopControlsPolish();
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
@@ -101,7 +104,7 @@ export const EV = {
   equip: "quest:equip",
   bosschoice: "quest:bosschoice",
   companion: "quest:companion",
-  /** Scene -> React: "explore" or "battle" music layer. */
+  /** 0..1 through the day; 0 = dawn. */
   music: "quest:music",
   /** React -> scene: inventory action (eat / cook / stash / take / sleep / leave). */
   item: "quest:item",
