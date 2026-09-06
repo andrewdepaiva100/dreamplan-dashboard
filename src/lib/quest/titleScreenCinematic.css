@@ -91,13 +91,15 @@ div:has(> canvas):has(img[alt^="Pixel-art Andrew and Maria"]) > .relative.z-10 >
   pointer-events: none;
 }
 
-/* Couple artwork — now a true hero, not a thumbnail */
+/* Couple artwork — show the complete square illustration instead of cropping it. */
 div:has(> canvas):has(img[alt^="Pixel-art Andrew and Maria"]) img[alt^="Pixel-art Andrew and Maria"] {
+  display: block;
   width: 100% !important;
   height: auto !important;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  object-position: center 42%;
+  max-height: min(52vh, 560px) !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center !important;
   border: 2px solid #dfb75f !important;
   border-radius: 18px !important;
   box-shadow:
@@ -108,10 +110,6 @@ div:has(> canvas):has(img[alt^="Pixel-art Andrew and Maria"]) img[alt^="Pixel-ar
 }
 
 /* Hero image wrapper */
-div:has(> canvas):has(img[alt^="Pixel-art Andrew and Maria"]) img[alt^="Pixel-art Andrew and Maria"]:parent {
-  max-width: none;
-}
-
 div:has(> canvas):has(img[alt^="Pixel-art Andrew and Maria"]) .rounded-3xl > div:first-child {
   order: 3;
   width: min(100%, 560px) !important;
@@ -265,6 +263,9 @@ div:has(> canvas):has(img[alt^="Pixel-art Andrew and Maria"]) .rounded-3xl > div
   div:has(> canvas):has(img[alt^="Pixel-art Andrew and Maria"]) .rounded-3xl > div:first-child {
     width: min(100%,410px) !important;
     margin-top: 18px !important;
+  }
+  div:has(> canvas):has(img[alt^="Pixel-art Andrew and Maria"]) img[alt^="Pixel-art Andrew and Maria"] {
+    max-height: 46vh !important;
   }
   div:has(> canvas):has(img[alt^="Pixel-art Andrew and Maria"]) .rounded-3xl > h2 + p + p {
     font-size: .78rem !important;
