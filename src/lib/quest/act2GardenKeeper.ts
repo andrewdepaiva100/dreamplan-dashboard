@@ -5,8 +5,17 @@ import evelynPortrait from "../../assets/quest/portrait-evelyn.svg";
 const ZONE = "wedding_garden";
 const KEEPER_KIND = "garden-keeper";
 const LETTER_KIND = "garden-keeper-letter";
-const KEEPER_X = 88;
-const KEEPER_Y = 54;
+
+// Keep the main Act II cast deliberately separated so the Conservatory plaza
+// reads as a garden to explore instead of a crowd of NPCs around Maria's spawn.
+const KEEPER_X = 82;
+const KEEPER_Y = 70;
+const GUIDE_X = 86;
+const GUIDE_Y = 34;
+const SMITH_X = 104;
+const SMITH_Y = 38;
+const GUEST_X = 108;
+const GUEST_Y = 78;
 
 const KEEPER_LINES = [
   "This garden is not simply dying, Maria. Its seasons have forgotten how to belong to one another. Spring keeps trying to begin. Summer refuses to end. Autumn cannot let go. Winter will not wake. The four Seasonal Keys once kept them in balance. Bring them home, and watch what the garden remembers.",
@@ -17,11 +26,25 @@ const KEEPER_LINES = [
 ];
 
 function removeActTwoDog(scene: any) {
+  // Remove both possible versions of Max: the pre-adoption interactable and
+  // the already-adopted following sprite. Act II should contain no dog at all.
   for (const it of [...(scene.interactables ?? [])]) {
     if (it?.kind !== "dog") continue;
     it.enabled = false;
     it.obj?.destroy?.();
     scene.interactables = scene.interactables.filter((entry: any) => entry !== it);
+  }
+
+  const offer = scene.zoneState?.["dogOffer"];
+  if (offer) {
+    offer.enabled = false;
+    offer.obj?.destroy?.();
+    scene.zoneState["dogOffer"] = undefined;
+  }
+
+  if (scene.dog) {
+    scene.dog.destroy?.();
+    scene.dog = null;
   }
 }
 
@@ -33,17 +56,19 @@ function addKeeperStation(scene: any) {
   keeper?.obj?.setScale?.(0.92);
   if (keeper?.obj) scene.tweens.add({ targets: keeper.obj, y: keeper.obj.y - 2, duration: 1700, yoyo: true, repeat: -1 });
 
+  // Give Evelyn a little breathing room: the worktable sits well to her left,
+  // while the lantern and pots form a loose garden-work triangle around her.
   const depth = 6;
-  scene.add.rectangle(x - 58, y + 38, 62, 20, 0x76513b, 1).setDepth(depth);
-  scene.add.rectangle(x - 58, y + 50, 54, 7, 0x4f382d, 1).setDepth(depth);
-  scene.add.rectangle(x - 79, y + 60, 6, 24, 0x4f382d, 1).setDepth(depth);
-  scene.add.rectangle(x - 37, y + 60, 6, 24, 0x4f382d, 1).setDepth(depth);
-  scene.add.circle(x - 78, y + 27, 8, 0xb86f4f, 1).setDepth(depth + 1);
-  scene.add.circle(x - 56, y + 28, 7, 0xc57a55, 1).setDepth(depth + 1);
-  scene.add.circle(x - 35, y + 28, 6, 0xa95e45, 1).setDepth(depth + 1);
-  scene.add.rectangle(x - 49, y + 26, 18, 5, 0xb9c1a0, 1).setAngle(-18).setDepth(depth + 2);
-  scene.add.circle(x - 22, y + 29, 7, 0xd8b65d, 0.72).setDepth(depth + 1);
-  const glow = scene.add.circle(x - 22, y + 29, 17, 0xffdc82, 0.12).setDepth(depth);
+  scene.add.rectangle(x - 88, y + 42, 68, 20, 0x76513b, 1).setDepth(depth);
+  scene.add.rectangle(x - 88, y + 54, 58, 7, 0x4f382d, 1).setDepth(depth);
+  scene.add.rectangle(x - 112, y + 66, 6, 26, 0x4f382d, 1).setDepth(depth);
+  scene.add.rectangle(x - 64, y + 66, 6, 26, 0x4f382d, 1).setDepth(depth);
+  scene.add.circle(x - 111, y + 29, 8, 0xb86f4f, 1).setDepth(depth + 1);
+  scene.add.circle(x - 84, y + 29, 7, 0xc57a55, 1).setDepth(depth + 1);
+  scene.add.circle(x - 58, y + 31, 6, 0xa95e45, 1).setDepth(depth + 1);
+  scene.add.rectangle(x - 80, y + 27, 20, 5, 0xb9c1a0, 1).setAngle(-18).setDepth(depth + 2);
+  scene.add.circle(x + 48, y + 8, 7, 0xd8b65d, 0.72).setDepth(depth + 1);
+  const glow = scene.add.circle(x + 48, y + 8, 20, 0xffdc82, 0.12).setDepth(depth);
   scene.tweens.add({ targets: glow, alpha: { from: 0.06, to: 0.2 }, scale: { from: 0.85, to: 1.15 }, duration: 1400, yoyo: true, repeat: -1 });
   scene.__act2KeeperArt = { x, y, glow, stage: -1, seasonal: [] };
   refreshKeeperGarden(scene, true);
@@ -72,12 +97,12 @@ function refreshKeeperGarden(scene: any, force = false) {
     return f;
   };
   if (n >= 1) {
-    addFlower(-78, 20, 0x9dff70, 0.62);
-    for (const [dx, dy] of [[-18, 68], [12, 74], [38, 62]]) addFlower(dx, dy, 0xb9f28f);
+    addFlower(-120, 18, 0x9dff70, 0.62);
+    for (const [dx, dy] of [[-30, 82], [20, 88], [66, 66]]) addFlower(dx, dy, 0xb9f28f);
   }
   if (n >= 2) {
     art.glow?.setFillStyle?.(0xffd66f, 0.28);
-    for (const [dx, dy] of [[-6, -54], [28, -46], [52, -22]]) {
+    for (const [dx, dy] of [[18, -58], [62, -40], [92, -10]]) {
       const light = scene.add.circle(x + dx, y + dy, 5, 0xffd66f, 0.75).setDepth(7);
       made.push(light);
       scene.tweens.add({ targets: light, alpha: { from: 0.35, to: 0.9 }, duration: 1100 + Math.random() * 500, yoyo: true, repeat: -1 });
@@ -85,29 +110,29 @@ function refreshKeeperGarden(scene: any, force = false) {
   }
   if (n >= 3) {
     for (let i = 0; i < 8; i++) {
-      const leaf = scene.add.ellipse(x - 72 + i * 20, y - 58 + (i % 3) * 14, 7, 4, i % 2 ? 0xd98b43 : 0xe7b95f, 0.72).setDepth(7);
+      const leaf = scene.add.ellipse(x - 96 + i * 25, y - 68 + (i % 3) * 16, 7, 4, i % 2 ? 0xd98b43 : 0xe7b95f, 0.72).setDepth(7);
       made.push(leaf);
-      scene.tweens.add({ targets: leaf, y: leaf.y + 28, x: leaf.x + 10, alpha: 0.1, duration: 2200 + i * 130, repeat: -1, delay: i * 180 });
+      scene.tweens.add({ targets: leaf, y: leaf.y + 30, x: leaf.x + 12, alpha: 0.1, duration: 2200 + i * 130, repeat: -1, delay: i * 180 });
     }
   }
   if (n >= 4) {
-    const archLeft = scene.add.rectangle(x + 72, y - 8, 7, 72, 0x6c8f55, 1).setDepth(5);
-    const archRight = scene.add.rectangle(x + 130, y - 8, 7, 72, 0x6c8f55, 1).setDepth(5);
-    const archTop = scene.add.rectangle(x + 101, y - 43, 64, 7, 0x6c8f55, 1).setDepth(5);
+    const archLeft = scene.add.rectangle(x + 92, y - 8, 7, 72, 0x6c8f55, 1).setDepth(5);
+    const archRight = scene.add.rectangle(x + 150, y - 8, 7, 72, 0x6c8f55, 1).setDepth(5);
+    const archTop = scene.add.rectangle(x + 121, y - 43, 64, 7, 0x6c8f55, 1).setDepth(5);
     made.push(archLeft, archRight, archTop);
-    for (const [dx, dy] of [[72,-36],[84,-44],[98,-46],[112,-44],[128,-36],[72,-12],[130,-10]]) addFlower(dx, dy, 0xf2a5bd, 0.58);
-    const table = scene.add.ellipse(x + 101, y + 28, 50, 22, 0x7a563e, 1).setDepth(5);
-    const leg = scene.add.rectangle(x + 101, y + 42, 6, 26, 0x51392e, 1).setDepth(4);
-    const chair = scene.add.rectangle(x + 142, y + 35, 18, 28, 0x6a4936, 1).setDepth(4);
+    for (const [dx, dy] of [[92,-36],[104,-44],[118,-46],[132,-44],[148,-36],[92,-12],[150,-10]]) addFlower(dx, dy, 0xf2a5bd, 0.58);
+    const table = scene.add.ellipse(x + 121, y + 28, 50, 22, 0x7a563e, 1).setDepth(5);
+    const leg = scene.add.rectangle(x + 121, y + 42, 6, 26, 0x51392e, 1).setDepth(4);
+    const chair = scene.add.rectangle(x + 162, y + 35, 18, 28, 0x6a4936, 1).setDepth(4);
     made.push(table, leg, chair);
     if (!scene.__act2KeeperLetterAdded) {
       scene.__act2KeeperLetterAdded = true;
-      const letter = scene.addInteractable(x + 101, y + 20, "envelope", LETTER_KIND, "Read the letter for Maria", { id: "four-seasons", radius: 72, depth: 8 });
+      const letter = scene.addInteractable(x + 121, y + 20, "envelope", LETTER_KIND, "Read the letter for Maria", { id: "four-seasons", radius: 72, depth: 8 });
       if (letter?.obj) {
         letter.obj.setTint?.(0xffe5a8);
         scene.tweens.add({ targets: letter.obj, y: letter.obj.y - 3, duration: 1200, yoyo: true, repeat: -1 });
       }
-      scene.spawnSparkle?.(x + 101, y + 10, 0xffd978, 20);
+      scene.spawnSparkle?.(x + 121, y + 10, 0xffd978, 20);
       scene.emitToast?.("The four seasons answer together. A flowering arch opens beside Evelyn.");
     }
   }
@@ -192,6 +217,35 @@ export function installAct2GardenKeeper(QuestScene: any) {
   const proto = QuestScene?.prototype;
   if (!proto || proto.__act2GardenKeeperInstalled) return;
   proto.__act2GardenKeeperInstalled = true;
+
+  // Re-route only Act II's initial cast placements. Other acts still receive
+  // their original coordinates and behavior.
+  const originalSpawnActGuide = proto.spawnActGuide;
+  proto.spawnActGuide = function act2SpreadGuide(tx: number, ty: number) {
+    if (this.save?.current_zone === ZONE) return originalSpawnActGuide.call(this, GUIDE_X, GUIDE_Y);
+    return originalSpawnActGuide.call(this, tx, ty);
+  };
+
+  const originalAddBlacksmith = proto.addBlacksmith;
+  proto.addBlacksmith = function act2SpreadBlacksmith(tx: number, ty: number) {
+    if (this.save?.current_zone === ZONE) return originalAddBlacksmith.call(this, SMITH_X, SMITH_Y);
+    return originalAddBlacksmith.call(this, tx, ty);
+  };
+
+  const originalAddGuest = proto.addGuest;
+  proto.addGuest = function act2SpreadGuest(guest: any, tx: number, ty: number) {
+    if (this.save?.current_zone === ZONE) return originalAddGuest.call(this, guest, GUEST_X, GUEST_Y);
+    return originalAddGuest.call(this, guest, tx, ty);
+  };
+
+  // Prevent Act II from creating Max in the first place, including the branch
+  // that used to spawn him automatically when an older save had adopted him.
+  const originalAddDogOffer = proto.addDogOffer;
+  proto.addDogOffer = function noActTwoDog(tx: number, ty: number) {
+    if (this.save?.current_zone === ZONE) return;
+    return originalAddDogOffer.call(this, tx, ty);
+  };
+
   const originalBuildAct2 = proto.buildAct2;
   proto.buildAct2 = function act2GardenKeeperBuild() {
     const result = originalBuildAct2.call(this);
@@ -199,6 +253,7 @@ export function installAct2GardenKeeper(QuestScene: any) {
     addKeeperStation(this);
     return result;
   };
+
   const originalInteract = proto.interact;
   proto.interact = function act2GardenKeeperInteract() {
     if (this.save?.current_zone !== ZONE) return originalInteract.call(this);
