@@ -1,5 +1,4 @@
 // @ts-nocheck -- Runtime Phaser decorator; intentionally isolated from core scene typing.
-import * as Phaser from "phaser";
 
 const FIRST_PASS_ZONES = new Set(["sunlit_shores", "wedding_garden"]);
 const ACTOR_KINDS = new Set([
@@ -27,10 +26,12 @@ function addLandmarkDepthShadow(scene: any, sprite: any) {
 
   // Reuse the actual landmark artwork as its own offset silhouette. This gives
   // the building visible height without introducing geometric programmer art.
+  // Use the source sprite's horizontal scale as the authored scale; the scene's
+  // projection hook compensates vertical scale for upright world objects.
   const shadow = scene.add
     .sprite(sprite.x + 5, sprite.y + 9, textureKey)
     .setOrigin(sprite.originX ?? 0.5, sprite.originY ?? 0.5)
-    .setScale(sprite.scaleX ?? 1, sprite.scaleY ?? 1)
+    .setScale(sprite.scaleX ?? 1)
     .setTint(0x182038)
     .setAlpha(0.18)
     .setDepth(Math.max(2, (sprite.depth ?? 8) - 0.16));
