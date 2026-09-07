@@ -1,12 +1,11 @@
-// @ts-nocheck -- Cinematic, contextual conversation layer for Wren's Act I guide dialogue.
+// @ts-nocheck -- Stable cinematic conversation layer for Wren's Act I guide dialogue.
+// Important: this module deliberately does NOT use MutationObserver or polling.
 import wrenArt from "../../assets/quest/guide-act.png";
 import mariaPortrait from "../../assets/quest/maria-portrait.png";
 
 type Choice = { text: string; answer: string };
 type Beat = { match: RegExp; short: string; choices: Choice[] };
 
-// Wren's displayed monologue is tightened by roughly 25%, while every Maria
-// question gets a direct Wren answer before the underlying guide advances.
 const BEATS: Beat[] = [
   {
     match: /Oh — you're awake|sea told me someone was coming/i,
@@ -102,9 +101,9 @@ function style(el: HTMLElement, values: Record<string, string>) { Object.assign(
 function portrait(src: string, alt: string, maria = false) {
   const frame = document.createElement("div");
   frame.className = maria ? "quest-wren-portrait-maria" : "quest-wren-portrait-wren";
-  style(frame, { width: maria ? "72px" : "112px", height: maria ? "72px" : "112px", minWidth: maria ? "72px" : "112px", borderRadius: maria ? "18px" : "22px", border: `2px solid ${maria ? "rgba(235,190,204,.9)" : "rgba(230,191,101,.96)"}`, overflow: "hidden", background: maria ? "#e7cbd0" : "radial-gradient(circle at 50% 25%,#294762,#081224 72%)", boxShadow: maria ? "0 10px 28px #0006" : "0 0 0 4px #d3ae5914,0 0 36px #d3ae5930,0 18px 38px #0008", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: "0" });
+  style(frame, { width: maria ? "64px" : "96px", height: maria ? "64px" : "96px", minWidth: maria ? "64px" : "96px", borderRadius: maria ? "16px" : "20px", border: `2px solid ${maria ? "rgba(235,190,204,.9)" : "rgba(230,191,101,.96)"}`, overflow: "hidden", background: maria ? "#e7cbd0" : "radial-gradient(circle at 50% 25%,#294762,#081224 72%)", boxShadow: maria ? "0 10px 24px #0005" : "0 0 0 3px #d3ae5914,0 0 30px #d3ae5928,0 14px 32px #0007", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: "0" });
   const img = document.createElement("img"); img.src = src; img.alt = alt;
-  style(img, { width: maria ? "100%" : "82px", height: maria ? "100%" : "118px", objectFit: maria ? "cover" : "contain", objectPosition: "50% 12%", imageRendering: "pixelated" });
+  style(img, { width: maria ? "100%" : "74px", height: maria ? "100%" : "104px", objectFit: maria ? "cover" : "contain", objectPosition: "50% 12%", imageRendering: "pixelated" });
   frame.appendChild(img); return frame;
 }
 
@@ -119,74 +118,117 @@ function findDialog() {
   return null;
 }
 
-function beatFor(shell: HTMLElement) { const t = shell.textContent ?? ""; return BEATS.find(b => b.match.test(t)); }
+function beatFor(shell: HTMLElement) {
+  const text = shell.textContent ?? "";
+  return BEATS.find(b => b.match.test(text));
+}
 
 function decorate(shell: HTMLElement, overlay: HTMLElement, name: HTMLElement) {
   style(overlay, { background: "radial-gradient(circle at 50% 42%,rgba(5,15,31,.34),rgba(2,7,18,.72))", backdropFilter: "blur(5px) saturate(.9)" });
   style(shell, { maxWidth: "900px" });
-  const inner = name.closest(".relative.flex.items-start") as HTMLElement | null; if (!inner) return;
-  style(inner, { padding: "18px 22px", gap: "18px", alignItems: "center", minHeight: "142px" });
+  const inner = name.closest(".relative.flex.items-start") as HTMLElement | null;
+  if (!inner) return;
+  style(inner, { padding: "18px 22px", gap: "18px", alignItems: "center", minHeight: "138px" });
   if (!inner.querySelector(".quest-wren-portrait-wren")) inner.insertBefore(portrait(wrenArt, "Wren of the Shores"), inner.firstChild);
   const card = inner.parentElement as HTMLElement | null;
   if (card) style(card, { borderRadius: "24px", borderColor: "rgba(230,191,101,.92)", background: "radial-gradient(120% 180% at 0 0,#203a54fa,#081123fc 52%,#0e1127fc)", boxShadow: "0 28px 75px #0008,0 0 55px #d3ae5914" });
-  if (!shell.querySelector(".quest-wren-crownline")) {
-    const line = document.createElement("div"); line.className = "quest-wren-crownline"; line.textContent = "✦  ACT I  ·  THE SUNLIT SHORES  ·  A CONVERSATION  ✦";
-    style(line, { position: "absolute", top: "8px", left: "50%", transform: "translateX(-50%)", color: "#e6bf6599", fontSize: "9px", fontWeight: "900", letterSpacing: ".2em", whiteSpace: "nowrap", pointerEvents: "none" });
-    shell.appendChild(line);
-  }
+}
+
+function shortenVisibleLine(shell: HTMLElement, beat?: Beat) {
+  if (!beat || shell.dataset.wrenShortened === beat.short) return;
+  const candidates = Array.from(shell.querySelectorAll<HTMLElement>("p"));
+  const line = candidates.find(node => beat.match.test(node.textContent ?? ""));
+  if (!line) return;
+  line.textContent = `“${beat.short}”`;
+  shell.dataset.wrenShortened = beat.short;
 }
 
 function addPanel(shell: HTMLElement, advance: HTMLButtonElement, status: string, beat?: Beat) {
   if (shell.querySelector(".quest-wren-replies")) return;
-  const choicesData = beat?.choices ?? FALLBACK;
-  const panel = document.createElement("section"); panel.className = "quest-wren-replies";
-  style(panel, { marginTop: "10px", padding: "16px", borderRadius: "20px", border: "1px solid #d3ae5994", background: "radial-gradient(120% 160% at 50% 0%,#19243ffc,#060d1cfc 68%)", boxShadow: "0 20px 48px #0006", color: "white" });
-  const label = document.createElement("div"); label.textContent = "HOW DOES MARIA ANSWER?"; style(label, { color: "#e1b95b", fontSize: "10px", fontWeight: "900", letterSpacing: ".2em", marginBottom: "12px" }); panel.appendChild(label);
+  const panel = document.createElement("section");
+  panel.className = "quest-wren-replies";
+  style(panel, { marginTop: "10px", padding: "15px", borderRadius: "20px", border: "1px solid #d3ae5994", background: "radial-gradient(120% 160% at 50% 0%,#19243ffc,#060d1cfc 68%)", boxShadow: "0 20px 48px #0006", color: "white" });
+  const label = document.createElement("div"); label.textContent = "HOW DOES MARIA ANSWER?";
+  style(label, { color: "#e1b95b", fontSize: "10px", fontWeight: "900", letterSpacing: ".2em", marginBottom: "11px" }); panel.appendChild(label);
   const grid = document.createElement("div"); style(grid, { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: "9px" }); panel.appendChild(grid);
-  choicesData.forEach((choice, i) => {
-    const b = document.createElement("button"); b.type = "button"; b.innerHTML = `<small style="display:block;color:#d9b45d;font-weight:900;letter-spacing:.15em;margin-bottom:5px">${i === 0 ? "CURIOUS" : i === 1 ? "THOUGHTFUL" : "READY"}</small>“${choice.text}”`;
-    style(b, { minHeight: "66px", borderRadius: "15px", border: "1px solid #d3ae5957", background: "linear-gradient(150deg,#ffffff12,#ffffff06)", color: "#fff", padding: "12px 14px", textAlign: "left", fontSize: "13px", lineHeight: "1.4", cursor: "pointer", transition: ".16s ease" });
-    b.onmouseenter = () => { b.style.transform = "translateY(-2px)"; b.style.borderColor = "#e6bf65d9"; b.style.background = "linear-gradient(150deg,#d3ae592b,#ffffff0b)"; };
-    b.onmouseleave = () => { b.style.transform = "none"; b.style.borderColor = "#d3ae5957"; b.style.background = "linear-gradient(150deg,#ffffff12,#ffffff06)"; };
-    b.onclick = e => {
-      e.preventDefault(); e.stopPropagation(); grid.replaceChildren(); label.textContent = "MARIA";
-      const mariaRow = document.createElement("div"); style(mariaRow, { display: "flex", alignItems: "center", gap: "14px", padding: "10px", borderRadius: "16px", background: "#e7bdc314", border: "1px solid #e7bdc347" }); mariaRow.appendChild(portrait(mariaPortrait, "Maria", true));
-      const mq = document.createElement("div"); mq.innerHTML = `<b style="color:#efc4d0">Maria</b><div style="margin-top:5px;font-style:italic">“${choice.text}”</div>`; mariaRow.appendChild(mq); grid.appendChild(mariaRow);
-      const answer = document.createElement("div"); style(answer, { display: "flex", gap: "14px", alignItems: "center", marginTop: "10px", padding: "12px", borderRadius: "16px", background: "#d3ae5910", border: "1px solid #d3ae5945" }); answer.appendChild(portrait(wrenArt, "Wren"));
-      const aq = document.createElement("div"); aq.innerHTML = `<b style="color:#e6bf65">Wren answers</b><div style="margin-top:5px;line-height:1.5;font-style:italic">“${choice.answer}”</div>`; answer.appendChild(aq); panel.appendChild(answer);
-      const cont = document.createElement("button"); cont.type = "button"; cont.textContent = /Tap to close/i.test(status) ? "Finish conversation  ✦" : "Continue with Wren  →";
-      style(cont, { width: "100%", marginTop: "12px", minHeight: "44px", borderRadius: "13px", border: "1px solid #e6bf65d1", background: "linear-gradient(90deg,#b78f393d,#e6bf6529,#b78f393d)", color: "#f2d78f", fontWeight: "900", cursor: "pointer" });
-      cont.onclick = ev => { ev.preventDefault(); ev.stopPropagation(); advance.dataset.wrenAllowAdvance = "1"; advance.click(); }; panel.appendChild(cont);
-    }; grid.appendChild(b);
-  }); shell.appendChild(panel);
-}
 
-function shortenVisibleLine(shell: HTMLElement, beat?: Beat) {
-  if (!beat) return;
-  const candidates = Array.from(shell.querySelectorAll<HTMLElement>("p,blockquote,div"));
-  const el = candidates.find(node => beat.match.test(node.textContent ?? "") && !node.querySelector("button") && !/Wren of the Shores/.test(node.textContent ?? ""));
-  if (el && el.textContent !== beat.short) el.textContent = beat.short;
+  (beat?.choices ?? FALLBACK).forEach((choice, i) => {
+    const button = document.createElement("button"); button.type = "button";
+    button.innerHTML = `<small style="display:block;color:#d9b45d;font-weight:900;letter-spacing:.15em;margin-bottom:5px">${i === 0 ? "CURIOUS" : i === 1 ? "THOUGHTFUL" : "READY"}</small>“${choice.text}”`;
+    style(button, { minHeight: "64px", borderRadius: "15px", border: "1px solid #d3ae5957", background: "linear-gradient(150deg,#ffffff12,#ffffff06)", color: "#fff", padding: "12px 14px", textAlign: "left", fontSize: "13px", lineHeight: "1.4", cursor: "pointer" });
+    button.onclick = event => {
+      event.preventDefault(); event.stopPropagation();
+      // Freeze this panel into a single response state. No observer is allowed to
+      // re-enter while these nodes are being created.
+      grid.replaceChildren(); label.textContent = "MARIA";
+      const mariaRow = document.createElement("div");
+      style(mariaRow, { display: "flex", alignItems: "center", gap: "13px", padding: "10px", borderRadius: "16px", background: "#e7bdc314", border: "1px solid #e7bdc347" });
+      mariaRow.appendChild(portrait(mariaPortrait, "Maria", true));
+      const mq = document.createElement("div"); mq.innerHTML = `<b style="color:#efc4d0">Maria</b><div style="margin-top:5px;font-style:italic">“${choice.text}”</div>`; mariaRow.appendChild(mq); grid.appendChild(mariaRow);
+
+      const answer = document.createElement("div");
+      style(answer, { display: "flex", gap: "13px", alignItems: "center", marginTop: "10px", padding: "11px", borderRadius: "16px", background: "#d3ae5910", border: "1px solid #d3ae5945" });
+      answer.appendChild(portrait(wrenArt, "Wren"));
+      const aq = document.createElement("div"); aq.innerHTML = `<b style="color:#e6bf65">Wren</b><div style="margin-top:5px;line-height:1.5;font-style:italic">“${choice.answer}”</div>`; answer.appendChild(aq); panel.appendChild(answer);
+
+      const cont = document.createElement("button"); cont.type = "button";
+      cont.textContent = /Tap to close/i.test(status) ? "Finish conversation  ✦" : "Continue with Wren  →";
+      style(cont, { width: "100%", marginTop: "12px", minHeight: "44px", borderRadius: "13px", border: "1px solid #e6bf65d1", background: "linear-gradient(90deg,#b78f393d,#e6bf6529,#b78f393d)", color: "#f2d78f", fontWeight: "900", cursor: "pointer" });
+      cont.onclick = ev => {
+        ev.preventDefault(); ev.stopPropagation();
+        advance.dataset.wrenAllowAdvance = "1";
+        advance.click();
+        // React owns the underlying page transition. Decorate the new page only
+        // after React has committed it; never during the current click stack.
+        window.setTimeout(enhance, 40);
+      };
+      panel.appendChild(cont);
+    };
+    grid.appendChild(button);
+  });
+  shell.appendChild(panel);
 }
 
 function enhance() {
-  const f = findDialog(); if (!f) return;
-  const { shell, overlay, advance, name } = f; decorate(shell, overlay, name);
-  const status = advance.textContent ?? ""; const ready = /Tap to (continue|close)/i.test(status); const beat = beatFor(shell);
+  const found = findDialog();
+  if (!found) return;
+  const { shell, overlay, advance, name } = found;
+  decorate(shell, overlay, name);
+  const status = advance.textContent ?? "";
+  const ready = /Tap to (continue|close)/i.test(status);
+  const beat = beatFor(shell);
   if (ready) shortenVisibleLine(shell, beat);
-  if (advance.dataset.wrenGuard !== "1") {
-    advance.dataset.wrenGuard = "1";
-    advance.addEventListener("click", e => {
-      const s = advance.textContent ?? ""; if (!/Tap to (continue|close)/i.test(s)) return;
-      if (advance.dataset.wrenAllowAdvance === "1") { delete advance.dataset.wrenAllowAdvance; return; }
-      e.preventDefault(); e.stopImmediatePropagation(); addPanel(shell, advance, s, beatFor(shell));
-    }, true);
-  }
-  const panel = shell.querySelector(".quest-wren-replies") as HTMLElement | null;
-  if (!ready) panel?.remove(); else addPanel(shell, advance, status, beat);
 }
 
 export function installAct1WrenDialoguePolish() {
   if (typeof window === "undefined" || typeof document === "undefined") return;
-  const w = window as Window & { __act1WrenDialoguePolishV4?: boolean }; if (w.__act1WrenDialoguePolishV4) return; w.__act1WrenDialoguePolishV4 = true;
-  enhance(); const observer = new MutationObserver(enhance); observer.observe(document.body, { childList: true, subtree: true, characterData: true }); window.setInterval(enhance, 250);
+  const w = window as Window & { __act1WrenDialoguePolishV5?: boolean };
+  if (w.__act1WrenDialoguePolishV5) return;
+  w.__act1WrenDialoguePolishV5 = true;
+
+  // One delegated click handler replaces the previous MutationObserver +
+  // interval combination. It reacts only to deliberate user interaction.
+  document.addEventListener("click", event => {
+    const target = event.target as HTMLElement | null;
+    const advance = target?.closest<HTMLButtonElement>('button[aria-label="Continue conversation"]');
+    if (advance) {
+      const shell = advance.parentElement as HTMLElement | null;
+      if (shell && /Wren of the Shores/i.test(shell.textContent ?? "")) {
+        const status = advance.textContent ?? "";
+        if (/Tap to (continue|close)/i.test(status)) {
+          if (advance.dataset.wrenAllowAdvance === "1") {
+            delete advance.dataset.wrenAllowAdvance;
+          } else {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            addPanel(shell, advance, status, beatFor(shell));
+            return;
+          }
+        }
+      }
+    }
+    window.setTimeout(enhance, 40);
+  }, true);
+
+  window.setTimeout(enhance, 0);
 }
