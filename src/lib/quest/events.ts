@@ -39,6 +39,7 @@ if (typeof window !== "undefined") {
       import("./act2SeasonIdentity"),
       import("./act2BramForgemaster"),
       import("./act2BramWeaponOwnership"),
+      import("./act2SeasonChallenges"),
       import("./global2_5dPolish"),
       import("./desktopActSelector"),
       import("./desktopControlsPolish"),
@@ -72,6 +73,7 @@ if (typeof window !== "undefined") {
         act2SeasonIdentity,
         act2BramForgemaster,
         act2BramWeaponOwnership,
+        act2SeasonChallenges,
         global25DPolish,
         desktopActSelector,
         desktopControlsPolish,
@@ -104,6 +106,7 @@ if (typeof window !== "undefined") {
         act2SeasonIdentity.installAct2SeasonIdentity(QuestScene);
         act2BramForgemaster.installAct2BramForgemaster(QuestScene);
         act2BramWeaponOwnership.installAct2BramWeaponOwnership(QuestScene);
+        act2SeasonChallenges.installAct2SeasonChallenges(QuestScene);
         global25DPolish.installGlobal25DPolish(QuestScene);
         desktopActSelector.installDesktopActSelector(QuestScene);
         desktopControlsPolish.installDesktopControlsPolish();
