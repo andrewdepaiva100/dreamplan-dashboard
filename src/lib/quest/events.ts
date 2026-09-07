@@ -37,6 +37,7 @@ if (typeof window !== "undefined") {
       import("./act2VisualTuning"),
       import("./act2GuideCleanup"),
       import("./act2SeasonIdentity"),
+      import("./act2BramForgemaster"),
       import("./global2_5dPolish"),
       import("./desktopActSelector"),
       import("./desktopControlsPolish"),
@@ -68,6 +69,7 @@ if (typeof window !== "undefined") {
         act2VisualTuning,
         act2GuideCleanup,
         act2SeasonIdentity,
+        act2BramForgemaster,
         global25DPolish,
         desktopActSelector,
         desktopControlsPolish,
@@ -98,6 +100,7 @@ if (typeof window !== "undefined") {
         act2VisualTuning.installAct2VisualTuning(QuestScene);
         act2GuideCleanup.installAct2GuideCleanup(QuestScene);
         act2SeasonIdentity.installAct2SeasonIdentity(QuestScene);
+        act2BramForgemaster.installAct2BramForgemaster(QuestScene);
         global25DPolish.installGlobal25DPolish(QuestScene);
         desktopActSelector.installDesktopActSelector(QuestScene);
         desktopControlsPolish.installDesktopControlsPolish();
