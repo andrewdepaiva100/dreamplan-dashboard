@@ -1,4 +1,4 @@
-// @ts-nocheck -- Developer-only desktop helper intentionally patches the runtime scene.
+// @ts-nocheck -- Developer-only desktop helper.
 import type { ZoneId } from "./content";
 
 const DEV_ACT_KEY = "marias-quest-dev-act-once";
@@ -13,13 +13,6 @@ const ACTS: { label: string; subtitle: string; zone: ZoneId }[] = [
   { label: "Act V", subtitle: "Grand Cathedral", zone: "cathedral" },
 ];
 
-// The title button is installed as soon as this module evaluates, but the
-// QuestScene prototype patch is installed asynchronously by events.ts. Never
-// click Continue/New Game until that patch is definitely ready, otherwise the
-// scene can initialize from the normal save first and land back in Act I.
-let sceneOverrideReady = false;
-let pendingLaunchTimer: number | null = null;
-
 function isDesktopTitle() {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(min-width: 768px)").matches;
@@ -29,66 +22,23 @@ function titleIsVisible() {
   return Boolean(document.querySelector('img[alt^="Pixel-art Andrew and Maria"]'));
 }
 
-function findLaunchButton() {
-  const buttons = Array.from(document.querySelectorAll("button"));
-  const continuing = buttons.find(
-    (button) => button.textContent?.includes("Continue Your Journey") && !button.disabled,
-  );
-  if (continuing) return continuing;
-  return buttons.find((button) => button.textContent?.trim() === "New Game" && !button.disabled) ?? null;
-}
-
 function closeModal() {
   document.getElementById(MODAL_ID)?.remove();
 }
 
-function clearPendingLaunch() {
-  if (pendingLaunchTimer !== null) {
-    window.clearInterval(pendingLaunchTimer);
-    pendingLaunchTimer = null;
-  }
-}
-
+/**
+ * Hand the requested zone to the real React startGame path.
+ * We deliberately do not click Continue/New Game here: that was ambiguous and
+ * could restore the ordinary Act I save before the developer override ran.
+ */
 function launchAct(zone: ZoneId) {
   try {
     window.sessionStorage.setItem(DEV_ACT_KEY, zone);
-  } catch {
-    return;
+    window.dispatchEvent(new CustomEvent("marias-quest:dev-act", { detail: { zone } }));
+  } catch (error) {
+    console.error("[quest] unable to launch developer act", error);
   }
-
   closeModal();
-  clearPendingLaunch();
-
-  let attempts = 0;
-  const tryLaunch = () => {
-    attempts += 1;
-    // Critical ordering guarantee: the one-shot init override must exist before
-    // React is allowed to create Phaser.
-    if (!sceneOverrideReady) {
-      if (attempts > 100) {
-        clearPendingLaunch();
-        window.sessionStorage.removeItem(DEV_ACT_KEY);
-      }
-      return;
-    }
-
-    const button = findLaunchButton();
-    if (button) {
-      clearPendingLaunch();
-      button.click();
-      return;
-    }
-
-    if (attempts > 100) {
-      clearPendingLaunch();
-      window.sessionStorage.removeItem(DEV_ACT_KEY);
-    }
-  };
-
-  tryLaunch();
-  if (pendingLaunchTimer === null && (!sceneOverrideReady || !findLaunchButton())) {
-    pendingLaunchTimer = window.setInterval(tryLaunch, 50);
-  }
 }
 
 function openModal() {
@@ -250,41 +200,8 @@ function installTitleButton() {
 
 if (typeof window !== "undefined") installTitleButton();
 
-export function installDesktopActSelector(QuestScene: any) {
-  const proto = QuestScene?.prototype;
-  if (!proto) return;
-  if (proto.__desktopActSelectorInstalled) {
-    sceneOverrideReady = true;
-    return;
-  }
-  proto.__desktopActSelectorInstalled = true;
-
-  const originalInit = proto.init;
-  proto.init = function devActSelectorInit(data: any) {
-    let requested: ZoneId | null = null;
-    try {
-      const raw = window.sessionStorage.getItem(DEV_ACT_KEY);
-      if (ACTS.some((act) => act.zone === raw)) requested = raw as ZoneId;
-      // Consume exactly once at the scene boundary, after we know the requested
-      // zone is about to be applied.
-      window.sessionStorage.removeItem(DEV_ACT_KEY);
-    } catch {
-      requested = null;
-    }
-
-    if (requested) {
-      const nextData = {
-        ...(data ?? {}),
-        save: {
-          ...(data?.save ?? {}),
-          current_zone: requested,
-        },
-      };
-      return originalInit.call(this, nextData);
-    }
-    return originalInit.call(this, data);
-  };
-
-  sceneOverrideReady = true;
+export function installDesktopActSelector(_QuestScene: any) {
+  // Kept as the installer entry point so events.ts does not need to change.
+  // Act selection is now handled directly by React through the custom event.
   installTitleButton();
 }
