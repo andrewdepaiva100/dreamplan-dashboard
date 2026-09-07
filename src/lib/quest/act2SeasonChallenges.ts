@@ -11,7 +11,7 @@ const INTRO_COPY: Record<string, { kicker: string; body: string }> = {
   Autumn: { kicker: "RELEASE", body: "Not everything is meant to be held. Release the old growth in the order it calls to you." },
   Winter: { kicker: "REST", body: "Even a sleeping garden needs warmth. Relight the lanterns and discover the right balance." },
 };
-const SUMMER_GUARDIAN_HP = 1000;
+const SUMMER_GUARDIAN_HP = 800;
 
 function ensureState(scene: any) {
   const existing = scene.zoneState?.["seasonMiniGames"];
@@ -100,13 +100,13 @@ function springInteract(scene:any,it:any) { const st=seasonState(scene,"Spring")
 function setupSummer(scene:any) {
   if(scene.save?.current_zone!==ZONE||scene.__summerTrialInitialized)return true; const st=seasonState(scene,"Summer"); if(st.done){scene.__summerTrialInitialized=true;return true;} if(!scene.enemies?.get||!scene.spawnEnemy)return false;
   scene.__summerGuardians=[]; const spots=[[89,22],[97,27],[105,22]];
-  try { spots.forEach(([tx,ty],i)=>{ const key=scene.textures?.exists?.("enemy-bramble-guardian")?"enemy-bramble-guardian":scene.textures?.exists?.("enemy-rose-crawler")?"enemy-rose-crawler":"enemy-rush"; const speed=56+i*4; const e=scene.spawnEnemy(scene.wx(tx),scene.wy(ty),key,0,true); if(!e)return; e.setData?.("seasonMiniGame","Summer");e.setData?.("summerGuardian",true);e.setData?.("summerAwake",false);e.setData?.("summerSpeed",speed);e.setData?.("hp",SUMMER_GUARDIAN_HP);e.setData?.("maxhp",SUMMER_GUARDIAN_HP);e.setVelocity?.(0,0);e.setTint?.(0xffcf62);scene.__summerGuardians.push(e); }); }
+  try { spots.forEach(([tx,ty],i)=>{ const key=scene.textures?.exists?.("enemy-bramble-guardian")?"enemy-bramble-guardian":scene.textures?.exists?.("enemy-rose-crawler")?"enemy-rose-crawler":"enemy-rush"; const speeds=[48,51,54]; const speed=speeds[i]??51; const e=scene.spawnEnemy(scene.wx(tx),scene.wy(ty),key,0,true); if(!e)return; e.setData?.("seasonMiniGame","Summer");e.setData?.("summerGuardian",true);e.setData?.("summerAwake",false);e.setData?.("summerSpeed",speed);e.setData?.("hp",SUMMER_GUARDIAN_HP);e.setData?.("maxhp",SUMMER_GUARDIAN_HP);e.setVelocity?.(0,0);e.setTint?.(0xffcf62);scene.__summerGuardians.push(e); }); }
   catch(error){console.error("[quest] Summer trial guardians could not spawn",error);scene.__summerGuardians=[];return false;}
   if(scene.__summerGuardians.length!==3){for(const e of scene.__summerGuardians)e?.disableBody?.(true,true);scene.__summerGuardians=[];return false;} scene.__summerTrialInitialized=true; return true;
 }
 function wakeSummerGuardians(scene:any) {
   if(scene.__summerGuardiansAwake)return; scene.__summerGuardiansAwake=true;
-  for(const e of scene.__summerGuardians??[]){if(!e?.active)continue;e.setData?.("summerAwake",true);e.setData?.("speed",Number(e.getData?.("summerSpeed")??60));}
+  for(const e of scene.__summerGuardians??[]){if(!e?.active)continue;e.setData?.("summerAwake",true);e.setData?.("speed",Number(e.getData?.("summerSpeed")??51));}
 }
 function onSummerGuardianDefeated(scene:any,enemy:any){if(enemy?.getData?.("summerCounted"))return;enemy?.setData?.("summerCounted",true);const st=seasonState(scene,"Summer");st.defeated=Math.min(3,Number(st.defeated??0)+1);if(st.defeated>=3)finishTrial(scene,"Summer");else{scene.objective=`Summer — clear the bramble guardians (${st.defeated}/3).`;scene.emitToast?.(`Summer guardians cleared ${st.defeated}/3.`);scene.pushHud?.(true);}}
 function hitSummerGuardian(scene:any,enemy:any){if(!enemy?.getData?.("summerAwake")){enemy.setVelocity?.(0,0);return false;}if(!scene.__summerSwordStrike)return false;const damage=Math.max(1,Number(scene.equippedWeapon?.()?.damage??1));const hp=Math.max(0,Number(enemy.getData?.("hp")??SUMMER_GUARDIAN_HP)-damage);enemy.setData?.("hp",hp);scene.floatText?.(enemy.x,enemy.y,`-${damage}`,"#ffe9a8");enemy.setTint?.(0xffe39a);scene.time?.delayedCall?.(90,()=>enemy?.active&&enemy.setTint?.(0xffcf62));return hp<=0;}
