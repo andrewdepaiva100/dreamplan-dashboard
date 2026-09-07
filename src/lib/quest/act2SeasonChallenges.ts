@@ -61,46 +61,20 @@ function seasonKey(scene: any, season: string) {
   );
 }
 
-function decor(
-  scene: any,
-  key: string,
-  tx: number,
-  ty: number,
-  tint: number,
-  scale = 0.7,
-  alpha = 0.95,
-) {
+function decor(scene: any, key: string, tx: number, ty: number, tint: number, scale = 0.7, alpha = 0.95) {
   if (!scene.textures?.exists?.(key)) return null;
   const y = scene.wy(ty);
-  const s = scene.add
-    .sprite(scene.wx(tx), y, key)
-    .setTint(tint)
-    .setScale(scale)
-    .setAlpha(alpha)
-    .setDepth(scene.dsort?.(y + 8) ?? 6);
+  const s = scene.add.sprite(scene.wx(tx), y, key).setTint(tint).setScale(scale).setAlpha(alpha).setDepth(scene.dsort?.(y + 8) ?? 6);
   s.setData?.("act2-restoration", true);
   return s;
 }
 
-function addChallengeInteractable(
-  scene: any,
-  season: string,
-  tx: number,
-  ty: number,
-  texture: string,
-  label: string,
-  id: string,
-  index: number,
-) {
+function addChallengeInteractable(scene: any, season: string, tx: number, ty: number, texture: string, label: string, id: string, index: number) {
   if (!scene.textures?.exists?.(texture)) texture = "flowers";
-  const it = scene.addInteractable(
-    scene.wx(tx),
-    scene.wy(ty),
-    texture,
-    "season-mini-game",
-    label,
-    { id: `${season}:${id}`, radius: 72 },
-  );
+  const it = scene.addInteractable(scene.wx(tx), scene.wy(ty), texture, "season-mini-game", label, {
+    id: `${season}:${id}`,
+    radius: 72,
+  });
   if (!it) return null;
   it.data = { season, challengeId: id, index };
   it.obj.setTint?.(TINTS[season]).setScale?.(0.84);
@@ -125,7 +99,6 @@ function showCard(scene: any, season: string, complete = false) {
   document.getElementById("quest-season-card")?.remove();
   const copy = INTRO_COPY[season];
   if (!copy) return;
-
   const card = document.createElement("div");
   card.id = "quest-season-card";
   Object.assign(card.style, {
@@ -147,11 +120,8 @@ function showCard(scene: any, season: string, complete = false) {
     textAlign: "center",
     fontFamily: "Georgia, serif",
   });
-
   const title = complete ? `${season.toUpperCase()} TRIAL COMPLETE` : `${season.toUpperCase()} · ${copy.kicker}`;
-  const body = complete
-    ? `The ${season} Seasonal Key awakens.`
-    : copy.body;
+  const body = complete ? `The ${season} Seasonal Key awakens.` : copy.body;
   card.innerHTML = `
     <div style="font-size:10px;letter-spacing:.22em;font-weight:900;color:#${TINTS[season].toString(16).padStart(6, "0")};text-transform:uppercase">Wedding Garden</div>
     <div style="font-size:22px;font-weight:800;margin-top:4px;color:#fff7df">${title}</div>
@@ -184,14 +154,8 @@ function finishTrial(scene: any, season: string) {
 }
 
 function setupSpring(scene: any) {
-  const spots = [
-    [11, 22],
-    [18, 27],
-    [26, 22],
-  ];
-  scene.__springTrialNodes = spots.map(([x, y], i) =>
-    addChallengeInteractable(scene, "Spring", x, y, "flowers", "Listen to the Spring bed", `bed-${i}`, i),
-  );
+  const spots = [[11, 22], [18, 27], [26, 22]];
+  scene.__springTrialNodes = spots.map(([x, y], i) => addChallengeInteractable(scene, "Spring", x, y, "flowers", "Listen to the Spring bed", `bed-${i}`, i));
   refreshSpringVisual(scene);
 }
 
@@ -219,9 +183,7 @@ function springInteract(scene: any, it: any) {
   scene.spawnSparkle?.(it.obj.x, it.obj.y, TINTS.Spring, 10);
   it.obj.setTint?.(0xa9ef8c).setAlpha?.(0.9);
   if (st.progress >= 3) {
-    for (const node of scene.__springTrialNodes ?? []) {
-      if (node?.enabled) scene.removeInteractable?.(node);
-    }
+    for (const node of scene.__springTrialNodes ?? []) if (node?.enabled) scene.removeInteractable?.(node);
     [[11,22],[18,27],[26,22]].forEach(([x,y]) => decor(scene,"flowers",x,y,0xc8f7a8,.9,1));
     finishTrial(scene, "Spring");
   } else {
@@ -232,25 +194,46 @@ function springInteract(scene: any, it: any) {
 }
 
 function setupSummer(scene: any) {
+  if (scene.save?.current_zone !== ZONE || scene.__summerTrialInitialized) return true;
+  const st = seasonState(scene, "Summer");
+  if (st.done) {
+    scene.__summerTrialInitialized = true;
+    return true;
+  }
+  // buildAct2 runs before QuestScene creates its pooled enemy group. Do not
+  // touch spawnEnemy until that group exists; otherwise the whole realm throws
+  // and the scene safety net falls back to Act I.
+  if (!scene.enemies?.get || !scene.spawnEnemy) return false;
+
   scene.__summerGuardians = [];
-  const spots = [
-    [89, 22],
-    [97, 27],
-    [105, 22],
-  ];
-  spots.forEach(([tx, ty], i) => {
-    const key = scene.textures?.exists?.("enemy-bramble-guardian")
-      ? "enemy-bramble-guardian"
-      : scene.textures?.exists?.("enemy-rose-crawler")
-        ? "enemy-rose-crawler"
-        : "enemy-rush";
-    const e = scene.spawnEnemy?.(scene.wx(tx), scene.wy(ty), key, 42 + i * 3, true);
-    if (!e) return;
-    e.setData?.("seasonMiniGame", "Summer");
-    e.setData?.("summerGuardian", true);
-    e.setTint?.(0xffcf62);
-    scene.__summerGuardians.push(e);
-  });
+  const spots = [[89, 22], [97, 27], [105, 22]];
+  try {
+    spots.forEach(([tx, ty], i) => {
+      const key = scene.textures?.exists?.("enemy-bramble-guardian")
+        ? "enemy-bramble-guardian"
+        : scene.textures?.exists?.("enemy-rose-crawler")
+          ? "enemy-rose-crawler"
+          : "enemy-rush";
+      const e = scene.spawnEnemy(scene.wx(tx), scene.wy(ty), key, 42 + i * 3, true);
+      if (!e) return;
+      e.setData?.("seasonMiniGame", "Summer");
+      e.setData?.("summerGuardian", true);
+      e.setTint?.(0xffcf62);
+      scene.__summerGuardians.push(e);
+    });
+  } catch (error) {
+    console.error("[quest] Summer trial guardians could not spawn", error);
+    scene.__summerGuardians = [];
+    return false;
+  }
+
+  if (scene.__summerGuardians.length !== 3) {
+    for (const e of scene.__summerGuardians) e?.disableBody?.(true, true);
+    scene.__summerGuardians = [];
+    return false;
+  }
+  scene.__summerTrialInitialized = true;
+  return true;
 }
 
 function onSummerGuardianDefeated(scene: any, enemy: any) {
@@ -258,9 +241,8 @@ function onSummerGuardianDefeated(scene: any, enemy: any) {
   enemy?.setData?.("summerCounted", true);
   const st = seasonState(scene, "Summer");
   st.defeated = Math.min(3, Number(st.defeated ?? 0) + 1);
-  if (st.defeated >= 3) {
-    finishTrial(scene, "Summer");
-  } else {
+  if (st.defeated >= 3) finishTrial(scene, "Summer");
+  else {
     scene.objective = `Summer — clear the bramble guardians (${st.defeated}/3).`;
     scene.emitToast?.(`Summer guardians cleared ${st.defeated}/3.`);
     scene.pushHud?.(true);
@@ -268,20 +250,13 @@ function onSummerGuardianDefeated(scene: any, enemy: any) {
 }
 
 function setupAutumn(scene: any) {
-  const spots = [
-    [11, 77],
-    [18, 72],
-    [26, 77],
-  ];
-  scene.__autumnTrialNodes = spots.map(([x, y], i) =>
-    addChallengeInteractable(scene, "Autumn", x, y, "flowers", "Release the old growth", `release-${i}`, i),
-  );
+  const spots = [[11, 77], [18, 72], [26, 77]];
+  scene.__autumnTrialNodes = spots.map(([x, y], i) => addChallengeInteractable(scene, "Autumn", x, y, "flowers", "Release the old growth", `release-${i}`, i));
   refreshAutumnVisual(scene);
 }
 
 function refreshAutumnVisual(scene: any) {
   const st = seasonState(scene, "Autumn");
-  // The intended sequence is center -> left -> right. The next marker glows warmer.
   const order = [1, 0, 2];
   const nextIndex = order[Number(st.progress ?? 0)] ?? -1;
   (scene.__autumnTrialNodes ?? []).forEach((it: any, i: number) => {
@@ -306,9 +281,7 @@ function autumnInteract(scene: any, it: any) {
   st.progress = Number(st.progress ?? 0) + 1;
   scene.spawnSparkle?.(it.obj.x, it.obj.y, TINTS.Autumn, 10);
   if (st.progress >= 3) {
-    for (const node of scene.__autumnTrialNodes ?? []) {
-      if (node?.enabled) scene.removeInteractable?.(node);
-    }
+    for (const node of scene.__autumnTrialNodes ?? []) if (node?.enabled) scene.removeInteractable?.(node);
     [[11,77],[18,72],[26,77]].forEach(([x,y]) => decor(scene,"flowers",x,y,0xc7763d,.72,.78));
     finishTrial(scene, "Autumn");
   } else {
@@ -319,14 +292,8 @@ function autumnInteract(scene: any, it: any) {
 }
 
 function setupWinter(scene: any) {
-  const spots = [
-    [88, 77],
-    [97, 72],
-    [105, 77],
-  ];
-  scene.__winterTrialNodes = spots.map(([x, y], i) =>
-    addChallengeInteractable(scene, "Winter", x, y, "lamp", "Adjust the Winter lantern", `lamp-${i}`, i),
-  );
+  const spots = [[88, 77], [97, 72], [105, 77]];
+  scene.__winterTrialNodes = spots.map(([x, y], i) => addChallengeInteractable(scene, "Winter", x, y, "lamp", "Adjust the Winter lantern", `lamp-${i}`, i));
   refreshWinterVisual(scene);
 }
 
@@ -343,7 +310,6 @@ function refreshWinterVisual(scene: any) {
 function winterInteract(scene: any, it: any) {
   const st = seasonState(scene, "Winter");
   const i = Number(it.data?.index ?? 0);
-  // Simple balance puzzle: a lantern changes itself and one neighbour.
   const pairs: Record<number, number[]> = { 0: [0, 1], 1: [0, 1, 2], 2: [1, 2] };
   const lamps = [...(st.lamps ?? [false, true, false])];
   for (const idx of pairs[i] ?? [i]) lamps[idx] = !lamps[idx];
@@ -351,9 +317,7 @@ function winterInteract(scene: any, it: any) {
   scene.spawnSparkle?.(it.obj.x, it.obj.y, TINTS.Winter, 8);
   refreshWinterVisual(scene);
   if (lamps.every(Boolean)) {
-    for (const node of scene.__winterTrialNodes ?? []) {
-      if (node?.enabled) scene.removeInteractable?.(node);
-    }
+    for (const node of scene.__winterTrialNodes ?? []) if (node?.enabled) scene.removeInteractable?.(node);
     [[88,77],[97,72],[105,77]].forEach(([x,y]) => decor(scene,"lamp",x,y,0xffe5a3,.84,1));
     finishTrial(scene, "Winter");
   } else {
@@ -367,7 +331,9 @@ function winterInteract(scene: any, it: any) {
 function setupMiniGames(scene: any) {
   ensureState(scene);
   setupSpring(scene);
-  setupSummer(scene);
+  // Summer is intentionally deferred until QuestScene.create() has created
+  // this.enemies. setupSummer() is retried safely from the update wrapper.
+  scene.__summerTrialInitialized = false;
   setupAutumn(scene);
   setupWinter(scene);
   SEASONS.forEach((s) => setKeyLockedVisual(scene, s));
@@ -402,9 +368,7 @@ function applyRestoration(scene: any, season: string) {
   const [x, y] = SPOTS[season];
   const tint = TINTS[season];
   const offsets = [[-8,0],[-5,6],[0,8],[6,5],[8,-1],[3,-7],[-4,-6]];
-  offsets.forEach(([dx, dy], i) =>
-    decor(scene, i === 5 ? "tree" : "flowers", x + dx, y + dy, tint, i === 5 ? 0.78 : 0.62 + (i % 2) * 0.1, 0.88),
-  );
+  offsets.forEach(([dx, dy], i) => decor(scene, i === 5 ? "tree" : "flowers", x + dx, y + dy, tint, i === 5 ? 0.78 : 0.62 + (i % 2) * 0.1, 0.88));
   const index = SEASONS.indexOf(season as any);
   addFountainLayer(scene, season, index);
   const count = Object.keys(scene.__act2Restored).length;
@@ -413,9 +377,7 @@ function applyRestoration(scene: any, season: string) {
   if (count === 4) {
     scene.spawnSparkle?.(scene.wx(66), scene.wy(54), 0xffe9a8, 28);
     scene.emitToast?.("The Wedding Garden breathes in all four seasons again.");
-  } else {
-    scene.emitToast?.(`${season} settles back into the Wedding Garden.`);
-  }
+  } else scene.emitToast?.(`${season} settles back into the Wedding Garden.`);
 }
 
 function maybeShowProximityIntro(scene: any) {
@@ -433,7 +395,7 @@ function maybeShowProximityIntro(scene: any) {
     if (season === "Spring") scene.objective = `Spring — follow the answering flower beds (${st.progress ?? 0}/3).`;
     if (season === "Summer") scene.objective = `Summer — clear the bramble guardians (${st.defeated ?? 0}/3).`;
     if (season === "Autumn") scene.objective = `Autumn — release the old growth in order (${st.progress ?? 0}/3).`;
-    if (season === "Winter") scene.objective = `Winter — bring all three lanterns into balance.`;
+    if (season === "Winter") scene.objective = "Winter — bring all three lanterns into balance.";
     scene.pushHud?.(true);
     break;
   }
@@ -476,7 +438,6 @@ export function installAct2SeasonChallenges(QuestScene: any) {
       this.pushHud?.(true);
       return;
     }
-
     const before = Number(this.zoneState?.["keysFound"] ?? 0);
     const id = nearest?.kind === "season-key" ? nearest.id : null;
     const result = originalInteract.apply(this, args);
@@ -488,6 +449,7 @@ export function installAct2SeasonChallenges(QuestScene: any) {
   const originalUpdate = proto.update;
   proto.update = function act2SeasonMiniGameUpdate(time: number, delta: number) {
     const result = originalUpdate.call(this, time, delta);
+    if (this.save?.current_zone === ZONE && !this.__summerTrialInitialized) setupSummer(this);
     maybeShowProximityIntro(this);
     return result;
   };
