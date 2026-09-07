@@ -35,6 +35,8 @@ if (typeof window !== "undefined") {
       import("./act2GardenKeeper"),
       import("./act2EvelynSprite"),
       import("./act2VisualTuning"),
+      import("./act2GuideCleanup"),
+      import("./act2SeasonIdentity"),
       import("./global2_5dPolish"),
       import("./desktopActSelector"),
       import("./desktopControlsPolish"),
@@ -64,6 +66,8 @@ if (typeof window !== "undefined") {
         act2GardenKeeper,
         act2EvelynSprite,
         act2VisualTuning,
+        act2GuideCleanup,
+        act2SeasonIdentity,
         global25DPolish,
         desktopActSelector,
         desktopControlsPolish,
@@ -92,6 +96,8 @@ if (typeof window !== "undefined") {
         act2GardenKeeper.installAct2GardenKeeper(QuestScene);
         act2EvelynSprite.installAct2EvelynSprite(QuestScene);
         act2VisualTuning.installAct2VisualTuning(QuestScene);
+        act2GuideCleanup.installAct2GuideCleanup(QuestScene);
+        act2SeasonIdentity.installAct2SeasonIdentity(QuestScene);
         global25DPolish.installGlobal25DPolish(QuestScene);
         desktopActSelector.installDesktopActSelector(QuestScene);
         desktopControlsPolish.installDesktopControlsPolish();
