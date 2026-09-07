@@ -22,6 +22,8 @@ const STORY = {
     "I learned that from a couple who came through this garden years ago. They argued right here beside the forge, then sat on that bench until sunset and left holding hands. Before they went, the husband told me: 'Don't confuse an easy season with a lasting one.' I kept the sentence.",
   boss:
     "The thing inside the Conservatory feeds on the lie that carrying everything is the same as being strong. It isn't. Strength is knowing what belongs in your hands and what should be set down. When you go in there, don't let its hurry become yours.",
+  final:
+    "All four seasons are in the steel now — renewal, warmth, release, and rest. That's the whole lesson. Strength isn't never changing; it's letting every season shape you without losing what you promised to protect. The blade is ready. So are you.",
 };
 
 function style(el: HTMLElement, values: Record<string, string>) {
@@ -30,6 +32,10 @@ function style(el: HTMLElement, values: Record<string, string>) {
 
 function currentKeys(scene: any) {
   return Math.max(0, Math.min(4, Number(scene.zoneState?.["keysFound"] ?? 0)));
+}
+
+function finalForgeDone(scene: any) {
+  return scene.zoneState?.["bramFinalCleared"] === true;
 }
 
 function ensureBramPresentation(scene: any, it: any) {
@@ -119,6 +125,7 @@ function showBramDialogue(scene: any) {
   const keys = currentKeys(scene);
   const hasBlade = scene.save?.weapons?.includes?.(BLADE) === true;
   const tempered = Math.max(0, Number(scene.zoneState?.["bramTempered"] ?? 0));
+  const needsFinal = keys >= 4 && !finalForgeDone(scene);
 
   const overlay = document.createElement("div");
   overlay.id = "quest-bram-dialogue";
@@ -188,7 +195,9 @@ function showBramDialogue(scene: any) {
   speaker.textContent = "Bram";
   style(speaker, { fontFamily: "Georgia,serif", color: "#efc96b", fontSize: "16px", fontWeight: "800" });
   const line = document.createElement("p");
-  line.textContent = STORY.first;
+  line.textContent = needsFinal
+    ? "Four keys. Good. I could hear the garden settle from here. Bring me the blade, Maria. Before you walk into that Conservatory, we finish what the seasons started."
+    : STORY.first;
   style(line, { fontFamily: "Georgia,serif", fontStyle: "italic", fontSize: "16px", lineHeight: "1.62", color: "rgba(255,255,255,.95)", minHeight: "116px", margin: "10px 0 14px" });
   const response = document.createElement("div");
   style(response, { display: "none", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(226,183,90,.2)" });
@@ -207,8 +216,13 @@ function showBramDialogue(scene: any) {
     response.innerHTML = `<div style="font-family:Georgia,serif;color:#efc96b;font-weight:800;margin-bottom:7px">Bram</div><div style="font-family:Georgia,serif;font-style:italic;line-height:1.58;color:rgba(255,255,255,.93)">“${bram}”</div>`;
   };
 
-  const addChoice = (label: string, answer: string, action?: () => void) => {
+  const addChoice = (label: string, answer: string, action?: () => void, emphasized = false) => {
     const b = choiceButton(label);
+    if (emphasized) {
+      b.style.borderColor = "rgba(245,199,95,.9)";
+      b.style.background = "linear-gradient(135deg,rgba(224,165,66,.26),rgba(255,255,255,.07))";
+      b.style.boxShadow = "0 0 24px rgba(226,177,75,.12)";
+    }
     b.onclick = () => {
       action?.();
       setLine(label, answer);
@@ -216,7 +230,17 @@ function showBramDialogue(scene: any) {
     choices.appendChild(b);
   };
 
-  if (!hasBlade) {
+  if (needsFinal) {
+    addChoice("Finish the Four-Season Tempering", `${STORY.final} One more thing before you go: ${STORY.boss}`, () => {
+      scene.zoneState["bramTempered"] = 4;
+      scene.zoneState["bramFinalCleared"] = true;
+      scene.objective = "Enter the Grand Conservatory — Bram's final tempering is complete.";
+      scene.spawnSparkle?.(scene.player.x, scene.player.y, 0xffd36b, 30);
+      scene.cameras?.main?.flash?.(260, 255, 222, 146);
+      scene.emitToast?.("Bram completes the Four-Season Tempering. The Conservatory is ready.");
+      scene.pushHud?.(true);
+    }, true);
+  } else if (!hasBlade) {
     addChoice("Can you forge something for me?", "I already did. I started it before dawn because the forge went warm before you arrived. The Ember Blade isn't a weapon made for anger; it's a tool for cutting through what crowds your way. Take it. Then bring it back as the seasons return, and I'll temper it to what the garden teaches you.", () => {
       const fresh = scene.grantWeapon?.(BLACKSMITH.weapon);
       if (fresh) {
@@ -247,11 +271,11 @@ function showBramDialogue(scene: any) {
   addChoice("What do you do here besides forge blades?", STORY.garden);
   addChoice("What makes something strong enough to last?", STORY.covenant);
   addChoice("You sound like you've seen a lot of people come through here.", STORY.legacy);
-  if (keys >= 4) addChoice("What should I know before I enter the Conservatory?", STORY.boss);
+  if (keys >= 4 && finalForgeDone(scene)) addChoice("What should I know before I enter the Conservatory?", STORY.boss);
 
   const footer = document.createElement("div");
   style(footer, { gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginTop: "3px", paddingTop: "13px", borderTop: "1px solid rgba(226,183,90,.2)" });
-  footer.innerHTML = `<div style="font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.5)">Forge record</div><div style="font-family:Georgia,serif;color:#e8bf62;font-size:13px">Seasonal tempering: ${tempered}/4 · Keys restored: ${keys}/4</div>`;
+  footer.innerHTML = `<div style="font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.5)">Forge record</div><div style="font-family:Georgia,serif;color:#e8bf62;font-size:13px">Seasonal tempering: ${needsFinal ? "Final tempering required" : `${Math.max(tempered, finalForgeDone(scene) ? 4 : 0)}/4`} · Keys restored: ${keys}/4</div>`;
   body.appendChild(footer);
 
   const exit = () => {
@@ -293,6 +317,22 @@ export function installAct2BramForgemaster(QuestScene: any) {
         showBramDialogue(this);
         return;
       }
+      if (nearest?.kind === "conservatory" && currentKeys(this) >= 4 && !finalForgeDone(this)) {
+        this.objective = "Return to Bram the Forgemaster before entering the Grand Conservatory.";
+        this.emitToast?.("The four seasons are restored, but Bram still needs to finish the blade.");
+        this.pushHud?.(true);
+        return;
+      }
+
+      const before = currentKeys(this);
+      const result = originalInteract.apply(this, args);
+      const after = currentKeys(this);
+      if (before < 4 && after >= 4 && !finalForgeDone(this)) {
+        this.objective = "Return to Bram the Forgemaster — all four Seasonal Keys are restored.";
+        this.emitToast?.("All four seasons are home. Bram asked to see the blade before the Conservatory.");
+        this.pushHud?.(true);
+      }
+      return result;
     }
     return originalInteract.apply(this, args);
   };
