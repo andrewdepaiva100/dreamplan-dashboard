@@ -64,10 +64,38 @@ function finishTrial(scene: any, season: string) {
 }
 
 function setupSpring(scene: any) {
-  const spots=[[11,22],[18,27],[26,22]]; scene.__springTrialNodes=spots.map(([x,y],i)=>addChallengeInteractable(scene,"Spring",x,y,"flowers","Listen to the Spring bed",`bed-${i}`,i)); refreshSpringVisual(scene);
+  const spots=[[11,22],[18,27],[26,22]];
+  scene.__springTrialNodes=spots.map(([x,y],i)=>addChallengeInteractable(scene,"Spring",x,y,"flowers","Listen to the Spring bed",`bed-${i}`,i));
+  refreshSpringVisual(scene);
 }
-function refreshSpringVisual(scene:any) { const st=seasonState(scene,"Spring"); (scene.__springTrialNodes??[]).forEach((it:any,i:number)=>{ if(!it?.obj?.active)return; const current=i===Number(st.progress??0); it.obj.setAlpha?.(current?1:.42); it.obj.setTint?.(current?0xd7ffb8:0x7e9f76); it.label=current?"Wake this answering flower bed":"Listen for the answering flower bed"; }); }
-function springInteract(scene:any,it:any) { const st=seasonState(scene,"Spring"), expected=Number(st.progress??0); if(it.data?.index!==expected){st.progress=0;scene.emitToast?.("Spring falls quiet — listen for the bed that glows first.");refreshSpringVisual(scene);return;} st.progress=expected+1;scene.spawnSparkle?.(it.obj.x,it.obj.y,TINTS.Spring,10);it.obj.setTint?.(0xa9ef8c).setAlpha?.(.9); if(st.progress>=3){for(const node of scene.__springTrialNodes??[])if(node?.enabled)scene.removeInteractable?.(node);[[11,22],[18,27],[26,22]].forEach(([x,y])=>decor(scene,"flowers",x,y,0xc8f7a8,.9,1));finishTrial(scene,"Spring");}else{scene.objective=`Spring — follow the answering beds (${st.progress}/3).`;scene.emitToast?.(`Spring answers ${st.progress}/3.`);refreshSpringVisual(scene);} }
+function showSpringBedHint(scene:any,it:any) {
+  scene.__springBedHint?.destroy?.();
+  if(!it?.obj?.active)return;
+  const hint=scene.add.text(it.obj.x,it.obj.y-34,"✦ WAKE THIS BED FIRST ✦",{fontFamily:"system-ui, sans-serif",fontSize:"11px",fontStyle:"bold",color:"#f4ffd9",backgroundColor:"#315b3bcc",padding:{x:7,y:4},stroke:"#17351f",strokeThickness:2}).setOrigin(.5,1).setDepth(980);
+  scene.__springBedHint=hint;
+  scene.tweens?.add?.({targets:hint,y:hint.y-5,alpha:{from:.78,to:1},duration:700,yoyo:true,repeat:3,ease:"Sine.easeInOut",onComplete:()=>{scene.tweens?.add?.({targets:hint,alpha:0,duration:500,onComplete:()=>{if(scene.__springBedHint===hint)scene.__springBedHint=null;hint.destroy();}});}});
+}
+function refreshSpringVisual(scene:any) {
+  const st=seasonState(scene,"Spring");
+  const currentIndex=Number(st.progress??0);
+  let currentNode:any=null;
+  (scene.__springTrialNodes??[]).forEach((it:any,i:number)=>{
+    if(!it?.obj?.active)return;
+    scene.tweens?.killTweensOf?.(it.obj);
+    const current=i===currentIndex;
+    if(current)currentNode=it;
+    it.obj.setScale?.(current?1.08:.78);
+    it.obj.setAlpha?.(current?1:.28);
+    it.obj.setTint?.(current?0xdfff9c:0x62745f);
+    it.label=current?"Wake this glowing Spring bed":"This bed is still sleeping";
+    if(current){
+      scene.tweens?.add?.({targets:it.obj,scaleX:{from:1.02,to:1.2},scaleY:{from:1.02,to:1.2},alpha:{from:.78,to:1},duration:650,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
+      scene.spawnSparkle?.(it.obj.x,it.obj.y-8,0xcfff8f,6);
+    }
+  });
+  showSpringBedHint(scene,currentNode);
+}
+function springInteract(scene:any,it:any) { const st=seasonState(scene,"Spring"), expected=Number(st.progress??0); if(it.data?.index!==expected){st.progress=0;scene.emitToast?.("Spring falls quiet — follow the brightest pulsing bed.");refreshSpringVisual(scene);return;} st.progress=expected+1;scene.spawnSparkle?.(it.obj.x,it.obj.y,TINTS.Spring,10);it.obj.setTint?.(0xa9ef8c).setAlpha?.(.9); if(st.progress>=3){scene.__springBedHint?.destroy?.();scene.__springBedHint=null;for(const node of scene.__springTrialNodes??[]){scene.tweens?.killTweensOf?.(node?.obj);if(node?.enabled)scene.removeInteractable?.(node);}[[11,22],[18,27],[26,22]].forEach(([x,y])=>decor(scene,"flowers",x,y,0xc8f7a8,.9,1));finishTrial(scene,"Spring");}else{scene.objective=`Spring — follow the brightest pulsing flower bed (${st.progress}/3).`;scene.emitToast?.(`Spring answers ${st.progress}/3 — look for the next bright bed.`);refreshSpringVisual(scene);} }
 
 function setupSummer(scene:any) {
   if(scene.save?.current_zone!==ZONE||scene.__summerTrialInitialized)return true; const st=seasonState(scene,"Summer"); if(st.done){scene.__summerTrialInitialized=true;return true;} if(!scene.enemies?.get||!scene.spawnEnemy)return false;
@@ -94,7 +122,7 @@ function setupMiniGames(scene:any){ensureState(scene);setupSpring(scene);scene._
 function addFountainLayer(scene:any,season:string,index:number){scene.__act2FountainLayers??={};if(scene.__act2FountainLayers[season])return;const angles=[[-9,-5],[9,-5],[-9,7],[9,7]], [dx,dy]=angles[index]??[0,0],key=season==="Winter"?"spark":"flowers",s=decor(scene,key,66+dx,54+dy,TINTS[season],season==="Winter"?.7:.64,.9);if(s)scene.__act2FountainLayers[season]=s;}
 function wakeConservatory(scene:any,count:number){scene.__act2ConservatoryWake??=[];while(scene.__act2ConservatoryWake.length<count){const i=scene.__act2ConservatoryWake.length,pts=[[113,45],[121,40],[128,45],[121,57]],[x,y]=pts[i],s=decor(scene,i===3?"flowers":"lamp",x,y,TINTS[SEASONS[i]],i===3?.72:.6,.38+i*.13);if(s)scene.__act2ConservatoryWake.push(s);else break;}}
 function applyRestoration(scene:any,season:string){scene.__act2Restored??={};if(scene.__act2Restored[season])return;scene.__act2Restored[season]=true;const[x,y]=SPOTS[season],tint=TINTS[season],offsets=[[-8,0],[-5,6],[0,8],[6,5],[8,-1],[3,-7],[-4,-6]];offsets.forEach(([dx,dy],i)=>decor(scene,i===5?"tree":"flowers",x+dx,y+dy,tint,i===5?.78:.62+(i%2)*.1,.88));addFountainLayer(scene,season,SEASONS.indexOf(season as any));const count=Object.keys(scene.__act2Restored).length;wakeConservatory(scene,count);scene.spawnSparkle?.(scene.wx(x),scene.wy(y),tint,18);if(count===4){scene.spawnSparkle?.(scene.wx(66),scene.wy(54),0xffe9a8,28);scene.emitToast?.("The Wedding Garden breathes in all four seasons again.");}else scene.emitToast?.(`${season} settles back into the Wedding Garden.`);}
-function maybeShowProximityIntro(scene:any){if(scene.save?.current_zone!==ZONE||!scene.player?.active||scene.frozen)return;scene.__seasonIntroShown??=new Set<string>();for(const season of SEASONS){if(scene.__seasonIntroShown.has(season)||challengeDone(scene,season))continue;const[tx,ty]=SPOTS[season],dx=scene.player.x-scene.wx(tx),dy=scene.player.y-scene.wy(ty);if(Math.hypot(dx,dy)>185)continue;scene.__seasonIntroShown.add(season);showCard(scene,season,false);if(season==="Summer")wakeSummerGuardians(scene);const st=seasonState(scene,season);if(season==="Spring")scene.objective=`Spring — follow the answering flower beds (${st.progress??0}/3).`;if(season==="Summer")scene.objective=`Summer — clear the bramble guardians (${st.defeated??0}/3).`;if(season==="Autumn")scene.objective=`Autumn — release the old growth in order (${st.progress??0}/3).`;if(season==="Winter")scene.objective="Winter — bring all three lanterns into balance.";scene.pushHud?.(true);break;}}
+function maybeShowProximityIntro(scene:any){if(scene.save?.current_zone!==ZONE||!scene.player?.active||scene.frozen)return;scene.__seasonIntroShown??=new Set<string>();for(const season of SEASONS){if(scene.__seasonIntroShown.has(season)||challengeDone(scene,season))continue;const[tx,ty]=SPOTS[season],dx=scene.player.x-scene.wx(tx),dy=scene.player.y-scene.wy(ty);if(Math.hypot(dx,dy)>185)continue;scene.__seasonIntroShown.add(season);showCard(scene,season,false);if(season==="Summer")wakeSummerGuardians(scene);if(season==="Spring")refreshSpringVisual(scene);const st=seasonState(scene,season);if(season==="Spring")scene.objective=`Spring — follow the brightest pulsing flower bed (${st.progress??0}/3).`;if(season==="Summer")scene.objective=`Summer — clear the bramble guardians (${st.defeated??0}/3).`;if(season==="Autumn")scene.objective=`Autumn — release the old growth in order (${st.progress??0}/3).`;if(season==="Winter")scene.objective="Winter — bring all three lanterns into balance.";scene.pushHud?.(true);break;}}
 
 export function installAct2SeasonChallenges(QuestScene:any){const proto=QuestScene?.prototype;if(!proto||proto.__act2SeasonChallengesInstalled)return;proto.__act2SeasonChallengesInstalled=true;
   const originalBuild=proto.buildAct2;proto.buildAct2=function(...args:any[]){const result=originalBuild.apply(this,args);setupMiniGames(this);return result;};
