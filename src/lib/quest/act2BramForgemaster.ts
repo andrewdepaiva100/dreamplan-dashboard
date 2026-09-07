@@ -38,6 +38,18 @@ function finalForgeDone(scene: any) {
   return scene.zoneState?.["bramFinalCleared"] === true;
 }
 
+function askedSet(scene: any, stage: string) {
+  scene.zoneState["bramAsked"] ??= {};
+  const all = scene.zoneState["bramAsked"];
+  const values = Array.isArray(all[stage]) ? all[stage] : [];
+  return new Set<string>(values);
+}
+
+function persistAsked(scene: any, stage: string, asked: Set<string>) {
+  scene.zoneState["bramAsked"] ??= {};
+  scene.zoneState["bramAsked"][stage] = [...asked];
+}
+
 function ensureBramPresentation(scene: any, it: any) {
   if (!it?.obj?.active || it.obj.getData?.("bram-premium")) return;
   it.obj.setData?.("bram-premium", true);
@@ -47,8 +59,6 @@ function ensureBramPresentation(scene: any, it: any) {
   it.obj.clearTint?.();
   it.obj.setDepth?.(scene.dsort?.(it.obj.y + (it.obj.displayHeight ?? 34) * 0.28) ?? 14);
 
-  // Keep the authored smith sprite as the character art. These small authored
-  // accents make him read as important without replacing him with geometric art.
   if (scene.textures?.exists?.("relic")) {
     const crest = scene.add.sprite(it.obj.x, it.obj.y + 7, "relic")
       .setScale(0.26)
@@ -126,6 +136,8 @@ function showBramDialogue(scene: any) {
   const hasBlade = scene.save?.weapons?.includes?.(BLADE) === true;
   const tempered = Math.max(0, Number(scene.zoneState?.["bramTempered"] ?? 0));
   const needsFinal = keys >= 4 && !finalForgeDone(scene);
+  const stage = needsFinal ? "final" : `keys-${keys}-${hasBlade ? "blade" : "no-blade"}`;
+  const asked = askedSet(scene, stage);
 
   const overlay = document.createElement("div");
   overlay.id = "quest-bram-dialogue";
@@ -208,6 +220,14 @@ function showBramDialogue(scene: any) {
   style(choices, { display: "flex", flexDirection: "column", gap: "8px" });
   body.appendChild(choices);
 
+  let finished = false;
+  const exit = () => {
+    overlay.remove();
+    scene.scene?.resume?.();
+    scene.physics?.resume?.();
+    scene.frozen = false;
+  };
+
   const setLine = (maria: string, bram: string) => {
     speaker.textContent = "Maria";
     speaker.style.color = "#f0c4d2";
@@ -216,74 +236,121 @@ function showBramDialogue(scene: any) {
     response.innerHTML = `<div style="font-family:Georgia,serif;color:#efc96b;font-weight:800;margin-bottom:7px">Bram</div><div style="font-family:Georgia,serif;font-style:italic;line-height:1.58;color:rgba(255,255,255,.93)">“${bram}”</div>`;
   };
 
-  const addChoice = (label: string, answer: string, action?: () => void, emphasized = false) => {
-    const b = choiceButton(label);
-    if (emphasized) {
-      b.style.borderColor = "rgba(245,199,95,.9)";
-      b.style.background = "linear-gradient(135deg,rgba(224,165,66,.26),rgba(255,255,255,.07))";
-      b.style.boxShadow = "0 0 24px rgba(226,177,75,.12)";
-    }
-    b.onclick = () => {
-      action?.();
-      setLine(label, answer);
+  const renderChoices = () => {
+    choices.innerHTML = "";
+
+    const addChoice = (id: string, label: string, answer: string, action?: () => void, emphasized = false) => {
+      if (asked.has(id)) return;
+      const b = choiceButton(label);
+      if (emphasized) {
+        b.style.borderColor = "rgba(245,199,95,.9)";
+        b.style.background = "linear-gradient(135deg,rgba(224,165,66,.26),rgba(255,255,255,.07))";
+        b.style.boxShadow = "0 0 24px rgba(226,177,75,.12)";
+      }
+      b.onclick = () => {
+        asked.add(id);
+        persistAsked(scene, stage, asked);
+        action?.();
+        setLine(label, answer);
+        renderChoices();
+      };
+      choices.appendChild(b);
     };
-    choices.appendChild(b);
+
+    if (needsFinal) {
+      addChoice("final-temper", "Finish the Four-Season Tempering", `${STORY.final} One more thing before you go: ${STORY.boss}`, () => {
+        scene.zoneState["bramTempered"] = 4;
+        scene.zoneState["bramFinalCleared"] = true;
+        scene.objective = "Enter the Grand Conservatory — Bram's final tempering is complete.";
+        scene.spawnSparkle?.(scene.player.x, scene.player.y, 0xffd36b, 30);
+        scene.cameras?.main?.flash?.(260, 255, 222, 146);
+        scene.emitToast?.("Bram completes the Four-Season Tempering. The Conservatory is ready.");
+        scene.pushHud?.(true);
+        finished = true;
+      }, true);
+      addChoice("final-question", "What should I remember when I go in there?", STORY.boss);
+    } else if (!hasBlade) {
+      addChoice("blade", "Can you forge something for me?", "I already did. I started it before dawn because the forge went warm before you arrived. The Ember Blade isn't a weapon made for anger; it's a tool for cutting through what crowds your way. Take it. Then bring it back as the seasons return, and I'll temper it to what the garden teaches you.", () => {
+        const fresh = scene.grantWeapon?.(BLACKSMITH.weapon);
+        if (fresh) {
+          scene.spawnSparkle?.(scene.player.x, scene.player.y, 0xffb35f, 22);
+          scene.emitToast?.("Bram places the Ember Blade in Maria's hands.");
+          scene.refreshHand?.();
+        }
+      }, true);
+    } else {
+      const canTemper = keys > tempered;
+      addChoice(
+        "temper",
+        canTemper ? `Temper the Ember Blade with what I've restored (${keys}/4)` : `How is the Ember Blade holding? (${tempered}/4 tempered)`,
+        canTemper
+          ? `There. ${SEASON_NAMES[Math.max(0, keys - 1)] ?? "Another season"} left its mark in the steel. Not louder — steadier. That's what good tempering does. Bring it back when another season comes home.`
+          : keys < 4
+            ? "It is holding exactly as it should. Restore another season and bring it back. Good metal learns from every honest fire."
+            : "All four seasons are in it now: renewal, abundance, release, and rest. I wouldn't touch it again. Some things are finished when they finally become balanced.",
+        () => {
+          if (canTemper) {
+            scene.zoneState["bramTempered"] = keys;
+            scene.spawnSparkle?.(scene.player.x, scene.player.y, 0xf0bd62, 18);
+            scene.emitToast?.(`Bram tempers the Ember Blade — ${keys}/4 seasonal marks.`);
+          }
+        },
+        canTemper,
+      );
+    }
+
+    addChoice("garden", "What do you do here besides forge blades?", STORY.garden);
+    addChoice("covenant", "What makes something strong enough to last?", STORY.covenant);
+    addChoice("legacy", "You sound like you've seen a lot of people come through here.", STORY.legacy);
+    if (keys >= 4 && finalForgeDone(scene)) addChoice("boss", "What should I know before I enter the Conservatory?", STORY.boss);
+
+    const remaining = choices.querySelectorAll("button").length;
+    if (remaining === 0 || finished) {
+      const end = choiceButton(finalForgeDone(scene)
+        ? "I'm ready. I'll see this through."
+        : "That's enough for now. I'll keep going.");
+      end.style.textAlign = "center";
+      end.style.borderColor = "rgba(245,199,95,.75)";
+      end.onclick = () => {
+        speaker.textContent = "Bram";
+        speaker.style.color = "#efc96b";
+        line.textContent = finalForgeDone(scene)
+          ? "Good. Go steady, Maria. The garden has taught you everything I could."
+          : "Then go on. The forge will be warm when you come back.";
+        response.style.display = "none";
+        choices.innerHTML = "";
+        const closeEnd = choiceButton("End conversation");
+        closeEnd.style.textAlign = "center";
+        closeEnd.onclick = exit;
+        choices.appendChild(closeEnd);
+      };
+      choices.appendChild(end);
+    } else {
+      const leave = choiceButton("End conversation");
+      leave.style.textAlign = "center";
+      leave.style.opacity = "0.72";
+      leave.onclick = () => {
+        speaker.textContent = "Bram";
+        speaker.style.color = "#efc96b";
+        line.textContent = "Go on, then. The forge will be warm when you come back.";
+        response.style.display = "none";
+        choices.innerHTML = "";
+        const closeEnd = choiceButton("Close");
+        closeEnd.style.textAlign = "center";
+        closeEnd.onclick = exit;
+        choices.appendChild(closeEnd);
+      };
+      choices.appendChild(leave);
+    }
   };
 
-  if (needsFinal) {
-    addChoice("Finish the Four-Season Tempering", `${STORY.final} One more thing before you go: ${STORY.boss}`, () => {
-      scene.zoneState["bramTempered"] = 4;
-      scene.zoneState["bramFinalCleared"] = true;
-      scene.objective = "Enter the Grand Conservatory — Bram's final tempering is complete.";
-      scene.spawnSparkle?.(scene.player.x, scene.player.y, 0xffd36b, 30);
-      scene.cameras?.main?.flash?.(260, 255, 222, 146);
-      scene.emitToast?.("Bram completes the Four-Season Tempering. The Conservatory is ready.");
-      scene.pushHud?.(true);
-    }, true);
-  } else if (!hasBlade) {
-    addChoice("Can you forge something for me?", "I already did. I started it before dawn because the forge went warm before you arrived. The Ember Blade isn't a weapon made for anger; it's a tool for cutting through what crowds your way. Take it. Then bring it back as the seasons return, and I'll temper it to what the garden teaches you.", () => {
-      const fresh = scene.grantWeapon?.(BLACKSMITH.weapon);
-      if (fresh) {
-        scene.spawnSparkle?.(scene.player.x, scene.player.y, 0xffb35f, 22);
-        scene.emitToast?.("Bram places the Ember Blade in Maria's hands.");
-        scene.refreshHand?.();
-      }
-    });
-  } else {
-    const canTemper = keys > tempered;
-    addChoice(
-      canTemper ? `Temper the Ember Blade with what I've restored (${keys}/4)` : `How is the Ember Blade holding? (${tempered}/4 tempered)`,
-      canTemper
-        ? `There. ${SEASON_NAMES[Math.max(0, keys - 1)] ?? "Another season"} left its mark in the steel. Not louder — steadier. That's what good tempering does. Bring it back when another season comes home.`
-        : keys < 4
-          ? "It is holding exactly as it should. Restore another season and bring it back. Good metal learns from every honest fire."
-          : "All four seasons are in it now: renewal, abundance, release, and rest. I wouldn't touch it again. Some things are finished when they finally become balanced.",
-      () => {
-        if (canTemper) {
-          scene.zoneState["bramTempered"] = keys;
-          scene.spawnSparkle?.(scene.player.x, scene.player.y, 0xf0bd62, 18);
-          scene.emitToast?.(`Bram tempers the Ember Blade — ${keys}/4 seasonal marks.`);
-        }
-      },
-    );
-  }
-
-  addChoice("What do you do here besides forge blades?", STORY.garden);
-  addChoice("What makes something strong enough to last?", STORY.covenant);
-  addChoice("You sound like you've seen a lot of people come through here.", STORY.legacy);
-  if (keys >= 4 && finalForgeDone(scene)) addChoice("What should I know before I enter the Conservatory?", STORY.boss);
+  renderChoices();
 
   const footer = document.createElement("div");
   style(footer, { gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginTop: "3px", paddingTop: "13px", borderTop: "1px solid rgba(226,183,90,.2)" });
   footer.innerHTML = `<div style="font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.5)">Forge record</div><div style="font-family:Georgia,serif;color:#e8bf62;font-size:13px">Seasonal tempering: ${needsFinal ? "Final tempering required" : `${Math.max(tempered, finalForgeDone(scene) ? 4 : 0)}/4`} · Keys restored: ${keys}/4</div>`;
   body.appendChild(footer);
 
-  const exit = () => {
-    overlay.remove();
-    scene.scene?.resume?.();
-    scene.physics?.resume?.();
-    scene.frozen = false;
-  };
   close.onclick = exit;
   overlay.onclick = (event) => { if (event.target === overlay) exit(); };
   document.body.appendChild(overlay);
