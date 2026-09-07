@@ -13,11 +13,13 @@ const ACTS: { label: string; subtitle: string; zone: ZoneId }[] = [
   { label: "Act V", subtitle: "Grand Cathedral", zone: "cathedral" },
 ];
 
-/**
- * This is intentionally a simple desktop gate. The old version also required
- * maxTouchPoints === 0 and several pointer capability queries; Safari can report
- * those conservatively and hide a perfectly valid MacBook test control.
- */
+// The title button is installed as soon as this module evaluates, but the
+// QuestScene prototype patch is installed asynchronously by events.ts. Never
+// click Continue/New Game until that patch is definitely ready, otherwise the
+// scene can initialize from the normal save first and land back in Act I.
+let sceneOverrideReady = false;
+let pendingLaunchTimer: number | null = null;
+
 function isDesktopTitle() {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(min-width: 768px)").matches;
@@ -40,6 +42,13 @@ function closeModal() {
   document.getElementById(MODAL_ID)?.remove();
 }
 
+function clearPendingLaunch() {
+  if (pendingLaunchTimer !== null) {
+    window.clearInterval(pendingLaunchTimer);
+    pendingLaunchTimer = null;
+  }
+}
+
 function launchAct(zone: ZoneId) {
   try {
     window.sessionStorage.setItem(DEV_ACT_KEY, zone);
@@ -48,24 +57,38 @@ function launchAct(zone: ZoneId) {
   }
 
   closeModal();
-  const launch = findLaunchButton();
-  if (launch) {
-    launch.click();
-    return;
-  }
+  clearPendingLaunch();
 
   let attempts = 0;
-  const timer = window.setInterval(() => {
+  const tryLaunch = () => {
     attempts += 1;
+    // Critical ordering guarantee: the one-shot init override must exist before
+    // React is allowed to create Phaser.
+    if (!sceneOverrideReady) {
+      if (attempts > 100) {
+        clearPendingLaunch();
+        window.sessionStorage.removeItem(DEV_ACT_KEY);
+      }
+      return;
+    }
+
     const button = findLaunchButton();
     if (button) {
-      window.clearInterval(timer);
+      clearPendingLaunch();
       button.click();
-    } else if (attempts > 40) {
-      window.clearInterval(timer);
+      return;
+    }
+
+    if (attempts > 100) {
+      clearPendingLaunch();
       window.sessionStorage.removeItem(DEV_ACT_KEY);
     }
-  }, 100);
+  };
+
+  tryLaunch();
+  if (pendingLaunchTimer === null && (!sceneOverrideReady || !findLaunchButton())) {
+    pendingLaunchTimer = window.setInterval(tryLaunch, 50);
+  }
 }
 
 function openModal() {
@@ -225,13 +248,15 @@ function installTitleButton() {
   window.addEventListener("resize", run, { passive: true });
 }
 
-// Install the visible title control as soon as this module evaluates. It no
-// longer waits for the Phaser prototype installer to finish first.
 if (typeof window !== "undefined") installTitleButton();
 
 export function installDesktopActSelector(QuestScene: any) {
   const proto = QuestScene?.prototype;
-  if (!proto || proto.__desktopActSelectorInstalled) return;
+  if (!proto) return;
+  if (proto.__desktopActSelectorInstalled) {
+    sceneOverrideReady = true;
+    return;
+  }
   proto.__desktopActSelectorInstalled = true;
 
   const originalInit = proto.init;
@@ -240,6 +265,8 @@ export function installDesktopActSelector(QuestScene: any) {
     try {
       const raw = window.sessionStorage.getItem(DEV_ACT_KEY);
       if (ACTS.some((act) => act.zone === raw)) requested = raw as ZoneId;
+      // Consume exactly once at the scene boundary, after we know the requested
+      // zone is about to be applied.
       window.sessionStorage.removeItem(DEV_ACT_KEY);
     } catch {
       requested = null;
@@ -258,5 +285,6 @@ export function installDesktopActSelector(QuestScene: any) {
     return originalInit.call(this, data);
   };
 
+  sceneOverrideReady = true;
   installTitleButton();
 }
