@@ -111,9 +111,57 @@ function wakeSummerGuardians(scene:any) {
 function onSummerGuardianDefeated(scene:any,enemy:any){if(enemy?.getData?.("summerCounted"))return;enemy?.setData?.("summerCounted",true);const st=seasonState(scene,"Summer");st.defeated=Math.min(3,Number(st.defeated??0)+1);if(st.defeated>=3)finishTrial(scene,"Summer");else{scene.objective=`Summer — clear the bramble guardians (${st.defeated}/3).`;scene.emitToast?.(`Summer guardians cleared ${st.defeated}/3.`);scene.pushHud?.(true);}}
 function hitSummerGuardian(scene:any,enemy:any){if(!enemy?.getData?.("summerAwake")){enemy.setVelocity?.(0,0);return false;}if(!scene.__summerSwordStrike)return false;const damage=Math.max(1,Number(scene.equippedWeapon?.()?.damage??1));const hp=Math.max(0,Number(enemy.getData?.("hp")??SUMMER_GUARDIAN_HP)-damage);enemy.setData?.("hp",hp);scene.floatText?.(enemy.x,enemy.y,`-${damage}`,"#ffe9a8");enemy.setTint?.(0xffe39a);scene.time?.delayedCall?.(90,()=>enemy?.active&&enemy.setTint?.(0xffcf62));return hp<=0;}
 
-function setupAutumn(scene:any){const spots=[[11,77],[18,72],[26,77]];scene.__autumnTrialNodes=spots.map(([x,y],i)=>addChallengeInteractable(scene,"Autumn",x,y,"flowers","Release the old growth",`release-${i}`,i));refreshAutumnVisual(scene);}
-function refreshAutumnVisual(scene:any){const st=seasonState(scene,"Autumn"),order=[1,0,2],nextIndex=order[Number(st.progress??0)]??-1;(scene.__autumnTrialNodes??[]).forEach((it:any,i:number)=>{if(!it?.obj?.active)return;const current=i===nextIndex;it.obj.setAlpha?.(current?1:.48);it.obj.setTint?.(current?0xf0b26b:0x9a6c4a);it.label=current?"Release the growth that is ready":"This growth is not ready to release";});}
-function autumnInteract(scene:any,it:any){const st=seasonState(scene,"Autumn"),order=[1,0,2],expected=order[Number(st.progress??0)];if(it.data?.index!==expected){st.progress=0;scene.emitToast?.("Autumn gathers itself again — release what glows warmest first.");refreshAutumnVisual(scene);return;}st.progress=Number(st.progress??0)+1;scene.spawnSparkle?.(it.obj.x,it.obj.y,TINTS.Autumn,10);if(st.progress>=3){for(const node of scene.__autumnTrialNodes??[])if(node?.enabled)scene.removeInteractable?.(node);[[11,77],[18,72],[26,77]].forEach(([x,y])=>decor(scene,"flowers",x,y,0xc7763d,.72,.78));finishTrial(scene,"Autumn");}else{scene.objective=`Autumn — release the old growth in order (${st.progress}/3).`;scene.emitToast?.(`Autumn releases ${st.progress}/3.`);refreshAutumnVisual(scene);}}
+function setupAutumn(scene:any){
+  const spots=[[11,77],[18,72],[26,77]];
+  scene.__autumnTrialNodes=spots.map(([x,y],i)=>addChallengeInteractable(scene,"Autumn",x,y,"flowers","Release the old growth",`release-${i}`,i));
+  refreshAutumnVisual(scene);
+}
+function showAutumnHint(scene:any,it:any){
+  scene.__autumnHint?.destroy?.();
+  if(!it?.obj?.active)return;
+  const hint=scene.add.text(it.obj.x,it.obj.y-34,"✦ RELEASE THIS ONE ✦",{fontFamily:"system-ui, sans-serif",fontSize:"11px",fontStyle:"bold",color:"#fff1cf",backgroundColor:"#70401ed9",padding:{x:7,y:4},stroke:"#3b1f0d",strokeThickness:2}).setOrigin(.5,1).setDepth(980);
+  scene.__autumnHint=hint;
+  scene.tweens?.add?.({targets:hint,y:hint.y-5,alpha:{from:.8,to:1},duration:700,yoyo:true,repeat:3,ease:"Sine.easeInOut",onComplete:()=>{scene.tweens?.add?.({targets:hint,alpha:0,duration:500,onComplete:()=>{if(scene.__autumnHint===hint)scene.__autumnHint=null;hint.destroy();}});}});
+}
+function refreshAutumnVisual(scene:any){
+  const st=seasonState(scene,"Autumn"),order=[1,0,2],nextIndex=order[Number(st.progress??0)]??-1;
+  let currentNode:any=null;
+  (scene.__autumnTrialNodes??[]).forEach((it:any,i:number)=>{
+    if(!it?.obj?.active)return;
+    scene.tweens?.killTweensOf?.(it.obj);
+    const current=i===nextIndex;
+    if(current)currentNode=it;
+    it.obj.setScale?.(current?1.08:.78);
+    it.obj.setAlpha?.(current?1:.28);
+    it.obj.setTint?.(current?0xffc56f:0x75513c);
+    it.label=current?"Release this glowing Autumn growth":"This growth is not ready yet";
+    if(current){
+      scene.tweens?.add?.({targets:it.obj,scaleX:{from:1.02,to:1.2},scaleY:{from:1.02,to:1.2},alpha:{from:.8,to:1},duration:650,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
+      scene.spawnSparkle?.(it.obj.x,it.obj.y-8,0xffbd63,6);
+    }
+  });
+  showAutumnHint(scene,currentNode);
+}
+function autumnInteract(scene:any,it:any){
+  const st=seasonState(scene,"Autumn"),order=[1,0,2],expected=order[Number(st.progress??0)];
+  if(it.data?.index!==expected){
+    scene.emitToast?.("Not this one yet — release the bright pulsing Autumn growth.");
+    refreshAutumnVisual(scene);
+    return;
+  }
+  st.progress=Number(st.progress??0)+1;
+  scene.spawnSparkle?.(it.obj.x,it.obj.y,TINTS.Autumn,10);
+  if(st.progress>=3){
+    scene.__autumnHint?.destroy?.();scene.__autumnHint=null;
+    for(const node of scene.__autumnTrialNodes??[]){scene.tweens?.killTweensOf?.(node?.obj);if(node?.enabled)scene.removeInteractable?.(node);}
+    [[11,77],[18,72],[26,77]].forEach(([x,y])=>decor(scene,"flowers",x,y,0xc7763d,.72,.78));
+    finishTrial(scene,"Autumn");
+  }else{
+    scene.objective=`Autumn — release the bright pulsing growth (${st.progress}/3).`;
+    scene.emitToast?.(`Autumn releases ${st.progress}/3 — follow the next bright growth.`);
+    refreshAutumnVisual(scene);
+  }
+}
 function setupWinter(scene:any){const spots=[[88,77],[97,72],[105,77]];scene.__winterTrialNodes=spots.map(([x,y],i)=>addChallengeInteractable(scene,"Winter",x,y,"lamp","Adjust the Winter lantern",`lamp-${i}`,i));refreshWinterVisual(scene);}
 function refreshWinterVisual(scene:any){const st=seasonState(scene,"Winter");(scene.__winterTrialNodes??[]).forEach((it:any,i:number)=>{if(!it?.obj?.active)return;const lit=Boolean(st.lamps?.[i]);it.obj.setTint?.(lit?0xffe5a3:0x7f91ad).setAlpha?.(lit?1:.48);it.label=lit?"Adjust this glowing lantern":"Relight this cold lantern";});}
 function winterInteract(scene:any,it:any){const st=seasonState(scene,"Winter"),i=Number(it.data?.index??0),pairs:Record<number,number[]>={0:[0,1],1:[0,1,2],2:[1,2]},lamps=[...(st.lamps??[false,true,false])];for(const idx of pairs[i]??[i])lamps[idx]=!lamps[idx];st.lamps=lamps;scene.spawnSparkle?.(it.obj.x,it.obj.y,TINTS.Winter,8);refreshWinterVisual(scene);if(lamps.every(Boolean)){for(const node of scene.__winterTrialNodes??[])if(node?.enabled)scene.removeInteractable?.(node);[[88,77],[97,72],[105,77]].forEach(([x,y])=>decor(scene,"lamp",x,y,0xffe5a3,.84,1));finishTrial(scene,"Winter");}else{const n=lamps.filter(Boolean).length;scene.objective=`Winter — bring all three lanterns into balance (${n}/3 glowing).`;scene.emitToast?.(`${n}/3 Winter lanterns are glowing.`);scene.pushHud?.(true);}}
@@ -122,7 +170,7 @@ function setupMiniGames(scene:any){ensureState(scene);setupSpring(scene);scene._
 function addFountainLayer(scene:any,season:string,index:number){scene.__act2FountainLayers??={};if(scene.__act2FountainLayers[season])return;const angles=[[-9,-5],[9,-5],[-9,7],[9,7]], [dx,dy]=angles[index]??[0,0],key=season==="Winter"?"spark":"flowers",s=decor(scene,key,66+dx,54+dy,TINTS[season],season==="Winter"?.7:.64,.9);if(s)scene.__act2FountainLayers[season]=s;}
 function wakeConservatory(scene:any,count:number){scene.__act2ConservatoryWake??=[];while(scene.__act2ConservatoryWake.length<count){const i=scene.__act2ConservatoryWake.length,pts=[[113,45],[121,40],[128,45],[121,57]],[x,y]=pts[i],s=decor(scene,i===3?"flowers":"lamp",x,y,TINTS[SEASONS[i]],i===3?.72:.6,.38+i*.13);if(s)scene.__act2ConservatoryWake.push(s);else break;}}
 function applyRestoration(scene:any,season:string){scene.__act2Restored??={};if(scene.__act2Restored[season])return;scene.__act2Restored[season]=true;const[x,y]=SPOTS[season],tint=TINTS[season],offsets=[[-8,0],[-5,6],[0,8],[6,5],[8,-1],[3,-7],[-4,-6]];offsets.forEach(([dx,dy],i)=>decor(scene,i===5?"tree":"flowers",x+dx,y+dy,tint,i===5?.78:.62+(i%2)*.1,.88));addFountainLayer(scene,season,SEASONS.indexOf(season as any));const count=Object.keys(scene.__act2Restored).length;wakeConservatory(scene,count);scene.spawnSparkle?.(scene.wx(x),scene.wy(y),tint,18);if(count===4){scene.spawnSparkle?.(scene.wx(66),scene.wy(54),0xffe9a8,28);scene.emitToast?.("The Wedding Garden breathes in all four seasons again.");}else scene.emitToast?.(`${season} settles back into the Wedding Garden.`);}
-function maybeShowProximityIntro(scene:any){if(scene.save?.current_zone!==ZONE||!scene.player?.active||scene.frozen)return;scene.__seasonIntroShown??=new Set<string>();for(const season of SEASONS){if(scene.__seasonIntroShown.has(season)||challengeDone(scene,season))continue;const[tx,ty]=SPOTS[season],dx=scene.player.x-scene.wx(tx),dy=scene.player.y-scene.wy(ty);if(Math.hypot(dx,dy)>185)continue;scene.__seasonIntroShown.add(season);showCard(scene,season,false);if(season==="Summer")wakeSummerGuardians(scene);if(season==="Spring")refreshSpringVisual(scene);const st=seasonState(scene,season);if(season==="Spring")scene.objective=`Spring — follow the brightest pulsing flower bed (${st.progress??0}/3).`;if(season==="Summer")scene.objective=`Summer — clear the bramble guardians (${st.defeated??0}/3).`;if(season==="Autumn")scene.objective=`Autumn — release the old growth in order (${st.progress??0}/3).`;if(season==="Winter")scene.objective="Winter — bring all three lanterns into balance.";scene.pushHud?.(true);break;}}
+function maybeShowProximityIntro(scene:any){if(scene.save?.current_zone!==ZONE||!scene.player?.active||scene.frozen)return;scene.__seasonIntroShown??=new Set<string>();for(const season of SEASONS){if(scene.__seasonIntroShown.has(season)||challengeDone(scene,season))continue;const[tx,ty]=SPOTS[season],dx=scene.player.x-scene.wx(tx),dy=scene.player.y-scene.wy(ty);if(Math.hypot(dx,dy)>185)continue;scene.__seasonIntroShown.add(season);showCard(scene,season,false);if(season==="Summer")wakeSummerGuardians(scene);if(season==="Spring")refreshSpringVisual(scene);if(season==="Autumn")refreshAutumnVisual(scene);const st=seasonState(scene,season);if(season==="Spring")scene.objective=`Spring — follow the brightest pulsing flower bed (${st.progress??0}/3).`;if(season==="Summer")scene.objective=`Summer — clear the bramble guardians (${st.defeated??0}/3).`;if(season==="Autumn")scene.objective=`Autumn — release the bright pulsing growth (${st.progress??0}/3).`;if(season==="Winter")scene.objective="Winter — bring all three lanterns into balance.";scene.pushHud?.(true);break;}}
 
 export function installAct2SeasonChallenges(QuestScene:any){const proto=QuestScene?.prototype;if(!proto||proto.__act2SeasonChallengesInstalled)return;proto.__act2SeasonChallengesInstalled=true;
   const originalBuild=proto.buildAct2;proto.buildAct2=function(...args:any[]){const result=originalBuild.apply(this,args);setupMiniGames(this);return result;};
