@@ -34,6 +34,7 @@ if (typeof window !== "undefined") {
       import("./act2Enemies"),
       import("./act2GardenKeeper"),
       import("./act2EvelynSprite"),
+      import("./act2VisualTuning"),
       import("./desktopActSelector"),
       import("./desktopControlsPolish"),
     ])
@@ -61,6 +62,7 @@ if (typeof window !== "undefined") {
         act2Enemies,
         act2GardenKeeper,
         act2EvelynSprite,
+        act2VisualTuning,
         desktopActSelector,
         desktopControlsPolish,
       ]) => {
@@ -87,6 +89,7 @@ if (typeof window !== "undefined") {
         act2Enemies.installAct2Enemies(QuestScene);
         act2GardenKeeper.installAct2GardenKeeper(QuestScene);
         act2EvelynSprite.installAct2EvelynSprite(QuestScene);
+        act2VisualTuning.installAct2VisualTuning(QuestScene);
         desktopActSelector.installDesktopActSelector(QuestScene);
         desktopControlsPolish.installDesktopControlsPolish();
       })
