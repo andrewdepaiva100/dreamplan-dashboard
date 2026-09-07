@@ -38,6 +38,7 @@ if (typeof window !== "undefined") {
       import("./global2_5dPolish"),
       import("./desktopActSelector"),
       import("./desktopControlsPolish"),
+      import("./act1WrenDialoguePolish"),
     ])
       .then(([
         sceneModule,
@@ -67,6 +68,7 @@ if (typeof window !== "undefined") {
         global25DPolish,
         desktopActSelector,
         desktopControlsPolish,
+        act1WrenDialoguePolish,
       ]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
         const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
@@ -95,6 +97,7 @@ if (typeof window !== "undefined") {
         global25DPolish.installGlobal25DPolish(QuestScene);
         desktopActSelector.installDesktopActSelector(QuestScene);
         desktopControlsPolish.installDesktopControlsPolish();
+        act1WrenDialoguePolish.installAct1WrenDialoguePolish();
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
   });
