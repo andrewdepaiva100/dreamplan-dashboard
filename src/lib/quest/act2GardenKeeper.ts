@@ -15,35 +15,40 @@ const GUEST_X = 108;
 const GUEST_Y = 78;
 
 const KEEPER_LINES = [
-  "This garden is not simply dying, Maria. Its seasons have forgotten how to belong to one another. Spring keeps trying to begin. Summer refuses to end. Autumn cannot let go. Winter will not wake. The four Seasonal Keys once kept them in balance. Bring them home, and watch what the garden remembers.",
-  "Spring answered you. I have tended these beds for years, but they have not opened like that for me. Keep going — the garden knows the difference between being repaired and being cared for.",
-  "Two seasons are breathing together again. Look at the fountain light. The garden recognizes you, Maria. You are not merely collecting keys; you are reminding this place what it was made to hold.",
-  "Three seasons have returned. One remains. When the fourth comes home, return to me. There is something beneath the flowering arch that has been waiting longer than I have.",
-  "All four seasons are home. The Conservatory can hear them again. Before you go inside, there is something here for you — beneath the flowering arch.",
+  "Welcome to the Wedding Garden, Maria. Long before the Conservatory was sealed, this realm was kept in balance by four Seasonal Keys — Spring to begin, Summer to flourish, Autumn to release, and Winter to rest. Something broke that rhythm. The seasons pulled apart, the garden's creatures turned restless, and the Grand Conservatory locked itself behind their silence. Your path through Act II is to explore the four corners of the garden, recover each Seasonal Key, and bring their cycle back into harmony. Every key you restore will change this place. When all four seasons are breathing together again, return to me before you enter the Conservatory.",
+  "Spring has returned, and you can already see what one restored season does. New growth is answering the paths, but the garden is still uneven. Three Seasonal Keys remain. As you travel farther from the fountain, watch the beds and the creatures around them — each part of the garden has been shaped by the season that became stranded there. Restore the remaining keys, then the Conservatory will begin to recognize the whole cycle again.",
+  "Two seasons are breathing together now. That is the heart of this realm, Maria: not choosing one beautiful season and holding it forever, but allowing each one to make room for the next. The Grand Conservatory was built to preserve that balance. With half the keys restored, its old magic is waking, but its doors will not truly answer until all four seasons are home.",
+  "Three seasons have returned. Only one Seasonal Key remains between this fractured garden and a complete cycle. When you restore it, the Conservatory should finally hear the garden again. Come back to me before you enter. There is something beneath the flowering arch that belongs to this part of your journey — something the garden protected while everything else was changing.",
+  "All four Seasonal Keys are home. Spring can begin, Summer can flourish, Autumn can release, and Winter can rest. The garden is whole enough for the Grand Conservatory to open its heart again. Before you cross that threshold, read what has been waiting beneath the roses. It is the final piece of what Act II was trying to show you: love does not survive by freezing one perfect moment. It survives by choosing each other through every season that follows.",
 ];
 
 type KeeperReply = { maria: string; evelyn: string };
 const KEEPER_REPLIES: KeeperReply[][] = [
   [
-    { maria: "What happened to the garden?", evelyn: "It stopped moving as one living thing. Each season began protecting only itself. That is why the keys matter — they remind the garden that change is not loss." },
-    { maria: "Why do the seasons matter so much?", evelyn: "Because a garden cannot live in only one perfect moment. Spring begins, summer gives, autumn releases, winter rests. Love survives by learning all four." },
-    { maria: "Tell me where to begin.", evelyn: "Begin anywhere. The closest season will answer when you reach it. Bring each key home in your own order; the garden is listening for your care, not your speed." },
+    { maria: "What happened here?", evelyn: "The four seasons once moved through this realm like one long breath. Then the cycle fractured. Each season clung to its own corner, the Seasonal Keys scattered with them, and the garden began repeating pieces of itself instead of changing. That is why some paths feel too wild, some beds refuse to wake, and the creatures here have become unsettled." },
+    { maria: "What exactly are the Seasonal Keys?", evelyn: "They are anchors for the garden's cycle. Spring carries renewal, Summer carries abundance, Autumn carries release, and Winter carries rest. They are not ordinary keys for four ordinary locks. Returning them teaches the entire realm how to move forward again. You may recover them in whatever order the garden allows." },
+    { maria: "What's inside the Grand Conservatory?", evelyn: "It is the heart of the Wedding Garden — glass and white iron built around a place where all four seasons could exist in harmony. When the cycle broke, the Conservatory sealed itself rather than preserve a false, frozen version of the garden. Restore all four keys and its doors can wake safely." },
+    { maria: "Where should I start?", evelyn: "Explore outward from this fountain and look for the four seasonal corners. Each holds one key. You do not need to solve them in a perfect order. Recover a key, notice how the garden responds, and keep moving. When your count reaches four of four, come back to me before entering the Conservatory." },
   ],
   [
-    { maria: "It really changed when I touched the key.", evelyn: "Yes. Not because the key is powerful by itself — because you carried its season back with intention. The garden felt that." },
-    { maria: "Three more, then.", evelyn: "Three more. But do not rush past what each corner becomes. This place is trying to tell you something while it heals." },
+    { maria: "Why did Spring change so much?", evelyn: "Because the keys affect more than the place where you find them. Each restored season rejoins the shared cycle. Spring can finally send new life beyond its own corner instead of endlessly trying to begin there." },
+    { maria: "What should I watch for next?", evelyn: "The farther corners of the garden. The remaining seasons have been isolated longer, and their imbalance may be more obvious in the paths, flowers, and creatures around them. Three keys remain; each one should make the whole realm feel a little more connected." },
+    { maria: "And the Conservatory is still sealed?", evelyn: "Yes. One season is a promise, not a cycle. The Conservatory needs all four voices before it can trust that the garden is truly moving again." },
   ],
   [
-    { maria: "You think the garden recognizes me?", evelyn: "I do. Some places remember the people who arrive willing to listen. You have been listening since you stepped through the gate." },
-    { maria: "What is inside the Conservatory?", evelyn: "Something the garden refused to surrender, even when everything else fractured. I would rather let it introduce itself when you are ready." },
+    { maria: "Why does balance matter more than one perfect season?", evelyn: "Because perfection that cannot change becomes a cage. Spring must become Summer. Summer must eventually yield to Autumn. Winter must be allowed to rest before anything can begin again. The garden is teaching the same truth this journey keeps placing before you." },
+    { maria: "What is the Conservatory protecting?", evelyn: "A memory of the garden as it was meant to be — not frozen, but whole. There is something more personal waiting there too, but I will not steal that discovery from you. Two more keys will make the way clear." },
+    { maria: "So I'm halfway through Act II?", evelyn: "Through its seasonal restoration, yes. Two keys are home and two remain. Keep exploring, let the garden change around you, and return here once the fourth has answered." },
   ],
   [
-    { maria: "What is waiting under the arch?", evelyn: "A small thing. Which is often how the important things survive. Bring winter home and I will show you." },
-    { maria: "Then I am finishing this.", evelyn: "I knew you would. Just remember: restoring a place is different from defeating it. Let the last season come home gently." },
+    { maria: "What happens when I restore the last key?", evelyn: "The four seasons will finally recognize one another again. The garden should bloom as a complete cycle, the flowering arch here will reveal what it has protected, and the Grand Conservatory will be ready for you." },
+    { maria: "What is waiting under the arch?", evelyn: "A small message that survived the fracture. I kept it where no single season could claim it. Bring the last season home, and the roses will show you." },
+    { maria: "Then I'm finishing this.", evelyn: "Good. Just remember what this act has asked of you: you are not defeating a season. You are returning it to relationship with the others. Let the last one come home gently." },
   ],
   [
-    { maria: "We did it.", evelyn: "You did more than that. You gave the garden permission to become whole again. Go read what waited for you beneath the roses." },
-    { maria: "I want to see what it was protecting.", evelyn: "Then read the letter first, Maria. After that, the Conservatory is yours to enter." },
+    { maria: "We restored the whole garden.", evelyn: "You restored its ability to change. That is more important. The Conservatory can open because Spring, Summer, Autumn, and Winter are no longer fighting to be the only season that matters." },
+    { maria: "What was Act II trying to tell me?", evelyn: "That lasting love is not one endless spring day. There will be beginnings, abundance, change, and quiet seasons. The promise is not that nothing changes. The promise is that you keep choosing one another as it does." },
+    { maria: "I'm ready for the Conservatory.", evelyn: "Then read the letter beneath the roses first. After that, follow the restored garden to the Grand Conservatory. You have earned whatever it has been waiting to show you." },
   ],
 ];
 
@@ -118,18 +123,20 @@ function addKeeperStation(scene: any) {
   ensureKeeperTextures(scene);
   const x = scene.wx(KEEPER_X);
   const y = scene.wy(KEEPER_Y);
-  const nook = scene.add.image(x - 76, y + 8, "keeper-nook").setScale(1.45).setDepth(5);
+  // Keep the same detailed art, but make the nook a compact keeper station
+  // rather than a second house-sized landmark beside Maria's arrival.
+  const nook = scene.add.image(x - 58, y + 5, "keeper-nook").setScale(1.04).setDepth(5);
   nook.setOrigin(0.5, 0.5);
   const keeper = scene.addInteractable(x, y, "evelyn-keeper", KEEPER_KIND, "Talk to Evelyn", { id: "evelyn", radius: 92, depth: 9 });
   keeper?.obj?.clearTint?.();
   keeper?.obj?.setScale?.(1.75);
   if (keeper?.obj) scene.tweens.add({ targets: keeper.obj, y: keeper.obj.y - 1, duration: 1850, yoyo: true, repeat: -1 });
   const stones:any[] = [];
-  for (const [dx,dy,w] of [[-2,48,18],[-18,57,16],[-35,64,14]]) {
-    const s = scene.add.ellipse(x + dx, y + dy, w, 8, 0xd9d2b7, 0.88).setDepth(3);
+  for (const [dx,dy,w] of [[-2,39,15],[-15,46,13],[-28,52,12]]) {
+    const s = scene.add.ellipse(x + dx, y + dy, w, 7, 0xd9d2b7, 0.88).setDepth(3);
     s.setStrokeStyle?.(1,0xa79e82,0.7); stones.push(s);
   }
-  const glow = scene.add.circle(x - 22, y + 5, 18, 0xffdc82, 0.08).setDepth(4);
+  const glow = scene.add.circle(x - 18, y + 4, 14, 0xffdc82, 0.08).setDepth(4);
   scene.tweens.add({ targets: glow, alpha: { from: 0.04, to: 0.13 }, scale: { from: 0.9, to: 1.08 }, duration: 1700, yoyo: true, repeat: -1 });
   scene.__act2KeeperArt = { x, y, glow, nook, stones, stage: -1, seasonal: [] };
   refreshKeeperGarden(scene, true);
@@ -152,32 +159,32 @@ function refreshKeeperGarden(scene: any, force = false) {
   clearSeasonalArt(scene);
   const made:any[] = [];
   const { x, y } = art;
-  const flower=(dx:number,dy:number,tint:number,scale=.58)=>{const f=scene.add.sprite(x+dx,y+dy,"flowers").setTint(tint).setScale(scale).setDepth(5);made.push(f);return f;};
-  if (n >= 1) for (const [dx,dy] of [[-138,52],[-116,66],[-82,73],[-54,70]]) flower(dx,dy,0xb9f28f,.5);
+  const flower=(dx:number,dy:number,tint:number,scale=.48)=>{const f=scene.add.sprite(x+dx,y+dy,"flowers").setTint(tint).setScale(scale).setDepth(5);made.push(f);return f;};
+  if (n >= 1) for (const [dx,dy] of [[-104,40],[-87,51],[-62,56],[-41,53]]) flower(dx,dy,0xb9f28f,.42);
   if (n >= 2) {
     art.glow?.setFillStyle?.(0xffd66f,.22);
-    for (const [dx,dy] of [[-118,-28],[-73,-38],[-31,-24]]) {
-      const light=scene.add.circle(x+dx,y+dy,4,0xffd66f,.68).setDepth(7); made.push(light);
+    for (const [dx,dy] of [[-88,-21],[-56,-29],[-25,-18]]) {
+      const light=scene.add.circle(x+dx,y+dy,3,0xffd66f,.68).setDepth(7); made.push(light);
       scene.tweens.add({targets:light,alpha:{from:.3,to:.85},duration:1250,yoyo:true,repeat:-1});
     }
   }
   if (n >= 3) {
-    for (let i=0;i<7;i++) {
-      const leaf=scene.add.ellipse(x-132+i*20,y-50+(i%3)*12,6,3,i%2?0xd98b43:0xe7b95f,.65).setDepth(7); made.push(leaf);
-      scene.tweens.add({targets:leaf,y:leaf.y+25,x:leaf.x+10,alpha:.08,duration:2300+i*120,repeat:-1,delay:i*170});
+    for (let i=0;i<6;i++) {
+      const leaf=scene.add.ellipse(x-99+i*16,y-37+(i%3)*9,5,2.5,i%2?0xd98b43:0xe7b95f,.65).setDepth(7); made.push(leaf);
+      scene.tweens.add({targets:leaf,y:leaf.y+20,x:leaf.x+8,alpha:.08,duration:2300+i*120,repeat:-1,delay:i*170});
     }
   }
   if (n >= 4) {
-    const ax=x+78, ay=y-12;
-    const left=scene.add.sprite(ax,ay,"flowers").setTint(0xf2a5bd).setScale(.8).setDepth(6);
-    const right=scene.add.sprite(ax+50,ay,"flowers").setTint(0xf2a5bd).setScale(.8).setDepth(6);
-    const top=scene.add.sprite(ax+25,ay-34,"flowers").setTint(0xf2a5bd).setScale(.9).setDepth(6);
+    const ax=x+62, ay=y-9;
+    const left=scene.add.sprite(ax,ay,"flowers").setTint(0xf2a5bd).setScale(.62).setDepth(6);
+    const right=scene.add.sprite(ax+38,ay,"flowers").setTint(0xf2a5bd).setScale(.62).setDepth(6);
+    const top=scene.add.sprite(ax+19,ay-27,"flowers").setTint(0xf2a5bd).setScale(.7).setDepth(6);
     made.push(left,right,top);
     if (!scene.__act2KeeperLetterAdded) {
       scene.__act2KeeperLetterAdded = true;
-      const letter=scene.addInteractable(ax+25,ay+30,"envelope",LETTER_KIND,"Read the letter for Maria",{id:"four-seasons",radius:72,depth:8});
+      const letter=scene.addInteractable(ax+19,ay+24,"envelope",LETTER_KIND,"Read the letter for Maria",{id:"four-seasons",radius:72,depth:8});
       if(letter?.obj){letter.obj.setTint?.(0xffe5a8);scene.tweens.add({targets:letter.obj,y:letter.obj.y-3,duration:1200,yoyo:true,repeat:-1});}
-      scene.spawnSparkle?.(ax+25,ay+15,0xffd978,20);
+      scene.spawnSparkle?.(ax+19,ay+12,0xffd978,20);
       scene.emitToast?.("The four seasons answer together. A flowering arch opens beside Evelyn.");
     }
   }
@@ -214,7 +221,7 @@ function showEvelynDialogue(scene:any,line:string,replies:KeeperReply[]) {
 function talkToKeeper(scene:any){
   const n=Math.max(0,Math.min(4,Number(scene.zoneState?.["keysFound"]??0)));
   scene.zoneState["keeperMet"]=true;
-  if(n===0)scene.objective="Restore the Four Seasons — Seasonal Keys 0/4.";
+  if(n===0)scene.objective="Restore the Four Seasons — Seasonal Keys 0/4. Explore the garden's four seasonal corners.";
   showEvelynDialogue(scene,KEEPER_LINES[n],KEEPER_REPLIES[n] ?? KEEPER_REPLIES[0]);
 }
 
@@ -231,9 +238,6 @@ export function installAct2GardenKeeper(QuestScene:any){
   const originalAddGuest=proto.addGuest;proto.addGuest=function(guest:any,tx:number,ty:number){if(this.save?.current_zone===ZONE)return originalAddGuest.call(this,guest,GUEST_X,GUEST_Y);return originalAddGuest.call(this,guest,tx,ty);};
   const originalAddDogOffer=proto.addDogOffer;proto.addDogOffer=function(tx:number,ty:number){if(this.save?.current_zone===ZONE)return;return originalAddDogOffer.call(this,tx,ty);};
 
-  // The base game intentionally keeps Maria's cottage close to each arrival point.
-  // In Act II, push that same valid house spot farther away from Evelyn's nook so
-  // the Keeper's garden reads as its own destination. All other acts are untouched.
   const originalHouseSpot=proto.houseSpot;
   proto.houseSpot=function(){
     const spot=originalHouseSpot.call(this);
@@ -250,5 +254,5 @@ export function installAct2GardenKeeper(QuestScene:any){
   };
 
   const originalBuildAct2=proto.buildAct2;proto.buildAct2=function(){const result=originalBuildAct2.call(this);removeActTwoDog(this);addKeeperStation(this);return result;};
-  const originalInteract=proto.interact;proto.interact=function(){if(this.save?.current_zone!==ZONE)return originalInteract.call(this);const nearest=this.nearest?.();if(nearest?.kind===KEEPER_KIND){talkToKeeper(this);return;}if(nearest?.kind===LETTER_KIND){readGardenLetter(this);return;}const before=Number(this.zoneState?.["keysFound"]??0);const result=originalInteract.call(this);const after=Number(this.zoneState?.["keysFound"]??0);if(after!==before){refreshKeeperGarden(this);if(this.zoneState?.["keeperMet"]===true)this.objective=after>=4?"All four seasons are restored — return to Evelyn by the fountain.":`Restore the Four Seasons — Seasonal Keys ${after}/4.`;}return result;};
+  const originalInteract=proto.interact;proto.interact=function(){if(this.save?.current_zone!==ZONE)return originalInteract.call(this);const nearest=this.nearest?.();if(nearest?.kind===KEEPER_KIND){talkToKeeper(this);return;}if(nearest?.kind===LETTER_KIND){readGardenLetter(this);return;}const before=Number(this.zoneState?.["keysFound"]??0);const result=originalInteract.call(this);const after=Number(this.zoneState?.["keysFound"]??0);if(after!==before){refreshKeeperGarden(this);if(this.zoneState?.["keeperMet"]===true)this.objective=after>=4?"All four seasons are restored — return to Evelyn before entering the Grand Conservatory.":`Restore the Four Seasons — Seasonal Keys ${after}/4. Explore the remaining seasonal corners.`;}return result;};
 }
