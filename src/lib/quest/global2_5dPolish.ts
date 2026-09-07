@@ -1,6 +1,15 @@
 // @ts-nocheck -- Runtime Phaser decorator; intentionally isolated from core scene typing.
 
-const FIRST_PASS_ZONES = new Set(["sunlit_shores", "wedding_garden"]);
+// The approved 2.5D presentation now spans the complete five-act journey.
+// Gameplay geometry/collision is deliberately untouched: this module only
+// affects render depth, authored-sprite shadows, and foreground occlusion.
+const POLISHED_ZONES = new Set([
+  "sunlit_shores",
+  "wedding_garden",
+  "the_haven",
+  "starry_ascent",
+  "cathedral",
+]);
 const ACTOR_KINDS = new Set([
   "guest",
   "guide",
@@ -13,6 +22,10 @@ const ACTOR_KINDS = new Set([
 ]);
 const NON_OCCLUDERS = new Set(["fence", "bridge", "lamp", "bench"]);
 const PICKUP_KINDS = new Set(["season-key", "relic", "vault-key", "envelope"]);
+
+function isPolishedZone(scene: any) {
+  return POLISHED_ZONES.has(scene.save?.current_zone);
+}
 
 function feetDepth(scene: any, obj: any, extra = 0) {
   if (!obj?.active || typeof obj.y !== "number") return;
@@ -36,7 +49,7 @@ function makeSpriteSilhouette(scene: any, source: any, xOffset: number, yOffset:
 }
 
 function addLandmarkDepth(scene: any, sprite: any) {
-  if (!sprite?.active || !FIRST_PASS_ZONES.has(scene.save?.current_zone)) return [];
+  if (!sprite?.active || !isPolishedZone(scene)) return [];
   // Stack silhouettes made from the authored landmark itself. The staggered
   // copies read as wall/roof thickness under the tilted camera without adding
   // replacement geometry or changing collision.
@@ -48,7 +61,7 @@ function addLandmarkDepth(scene: any, sprite: any) {
 }
 
 function addTallPropDepth(scene: any, obj: any) {
-  if (!FIRST_PASS_ZONES.has(scene.save?.current_zone) || !obj?.active) return null;
+  if (!isPolishedZone(scene) || !obj?.active) return null;
   if ((obj.displayHeight ?? 0) < 34 || (obj.displayWidth ?? 0) < 18) return null;
   if (NON_OCCLUDERS.has(String(obj.texture?.key ?? ""))) return null;
   return makeSpriteSilhouette(scene, obj, 3, 6, 0.13, -0.12);
@@ -74,7 +87,7 @@ function collectOccluders(scene: any) {
 function updateOcclusion(scene: any) {
   const state = scene.__global25d;
   const player = scene.player;
-  if (!state || !player?.active) return;
+  if (!state?.polishedZone || !player?.active) return;
 
   for (const obj of state.occluders ?? []) {
     if (!obj?.active) continue;
@@ -100,14 +113,15 @@ function actorList(scene: any) {
 }
 
 function ensureActorContactShadow(scene: any, actor: any) {
-  if (!actor?.active || !FIRST_PASS_ZONES.has(scene.save?.current_zone)) return;
+  if (!actor?.active || !isPolishedZone(scene)) return;
   scene.__global25d.actorShadows ??= new Map();
   if (scene.__global25d.actorShadows.has(actor)) return;
   const key = actor.texture?.key;
   if (!key || !scene.textures?.exists?.(key)) return;
 
   // A compressed copy of the actual sprite creates a pixel-consistent contact
-  // shadow. It is deliberately subtle and avoids smooth procedural ellipses.
+  // shadow. It stays in the game's authored pixel language rather than using
+  // smooth procedural ellipses.
   const shadow = scene.add
     .sprite(actor.x + 3, actor.y + Math.max(4, (actor.displayHeight ?? 20) * 0.3), key)
     .setOrigin(actor.originX ?? 0.5, actor.originY ?? 0.5)
@@ -119,7 +133,7 @@ function ensureActorContactShadow(scene: any, actor: any) {
 }
 
 function updateContactShadows(scene: any) {
-  if (!scene.__global25d?.firstPassZone) return;
+  if (!scene.__global25d?.polishedZone) return;
   for (const actor of actorList(scene)) ensureActorContactShadow(scene, actor);
   for (const [actor, shadow] of scene.__global25d.actorShadows ?? []) {
     if (!actor?.active || !shadow?.active) {
@@ -157,7 +171,7 @@ export function installGlobal25DPolish(QuestScene: any) {
   const originalAddLandmark = proto.addLandmark;
   proto.addLandmark = function polished25DLandmark(...args: any[]) {
     const result = originalAddLandmark.apply(this, args);
-    if (FIRST_PASS_ZONES.has(this.save?.current_zone)) {
+    if (isPolishedZone(this)) {
       const shadows = addLandmarkDepth(this, this.landmark?.sprite);
       if (shadows.length) {
         this.__global25dLandmarkShadows ??= [];
@@ -174,7 +188,7 @@ export function installGlobal25DPolish(QuestScene: any) {
 
     this.__global25d = {
       occluders: collectOccluders(this),
-      firstPassZone: FIRST_PASS_ZONES.has(this.save?.current_zone),
+      polishedZone: isPolishedZone(this),
       actorShadows: new Map(),
       propShadows: [],
     };
