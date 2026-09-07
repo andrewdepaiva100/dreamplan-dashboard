@@ -1,399 +1,192 @@
-// @ts-nocheck -- Isolated presentation enhancement for Wren's existing React guide dialogue.
+// @ts-nocheck -- Cinematic, contextual conversation layer for Wren's Act I guide dialogue.
 import wrenArt from "../../assets/quest/guide-act.png";
 import mariaPortrait from "../../assets/quest/maria-portrait.png";
 
-type ReplySet = { match: RegExp; replies: string[] };
+type Choice = { text: string; answer: string };
+type Beat = { match: RegExp; short: string; choices: Choice[] };
 
-const CONTEXTUAL_REPLIES: ReplySet[] = [
+// Wren's displayed monologue is tightened by roughly 25%, while every Maria
+// question gets a direct Wren answer before the underlying guide advances.
+const BEATS: Beat[] = [
   {
     match: /Oh — you're awake|sea told me someone was coming/i,
-    replies: [
-      "The sea told you I was coming?",
-      "Where am I exactly?",
-      "You've been waiting here since sunrise?",
+    short: "Oh — you're awake. Steady. I'm Wren, keeper of these shores. I've been waiting since sunrise; the sea told me someone was coming today.",
+    choices: [
+      { text: "The sea told you I was coming?", answer: "It did. The tide went still at dawn, then turned toward this shore. Around here, the sea notices arrivals before I do." },
+      { text: "Where am I exactly?", answer: "On the Sunlit Shores, at the edge of a much larger realm. I'll explain the rest — just keep your feet under you first." },
+      { text: "You've been waiting here since sunrise?", answer: "Since the first light. I didn't know your face yet, only that someone important was on her way." },
     ],
   },
   {
     match: /Your name is Maria|five lands laid end to end/i,
-    replies: [
-      "Five lands? What happened to this place?",
-      "Why do you keep telling me to hold on to my name?",
-      "Alright. Where am I supposed to start?",
+    short: "Your name is Maria. Hold on to that. This is the Realm of the Golden Ring: five lands joined together, each shaped by something Andrew feels about you.",
+    choices: [
+      { text: "Five lands? What happened to this place?", answer: "Nothing happened to it. It was made this way — five parts of one road, each carrying a different truth for you to find." },
+      { text: "Why do you keep telling me to hold on to my name?", answer: "Because this realm can feel like a dream. Your name is an anchor. Remember who you are, and the rest becomes easier to face." },
+      { text: "Alright. Where am I supposed to start?", answer: "Here, on the Shores. Learn the road, take what you need, then follow it east. I'll give you the destination before you leave." },
     ],
   },
   {
     match: /Andrew is the reason all this exists|road only runs one way/i,
-    replies: [
-      "He built all of this?",
-      "Why can't he come to me?",
-      "Then tell me how to reach him.",
+    short: "Andrew is why this realm exists. He's waiting at the far end, but he cannot come to you. That's the rule: the road runs one way, and you have to walk it.",
+    choices: [
+      { text: "He built all of this?", answer: "In the way this realm understands building, yes. His memories, hopes, fears, and love became places you can actually walk through." },
+      { text: "Why can't he come to me?", answer: "Because the road is meant to show you what he couldn't simply hand you. If he crossed it for you, the journey would lose its meaning." },
+      { text: "Then tell me how to reach him.", answer: "Keep moving through each land and gather what was left for you. The road itself will open the way to him." },
     ],
   },
   {
     match: /gathering five Relics|sealed Envelopes/i,
-    replies: [
-      "So each Relic is something he couldn't say?",
-      "The letters matter as much as the road?",
-      "Where should I look first?",
+    short: "You're gathering five Relics — not treasure, but truths Andrew wants you to know. You'll also find sealed letters in quiet places. Read them; they're part of the journey.",
+    choices: [
+      { text: "So each Relic is something he couldn't say?", answer: "Something he wanted you to feel, not just hear. Each Relic gives that truth a shape you can carry." },
+      { text: "The letters matter as much as the road?", answer: "Yes. Don't rush past them. The road gets you forward; the letters tell you why you're walking it." },
+      { text: "Where should I look first?", answer: "Follow the natural edges of each land and notice the quiet corners. The important things here rarely shout for attention." },
     ],
   },
   {
     match: /Each land is guarded|isn't evil|too much or not enough/i,
-    replies: [
-      "If they aren't evil, I don't want to treat them like they are.",
-      "What happens if I start believing what they say?",
-      "Then I'll keep moving, even when they get loud.",
+    short: "Each land is guarded. Sorrow takes shape here, but it isn't evil. It tries to make you believe you're too much or not enough. Beat it by refusing that lie.",
+    choices: [
+      { text: "If they aren't evil, I don't want to treat them like they are.", answer: "Good. You don't destroy them here. You break the fear holding them together and let them become gentle again." },
+      { text: "What happens if I start believing what they say?", answer: "Then stop, breathe, and remember whose voice you're hearing. A fear can sound convincing without being true." },
+      { text: "Then I'll keep moving, even when they get loud.", answer: "That's enough. Courage here isn't silence — it's taking the next step while the noise is still there." },
     ],
   },
   {
     match: /Radiant Spark Wand|throws light, not blades/i,
-    replies: [
-      "Light instead of blades. I like that.",
-      "So I can calm things without hurting them?",
-      "Show me how to use it.",
+    short: "Take the Radiant Spark Wand. It throws light, not blades; what it touches turns gentle again. You'll find stronger weapons later, and you can keep them all.",
+    choices: [
+      { text: "Light instead of blades. I like that.", answer: "I thought you might. This realm answers you best when strength and gentleness are the same thing." },
+      { text: "So I can calm things without hurting them?", answer: "Exactly. Strike the fear, not the creature underneath it. You'll see the difference when the petals appear." },
+      { text: "Show me how to use it.", answer: "Face what threatens you and swing. The wand does the rest. Keep moving while you fight; standing still makes you an easy target." },
     ],
   },
   {
     match: /Watch your hearts|Five hits|Rest stones/i,
-    replies: [
-      "Five hits sends me back, but I don't lose everything?",
-      "Good. I want to know where I can rest.",
-      "A house... here?",
+    short: "Watch your hearts. Five hits return you to the start of the land, but you lose nothing. Rest stones and your house restore you; the house also has storage, cooking, and a bed.",
+    choices: [
+      { text: "Five hits sends me back, but I don't lose everything?", answer: "Correct. No Relics, letters, or progress disappear. You only retrace a little road." },
+      { text: "Where can I rest?", answer: "Look for the glowing rest stones, or return to your house. Either will put you back on your feet." },
+      { text: "A house... here?", answer: "Yours. A small safe place in every strange thing around you. Use it whenever the road starts feeling too loud." },
     ],
   },
   {
     match: /sun here runs a real day|Animals wander the grass/i,
-    replies: [
-      "So this place really keeps time.",
-      "I'd rather not hunt unless I have to.",
-      "Alright — daylight matters. I'll pay attention.",
+    short: "Time moves here: daylight fades and the lamps come on at night. Animals wander the grass, and food can restore your hearts when you need it.",
+    choices: [
+      { text: "So this place really keeps time.", answer: "It does. Morning, evening, night — the world keeps breathing even when you stand still." },
+      { text: "I'd rather not hunt unless I have to.", answer: "Then don't. Rest stones and your house are there too. Food is an option, not an obligation." },
+      { text: "Alright — daylight matters. I'll pay attention.", answer: "Good. The road doesn't close at night, but landmarks are easier to read while the sun is up." },
     ],
   },
   {
     match: /Your road today|River Gate Temple|You're expected/i,
-    replies: [
-      "East to the River Gate Temple. Got it.",
-      "And the Warden is waiting inside?",
-      "I'm ready, Wren.",
+    short: "For now, follow the coastal path east to the River Gate Temple. Use the signposts or map if you lose your bearings. You're not lost, Maria. You're expected.",
+    choices: [
+      { text: "East to the River Gate Temple. Got it.", answer: "That's the road. Stay on the coast and you'll see the temple before you can miss it." },
+      { text: "And the Warden is waiting inside?", answer: "Yes — guarding the Lantern. Remember what I told you: what waits there is sorrow with a shape, not something born evil." },
+      { text: "I'm ready, Wren.", answer: "I believe you. Take the wand, follow the water east, and trust yourself when the road gets loud." },
     ],
   },
 ];
 
-const FALLBACK_REPLIES = [
-  "Tell me more.",
-  "What should I understand about that?",
-  "Alright. Keep going.",
+const FALLBACK: Choice[] = [
+  { text: "Tell me more.", answer: "Of course. One thing at a time." },
+  { text: "What should I understand about that?", answer: "Only what matters for the next step. The rest will make sense on the road." },
+  { text: "Alright. Keep going.", answer: "Good. Stay with me a moment longer." },
 ];
 
-function repliesFor(shell: HTMLElement) {
-  const text = shell.textContent ?? "";
-  return CONTEXTUAL_REPLIES.find((entry) => entry.match.test(text))?.replies ?? FALLBACK_REPLIES;
-}
+function style(el: HTMLElement, values: Record<string, string>) { Object.assign(el.style, values); }
 
-function style(el: HTMLElement, values: Record<string, string>) {
-  Object.assign(el.style, values);
-}
-
-function portrait(src: string, alt: string, side: "wren" | "maria") {
+function portrait(src: string, alt: string, maria = false) {
   const frame = document.createElement("div");
-  frame.className = `quest-wren-portrait quest-wren-portrait-${side}`;
-  style(frame, {
-    position: "relative",
-    width: side === "wren" ? "112px" : "72px",
-    height: side === "wren" ? "112px" : "72px",
-    minWidth: side === "wren" ? "112px" : "72px",
-    borderRadius: side === "wren" ? "22px" : "18px",
-    border: `2px solid ${side === "wren" ? "rgba(230,191,101,.95)" : "rgba(235,190,204,.88)"}`,
-    overflow: "hidden",
-    background: side === "wren"
-      ? "radial-gradient(circle at 50% 28%,rgba(74,112,139,.45),rgba(8,18,36,.98) 72%)"
-      : "linear-gradient(160deg,#f6e8e5,#d8b6bc)",
-    boxShadow: side === "wren"
-      ? "0 0 0 4px rgba(211,174,89,.08),0 0 34px rgba(211,174,89,.2),0 16px 34px rgba(0,0,0,.42)"
-      : "0 0 0 3px rgba(231,189,195,.08),0 12px 28px rgba(0,0,0,.34)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: "0",
-  });
-
-  const img = document.createElement("img");
-  img.src = src;
-  img.alt = alt;
-  style(img, {
-    width: side === "wren" ? "82px" : "100%",
-    height: side === "wren" ? "118px" : "100%",
-    objectFit: side === "wren" ? "contain" : "cover",
-    objectPosition: "50% 12%",
-    imageRendering: "pixelated",
-    filter: side === "wren" ? "drop-shadow(0 5px 4px rgba(0,0,0,.35))" : "none",
-  });
-  frame.appendChild(img);
-
-  const crest = document.createElement("div");
-  crest.textContent = "✦";
-  style(crest, {
-    position: "absolute",
-    right: "6px",
-    top: "5px",
-    color: side === "wren" ? "#e6bf65" : "#efc8d2",
-    fontSize: "10px",
-    textShadow: "0 0 10px currentColor",
-  });
-  frame.appendChild(crest);
-  return frame;
+  frame.className = maria ? "quest-wren-portrait-maria" : "quest-wren-portrait-wren";
+  style(frame, { width: maria ? "72px" : "112px", height: maria ? "72px" : "112px", minWidth: maria ? "72px" : "112px", borderRadius: maria ? "18px" : "22px", border: `2px solid ${maria ? "rgba(235,190,204,.9)" : "rgba(230,191,101,.96)"}`, overflow: "hidden", background: maria ? "#e7cbd0" : "radial-gradient(circle at 50% 25%,#294762,#081224 72%)", boxShadow: maria ? "0 10px 28px #0006" : "0 0 0 4px #d3ae5914,0 0 36px #d3ae5930,0 18px 38px #0008", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: "0" });
+  const img = document.createElement("img"); img.src = src; img.alt = alt;
+  style(img, { width: maria ? "100%" : "82px", height: maria ? "100%" : "118px", objectFit: maria ? "cover" : "contain", objectPosition: "50% 12%", imageRendering: "pixelated" });
+  frame.appendChild(img); return frame;
 }
 
-function findWrenDialog() {
-  const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('button[aria-label="Continue conversation"]'));
-  for (const advance of buttons) {
+function findDialog() {
+  for (const advance of Array.from(document.querySelectorAll<HTMLButtonElement>('button[aria-label="Continue conversation"]'))) {
     const shell = advance.parentElement as HTMLElement | null;
-    if (!shell) continue;
-    const text = shell.textContent ?? "";
-    if (!/Wren of the Shores/i.test(text)) continue;
+    if (!shell || !/Wren of the Shores/i.test(shell.textContent ?? "")) continue;
     const overlay = shell.closest(".absolute.inset-0") as HTMLElement | null;
-    const name = Array.from(shell.querySelectorAll<HTMLElement>("span")).find((el) => /Wren of the Shores/i.test(el.textContent ?? ""));
-    if (overlay && name) return { overlay, shell, advance, name };
+    const name = Array.from(shell.querySelectorAll<HTMLElement>("span")).find(el => /Wren of the Shores/i.test(el.textContent ?? ""));
+    if (overlay && name) return { advance, shell, overlay, name };
   }
   return null;
 }
 
-function decorateCard(shell: HTMLElement, name: HTMLElement) {
-  const cardInner = name.closest(".relative.flex.items-start") as HTMLElement | null;
-  if (!cardInner) return;
+function beatFor(shell: HTMLElement) { const t = shell.textContent ?? ""; return BEATS.find(b => b.match.test(t)); }
 
-  style(cardInner, {
-    padding: "20px 22px",
-    gap: "18px",
-    alignItems: "center",
-    minHeight: "150px",
-  });
-
-  if (!cardInner.querySelector(".quest-wren-portrait-wren")) {
-    cardInner.insertBefore(portrait(wrenArt, "Wren of the Shores", "wren"), cardInner.firstChild);
-  }
-
-  const copy = name.parentElement?.parentElement as HTMLElement | null;
-  if (copy) {
-    if (!copy.querySelector(".quest-wren-eyebrow")) {
-      const eyebrow = document.createElement("div");
-      eyebrow.className = "quest-wren-eyebrow";
-      eyebrow.textContent = "✦  ACT I  ·  THE SUNLIT SHORES  ✦";
-      style(eyebrow, {
-        marginBottom: "5px",
-        color: "rgba(230,191,101,.72)",
-        fontSize: "9px",
-        fontWeight: "800",
-        letterSpacing: ".24em",
-        textTransform: "uppercase",
-      });
-      copy.insertBefore(eyebrow, copy.firstChild);
-    }
-    style(name, {
-      fontSize: "22px",
-      letterSpacing: ".015em",
-      textShadow: "0 1px 0 rgba(0,0,0,.3),0 0 18px rgba(211,174,89,.14)",
-    });
-  }
-
-  const card = cardInner.parentElement as HTMLElement | null;
-  if (card) style(card, {
-    position: "relative",
-    borderRadius: "24px",
-    borderColor: "rgba(222,183,91,.9)",
-    background: "radial-gradient(120% 180% at 0% 0%,rgba(31,57,82,.98),rgba(8,17,35,.99) 52%,rgba(14,17,39,.99))",
-    boxShadow: "0 26px 70px rgba(0,0,0,.46),0 0 0 1px rgba(255,222,140,.05) inset,0 0 50px rgba(211,174,89,.08)",
-  });
-
-  if (!shell.querySelector(".quest-wren-ornament")) {
-    const ornament = document.createElement("div");
-    ornament.className = "quest-wren-ornament";
-    ornament.innerHTML = "<span>◆</span><span></span><span>✦</span><span></span><span>◆</span>";
-    style(ornament, {
-      display: "grid",
-      gridTemplateColumns: "auto 1fr auto 1fr auto",
-      alignItems: "center",
-      gap: "8px",
-      margin: "9px 20px 0",
-      color: "rgba(211,174,89,.58)",
-      fontSize: "8px",
-      pointerEvents: "none",
-    });
-    for (const child of Array.from(ornament.children)) {
-      const el = child as HTMLElement;
-      if (!el.textContent) style(el, { height: "1px", background: "linear-gradient(90deg,transparent,rgba(211,174,89,.5),transparent)" });
-    }
-    shell.insertBefore(ornament, shell.children[1] ?? null);
+function decorate(shell: HTMLElement, overlay: HTMLElement, name: HTMLElement) {
+  style(overlay, { background: "radial-gradient(circle at 50% 42%,rgba(5,15,31,.34),rgba(2,7,18,.72))", backdropFilter: "blur(5px) saturate(.9)" });
+  style(shell, { maxWidth: "900px" });
+  const inner = name.closest(".relative.flex.items-start") as HTMLElement | null; if (!inner) return;
+  style(inner, { padding: "18px 22px", gap: "18px", alignItems: "center", minHeight: "142px" });
+  if (!inner.querySelector(".quest-wren-portrait-wren")) inner.insertBefore(portrait(wrenArt, "Wren of the Shores"), inner.firstChild);
+  const card = inner.parentElement as HTMLElement | null;
+  if (card) style(card, { borderRadius: "24px", borderColor: "rgba(230,191,101,.92)", background: "radial-gradient(120% 180% at 0 0,#203a54fa,#081123fc 52%,#0e1127fc)", boxShadow: "0 28px 75px #0008,0 0 55px #d3ae5914" });
+  if (!shell.querySelector(".quest-wren-crownline")) {
+    const line = document.createElement("div"); line.className = "quest-wren-crownline"; line.textContent = "✦  ACT I  ·  THE SUNLIT SHORES  ·  A CONVERSATION  ✦";
+    style(line, { position: "absolute", top: "8px", left: "50%", transform: "translateX(-50%)", color: "#e6bf6599", fontSize: "9px", fontWeight: "900", letterSpacing: ".2em", whiteSpace: "nowrap", pointerEvents: "none" });
+    shell.appendChild(line);
   }
 }
 
-function addReplyPanel(shell: HTMLElement, advance: HTMLButtonElement, status: string) {
+function addPanel(shell: HTMLElement, advance: HTMLButtonElement, status: string, beat?: Beat) {
   if (shell.querySelector(".quest-wren-replies")) return;
+  const choicesData = beat?.choices ?? FALLBACK;
+  const panel = document.createElement("section"); panel.className = "quest-wren-replies";
+  style(panel, { marginTop: "10px", padding: "16px", borderRadius: "20px", border: "1px solid #d3ae5994", background: "radial-gradient(120% 160% at 50% 0%,#19243ffc,#060d1cfc 68%)", boxShadow: "0 20px 48px #0006", color: "white" });
+  const label = document.createElement("div"); label.textContent = "HOW DOES MARIA ANSWER?"; style(label, { color: "#e1b95b", fontSize: "10px", fontWeight: "900", letterSpacing: ".2em", marginBottom: "12px" }); panel.appendChild(label);
+  const grid = document.createElement("div"); style(grid, { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: "9px" }); panel.appendChild(grid);
+  choicesData.forEach((choice, i) => {
+    const b = document.createElement("button"); b.type = "button"; b.innerHTML = `<small style="display:block;color:#d9b45d;font-weight:900;letter-spacing:.15em;margin-bottom:5px">${i === 0 ? "CURIOUS" : i === 1 ? "THOUGHTFUL" : "READY"}</small>“${choice.text}”`;
+    style(b, { minHeight: "66px", borderRadius: "15px", border: "1px solid #d3ae5957", background: "linear-gradient(150deg,#ffffff12,#ffffff06)", color: "#fff", padding: "12px 14px", textAlign: "left", fontSize: "13px", lineHeight: "1.4", cursor: "pointer", transition: ".16s ease" });
+    b.onmouseenter = () => { b.style.transform = "translateY(-2px)"; b.style.borderColor = "#e6bf65d9"; b.style.background = "linear-gradient(150deg,#d3ae592b,#ffffff0b)"; };
+    b.onmouseleave = () => { b.style.transform = "none"; b.style.borderColor = "#d3ae5957"; b.style.background = "linear-gradient(150deg,#ffffff12,#ffffff06)"; };
+    b.onclick = e => {
+      e.preventDefault(); e.stopPropagation(); grid.replaceChildren(); label.textContent = "MARIA";
+      const mariaRow = document.createElement("div"); style(mariaRow, { display: "flex", alignItems: "center", gap: "14px", padding: "10px", borderRadius: "16px", background: "#e7bdc314", border: "1px solid #e7bdc347" }); mariaRow.appendChild(portrait(mariaPortrait, "Maria", true));
+      const mq = document.createElement("div"); mq.innerHTML = `<b style="color:#efc4d0">Maria</b><div style="margin-top:5px;font-style:italic">“${choice.text}”</div>`; mariaRow.appendChild(mq); grid.appendChild(mariaRow);
+      const answer = document.createElement("div"); style(answer, { display: "flex", gap: "14px", alignItems: "center", marginTop: "10px", padding: "12px", borderRadius: "16px", background: "#d3ae5910", border: "1px solid #d3ae5945" }); answer.appendChild(portrait(wrenArt, "Wren"));
+      const aq = document.createElement("div"); aq.innerHTML = `<b style="color:#e6bf65">Wren answers</b><div style="margin-top:5px;line-height:1.5;font-style:italic">“${choice.answer}”</div>`; answer.appendChild(aq); panel.appendChild(answer);
+      const cont = document.createElement("button"); cont.type = "button"; cont.textContent = /Tap to close/i.test(status) ? "Finish conversation  ✦" : "Continue with Wren  →";
+      style(cont, { width: "100%", marginTop: "12px", minHeight: "44px", borderRadius: "13px", border: "1px solid #e6bf65d1", background: "linear-gradient(90deg,#b78f393d,#e6bf6529,#b78f393d)", color: "#f2d78f", fontWeight: "900", cursor: "pointer" });
+      cont.onclick = ev => { ev.preventDefault(); ev.stopPropagation(); advance.dataset.wrenAllowAdvance = "1"; advance.click(); }; panel.appendChild(cont);
+    }; grid.appendChild(b);
+  }); shell.appendChild(panel);
+}
 
-  const panel = document.createElement("section");
-  panel.className = "quest-wren-replies";
-  style(panel, {
-    position: "relative",
-    marginTop: "10px",
-    padding: "16px",
-    borderRadius: "20px",
-    border: "1px solid rgba(211,174,89,.58)",
-    background: "radial-gradient(120% 160% at 50% 0%,rgba(25,36,63,.99),rgba(6,13,28,.99) 68%)",
-    boxShadow: "0 18px 45px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.025)",
-    color: "white",
-    overflow: "hidden",
-  });
-
-  const glow = document.createElement("div");
-  style(glow, {
-    position: "absolute", inset: "0", pointerEvents: "none",
-    background: "linear-gradient(110deg,rgba(211,174,89,.05),transparent 28%,transparent 72%,rgba(231,189,195,.04))",
-  });
-  panel.appendChild(glow);
-
-  const labelRow = document.createElement("div");
-  style(labelRow, { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "12px", position: "relative" });
-  const label = document.createElement("div");
-  label.textContent = "How does Maria answer?";
-  style(label, {
-    fontSize: "10px", textTransform: "uppercase", letterSpacing: ".2em",
-    color: "#e1b95b", fontWeight: "900",
-  });
-  const hint = document.createElement("div");
-  hint.textContent = "Choose what feels most like her";
-  style(hint, { color: "rgba(255,255,255,.38)", fontSize: "10px", fontStyle: "italic" });
-  labelRow.append(label, hint);
-  panel.appendChild(labelRow);
-
-  const choices = document.createElement("div");
-  style(choices, { position: "relative", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: "9px" });
-
-  const replies = repliesFor(shell);
-  replies.forEach((text, index) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.innerHTML = `<span style="display:block;color:#d9b45d;font-size:9px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;margin-bottom:5px">${index === 0 ? "Curious" : index === 1 ? "Thoughtful" : "Ready"}</span><span>“${text}”</span>`;
-    style(button, {
-      minHeight: "66px",
-      borderRadius: "15px",
-      border: "1px solid rgba(211,174,89,.34)",
-      background: "linear-gradient(150deg,rgba(255,255,255,.07),rgba(255,255,255,.025))",
-      color: "rgba(255,255,255,.97)",
-      padding: "12px 14px",
-      textAlign: "left",
-      fontSize: "13px",
-      lineHeight: "1.4",
-      cursor: "pointer",
-      transition: "transform .16s ease,border-color .16s ease,background .16s ease,box-shadow .16s ease",
-      boxShadow: "inset 0 1px 0 rgba(255,255,255,.035)",
-    });
-    button.onmouseenter = () => {
-      button.style.transform = "translateY(-2px)";
-      button.style.background = "linear-gradient(150deg,rgba(211,174,89,.17),rgba(255,255,255,.045))";
-      button.style.borderColor = "rgba(230,191,101,.85)";
-      button.style.boxShadow = "0 8px 22px rgba(0,0,0,.22),0 0 20px rgba(211,174,89,.06)";
-    };
-    button.onmouseleave = () => {
-      button.style.transform = "translateY(0)";
-      button.style.background = "linear-gradient(150deg,rgba(255,255,255,.07),rgba(255,255,255,.025))";
-      button.style.borderColor = "rgba(211,174,89,.34)";
-      button.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.035)";
-    };
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      choices.replaceChildren();
-      label.textContent = "Maria";
-      hint.textContent = "Her answer";
-
-      const row = document.createElement("div");
-      style(row, {
-        display: "flex", alignItems: "center", gap: "14px", padding: "10px 12px",
-        borderRadius: "16px", border: "1px solid rgba(231,189,195,.28)",
-        background: "linear-gradient(135deg,rgba(231,189,195,.08),rgba(255,255,255,.025))",
-      });
-      row.appendChild(portrait(mariaPortrait, "Maria", "maria"));
-      const copy = document.createElement("div");
-      const who = document.createElement("div");
-      who.textContent = "Maria";
-      style(who, { color: "#efc4d0", fontWeight: "900", fontSize: "15px", marginBottom: "4px", letterSpacing: ".02em" });
-      const quote = document.createElement("div");
-      quote.textContent = `“${text}”`;
-      style(quote, { color: "rgba(255,255,255,.97)", fontSize: "14px", fontStyle: "italic", lineHeight: "1.5" });
-      copy.append(who, quote);
-      row.appendChild(copy);
-      choices.appendChild(row);
-
-      const cont = document.createElement("button");
-      cont.type = "button";
-      cont.textContent = /Tap to close/i.test(status) ? "Finish conversation  ✦" : "Continue with Wren  →";
-      style(cont, {
-        position: "relative",
-        width: "100%", marginTop: "12px", minHeight: "44px", borderRadius: "13px",
-        border: "1px solid rgba(230,191,101,.82)",
-        background: "linear-gradient(90deg,rgba(183,143,57,.24),rgba(230,191,101,.16),rgba(183,143,57,.24))",
-        color: "#f2d78f", fontWeight: "900", cursor: "pointer", letterSpacing: ".02em",
-        boxShadow: "inset 0 1px 0 rgba(255,239,190,.08),0 8px 22px rgba(0,0,0,.18)",
-      });
-      cont.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        advance.dataset.wrenAllowAdvance = "1";
-        advance.click();
-      });
-      panel.appendChild(cont);
-    });
-    choices.appendChild(button);
-  });
-
-  panel.appendChild(choices);
-  shell.appendChild(panel);
+function shortenVisibleLine(shell: HTMLElement, beat?: Beat) {
+  if (!beat) return;
+  const candidates = Array.from(shell.querySelectorAll<HTMLElement>("p,blockquote,div"));
+  const el = candidates.find(node => beat.match.test(node.textContent ?? "") && !node.querySelector("button") && !/Wren of the Shores/.test(node.textContent ?? ""));
+  if (el && el.textContent !== beat.short) el.textContent = beat.short;
 }
 
 function enhance() {
-  const found = findWrenDialog();
-  if (!found) return;
-  const { overlay, shell, advance, name } = found;
-
-  overlay.dataset.wrenCinematic = "true";
-  style(overlay, {
-    background: "radial-gradient(circle at 50% 42%,rgba(5,15,31,.34),rgba(2,7,18,.7))",
-    backdropFilter: "blur(4px) saturate(.88)",
-  });
-  style(shell, { maxWidth: "900px" });
-  decorateCard(shell, name);
-
+  const f = findDialog(); if (!f) return;
+  const { shell, overlay, advance, name } = f; decorate(shell, overlay, name);
+  const status = advance.textContent ?? ""; const ready = /Tap to (continue|close)/i.test(status); const beat = beatFor(shell);
+  if (ready) shortenVisibleLine(shell, beat);
   if (advance.dataset.wrenGuard !== "1") {
     advance.dataset.wrenGuard = "1";
-    advance.addEventListener("click", (event) => {
-      const currentStatus = advance.textContent ?? "";
-      const ready = /Tap to (continue|close)/i.test(currentStatus);
-      if (!ready) return;
-      if (advance.dataset.wrenAllowAdvance === "1") {
-        delete advance.dataset.wrenAllowAdvance;
-        return;
-      }
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      addReplyPanel(shell, advance, currentStatus);
+    advance.addEventListener("click", e => {
+      const s = advance.textContent ?? ""; if (!/Tap to (continue|close)/i.test(s)) return;
+      if (advance.dataset.wrenAllowAdvance === "1") { delete advance.dataset.wrenAllowAdvance; return; }
+      e.preventDefault(); e.stopImmediatePropagation(); addPanel(shell, advance, s, beatFor(shell));
     }, true);
   }
-
-  const status = advance.textContent ?? "";
-  const finishedTyping = /Tap to (continue|close)/i.test(status);
   const panel = shell.querySelector(".quest-wren-replies") as HTMLElement | null;
-  if (!finishedTyping) panel?.remove();
-  else addReplyPanel(shell, advance, status);
+  if (!ready) panel?.remove(); else addPanel(shell, advance, status, beat);
 }
 
 export function installAct1WrenDialoguePolish() {
   if (typeof window === "undefined" || typeof document === "undefined") return;
-  const w = window as Window & { __act1WrenDialoguePolishV3?: boolean };
-  if (w.__act1WrenDialoguePolishV3) return;
-  w.__act1WrenDialoguePolishV3 = true;
-
-  enhance();
-  const observer = new MutationObserver(enhance);
-  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-  window.setInterval(enhance, 250);
+  const w = window as Window & { __act1WrenDialoguePolishV4?: boolean }; if (w.__act1WrenDialoguePolishV4) return; w.__act1WrenDialoguePolishV4 = true;
+  enhance(); const observer = new MutationObserver(enhance); observer.observe(document.body, { childList: true, subtree: true, characterData: true }); window.setInterval(enhance, 250);
 }
