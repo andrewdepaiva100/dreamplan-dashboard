@@ -12,6 +12,7 @@ const ACTOR_KINDS = new Set([
   "andrew-ceremony",
 ]);
 const NON_OCCLUDERS = new Set(["fence", "bridge", "lamp", "bench"]);
+const PICKUP_KINDS = new Set(["season-key", "relic", "vault-key", "envelope"]);
 
 function feetDepth(scene: any, obj: any, extra = 0) {
   if (!obj?.active || typeof obj.y !== "number") return;
@@ -19,24 +20,38 @@ function feetDepth(scene: any, obj: any, extra = 0) {
   obj.setDepth?.(scene.dsort?.(footY) ?? (12 + footY * 0.01));
 }
 
-function addLandmarkDepthShadow(scene: any, sprite: any) {
-  if (!sprite?.active || !FIRST_PASS_ZONES.has(scene.save?.current_zone)) return null;
-  const textureKey = sprite.texture?.key;
+function makeSpriteSilhouette(scene: any, source: any, xOffset: number, yOffset: number, alpha: number, depthOffset: number) {
+  if (!source?.active) return null;
+  const textureKey = source.texture?.key;
   if (!textureKey || !scene.textures?.exists?.(textureKey)) return null;
-
-  // Reuse the actual landmark artwork as its own offset silhouette. This gives
-  // the building visible height without introducing geometric programmer art.
-  // Use the source sprite's horizontal scale as the authored scale; the scene's
-  // projection hook compensates vertical scale for upright world objects.
   const shadow = scene.add
-    .sprite(sprite.x + 5, sprite.y + 9, textureKey)
-    .setOrigin(sprite.originX ?? 0.5, sprite.originY ?? 0.5)
-    .setScale(sprite.scaleX ?? 1)
-    .setTint(0x182038)
-    .setAlpha(0.18)
-    .setDepth(Math.max(2, (sprite.depth ?? 8) - 0.16));
+    .sprite(source.x + xOffset, source.y + yOffset, textureKey)
+    .setOrigin(source.originX ?? 0.5, source.originY ?? 0.5)
+    .setScale(source.scaleX ?? 1)
+    .setTint(0x171a2a)
+    .setAlpha(alpha)
+    .setDepth(Math.max(2, (source.depth ?? 8) + depthOffset));
   shadow.setData("2.5d-depth-shadow", true);
   return shadow;
+}
+
+function addLandmarkDepth(scene: any, sprite: any) {
+  if (!sprite?.active || !FIRST_PASS_ZONES.has(scene.save?.current_zone)) return [];
+  // Stack silhouettes made from the authored landmark itself. The staggered
+  // copies read as wall/roof thickness under the tilted camera without adding
+  // replacement geometry or changing collision.
+  return [
+    makeSpriteSilhouette(scene, sprite, 2, 4, 0.22, -0.19),
+    makeSpriteSilhouette(scene, sprite, 4, 8, 0.16, -0.18),
+    makeSpriteSilhouette(scene, sprite, 7, 12, 0.10, -0.17),
+  ].filter(Boolean);
+}
+
+function addTallPropDepth(scene: any, obj: any) {
+  if (!FIRST_PASS_ZONES.has(scene.save?.current_zone) || !obj?.active) return null;
+  if ((obj.displayHeight ?? 0) < 34 || (obj.displayWidth ?? 0) < 18) return null;
+  if (NON_OCCLUDERS.has(String(obj.texture?.key ?? ""))) return null;
+  return makeSpriteSilhouette(scene, obj, 3, 6, 0.13, -0.12);
 }
 
 function collectOccluders(scene: any) {
@@ -67,12 +82,55 @@ function updateOcclusion(scene: any) {
     const dy = player.y - obj.y;
     const width = Math.max(44, (obj.displayWidth ?? 44) * 0.46);
     const height = Math.max(38, (obj.displayHeight ?? 38) * 0.5);
-    // Fade only when Maria is visually behind/under a tall prop, never simply
-    // because she walks nearby. This preserves solid silhouettes in open space.
     const covered = dx < width && dy > -height * 0.42 && dy < height * 0.68;
     const base = Number(obj.getData?.("2.5d-base-alpha") ?? 1);
-    const target = covered ? Math.min(base, 0.58) : base;
+    const target = covered ? Math.min(base, 0.54) : base;
     obj.alpha += (target - obj.alpha) * 0.16;
+  }
+}
+
+function actorList(scene: any) {
+  const actors: any[] = [scene.player, scene.companion, scene.dog, scene.boss];
+  actors.push(...(scene.enemies?.getChildren?.() ?? []));
+  actors.push(...(scene.animals ?? []));
+  for (const it of scene.interactables ?? []) {
+    if (it?.enabled && it.obj?.active && ACTOR_KINDS.has(it.kind)) actors.push(it.obj);
+  }
+  return actors.filter((obj, i, all) => obj?.active && all.indexOf(obj) === i);
+}
+
+function ensureActorContactShadow(scene: any, actor: any) {
+  if (!actor?.active || !FIRST_PASS_ZONES.has(scene.save?.current_zone)) return;
+  scene.__global25d.actorShadows ??= new Map();
+  if (scene.__global25d.actorShadows.has(actor)) return;
+  const key = actor.texture?.key;
+  if (!key || !scene.textures?.exists?.(key)) return;
+
+  // A compressed copy of the actual sprite creates a pixel-consistent contact
+  // shadow. It is deliberately subtle and avoids smooth procedural ellipses.
+  const shadow = scene.add
+    .sprite(actor.x + 3, actor.y + Math.max(4, (actor.displayHeight ?? 20) * 0.3), key)
+    .setOrigin(actor.originX ?? 0.5, actor.originY ?? 0.5)
+    .setScale((actor.scaleX ?? 1) * 0.82, (actor.scaleY ?? 1) * 0.24)
+    .setTint(0x171a24)
+    .setAlpha(actor === scene.player ? 0.24 : 0.18);
+  shadow.setData("2.5d-contact-shadow", true);
+  scene.__global25d.actorShadows.set(actor, shadow);
+}
+
+function updateContactShadows(scene: any) {
+  if (!scene.__global25d?.firstPassZone) return;
+  for (const actor of actorList(scene)) ensureActorContactShadow(scene, actor);
+  for (const [actor, shadow] of scene.__global25d.actorShadows ?? []) {
+    if (!actor?.active || !shadow?.active) {
+      shadow?.destroy?.();
+      scene.__global25d.actorShadows.delete(actor);
+      continue;
+    }
+    shadow.setPosition(actor.x + 3, actor.y + Math.max(4, (actor.displayHeight ?? 20) * 0.3));
+    shadow.setScale((actor.scaleX ?? 1) * 0.82, (actor.scaleY ?? 1) * 0.24);
+    shadow.setDepth(Math.max(2, (actor.depth ?? 10) - 0.08));
+    shadow.setVisible(actor.visible !== false);
   }
 }
 
@@ -87,7 +145,7 @@ function updateActorDepth(scene: any) {
   for (const it of scene.interactables ?? []) {
     if (!it?.enabled || !it.obj?.active) continue;
     if (ACTOR_KINDS.has(it.kind)) feetDepth(scene, it.obj, 2);
-    else if (["season-key", "relic", "vault-key", "envelope"].includes(it.kind)) feetDepth(scene, it.obj, 0);
+    else if (PICKUP_KINDS.has(it.kind)) feetDepth(scene, it.obj, 0);
   }
 }
 
@@ -100,11 +158,10 @@ export function installGlobal25DPolish(QuestScene: any) {
   proto.addLandmark = function polished25DLandmark(...args: any[]) {
     const result = originalAddLandmark.apply(this, args);
     if (FIRST_PASS_ZONES.has(this.save?.current_zone)) {
-      const sprite = this.landmark?.sprite;
-      const shadow = addLandmarkDepthShadow(this, sprite);
-      if (shadow) {
+      const shadows = addLandmarkDepth(this, this.landmark?.sprite);
+      if (shadows.length) {
         this.__global25dLandmarkShadows ??= [];
-        this.__global25dLandmarkShadows.push(shadow);
+        this.__global25dLandmarkShadows.push(...shadows);
       }
     }
     return result;
@@ -113,23 +170,23 @@ export function installGlobal25DPolish(QuestScene: any) {
   const originalCreate = proto.create;
   proto.create = function polished25DCreate(...args: any[]) {
     const result = originalCreate.apply(this, args);
-
-    // Keep the pixel-art presentation crisp while the vertically-squashed
-    // camera supplies the ground-plane perspective already present in scene.ts.
     this.cameras?.main?.setRoundPixels?.(true);
 
     this.__global25d = {
       occluders: collectOccluders(this),
       firstPassZone: FIRST_PASS_ZONES.has(this.save?.current_zone),
+      actorShadows: new Map(),
+      propShadows: [],
     };
 
-    // Give tall static props feet-based depth too. Their collision footprints
-    // stay untouched; this is purely a render-order pass.
     for (const obj of this.solidDecor?.getChildren?.() ?? []) {
       if (!obj?.active) continue;
       feetDepth(this, obj, 0);
+      const shadow = addTallPropDepth(this, obj);
+      if (shadow) this.__global25d.propShadows.push(shadow);
     }
     updateActorDepth(this);
+    updateContactShadows(this);
     return result;
   };
 
@@ -137,6 +194,7 @@ export function installGlobal25DPolish(QuestScene: any) {
   proto.update = function polished25DUpdate(time: number, delta: number) {
     const result = originalUpdate.call(this, time, delta);
     updateActorDepth(this);
+    updateContactShadows(this);
     updateOcclusion(this);
     return result;
   };
