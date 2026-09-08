@@ -13,7 +13,6 @@ export function installInteractionPolish(QuestScene: any) {
   proto.__interactionPolishInstalled = true;
 
   const baseAlpha = new WeakMap<object, number>();
-  const baseScale = new WeakMap<object, { x: number; y: number }>();
   const nameplates = new WeakMap<object, any>();
   const nameplateAlpha = new WeakMap<object, number>();
   const promptState = new WeakMap<object, { alpha: number; label: string }>();
@@ -95,9 +94,6 @@ export function installInteractionPolish(QuestScene: any) {
       if (!obj || !obj.active) continue;
 
       if (!baseAlpha.has(obj)) baseAlpha.set(obj, typeof obj.alpha === "number" ? obj.alpha : 1);
-      if (!baseScale.has(obj) && typeof obj.scaleX === "number" && typeof obj.scaleY === "number") {
-        baseScale.set(obj, { x: obj.scaleX, y: obj.scaleY });
-      }
 
       const base = baseAlpha.get(obj) ?? 1;
       if (it === near) {
@@ -105,19 +101,6 @@ export function installInteractionPolish(QuestScene: any) {
         obj.setAlpha?.(Math.min(base, pulse));
       } else {
         obj.setAlpha?.(base);
-      }
-
-      // Tiny breathing emphasis on the selected object. Always resolve back to
-      // the exact scale captured before this decorator touched it.
-      const scale = baseScale.get(obj);
-      if (scale && typeof obj.setScale === "function") {
-        const breath = it === near ? 1.008 + (Math.sin(time / 260) + 1) * 0.0035 : 1;
-        const targetX = scale.x * breath;
-        const targetY = scale.y * breath;
-        obj.setScale(
-          approach(obj.scaleX, targetX, delta, 95),
-          approach(obj.scaleY, targetY, delta, 95),
-        );
       }
 
       const name = npcName(it);
