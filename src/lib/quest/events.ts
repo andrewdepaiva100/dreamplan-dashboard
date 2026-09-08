@@ -20,6 +20,7 @@ if (typeof window !== "undefined") {
       import("./global2_5dPolish"), import("./desktopActSelector"), import("./desktopControlsPolish"), import("./interactionPolish"),
       import("./wrenIntro"), import("./lastCrossingDialogueRebind"), import("./weaponVisualSync"), import("./introUiPolish"),
       import("./mariaMovementPolish"), import("./mariaCombatAnimation"), import("./globalCharacterReactions"), import("./enemyReactionPolish"),
+      import("./actArrivalCinematics"),
     ]).then(([
       sceneModule, houseModule, upgrades, visualRemaster, homeRemaster, homeScalePolish, act1WorldRemaster, lastCrossing, silasPolish,
       silasPlacementFix, lastCrossingLifecycle, act1GameplayPolish, fallenCrossingShrine, fallenCrossingJournalBook,
@@ -27,7 +28,7 @@ if (typeof window !== "undefined") {
       relicPresentation, act2Enemies, act2GardenKeeper, act2EvelynSprite, act2VisualTuning, act2GuideCleanup,
       act2SeasonIdentity, act2BramForgemaster, act2BramWeaponOwnership, act2SeasonChallenges, global25DPolish,
       desktopActSelector, desktopControlsPolish, interactionPolish, wrenIntro, lastCrossingDialogueRebind, weaponVisualSync,
-      introUiPolish, mariaMovementPolish, mariaCombatAnimation, globalCharacterReactions, enemyReactionPolish,
+      introUiPolish, mariaMovementPolish, mariaCombatAnimation, globalCharacterReactions, enemyReactionPolish, actArrivalCinematics,
     ]) => {
       const QuestScene = sceneModule.QuestScene as unknown as any;
       const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
@@ -71,6 +72,7 @@ if (typeof window !== "undefined") {
       mariaCombatAnimation.installMariaCombatAnimation(QuestScene);
       globalCharacterReactions.installGlobalCharacterReactions(QuestScene);
       enemyReactionPolish.installEnemyReactionPolish(QuestScene);
+      actArrivalCinematics.installActArrivalCinematics(QuestScene);
 
       // Let Phaser/browser complete two paints before parsing and installing the
       // large dialogue script. This removes it from the first playable frame.
