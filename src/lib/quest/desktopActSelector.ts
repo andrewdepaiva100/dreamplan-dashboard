@@ -89,10 +89,26 @@ function installTitleButton(){
 }
 if(typeof window!=="undefined")installTitleButton();
 
+function recoverDirectActMovement(scene:any){
+  const requested=scene.__devActRequested as ZoneId|undefined;
+  if(!requested||requested==="sunlit_shores")return;
+
+  // DEV jumps bypass normal realm-to-realm transition plumbing. Make the test
+  // scene explicitly playable after every decorator has had a chance to build.
+  scene.frozen=false;
+  scene.physics?.resume?.();
+  scene.stick={x:0,y:0};
+  scene.vel={x:0,y:0};
+  scene.player?.setVelocity?.(0,0);
+  if(scene.input)scene.input.enabled=true;
+  if(scene.input?.keyboard)scene.input.keyboard.enabled=true;
+}
+
 export function installDesktopActSelector(QuestScene:any){
   const proto=QuestScene?.prototype; if(!proto)return;
   if(proto.__desktopActSelectorInstalled){sceneOverrideReady=true;return;}
   proto.__desktopActSelectorInstalled=true;
+
   const originalInit=proto.init;
   proto.init=function devActSelectorInit(data:any){
     let requested:ZoneId|null=null;
@@ -102,11 +118,23 @@ export function installDesktopActSelector(QuestScene:any){
       window.sessionStorage.removeItem(DEV_ACT_KEY);
     }catch{requested=null;}
     if(!requested)return originalInit.call(this,data);
-    // Mark this scene so a DEV build failure is identifiable in the console.
     this.__devActRequested=requested;
     console.info(`[quest] DEV launching ${requested}`);
     return originalInit.call(this,{...(data??{}),save:{...(data?.save??{}),current_zone:requested}});
   };
+
+  const originalCreate=proto.create;
+  proto.create=function devActSelectorCreate(...args:any[]){
+    const result=originalCreate.apply(this,args);
+    if(this.__devActRequested&&this.__devActRequested!=="sunlit_shores"){
+      // Run once after the synchronous create stack and once more after the
+      // first paint so a late decorator cannot leave the DEV scene frozen.
+      this.time?.delayedCall?.(0,()=>recoverDirectActMovement(this));
+      requestAnimationFrame(()=>recoverDirectActMovement(this));
+    }
+    return result;
+  };
+
   sceneOverrideReady=true;
   installTitleButton();
 }
