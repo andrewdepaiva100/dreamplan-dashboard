@@ -89,24 +89,50 @@ function startAttackPresentation(scene: SceneLike, weaponId: string) {
   player.setData("mariaAttackActive", true);
   createTrail(scene, direction.angle, reach, color, kind);
 
-  // Weapon-specific hand motion. Existing gameplay swing remains authoritative;
-  // this tween only improves presentation and does not alter hit timing/range.
+  // Weapon-specific hand motion. Keep the equipped weapon at its exact normal
+  // scale throughout every attack; only rotation changes for presentation.
   const hand = scene.hand as Phaser.GameObjects.Sprite | null;
   if (hand?.active) {
     scene.tweens.killTweensOf(hand);
+    const baseScaleX = hand.scaleX;
+    const baseScaleY = hand.scaleY;
+    hand.setScale(baseScaleX, baseScaleY);
+    const restoreHand = () => {
+      if (!hand?.active) return;
+      hand.setAngle(0);
+      hand.setScale(baseScaleX, baseScaleY);
+    };
+
     if (kind === "sword") {
       const sign = direction.dir === "side" && scene.facing < 0 ? -1 : 1;
       hand.setAngle(-52 * sign);
-      scene.tweens.add({ targets: hand, angle: 58 * sign, duration: 145, ease: "Cubic.easeOut", yoyo: true, hold: 18,
-        onComplete: () => hand?.active && hand.setAngle(0) });
+      scene.tweens.add({
+        targets: hand,
+        angle: 58 * sign,
+        duration: 145,
+        ease: "Cubic.easeOut",
+        yoyo: true,
+        hold: 18,
+        onComplete: restoreHand,
+      });
     } else if (kind === "wand" || kind === "ring") {
-      hand.setScale(hand.scaleX * 0.92, hand.scaleY * 0.92);
-      scene.tweens.add({ targets: hand, angle: direction.dir === "side" ? 18 * scene.facing : 12, scaleX: hand.scaleX * 1.14,
-        scaleY: hand.scaleY * 1.14, duration: 105, yoyo: true, ease: "Quad.easeOut",
-        onComplete: () => hand?.active && hand.setAngle(0) });
+      scene.tweens.add({
+        targets: hand,
+        angle: direction.dir === "side" ? 18 * scene.facing : 12,
+        duration: 105,
+        yoyo: true,
+        ease: "Quad.easeOut",
+        onComplete: restoreHand,
+      });
     } else {
-      scene.tweens.add({ targets: hand, angle: direction.dir === "side" ? -16 * scene.facing : -12, duration: 85, yoyo: true,
-        ease: "Quad.easeOut", onComplete: () => hand?.active && hand.setAngle(0) });
+      scene.tweens.add({
+        targets: hand,
+        angle: direction.dir === "side" ? -16 * scene.facing : -12,
+        duration: 85,
+        yoyo: true,
+        ease: "Quad.easeOut",
+        onComplete: restoreHand,
+      });
     }
   }
 }
