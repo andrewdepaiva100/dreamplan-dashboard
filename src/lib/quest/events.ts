@@ -22,7 +22,7 @@ if (typeof window !== "undefined") {
       import("./act2SeasonIdentity"), import("./act2BramForgemaster"), import("./act2BramWeaponOwnership"), import("./act2SeasonChallenges"),
       import("./act2BossRemaster"), import("./act2Wildlife"), import("./act2Memorial"), import("./meleeHitPolish"), import("./global2_5dPolish"), import("./desktopActSelector"), import("./desktopControlsPolish"), import("./interactionPolish"),
       import("./wrenIntro"), import("./lastCrossingDialogueRebind"), import("./weaponVisualSync"), import("./introUiPolish"),
-      import("./mariaMovementPolish"), import("./mariaCombatAnimation"), import("./globalCharacterReactions"), import("./enemyReactionPolish"),
+      import("./mariaMovementPolish"), import("./mariaCombatAnimation"), import("./globalCharacterReactions"), import("./globalNpcLife"), import("./enemyReactionPolish"),
       import("./actArrivalCinematics"), import("./environmentalMicroLife"),
     ]).then(([
       sceneModule, houseModule, upgrades, visualRemaster, homeRemaster, homeScalePolish, act1WorldRemaster, lastCrossing, silasPolish,
@@ -31,7 +31,7 @@ if (typeof window !== "undefined") {
       relicPresentation, act2Enemies, act2GardenKeeper, act2EvelynSprite, act2VisualTuning, act2GuideCleanup,
       act2SeasonIdentity, act2BramForgemaster, act2BramWeaponOwnership, act2SeasonChallenges, act2BossRemaster, act2Wildlife, act2Memorial, meleeHitPolish, global25DPolish,
       desktopActSelector, desktopControlsPolish, interactionPolish, wrenIntro, lastCrossingDialogueRebind, weaponVisualSync,
-      introUiPolish, mariaMovementPolish, mariaCombatAnimation, globalCharacterReactions, enemyReactionPolish, actArrivalCinematics,
+      introUiPolish, mariaMovementPolish, mariaCombatAnimation, globalCharacterReactions, globalNpcLife, enemyReactionPolish, actArrivalCinematics,
       environmentalMicroLife,
     ]) => {
       const QuestScene = sceneModule.QuestScene as unknown as any;
@@ -79,6 +79,7 @@ if (typeof window !== "undefined") {
       mariaMovementPolish.installMariaMovementPolish(QuestScene, QuestHouseScene);
       mariaCombatAnimation.installMariaCombatAnimation(QuestScene);
       globalCharacterReactions.installGlobalCharacterReactions(QuestScene);
+      globalNpcLife.installGlobalNpcLife(QuestScene);
       enemyReactionPolish.installEnemyReactionPolish(QuestScene);
       actArrivalCinematics.installActArrivalCinematics(QuestScene);
       environmentalMicroLife.installEnvironmentalMicroLife(QuestScene);
