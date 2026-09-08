@@ -35,32 +35,6 @@ export function installInteractionPolish(QuestScene: any) {
   const approach = (current: number, target: number, delta: number, speed: number) =>
     Phaser.Math.Linear(current, target, 1 - Math.exp(-Math.max(0, delta) / speed));
 
-  const contextualLabel = (it: any) => {
-    const raw = String(it?.label ?? "Interact").trim();
-    const kind = String(it?.kind ?? "").toLowerCase();
-    const lower = raw.toLowerCase();
-
-    // Authored labels that already contain an action are complete prompts.
-    // Keep exactly one verb instead of producing combinations such as
-    // "Interact with Look at...", "Read Look into...", or "Open Examine...".
-    if (/^(?:look\s+(?:at|into|in|through)\b|examine\b|inspect\b|read\b|open\b|talk\s+to\b|rest\b|enter\b|use\b|take\b|pick\b|collect\b|touch\b|activate\b|light\b|sit\b|sleep\b|cook\b|store\b|leave\b|return\b)/i.test(raw)) {
-      return raw;
-    }
-
-    if (/evelyn|bram|wren|keeper|guide|guest|pastor|andrew/.test(`${kind} ${lower}`)) {
-      const subject = raw.replace(/^(?:talk\s+to\s+)+/i, "").trim();
-      return `Talk to ${subject || "them"}`;
-    }
-    if (/rest|bed|hearth|camp|stone/.test(`${kind} ${lower}`)) return `Rest at ${raw}`;
-    if (/key/.test(`${kind} ${lower}`)) return `Open ${raw}`;
-    if (/chest|box|crate/.test(`${kind} ${lower}`)) return `Open ${raw}`;
-    if (/sign|journal|book|letter|note/.test(`${kind} ${lower}`)) return `Read ${raw}`;
-    if (/portal|gateway|gate|door|entrance/.test(`${kind} ${lower}`)) return `Enter ${raw}`;
-    if (/forge|anvil/.test(`${kind} ${lower}`)) return `Use ${raw}`;
-    if (/relic|pickup|heart|envelope/.test(`${kind} ${lower}`)) return `Take ${raw}`;
-    return `Interact with ${raw}`;
-  };
-
   const npcName = (it: any) => {
     const kind = String(it?.kind ?? "").toLowerCase();
     const label = String(it?.label ?? "").trim();
@@ -70,7 +44,43 @@ export function installInteractionPolish(QuestScene: any) {
     if (haystack.includes("wren")) return "Wren";
     if (haystack.includes("pastor adriel")) return "Pastor Adriel";
     if (haystack.includes("pastor alcir")) return "Pastor Alcir";
+    if (kind === "andrew" || kind === "andrew-ceremony" || haystack.includes("andrew")) return "Andrew";
+    // Guides and guests are authored with their proper name in the prompt.
+    if (kind === "act-guide" || kind === "guide" || kind === "guest") {
+      const named = label.replace(/^(?:talk\s+(?:to|with)\s+|speak\s+(?:to|with)\s+)/i, "").trim();
+      if (named && !/^(?:talk|speak|interact|guest|guide|them)$/i.test(named)) return named;
+    }
     return null;
+  };
+
+  const contextualLabel = (it: any) => {
+    const raw = String(it?.label ?? "Interact").trim();
+    const kind = String(it?.kind ?? "").toLowerCase();
+    const lower = raw.toLowerCase();
+    const name = npcName(it);
+
+    // Every actual speaking character gets one consistent prompt, regardless
+    // of whether their authored label said Talk, Talk with, Speak to, etc.
+    if (name) return `Talk to ${name}`;
+
+    // Authored labels that already contain an action are complete prompts.
+    if (/^(?:look\s+(?:at|into|in|through)\b|examine\b|inspect\b|read\b|open\b|talk\s+to\b|rest\b|enter\b|use\b|take\b|pick\b|collect\b|touch\b|activate\b|light\b|sit\b|sleep\b|cook\b|store\b|leave\b|return\b)/i.test(raw)) {
+      return raw;
+    }
+
+    if (/keeper|guide|guest|pastor/.test(`${kind} ${lower}`)) {
+      const subject = raw.replace(/^(?:talk\s+(?:to|with)\s+|speak\s+(?:to|with)\s+)+/i, "").trim();
+      return `Talk to ${subject || "them"}`;
+    }
+    if (kind === "garden-memorial") return "Read the Memorial";
+    if (/rest|bed|hearth|camp|stone/.test(`${kind} ${lower}`)) return `Rest at ${raw}`;
+    if (/key/.test(`${kind} ${lower}`)) return `Open ${raw}`;
+    if (/chest|box|crate/.test(`${kind} ${lower}`)) return `Open ${raw}`;
+    if (/sign|journal|book|letter|note/.test(`${kind} ${lower}`)) return `Read ${raw}`;
+    if (/portal|gateway|gate|door|entrance/.test(`${kind} ${lower}`)) return `Enter ${raw}`;
+    if (/forge|anvil/.test(`${kind} ${lower}`)) return `Use ${raw}`;
+    if (/relic|pickup|heart|envelope/.test(`${kind} ${lower}`)) return `Take ${raw}`;
+    return `Interact with ${raw}`;
   };
 
   const getNameplate = (scene: any, it: any, name: string) => {
