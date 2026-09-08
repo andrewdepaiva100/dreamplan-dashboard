@@ -2,10 +2,10 @@
 import "./objectivePolish.css";
 
 /**
- * Gives the nearest usable interactable a gentle proximity pulse, upgrades the
- * floating interaction prompt with a concise contextual verb, and shows small
- * nearby nameplates for important NPCs. No radii, handlers, quest state, or
- * progression rules are changed.
+ * Gives the nearest usable interactable a gentle proximity response, upgrades
+ * the floating interaction prompt with a concise contextual verb, and shows
+ * small nearby nameplates for important NPCs. No radii, handlers, quest state,
+ * or progression rules are changed.
  */
 export function installInteractionPolish(QuestScene: any) {
   const proto = QuestScene?.prototype;
@@ -13,8 +13,14 @@ export function installInteractionPolish(QuestScene: any) {
   proto.__interactionPolishInstalled = true;
 
   const baseAlpha = new WeakMap<object, number>();
+  const baseScale = new WeakMap<object, { x: number; y: number }>();
   const nameplates = new WeakMap<object, any>();
+  const nameplateAlpha = new WeakMap<object, number>();
+  const promptState = new WeakMap<object, { alpha: number; label: string }>();
   const originalUpdate = proto.update;
+
+  const approach = (current: number, target: number, delta: number, speed: number) =>
+    Phaser.Math.Linear(current, target, 1 - Math.exp(-Math.max(0, delta) / speed));
 
   const contextualLabel = (it: any) => {
     const raw = String(it?.label ?? "Interact").trim();
@@ -74,6 +80,7 @@ export function installInteractionPolish(QuestScene: any) {
         .setAlpha(0)
         .setVisible(false);
       nameplates.set(obj, text);
+      nameplateAlpha.set(obj, 0);
     }
     return text;
   };
@@ -86,13 +93,31 @@ export function installInteractionPolish(QuestScene: any) {
     for (const it of list) {
       const obj = it?.obj;
       if (!obj || !obj.active) continue;
+
       if (!baseAlpha.has(obj)) baseAlpha.set(obj, typeof obj.alpha === "number" ? obj.alpha : 1);
+      if (!baseScale.has(obj) && typeof obj.scaleX === "number" && typeof obj.scaleY === "number") {
+        baseScale.set(obj, { x: obj.scaleX, y: obj.scaleY });
+      }
+
       const base = baseAlpha.get(obj) ?? 1;
       if (it === near) {
-        const pulse = 0.92 + (Math.sin(time / 210) + 1) * 0.04;
+        const pulse = 0.94 + (Math.sin(time / 230) + 1) * 0.025;
         obj.setAlpha?.(Math.min(base, pulse));
       } else {
         obj.setAlpha?.(base);
+      }
+
+      // Tiny breathing emphasis on the selected object. Always resolve back to
+      // the exact scale captured before this decorator touched it.
+      const scale = baseScale.get(obj);
+      if (scale && typeof obj.setScale === "function") {
+        const breath = it === near ? 1.008 + (Math.sin(time / 260) + 1) * 0.0035 : 1;
+        const targetX = scale.x * breath;
+        const targetY = scale.y * breath;
+        obj.setScale(
+          approach(obj.scaleX, targetX, delta, 95),
+          approach(obj.scaleY, targetY, delta, 95),
+        );
       }
 
       const name = npcName(it);
@@ -101,32 +126,52 @@ export function installInteractionPolish(QuestScene: any) {
         if (plate) {
           const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, obj.x, obj.y);
           const show = !!it.enabled && d <= Math.max(150, (it.radius ?? 48) * 2.1);
+          const current = nameplateAlpha.get(obj) ?? 0;
+          const alpha = approach(current, show ? 0.92 : 0, delta, show ? 90 : 135);
+          nameplateAlpha.set(obj, alpha);
           plate
-            .setPosition(obj.x, obj.y - Math.max(24, (obj.displayHeight ?? 32) * 0.62))
-            .setVisible(show)
-            .setAlpha(show ? 0.92 : 0);
+            .setPosition(obj.x, obj.y - Math.max(24, (obj.displayHeight ?? 32) * 0.62) + (1 - alpha / 0.92) * 2)
+            .setVisible(show || alpha > 0.02)
+            .setAlpha(alpha);
         }
       }
     }
 
-    if (this.promptText && near) {
-      const label = contextualLabel(near);
-      this.prompt = label;
-      this.promptText
-        .setText(`E  ·  ${label}`)
-        .setFontFamily("system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif")
-        .setFontSize(9)
-        .setFontStyle("600")
-        .setColor("#f8fbff")
-        .setBackgroundColor("#10233f")
-        .setPadding(7, 4, 7, 4)
-        .setStroke("#071426", 1)
-        .setShadow(0, 2, "#000000", 3, false, true)
-        .setAlpha(0.96)
-        .setOrigin(0.5, 1)
-        .setPosition(this.player.x, this.player.y - 31)
-        .setDepth(100000)
-        .setVisible(true);
+    if (this.promptText) {
+      let state = promptState.get(this);
+      if (!state) {
+        state = { alpha: 0, label: "Interact" };
+        promptState.set(this, state);
+      }
+
+      if (near) {
+        state.label = contextualLabel(near);
+        this.prompt = state.label;
+      }
+
+      state.alpha = approach(state.alpha, near ? 1 : 0, delta, near ? 70 : 105);
+      const visible = !!near || state.alpha > 0.025;
+
+      if (visible) {
+        const lift = (1 - state.alpha) * 4;
+        this.promptText
+          .setText(`E  ·  ${state.label}`)
+          .setFontFamily("system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif")
+          .setFontSize(9)
+          .setFontStyle("600")
+          .setColor("#f8fbff")
+          .setBackgroundColor("#10233f")
+          .setPadding(7, 4, 7, 4)
+          .setStroke("#071426", 1)
+          .setShadow(0, 2, "#000000", 3, false, true)
+          .setAlpha(0.96 * state.alpha)
+          .setOrigin(0.5, 1)
+          .setPosition(this.player.x, this.player.y - 31 + lift)
+          .setDepth(100000)
+          .setVisible(true);
+      } else {
+        this.promptText.setAlpha(0).setVisible(false);
+      }
     }
 
     return result;
