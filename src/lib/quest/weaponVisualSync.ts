@@ -3,6 +3,8 @@ import { WEAPON_BY_ID } from "./content";
 
 type WeaponKind = "sword" | "wand" | "bow" | "ring" | "shield" | "crown";
 
+const HAND_SCALE = 1;
+
 function hex(color: number | undefined, fallback = "#f3d489") {
   const n = Number.isFinite(color) ? Number(color) : parseInt(fallback.slice(1), 16);
   return `#${Math.max(0, Math.min(0xffffff, n)).toString(16).padStart(6, "0")}`;
@@ -151,6 +153,15 @@ function ensureHandTexture(scene: any, id: string) {
   return key;
 }
 
+function lockHandScale(scene: any) {
+  if (!scene.hand?.active) return;
+  // The generated hand textures are authored at their final 18x32 display size.
+  // Base combat/update decorators may write display scale for other visuals, so
+  // make the equipped weapon's size authoritative every frame.
+  scene.hand.setScale(HAND_SCALE, HAND_SCALE);
+  scene.hand.setData?.("weaponCanonicalScale", HAND_SCALE);
+}
+
 function sync(scene: any) {
   const id = scene.save?.equipped_weapon;
   const owned = !!id && Array.isArray(scene.save?.weapons) && scene.save.weapons.includes(id);
@@ -177,6 +188,7 @@ function sync(scene: any) {
   if (!scene.hand?.active) scene.hand = scene.add.sprite(scene.player.x, scene.player.y, key).setDepth(21);
   else if (scene.hand.texture?.key !== key) scene.hand.setTexture(key);
   scene.hand.setVisible(true);
+  lockHandScale(scene);
   scene.__weaponVisualId = id;
 
   // The Crossing Blade originally had a second, bespoke overlay. Once every
@@ -210,6 +222,7 @@ export function installWeaponVisualSync(QuestScene: any) {
   proto.update = function weaponVisualUpdate(...args: any[]) {
     const result = originalUpdate.apply(this, args);
     if (this.save?.equipped_weapon !== this.__weaponVisualId || this.__crossingBladeSprite?.active) sync(this);
+    lockHandScale(this);
     return result;
   };
 }
