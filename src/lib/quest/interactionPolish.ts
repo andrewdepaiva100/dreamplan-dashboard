@@ -17,6 +17,20 @@ export function installInteractionPolish(QuestScene: any) {
   const nameplateAlpha = new WeakMap<object, number>();
   const promptState = new WeakMap<object, { alpha: number; label: string }>();
   const originalUpdate = proto.update;
+  const originalBuildAct2 = proto.buildAct2;
+
+  // Pull only the central fountain's east wall one design tile toward the
+  // water so the grass lane leading up to Maria's house stays clear.
+  proto.buildAct2 = function interactionPolishBuildAct2(...args: any[]) {
+    const result = originalBuildAct2.apply(this, args);
+    const wallTile = this.layer?.getTileAt(this.sx(79), this.sy(46))?.index;
+    const groundTile = this.layer?.getTileAt(this.sx(78), this.sy(46))?.index;
+    if (typeof wallTile === "number" && typeof groundTile === "number") {
+      this.rectLive(78, 46, 1, 16, wallTile);
+      this.rectLive(79, 46, 1, 16, groundTile);
+    }
+    return result;
+  };
 
   const approach = (current: number, target: number, delta: number, speed: number) =>
     Phaser.Math.Linear(current, target, 1 - Math.exp(-Math.max(0, delta) / speed));
