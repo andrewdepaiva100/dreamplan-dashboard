@@ -4,7 +4,9 @@ import * as Phaser from "phaser";
 type SceneLike = Phaser.Scene & Record<string, any>;
 type SceneCtor = { prototype: SceneLike };
 
-const HOUSE_CLEAR_RADIUS = 184;
+const HOUSE_CLEAR_RADIUS = 185;
+const ROOM_W = 860;
+const ROOM_H = 560;
 
 function canvasTexture(scene: SceneLike, key: string) {
   if (!scene.textures.exists(key)) return null;
@@ -14,387 +16,215 @@ function canvasTexture(scene: SceneLike, key: string) {
   return { texture, canvas: source as HTMLCanvasElement };
 }
 
-/** Redraw the existing `cottage` texture in place so all house logic stays intact. */
 function redrawCottage(scene: SceneLike) {
   const entry = canvasTexture(scene, "cottage");
   if (!entry) return;
   const { texture, canvas } = entry;
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
-
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.imageSmoothingEnabled = false;
+  const sx = canvas.width / 56;
+  const sy = canvas.height / 50;
+  const R = (x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(Math.round(x*sx),Math.round(y*sy),Math.ceil(w*sx),Math.ceil(h*sy));};
 
-  const w = canvas.width;
-  const h = canvas.height;
-  const sx = w / 64;
-  const sy = h / 58;
-  const R = (x: number, y: number, rw: number, rh: number, color: string) => {
-    ctx.fillStyle = color;
-    ctx.fillRect(Math.round(x * sx), Math.round(y * sy), Math.ceil(rw * sx), Math.ceil(rh * sy));
-  };
+  R(4,25,48,22,"#756968");
+  R(5,27,46,17,"#bd7483");
+  R(7,29,42,14,"#d795a2");
+  R(4,44,48,4,"#665f5d");
+  for(let x=5;x<51;x+=7)R(x,45,5,2,x%2?"#8a817c":"#77706d");
 
-  // Ground shadow and stone foundation.
-  R(5, 49, 54, 5, "rgba(24,18,20,.42)");
-  R(7, 42, 50, 8, "#736b68");
-  for (let x = 8; x < 56; x += 8) {
-    R(x, 43 + ((x / 8) % 2), 6, 3, "#92877f");
-    R(x + 2, 47, 6, 2, "#5d5857");
+  R(5,24,46,3,"#51382f");
+  for(const x of [7,27,47]) R(x,26,2,18,"#644436");
+
+  ctx.fillStyle="#26364c";
+  ctx.beginPath();ctx.moveTo(1*sx,26*sy);ctx.lineTo(28*sx,5*sy);ctx.lineTo(55*sx,26*sy);ctx.closePath();ctx.fill();
+  for(let y=10;y<=23;y+=4){
+    const inset=Math.max(0,(22-y)*1.15);
+    for(let x=5+inset;x<51-inset;x+=7){R(x,y,6,2,"#40536d");R(x,y+2,6,1,"#1e2b3e");}
+  }
+  R(25,6,6,2,"#65758b");
+
+  R(41,4,7,13,"#746a66");R(40,3,9,3,"#514b49");R(42,7,2,2,"#9a8d86");R(45,11,2,2,"#5f5754");
+
+  R(21,31,14,14,"#34221f");R(22,32,12,13,"#4d3029");
+  ctx.fillStyle="#4d3029";ctx.beginPath();ctx.arc(28*sx,32*sy,6*sx,Math.PI,0);ctx.fill();
+  R(23,34,2,9,"#704a3c");R(31,38,1,1,"#f0c86c");R(26,31,4,3,"#56704d");R(27,31,2,2,"#db829d");
+
+  for(const x of [11,38]){
+    R(x-2,28,12,10,"#3f302c");R(x,29,8,8,"#ffd27c");R(x+1,30,6,6,"#ffe7a8");
+    R(x+3.5,29,1,8,"#79594a");R(x,32.5,8,1,"#79594a");
+    R(x-4,29,2,9,"#574239");R(x+10,29,2,9,"#574239");R(x-2,37,12,3,"#5b4034");
+    for(const [dx,c] of [[-1,"#dc7897"],[2,"#f0a8bd"],[5,"#cf6088"],[8,"#f1cbd6"]] as any[])R(x+dx,36,2,2,c);
   }
 
-  // Pink plaster cottage body with warm timber structure.
-  R(7, 25, 50, 20, "#c9828f");
-  R(9, 27, 46, 16, "#d99aa4");
-  R(7, 24, 50, 3, "#654637");
-  for (const x of [9, 31, 53]) R(x, 26, 2, 18, "#6c4938");
-  R(9, 40, 46, 3, "#76503c");
+  for(const [x,y,c] of [[8,26,"#46633f"],[11,23,"#5f7c4c"],[15,22,"#46633f"],[18,26,"#607c4c"],[44,25,"#46633f"],[42,22,"#607c4c"],[38,21,"#46633f"],[35,26,"#607c4c"],[10,24,"#e27d9c"],[14,22,"#f0a9bc"],[18,26,"#d6698e"],[42,23,"#efa9bc"],[38,21,"#d6698e"],[35,27,"#e98fa8"],[20,30,"#597448"],[18,34,"#597448"],[18,38,"#6a8652"],[36,30,"#597448"],[38,35,"#6a8652"],[37,39,"#597448"],[19,32,"#f0a9bc"],[18,37,"#d6698e"],[36,32,"#e98fa8"],[38,36,"#f2bfd0"]] as [number,number,string][])R(x,y,2,2,c);
 
-  // Deep layered slate roof with a stronger cottage silhouette.
-  ctx.fillStyle = "#243247";
-  ctx.beginPath();
-  ctx.moveTo(2 * sx, 27 * sy);
-  ctx.lineTo(31 * sx, 5 * sy);
-  ctx.lineTo(62 * sx, 27 * sy);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = "#1a2637";
-  ctx.beginPath();
-  ctx.moveTo(7 * sx, 25 * sy);
-  ctx.lineTo(31 * sx, 8 * sy);
-  ctx.lineTo(57 * sx, 25 * sy);
-  ctx.lineTo(53 * sx, 27 * sy);
-  ctx.lineTo(31 * sx, 12 * sy);
-  ctx.lineTo(11 * sx, 27 * sy);
-  ctx.closePath();
-  ctx.fill();
-  for (let y = 12; y <= 23; y += 4) {
-    const inset = Math.max(0, (23 - y) * 1.15);
-    for (let x = 8 + inset; x < 56 - inset; x += 7) R(x, y, 6, 2, y % 8 ? "#3d5069" : "#34465e");
-  }
-  R(28, 7, 7, 2, "#556a84");
-
-  // Stone chimney with individual block highlights.
-  R(47, 5, 7, 14, "#6b625e");
-  R(46, 4, 9, 3, "#4f4948");
-  for (let y = 7; y < 18; y += 4) {
-    R(48, y, 3, 2, "#8c8179");
-    R(52, y + 2, 2, 2, "#7a716c");
-  }
-
-  // Small attic window tucked into the gable.
-  R(27, 15, 9, 8, "#563e35");
-  R(28, 16, 7, 6, "#ffc975");
-  R(31, 16, 1, 6, "#84624a");
-  R(28, 18, 7, 1, "#84624a");
-
-  // Recessed arched door and stone threshold.
-  R(26, 31, 11, 15, "#4d3027");
-  ctx.fillStyle = "#4d3027";
-  ctx.beginPath();
-  ctx.arc(31.5 * sx, 31 * sy, 5.5 * sx, Math.PI, 0);
-  ctx.fill();
-  R(27, 34, 2, 9, "#74493a");
-  R(34, 36, 1, 1, "#f0c86d");
-  R(24, 45, 15, 2, "#9c8d82");
-  R(25, 47, 13, 2, "#756d68");
-
-  // Warm windows with mullions and flower boxes.
-  for (const x of [12, 43]) {
-    R(x - 1, 29, 10, 10, "#4f382f");
-    R(x, 30, 8, 8, "#ffd27c");
-    R(x, 30, 8, 3, "#ffe6a8");
-    R(x + 3.5, 30, 1, 8, "#7b5a43");
-    R(x, 33.5, 8, 1, "#7b5a43");
-    R(x - 2, 39, 12, 3, "#694737");
-    for (const [dx, c] of [[0, "#d96587"], [3, "#f4a6ba"], [6, "#e57f9c"], [8, "#f6c1cf"]]) R(x + dx, 38, 2, 2, c);
-  }
-
-  // Climbing rose vines around the doorway and roof edge.
-  const vine = [
-    [23, 28], [21, 31], [20, 34], [20, 38], [22, 41], [40, 27], [41, 30], [42, 34], [42, 38],
-    [14, 24], [18, 22], [22, 21], [39, 21], [44, 23], [48, 25],
-  ];
-  for (let i = 0; i < vine.length; i++) {
-    const [x, y] = vine[i]!;
-    R(x, y, 2, 2, i % 3 ? "#648453" : "#7f9b62");
-    if (i % 2 === 0) R(x + 1, y - 1, 2, 2, i % 4 ? "#e67698" : "#f2a6ba");
-  }
-
-  // Lanterns by the door.
-  for (const x of [22, 40]) {
-    R(x, 33, 2, 6, "#2e2d32");
-    R(x - 1, 34, 4, 3, "#ffcf70");
-    R(x, 34, 2, 1, "#fff0ae");
-  }
-
+  for(const x of [19,35]){R(x,31,2,5,"#292a30");R(x,32,2,2,"#ffd36f");}
+  R(21,45,14,2,"#aaa096");R(19,47,18,2,"#716966");
   texture.refresh?.();
 }
 
-function removeTreesNearHouse(scene: SceneLike, hx: number, hy: number) {
-  const near = (obj: any) =>
-    obj?.active !== false &&
-    obj?.texture?.key === "tree" &&
-    Phaser.Math.Distance.Between(obj.x ?? 0, obj.y ?? 0, hx, hy) < HOUSE_CLEAR_RADIUS;
-
-  for (const child of [...scene.children.list]) if (near(child)) child.destroy();
-  const solids = (scene.solidDecor?.getChildren?.() ?? []) as any[];
-  for (const child of [...solids]) if (near(child)) child.destroy();
+function removeTreesNearHouse(scene: SceneLike, hx:number, hy:number){
+  const near=(o:any)=>o?.active!==false&&o?.texture?.key==="tree"&&Phaser.Math.Distance.Between(o.x??0,o.y??0,hx,hy)<HOUSE_CLEAR_RADIUS;
+  for(const child of [...scene.children.list]) if(near(child)) child.destroy();
+  for(const child of [...(scene.solidDecor?.getChildren?.()??[])]) if(near(child)) child.destroy();
 }
 
-function decorateHouseYard(scene: SceneLike, hx: number, hy: number) {
-  const baseDepth = (scene.dsort?.(hy + 48) ?? 12) - 0.4;
-  const g = scene.add.graphics().setDepth(baseDepth);
-
-  // Soft earth apron and a handcrafted stepping-stone approach.
-  g.fillStyle(0x70573f, 0.22);
-  g.fillEllipse(hx, hy + 46, 176, 86);
-  const stones = [
-    [-2, 36, 30, 10], [5, 49, 34, 11], [-5, 63, 31, 10], [3, 77, 36, 11], [-3, 92, 30, 10],
-  ];
-  for (let i = 0; i < stones.length; i++) {
-    const [dx, dy, sw, sh] = stones[i]!;
-    g.fillStyle(i % 2 ? 0xb9ad98 : 0xc9bda7, 0.96);
-    g.fillRoundedRect(hx + dx - sw / 2, hy + dy, sw, sh, 4);
-    g.fillStyle(0xffffff, 0.09);
-    g.fillRoundedRect(hx + dx - sw / 2 + 3, hy + dy + 2, sw - 6, 2, 2);
-  }
-
-  // Layered flower beds and low greenery.
-  for (const side of [-1, 1]) {
-    const bx = hx + side * 62;
-    g.fillStyle(0x49643f, 0.95);
-    g.fillEllipse(bx, hy + 48, 64, 30);
-    g.fillStyle(0x668354, 0.9);
-    g.fillEllipse(bx + side * 5, hy + 42, 48, 20);
-  }
-  const blooms = [
-    [-82, 42, 0xf2a2b9], [-70, 52, 0xdb7192], [-56, 39, 0xf4c4d1], [-47, 51, 0xe487a3],
-    [48, 50, 0xf3afc1], [59, 38, 0xe87597], [72, 52, 0xf6c9d4], [84, 43, 0xd9678d],
-  ];
-  for (const [dx, dy, c] of blooms as [number, number, number][]) {
-    g.fillStyle(c, 1);
-    g.fillCircle(hx + dx, hy + dy, 4);
-    g.fillStyle(0xffe5ed, 0.62);
-    g.fillCircle(hx + dx - 1, hy + dy - 1, 1.5);
-  }
-
-  // Low lanterns and warm pools, kept decorative only.
-  for (const x of [hx - 54, hx + 54]) {
-    g.fillStyle(0x2d2e34, 1);
-    g.fillRect(x - 2, hy + 53, 4, 25);
-    g.fillStyle(0x4d4539, 1);
-    g.fillRoundedRect(x - 6, hy + 47, 12, 11, 2);
-    g.fillStyle(0xffcf75, 1);
-    g.fillRoundedRect(x - 4, hy + 49, 8, 7, 2);
-    const glow = scene.add.sprite(x, hy + 54, "light-warm").setDepth(baseDepth - 0.1).setBlendMode(Phaser.BlendModes.ADD).setScale(0.54).setAlpha(0.18);
-    scene.tweens.add({ targets: glow, alpha: { from: 0.12, to: 0.23 }, duration: 1500 + Math.random() * 500, yoyo: true, repeat: -1 });
-  }
-
-  // A little chimney smoke gives the exterior life without changing collisions.
-  for (let i = 0; i < 4; i++) {
-    const puff = scene.add.circle(hx + 25 + i * 4, hy - 55 - i * 7, 7 + i * 2, 0xe5e1db, 0.13).setDepth(baseDepth - 0.2);
-    scene.tweens.add({
-      targets: puff,
-      x: puff.x + 12 + i * 4,
-      y: puff.y - 26,
-      alpha: 0,
-      scale: 1.55,
-      duration: 2700 + i * 350,
-      delay: i * 420,
-      repeat: -1,
-    });
+function decorateHouseYard(scene: SceneLike,hx:number,hy:number){
+  const d=(scene.dsort?.(hy+42)??12)-0.4;
+  const g=scene.add.graphics().setDepth(d);
+  for(let i=0;i<6;i++){g.fillStyle(i%2?0xc6b8a1:0xd9ccb5,0.95);g.fillRoundedRect(hx-15+(i%2)*6,hy+34+i*11,30,8,3);}
+  g.fillStyle(0x47623f,0.94);g.fillRoundedRect(hx-82,hy+29,54,23,8);g.fillRoundedRect(hx+28,hy+29,54,23,8);
+  for(const [x,y,c] of [[-73,34,0xe1789b],[-61,42,0xf2c3d0],[-49,34,0xd65e88],[-36,41,0xf0a8bc],[36,35,0xf0adbf],[49,42,0xd96f91],[62,34,0xf3d2da],[74,41,0xe481a0]] as [number,number,number][]) {g.fillStyle(c,1);g.fillCircle(hx+x,hy+y,3);}
+  for(const x of [hx-55,hx+55]){g.fillStyle(0x292a30,1);g.fillRect(x-2,hy+43,4,25);g.fillStyle(0xf6ca70,1);g.fillRoundedRect(x-5,hy+39,10,10,2);}
+  for(let i=0;i<4;i++){
+    const puff=scene.add.ellipse(hx+31+i*3,hy-65-i*13,18+i*5,11+i*4,0xc8c4c3,0.12).setDepth(d-0.1);
+    scene.tweens.add({targets:puff,y:puff.y-12,x:puff.x+5,alpha:0.03,duration:2600+i*350,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
   }
 }
 
-function drawInterior(scene: SceneLike) {
-  const ROOM_W = 860;
-  const ROOM_H = 560;
-  const ox = (scene.scale.width - ROOM_W) / 2;
-  const oy = (scene.scale.height - ROOM_H) / 2;
-  const fy = oy + 118;
-  const cx = ox + ROOM_W / 2;
-  const g = scene.add.graphics().setDepth(9.35);
-
-  // Richer structural shell: dark timber frame, warm plaster, dimensional floorboards.
-  g.fillStyle(0x241812, 1); g.fillRect(ox, oy, ROOM_W, ROOM_H);
-  g.fillStyle(0xd8b795, 1); g.fillRect(ox + 14, oy + 14, ROOM_W - 28, 102);
-  g.fillStyle(0x5b3e2d, 1); g.fillRect(ox + 14, fy - 8, ROOM_W - 28, 13);
-  for (const x of [ox + 14, ox + 226, cx, ox + 634, ox + ROOM_W - 28]) {
-    g.fillStyle(0x513526, 1); g.fillRect(x, oy + 14, 15, 102);
-    g.fillStyle(0x76513a, 0.55); g.fillRect(x + 3, oy + 14, 3, 102);
-  }
-
-  g.fillStyle(0x805638, 1); g.fillRect(ox + 14, fy + 5, ROOM_W - 28, ROOM_H - 137);
-  for (let y = fy + 5; y < oy + ROOM_H - 14; y += 22) {
-    g.fillStyle(0x64422e, 0.7); g.fillRect(ox + 14, y, ROOM_W - 28, 2);
-    g.fillStyle(0xd9aa73, 0.08); g.fillRect(ox + 14, y + 2, ROOM_W - 28, 2);
-    for (let x = ox + 32 + (((y - fy) / 22) % 2) * 44; x < ox + ROOM_W - 20; x += 88) {
-      g.fillStyle(0x523522, 0.48); g.fillRect(x, y + 2, 2, 20);
-    }
-  }
-
-  // Two framed windows with curtains and bright warm panes.
-  for (const wx of [ox + 176, ox + ROOM_W - 176]) {
-    g.fillStyle(0x4d3327, 1); g.fillRect(wx - 61, oy + 27, 122, 72);
-    g.fillStyle(0x8fc0d0, 1); g.fillRect(wx - 51, oy + 35, 102, 54);
-    g.fillStyle(0xffdfa0, 0.24); g.fillRect(wx - 51, oy + 35, 102, 18);
-    g.fillStyle(0x5b4134, 1); g.fillRect(wx - 3, oy + 35, 6, 54); g.fillRect(wx - 51, oy + 60, 102, 5);
-    g.fillStyle(0x7f4860, 1); g.fillRect(wx - 70, oy + 20, 20, 85); g.fillRect(wx + 50, oy + 20, 20, 85);
-    g.fillStyle(0xc47790, 0.75); g.fillRect(wx - 63, oy + 20, 6, 85); g.fillRect(wx + 57, oy + 20, 6, 85);
-    g.fillStyle(0xd9b35b, 1); g.fillRect(wx - 74, oy + 16, 148, 5);
-    g.fillStyle(0x6a4938, 1); g.fillRect(wx - 58, oy + 94, 116, 8);
-  }
-
-  // Layered rugs with borders and woven details.
-  const rug = (x: number, y: number, w: number, h: number, fill: number, edge: number, accent: number) => {
-    g.fillStyle(0x2a1b17, 0.22); g.fillRoundedRect(x - 8, y - 5, w + 16, h + 15, 16);
-    g.fillStyle(edge, 1); g.fillRoundedRect(x - 6, y - 6, w + 12, h + 12, 14);
-    g.fillStyle(fill, 1); g.fillRoundedRect(x, y, w, h, 10);
-    g.lineStyle(3, accent, 0.55); g.strokeRoundedRect(x + 10, y + 10, w - 20, h - 20, 8);
-    g.lineStyle(1, accent, 0.32); g.strokeRoundedRect(x + 18, y + 18, w - 36, h - 36, 6);
-  };
-  rug(ox + 72, fy + 83, 250, 148, 0x874d5d, 0x583543, 0xe5c49e);
-  rug(cx + 80, fy + 55, 232, 178, 0xa86475, 0x714557, 0xf0c8ad);
-  rug(cx + 50, fy + 250, 286, 128, 0x49634f, 0x324638, 0xd7c39a);
-
-  // Kitchen wall: counters, sink, shelves, ceramics and hanging herbs.
-  g.fillStyle(0x53382b, 1); g.fillRect(ox + 34, oy + 35, 242, 62);
-  g.fillStyle(0xb18762, 1); g.fillRect(ox + 34, oy + 35, 242, 8);
-  for (let x = ox + 44; x < ox + 260; x += 54) {
-    g.fillStyle(0x704a36, 1); g.fillRect(x, oy + 49, 42, 39);
-    g.fillStyle(0xa97c58, 0.55); g.fillRect(x + 4, oy + 53, 34, 3);
-    g.fillStyle(0xd0a675, 1); g.fillRect(x + 18, oy + 68, 5, 3);
-  }
-  g.fillStyle(0xaeb9b4, 1); g.fillRect(ox + 126, oy + 45, 54, 20);
-  g.fillStyle(0x728b87, 1); g.fillRect(ox + 135, oy + 49, 36, 12);
-  g.fillStyle(0x755943, 1); g.fillRect(ox + 67, oy + 22, 168, 8);
-  for (let i = 0; i < 5; i++) {
-    g.fillStyle(i % 2 ? 0xd8c6ad : 0x8aa3a0, 1);
-    g.fillRoundedRect(ox + 78 + i * 30, oy + 10, 15, 12, 4);
-  }
-  for (const hx of [ox + 248, ox + 266]) {
-    g.lineStyle(2, 0x56704b, 1); g.lineBetween(hx, oy + 18, hx - 3, oy + 39);
-    g.fillStyle(0x68855b, 1); g.fillCircle(hx - 4, oy + 34, 7); g.fillCircle(hx + 2, oy + 39, 6);
-  }
-
-  // Bedroom dressing around the existing interactive bed.
-  g.fillStyle(0x563a2b, 1); g.fillRoundedRect(cx + 87, fy + 42, 228, 18, 7);
-  g.fillStyle(0xd3a0ac, 1); g.fillRoundedRect(cx + 101, fy + 53, 202, 144, 12);
-  g.fillStyle(0xe7c6c4, 1); g.fillRoundedRect(cx + 112, fy + 61, 180, 68, 10);
-  g.fillStyle(0xf1e5d7, 1); g.fillRoundedRect(cx + 127, fy + 69, 72, 35, 12);
-  g.fillStyle(0xf4dfd5, 1); g.fillRoundedRect(cx + 205, fy + 69, 72, 35, 12);
-  g.fillStyle(0xa85e76, 0.74); g.fillRoundedRect(cx + 128, fy + 137, 164, 50, 10);
-  g.lineStyle(2, 0xe7b9c1, 0.5); g.strokeRoundedRect(cx + 139, fy + 146, 142, 31, 8);
-  g.fillStyle(0x674331, 1); g.fillRoundedRect(cx + 322, fy + 76, 56, 72, 8);
-  g.fillStyle(0xc9915e, 1); g.fillRect(cx + 330, fy + 84, 40, 8);
-  g.fillStyle(0xf3d7a1, 1); g.fillCircle(cx + 350, fy + 69, 7);
-
-  // Dining table and chairs with flowers and candles.
-  g.fillStyle(0x4c3227, 0.25); g.fillRoundedRect(ox + 111, fy + 124, 194, 86, 10);
-  g.fillStyle(0x654431, 1); g.fillRoundedRect(ox + 118, fy + 116, 178, 72, 8);
-  g.fillStyle(0x9a704c, 1); g.fillRoundedRect(ox + 126, fy + 122, 162, 56, 6);
-  for (const [cx2, cy2] of [[ox + 103, fy + 135], [ox + 103, fy + 184], [ox + 310, fy + 135], [ox + 310, fy + 184]]) {
-    g.fillStyle(0x5d3d2c, 1); g.fillRoundedRect(cx2 - 14, cy2 - 12, 28, 24, 5);
-  }
-  g.fillStyle(0xf0dfc8, 1); g.fillCircle(ox + 207, fy + 150, 13);
-  for (const [dx, dy, c] of [[0,0,0xd87595],[7,-4,0xf2a8bb],[-7,-3,0xe692aa],[3,6,0xf5c7d1]]) {
-    g.fillStyle(c, 1); g.fillCircle(ox + 207 + dx, fy + 146 + dy, 4);
-  }
-  for (const x of [ox + 163, ox + 252]) {
-    g.fillStyle(0xe8c477, 1); g.fillRect(x - 2, fy + 137, 4, 12);
-    g.fillStyle(0xffe1a0, 1); g.fillCircle(x, fy + 134, 4);
-  }
-
-  // Living corner: upholstered sofa, pillows, coffee table, books.
-  g.fillStyle(0x29372f, 0.28); g.fillRoundedRect(ox + 86, fy + 294, 220, 87, 18);
-  g.fillStyle(0x35523f, 1); g.fillRoundedRect(ox + 94, fy + 286, 205, 78, 18);
-  g.fillStyle(0x527159, 1); g.fillRoundedRect(ox + 104, fy + 294, 185, 54, 14);
-  g.fillStyle(0xe6c7ae, 1); g.fillRoundedRect(ox + 128, fy + 306, 42, 30, 9);
-  g.fillStyle(0xc98fa4, 1); g.fillRoundedRect(ox + 220, fy + 306, 42, 30, 9);
-  g.fillStyle(0x60412f, 1); g.fillRoundedRect(ox + 154, fy + 373, 112, 42, 7);
-  g.fillStyle(0xd4b68d, 1); g.fillRect(ox + 172, fy + 382, 32, 18);
-  g.fillStyle(0x7b4d5d, 1); g.fillRect(ox + 209, fy + 385, 24, 6);
-  g.fillStyle(0x4e6b76, 1); g.fillRect(ox + 209, fy + 392, 28, 6);
-
-  // Study nook with layered books, papers and plant.
-  g.fillStyle(0x493026, 0.26); g.fillRoundedRect(cx + 110, fy + 298, 175, 73, 8);
-  g.fillStyle(0x5f402e, 1); g.fillRoundedRect(cx + 118, fy + 290, 160, 68, 7);
-  g.fillStyle(0x9a704c, 1); g.fillRect(cx + 128, fy + 300, 140, 48);
-  g.fillStyle(0xeee3d0, 1); g.fillRect(cx + 146, fy + 311, 46, 29);
-  g.fillStyle(0xe1d0b8, 1); g.fillRect(cx + 152, fy + 315, 34, 2);
-  g.fillStyle(0x3d563f, 1); g.fillRoundedRect(cx + 209, fy + 306, 40, 34, 5);
-  for (let i = 0; i < 4; i++) {
-    g.fillStyle([0x9a566a, 0x4e667d, 0x8a744b, 0x567055][i]!);
-    g.fillRect(cx + 249, fy + 312 + i * 7, 18 + (i % 2) * 6, 5);
-  }
-
-  // Plants, framed memories, candles and small domestic details.
-  for (const [px, py] of [[ox + 54, fy + 286], [cx + 354, fy + 250], [cx + 340, oy + 72], [ox + 318, oy + 80]] as [number, number][]) {
-    g.fillStyle(0x9d6846, 1); g.fillRoundedRect(px - 11, py + 8, 22, 16, 4);
-    g.fillStyle(0x466d46, 1); g.fillCircle(px, py, 15);
-    g.fillStyle(0x67905a, 1); g.fillCircle(px - 8, py - 8, 8); g.fillCircle(px + 8, py - 9, 8);
-  }
-  for (const [px, py, tone] of [[cx - 50, oy + 47, 0x6c87a1], [cx + 43, oy + 46, 0x7b9a6e], [cx + 5, oy + 76, 0xb16f83]] as [number, number, number][]) {
-    g.fillStyle(0x654432, 1); g.fillRect(px - 18, py - 15, 36, 30);
-    g.fillStyle(tone, 1); g.fillRect(px - 13, py - 10, 26, 20);
-    g.fillStyle(0xeccf98, 0.8); g.fillCircle(px + 6, py - 3, 4);
-  }
-  for (const [px, py] of [[ox + 350, fy + 52], [cx + 362, fy + 225], [cx - 58, fy + 350]] as [number, number][]) {
-    g.fillStyle(0xd5b064, 1); g.fillRect(px - 2, py, 4, 13);
-    g.fillStyle(0xffdfa0, 1); g.fillCircle(px, py - 3, 4);
-  }
-
-  // Subtle firelight and window sheen.
-  for (const [lx, ly, scale, alpha] of [[cx, oy + 100, 1.45, 0.18], [ox + 176, fy + 35, 0.85, 0.1], [ox + ROOM_W - 176, fy + 35, 0.85, 0.1]] as [number, number, number, number][]) {
-    const light = scene.add.sprite(lx, ly, "light-warm").setDepth(9.3).setBlendMode(Phaser.BlendModes.ADD).setScale(scale).setAlpha(alpha);
-    scene.tweens.add({ targets: light, alpha: { from: alpha * 0.72, to: alpha * 1.18 }, duration: 1550 + Math.random() * 650, yoyo: true, repeat: -1 });
-  }
-
-  // Sparse dust motes for atmosphere; purely visual and lightweight.
-  for (let i = 0; i < 12; i++) {
-    const mote = scene.add.circle(ox + 60 + ((i * 67) % 730), fy + 40 + ((i * 91) % 340), 1.2 + (i % 3) * 0.45, 0xffe7bb, 0.12).setDepth(9.45);
-    scene.tweens.add({
-      targets: mote,
-      y: mote.y - 18 - (i % 4) * 5,
-      x: mote.x + (i % 2 ? 8 : -8),
-      alpha: { from: 0.05, to: 0.22 },
-      duration: 3200 + i * 120,
-      yoyo: true,
-      repeat: -1,
-      delay: i * 110,
-    });
+function hideOldInteractiveSprites(scene:SceneLike){
+  for(const child of scene.children.list as any[]){
+    const key=child?.texture?.key;
+    if(["bed","chest","hearth"].includes(key)) child.setAlpha?.(0);
   }
 }
 
-export function installHomeRemaster(QuestScene: SceneCtor, QuestHouseScene: SceneCtor) {
-  const world = QuestScene.prototype;
-  if (!world.__homeExteriorRemasterInstalled) {
-    world.__homeExteriorRemasterInstalled = true;
-    const originalCreate = world.create;
-    world.create = function remasteredWorldCreate(this: SceneLike, ...args: any[]) {
-      const result = originalCreate.apply(this, args);
+function makeObject(scene:SceneLike, x:number, y:number, draw:(g:Phaser.GameObjects.Graphics)=>void){
+  const g=scene.add.graphics();
+  draw(g);
+  g.setPosition(x,y);
+  g.setData("home-remaster-object",true);
+  g.setData("home-remaster-anchor",y);
+  g.setDepth(1000+y);
+  return g;
+}
+
+function drawInterior(scene:SceneLike){
+  const ox=(scene.scale.width-ROOM_W)/2;
+  const oy=(scene.scale.height-ROOM_H)/2;
+  const fy=oy+118;
+  const cx=ox+ROOM_W/2;
+
+  const base=scene.add.graphics().setDepth(4.5);
+  base.fillStyle(0x201611,1);base.fillRect(ox,oy,ROOM_W,ROOM_H);
+  base.fillStyle(0xd7b994,1);base.fillRect(ox+12,oy+12,ROOM_W-24,104);
+  base.fillStyle(0x51382a,1);base.fillRect(ox+12,fy-12,ROOM_W-24,16);
+  base.fillStyle(0x7b5235,1);base.fillRect(ox+12,fy+4,ROOM_W-24,ROOM_H-134);
+  for(let y=fy+4;y<oy+ROOM_H-12;y+=20){
+    base.fillStyle(0x593a29,0.5);base.fillRect(ox+12,y,ROOM_W-24,2);
+    base.fillStyle(0xc18b58,0.10);base.fillRect(ox+12,y+2,ROOM_W-24,2);
+    for(let x=ox+34+(((y-fy)/20)%2)*42;x<ox+ROOM_W-18;x+=84)base.fillRect(x,y+2,2,18);
+  }
+  for(const x of [ox+14,ox+218,cx,cx+218,ox+ROOM_W-28]){base.fillStyle(0x493228,1);base.fillRect(x,oy+12,14,106);}
+  base.fillStyle(0x3d2a21,1);base.fillRect(ox+12,oy+12,ROOM_W-24,12);
+
+  for(const wx of [ox+145,cx+225]){
+    base.fillStyle(0x493228,1);base.fillRoundedRect(wx-58,oy+28,116,72,4);
+    base.fillStyle(0x547a90,1);base.fillRect(wx-49,oy+36,98,54);
+    base.fillStyle(0xf0d08d,0.28);base.fillRect(wx-49,oy+36,98,17);
+    base.fillStyle(0x493228,1);base.fillRect(wx-3,oy+36,6,54);base.fillRect(wx-49,oy+61,98,5);
+    base.fillStyle(0x75465b,1);base.fillRoundedRect(wx-68,oy+22,22,82,5);base.fillRoundedRect(wx+46,oy+22,22,82,5);
+    base.fillStyle(0xb76f89,1);base.fillRect(wx-61,oy+24,7,78);base.fillRect(wx+54,oy+24,7,78);
+    base.fillStyle(0x5c4031,1);base.fillRect(wx-55,oy+92,110,9);
+  }
+
+  const rug=(x:number,y:number,w:number,h:number,fill:number,edge:number)=>{base.fillStyle(edge,0.9);base.fillRoundedRect(x-6,y-6,w+12,h+12,14);base.fillStyle(fill,0.95);base.fillRoundedRect(x,y,w,h,10);base.lineStyle(2,0xe6c795,0.48);base.strokeRoundedRect(x+10,y+10,w-20,h-20,8);};
+  rug(ox+42,fy+55,190,150,0x865063,0x50313d);
+  rug(cx+60,fy+150,235,175,0x48614b,0x304233);
+
+  makeObject(scene,ox+104,fy+90,(g)=>{
+    g.fillStyle(0x000000,0.28);g.fillEllipse(-70,28,170,54);
+    g.fillStyle(0x4b3024,1);g.fillRoundedRect(-84,-34,168,74,10);
+    g.fillStyle(0x704936,1);g.fillRoundedRect(-78,-28,156,58,8);
+    g.fillStyle(0xd8c8b8,1);g.fillRoundedRect(-69,-23,138,45,10);
+    g.fillStyle(0xb96c82,1);g.fillRoundedRect(-69,-2,138,37,8);
+    g.fillStyle(0x8f5065,1);g.fillRoundedRect(-69,23,138,18,5);
+    g.fillStyle(0x5a3829,1);g.fillRect(-84,35,168,12);
+    g.fillStyle(0x744a35,1);g.fillRect(-78,41,156,8);
+    g.fillStyle(0xeee2d4,1);g.fillRoundedRect(-52,-18,45,20,9);g.fillRoundedRect(7,-18,45,20,9);
+    g.fillStyle(0x543429,1);g.fillRoundedRect(-86,-46,172,17,7);
+    g.fillStyle(0x7d513c,1);g.fillRoundedRect(-75,-43,150,11,5);
+    for(const x of [-75,75]){g.fillStyle(0x3f281f,1);g.fillCircle(x,43,5);}
+  });
+
+  makeObject(scene,ox+96,fy+210,(g)=>{
+    g.fillStyle(0x000000,0.28);g.fillEllipse(0,18,88,30);
+    g.fillStyle(0x4a2d1d,1);g.fillRoundedRect(-42,-2,84,36,6);
+    g.fillStyle(0x754823,1);g.fillRoundedRect(-39,-15,78,25,10);
+    g.fillStyle(0x966031,1);g.fillRoundedRect(-34,-10,68,16,8);
+    g.fillStyle(0x2f3137,1);g.fillRect(-31,-14,5,45);g.fillRect(26,-14,5,45);
+    g.fillStyle(0xcfa84b,1);g.fillRoundedRect(-7,8,14,16,3);g.fillStyle(0x2b1b11,1);g.fillRect(-2,14,4,6);
+    g.fillStyle(0x3b2418,1);g.fillRect(-42,26,84,9);
+  });
+
+  makeObject(scene,cx,fy+34,(g)=>{
+    g.fillStyle(0x000000,0.26);g.fillEllipse(0,26,150,36);
+    g.fillStyle(0x5b5551,1);g.fillRoundedRect(-68,-70,136,98,8);
+    for(let r=0;r<5;r++)for(let c=0;c<6;c++){g.fillStyle((r+c)%2?0x8c837a:0x9b9186,1);g.fillRoundedRect(-61+c*21+(r%2?7:0),-62+r*18,18,14,3);}
+    g.fillStyle(0x4b2f22,1);g.fillRoundedRect(-42,-15,84,54,14);
+    g.fillStyle(0x140d09,1);g.fillRoundedRect(-35,-8,70,46,12);
+    g.fillStyle(0x5a3823,1);g.fillRect(-26,26,52,7);
+    g.fillStyle(0x6a4427,1);g.fillRect(-21,21,42,7);
+    g.fillStyle(0x5b3b2b,1);g.fillRoundedRect(-80,-79,160,14,5);
+    g.fillStyle(0x8c6044,1);g.fillRoundedRect(-73,-76,146,7,3);
+    g.fillStyle(0xff8a2b,1);g.fillTriangle(-20,27,0,-3,20,27);g.fillStyle(0xffd166,1);g.fillTriangle(-10,27,2,8,12,27);
+  });
+
+  makeObject(scene,cx+320,fy+72,(g)=>{
+    g.fillStyle(0x000000,0.22);g.fillEllipse(0,56,90,24);g.fillStyle(0x4b3024,1);g.fillRoundedRect(-38,-72,76,126,5);
+    g.fillStyle(0x744a35,1);g.fillRect(-31,-64,62,112);
+    for(let y=-42;y<=25;y+=34){g.fillStyle(0x4d3225,1);g.fillRect(-31,y,62,5);}
+    const cols=[0x874d5f,0x47604b,0x526481,0xa27648,0x7b5b83];
+    for(let r=0;r<3;r++)for(let i=0;i<6;i++){g.fillStyle(cols[(r+i)%cols.length],1);g.fillRect(-27+i*9,-60+r*34,6,17+(i%2)*4);}
+  });
+
+  makeObject(scene,cx+285,fy+282,(g)=>{
+    g.fillStyle(0x000000,0.24);g.fillEllipse(0,22,128,30);g.fillStyle(0x4f3326,1);g.fillRoundedRect(-58,-16,116,42,6);g.fillStyle(0x936344,1);g.fillRoundedRect(-52,-25,104,18,5);
+    g.fillStyle(0x2f4436,1);g.fillRoundedRect(-42,-49,36,25,4);g.fillStyle(0xe9dfca,1);g.fillRoundedRect(8,-44,42,22,3);g.lineStyle(1,0x8f806d,0.8);g.lineBetween(29,-43,29,-23);
+  });
+
+  for(const [px,py,tone] of [[cx-90,oy+53,0x70866f],[cx+74,oy+50,0x906c79]] as [number,number,number][]) {base.fillStyle(0x583a2d,1);base.fillRect(px-28,py-21,56,43);base.fillStyle(tone,1);base.fillRect(px-21,py-14,42,30);base.fillStyle(0xe7c886,1);base.fillCircle(px+9,py-5,5);}
+  for(const [px,py] of [[ox+48,fy+286],[cx+350,fy+248],[ox+335,oy+82]] as [number,number][]) {base.fillStyle(0x936043,1);base.fillRoundedRect(px-11,py+8,22,17,4);base.fillStyle(0x3f6642,1);base.fillCircle(px,py,15);base.fillStyle(0x64885a,1);base.fillCircle(px-9,py-8,8);base.fillCircle(px+8,py-9,8);}
+
+  for(let i=0;i<14;i++){
+    const mote=scene.add.circle(ox+70+(i*53)%(ROOM_W-140),fy+40+(i*79)%(ROOM_H-190),1.4,0xffe8b8,0.18).setDepth(35);
+    scene.tweens.add({targets:mote,y:mote.y-8,alpha:{from:0.06,to:0.24},duration:1800+(i%4)*320,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
+  }
+}
+
+export function installHomeRemaster(QuestScene:SceneCtor,QuestHouseScene:SceneCtor){
+  const world=QuestScene.prototype;
+  if(!world.__homeExteriorRemasterInstalled){
+    world.__homeExteriorRemasterInstalled=true;
+    const originalCreate=world.create;
+    world.create=function(this:SceneLike,...args:any[]){
+      const result=originalCreate.apply(this,args);
       redrawCottage(this);
-
-      if (this.player?.active) this.player.setData("visualRemasterScale", 0.95);
-
-      const spot = this.houseSpot?.() as [number, number] | null | undefined;
-      if (spot) {
-        const [hx, hy] = spot;
-        removeTreesNearHouse(this, hx, hy);
-        decorateHouseYard(this, hx, hy);
-      }
+      const spot=this.houseSpot?.() as [number,number]|null|undefined;
+      if(spot){const [hx,hy]=spot;removeTreesNearHouse(this,hx,hy);decorateHouseYard(this,hx,hy);}
       return result;
     };
   }
 
-  const house = QuestHouseScene.prototype;
-  if (!house.__homeInteriorRemasterInstalled) {
-    house.__homeInteriorRemasterInstalled = true;
-    const originalCreate = house.create;
-    house.create = function remasteredHouseCreate(this: SceneLike, ...args: any[]) {
-      const result = originalCreate.apply(this, args);
+  const house=QuestHouseScene.prototype;
+  if(!house.__homeInteriorRemasterInstalled){
+    house.__homeInteriorRemasterInstalled=true;
+    const originalCreate=house.create;
+    const originalUpdate=house.update;
+    house.create=function(this:SceneLike,...args:any[]){
+      const result=originalCreate.apply(this,args);
+      hideOldInteractiveSprites(this);
       drawInterior(this);
-      if (this.player?.active) this.player.setScale(1.08);
+      if(this.player?.active)this.player.setScale(1.08);
+      return result;
+    };
+    house.update=function(this:SceneLike,...args:any[]){
+      const result=originalUpdate?.apply(this,args);
+      if(this.player?.active)this.player.setDepth(1000+this.player.y);
+      const shadow=(this.children?.list??[]).find((o:any)=>o?.name==="shadow");
+      if(shadow?.active){shadow.setPosition(this.player.x,this.player.y+18);shadow.setDepth(999+this.player.y);}
       return result;
     };
   }
