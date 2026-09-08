@@ -5,9 +5,12 @@ import "./act1EnvelopePolish.css";
 import "./relicPresentation.css";
 import "./titleScreenCinematic.css";
 
+const QUEST_RUNTIME_READY_EVENT = "quest:runtime-ready";
+
 // Install gameplay-critical scene decorators first. Presentation-only dialogue
 // is intentionally loaded after the browser has painted the playable scene.
 if (typeof window !== "undefined") {
+  (window as any).__questRuntimeReady = false;
   queueMicrotask(() => {
     void Promise.all([
       import("./scene"), import("./house"), import("./upgrades"), import("./visualRemaster"), import("./homeRemaster"), import("./homeScalePolish"),
@@ -75,6 +78,9 @@ if (typeof window !== "undefined") {
       enemyReactionPolish.installEnemyReactionPolish(QuestScene);
       actArrivalCinematics.installActArrivalCinematics(QuestScene);
       environmentalMicroLife.installEnvironmentalMicroLife(QuestScene);
+
+      (window as any).__questRuntimeReady = true;
+      window.dispatchEvent(new Event(QUEST_RUNTIME_READY_EVENT));
 
       // Let Phaser/browser complete two paints before parsing and installing the
       // large dialogue script. This removes it from the first playable frame.
