@@ -2,6 +2,8 @@
 
 const ZONE = "wedding_garden";
 const BOSS_NAME = "The Stress Spectre";
+const BOSS_ADD_TAG = "act2BossAdd";
+const BOSS_ADD_SPEED = "act2BossAddSpeed";
 
 type Season = {
   name: string;
@@ -34,6 +36,7 @@ function destroyFx(scene: any) {
   const fx = scene.__act2BossFx;
   if (!fx) return;
   fx.attackTimer?.remove?.();
+  fx.pulseTimer?.remove?.();
   for (const obj of fx.objects ?? []) obj?.destroy?.();
   scene.__act2BossFx = undefined;
 }
@@ -107,17 +110,26 @@ function revealBoss(scene: any) {
     scene.time.delayedCall(1200, () => mote?.destroy?.());
   }
 
-  scene.__act2BossFx = { objects, arena, phase: -1, attackTimer: null };
+  scene.__act2BossFx = { objects, arena, phase: -1, attackTimer: null, pulseTimer: null };
   applySeason(scene, true);
 
-  // Seasonal pressure is presentation-only: the real projectile keeps its existing
-  // cadence, speed and damage. This timer only gives the arena a living rhythm.
+  // Keep the existing seasonal arena rhythm as presentation-only pressure.
   scene.__act2BossFx.attackTimer = scene.time.addEvent({
     delay: 3400,
     loop: true,
     callback: () => {
       if (!isStressSpectre(scene) || scene.bossPhase !== 1 || !scene.boss?.active || scene.frozen) return;
       seasonalTelegraph(scene, phaseIndex(scene));
+    },
+  });
+
+  // One simple extra attack: a slow, clearly telegraphed pulse around the boss.
+  scene.__act2BossFx.pulseTimer = scene.time.addEvent({
+    delay: 6500,
+    loop: true,
+    callback: () => {
+      if (!isStressSpectre(scene) || scene.bossPhase !== 1 || !scene.boss?.active || scene.frozen) return;
+      seasonalPulse(scene);
     },
   });
 }
@@ -179,6 +191,51 @@ function seasonalTelegraph(scene: any, index: number) {
   }
 }
 
+function seasonalPulse(scene: any) {
+  const boss = scene.boss;
+  const player = scene.player;
+  if (!boss?.active || !player?.active) return;
+  const season = SEASONS[phaseIndex(scene)];
+  const startX = boss.x;
+  const startY = boss.y;
+  const ring = scene.add.circle(startX, startY, 28, season.color, 0.04).setDepth(18);
+  ring.setStrokeStyle(3, season.accent, 0.9);
+  scene.__act2BossFx?.objects?.push?.(ring);
+  scene.tweens.add({ targets: ring, scale: 4.3, alpha: 0.28, duration: 800, ease: "Sine.easeOut" });
+
+  scene.time.delayedCall(800, () => {
+    if (!isStressSpectre(scene) || scene.bossPhase !== 1 || !scene.boss?.active || scene.frozen) {
+      ring?.destroy?.();
+      return;
+    }
+    const dist = Math.hypot(player.x - startX, player.y - startY);
+    if (dist <= 120) scene.hurtPlayerDirect?.();
+    const burst = scene.add.circle(startX, startY, 120, season.color, 0.08).setDepth(17);
+    burst.setStrokeStyle(2, season.accent, 0.5);
+    scene.tweens.add({ targets: burst, alpha: 0, scale: 1.08, duration: 260, ease: "Sine.easeOut" });
+    scene.time.delayedCall(320, () => burst?.destroy?.());
+    ring?.destroy?.();
+  });
+}
+
+function keepBossAddsMoving(scene: any) {
+  if (!isStressSpectre(scene) || scene.bossPhase !== 1 || !scene.boss?.active || !scene.player?.active) return;
+  const adds = scene.enemies?.getChildren?.() ?? [];
+  for (const e of adds) {
+    if (!e?.active || e.getData?.(BOSS_ADD_TAG) !== true || !e.body?.enable) continue;
+    const vx = Number(e.body?.velocity?.x) || 0;
+    const vy = Number(e.body?.velocity?.y) || 0;
+    if (Math.hypot(vx, vy) > 2) continue;
+    const dx = scene.player.x - e.x;
+    const dy = scene.player.y - e.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist <= 18) continue;
+    const speed = Math.max(30, Number(e.getData?.(BOSS_ADD_SPEED)) || 62);
+    e.setVelocity((dx / dist) * speed, (dy / dist) * speed);
+    e.setFlipX?.(dx < 0);
+  }
+}
+
 function seasonalBoltAccent(scene: any) {
   if (!scene.__act2BossFx || !scene.boss?.active) return;
   const season = SEASONS[phaseIndex(scene)];
@@ -192,6 +249,7 @@ function seasonalBoltAccent(scene: any) {
 function finale(scene: any, x: number, y: number) {
   const fx = scene.__act2BossFx;
   fx?.attackTimer?.remove?.();
+  fx?.pulseTimer?.remove?.();
   if (fx?.arena?.ring) {
     scene.tweens.add({ targets: fx.arena.ring, alpha: 0.22, scale: 1.14, duration: 500, yoyo: true, ease: "Sine.easeInOut" });
   }
@@ -226,6 +284,23 @@ export function installAct2BossRemaster(QuestScene: any) {
   proto.spawnActBoss = function act2BossRemasterSpawn(...args: any[]) {
     const result = originalSpawnActBoss.apply(this, args);
     if (isStressSpectre(this) && this.boss?.active) revealBoss(this);
+    return result;
+  };
+
+  const originalSpawnEnemy = proto.spawnEnemy;
+  proto.spawnEnemy = function act2BossRemasterEnemy(x: number, y: number, key: string, speed: number, temp: boolean) {
+    const result = originalSpawnEnemy.call(this, x, y, key, speed, temp);
+    if (result && temp === true && isStressSpectre(this) && this.bossPhase === 1) {
+      result.setData?.(BOSS_ADD_TAG, true);
+      result.setData?.(BOSS_ADD_SPEED, speed);
+    }
+    return result;
+  };
+
+  const originalUpdate = proto.update;
+  proto.update = function act2BossRemasterUpdate(...args: any[]) {
+    const result = originalUpdate?.apply(this, args);
+    keepBossAddsMoving(this);
     return result;
   };
 
