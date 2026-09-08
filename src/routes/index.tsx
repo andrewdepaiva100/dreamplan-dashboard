@@ -12,6 +12,8 @@ import {
   CreditCard,
   Gamepad2,
   Map,
+  PiggyBank,
+
   ShieldCheck,
   Sparkles,
   Sofa,
@@ -36,6 +38,8 @@ import { MariasQuest } from "@/components/plan/quest";
 import { Notifications } from "@/components/plan/notifications";
 import { SharedCalendar } from "@/components/plan/calendar";
 import { Donut, SurplusGauge } from "@/components/plan/charts";
+import { SavingsTracker } from "@/components/plan/savings-tracker";
+
 
 
 import {
@@ -82,7 +86,9 @@ const SECTION_LINKS = [
   { id: "payments", label: "Wedding Payments", desc: "6 installments & balance", Icon: CreditCard, tint: "bg-royal/10 text-royal" },
   { id: "s2", label: "Monthly & Lease", desc: "Overhead & lease reserve", Icon: CalendarDays, tint: "bg-sky/20 text-deep-blue" },
   { id: "s3", label: "Savings Roadmap", desc: "Milestones & countdowns", Icon: Map, tint: "bg-gold/15 text-gold" },
+  { id: "tracker", label: "Weekly Savings Tracker", desc: "Andrew vs. Maria each week", Icon: PiggyBank, tint: "bg-teal/10 text-teal" },
   { id: "s4", label: "Furnishing Budget", desc: "Room-by-room tiers", Icon: Sofa, tint: "bg-teal/10 text-teal" },
+
   { id: "s5", label: "Final Goal & Emergency", desc: "$20k buffer fund", Icon: ShieldCheck, tint: "bg-navy/10 text-navy" },
   { id: "calendar", label: "Shared Calendar", desc: "Dates, plans & reminders", Icon: CalendarRange, tint: "bg-sky/20 text-deep-blue" },
   { id: "devotionals", label: "Devotionals", desc: "Daily reading & notes", Icon: BookOpen, tint: "bg-gold/15 text-gold" },
@@ -1137,6 +1143,14 @@ function Index() {
         <MariasQuest onExit={() => goTo(null)} />
       </Page>
       )}
+
+      {active === "tracker" && (
+      <Page id="tracker" title="Marriage & Honeymoon Savings Tracker">
+        <SavingsTracker />
+      </Page>
+      )}
+
+
 
       {/* STORAGE & HEALTH */}
       {active === "health" && (
