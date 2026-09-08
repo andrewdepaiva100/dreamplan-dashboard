@@ -76,7 +76,7 @@ function ensureKeeperTextures(scene: any) {
     const tex = scene.textures.createCanvas("evelyn-keeper", 24, 35);
     const c = tex.getContext();
     c.imageSmoothingEnabled = false;
-    const p = (x:number,y:number,w:number,h:number,color:string) => { c.fillStyle=color; c.fillRect(x,y,w,h); };
+    const p = (x:number,y:number,w:number,h:number,color:string) => { c.fillStyle=color;c.fillRect(x,y,w,h); };
     p(6,32,12,2,"#26352c"); p(7,29,4,4,"#49372c"); p(14,29,4,4,"#49372c");
     p(5,15,14,15,"#263d34"); p(4,18,3,9,"#263d34"); p(18,18,3,9,"#263d34");
     p(6,16,12,13,"#648567"); p(5,19,3,7,"#789a76"); p(17,19,3,7,"#526f59");
@@ -127,7 +127,7 @@ function addKeeperStation(scene: any) {
   // rather than a second house-sized landmark beside Maria's arrival.
   const nook = scene.add.image(x - 58, y + 5, "keeper-nook").setScale(1.04).setDepth(5);
   nook.setOrigin(0.5, 0.5);
-  const keeper = scene.addInteractable(x, y, "evelyn-keeper", KEEPER_KIND, "Talk to Evelyn", { id: "evelyn", radius: 92, depth: 9 });
+  const keeper = scene.addInteractable(x, y, "evelyn-keeper", KEEPER_KIND, "Talk", { id: "evelyn", radius: 92, depth: 9 });
   keeper?.obj?.clearTint?.();
   keeper?.obj?.setScale?.(1.75);
   if (keeper?.obj) scene.tweens.add({ targets: keeper.obj, y: keeper.obj.y - 1, duration: 1850, yoyo: true, repeat: -1 });
@@ -218,6 +218,32 @@ function showEvelynDialogue(scene:any,line:string,replies:KeeperReply[]) {
   scene.scene?.pause?.();
 }
 
+function showGardenLetter(scene:any){
+  document.getElementById("quest-garden-letter")?.remove();
+  const overlay=document.createElement("div");
+  overlay.id="quest-garden-letter";
+  overlay.style.cssText="position:fixed;inset:0;z-index:10020;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(8,18,28,.56);backdrop-filter:blur(5px);font-family:Georgia,'Times New Roman',serif";
+  overlay.innerHTML=`<div data-card style="position:relative;width:min(980px,96vw);min-height:430px;overflow:hidden;border-radius:30px;border:2px solid #d0ad65;background:linear-gradient(145deg,#fffaf0 0%,#f7edda 58%,#f1e2c6 100%);box-shadow:0 32px 90px rgba(4,15,24,.48),inset 0 0 0 5px rgba(255,255,255,.6);color:#11284a"><div style="position:absolute;inset:12px;border:1px solid rgba(183,139,66,.42);border-radius:22px;pointer-events:none"></div><div style="position:absolute;left:18px;top:14px;color:#b78b42;font-size:25px">❀</div><div style="position:absolute;right:18px;top:14px;color:#b78b42;font-size:25px">❀</div><div style="position:absolute;left:18px;bottom:14px;color:#b78b42;font-size:25px">❀</div><div style="position:absolute;right:18px;bottom:14px;color:#b78b42;font-size:25px">❀</div><button data-close aria-label="Close" style="position:absolute;right:26px;top:24px;z-index:4;width:48px;height:48px;border-radius:999px;border:1px solid rgba(17,40,74,.24);background:rgba(255,255,255,.74);color:#193252;font-size:25px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(17,40,74,.12)">×</button><div data-layout style="position:relative;display:grid;grid-template-columns:minmax(210px,30%) 1fr;gap:28px;align-items:end;min-height:430px;padding:34px 52px 34px 34px"><div data-portrait-wrap style="align-self:stretch;display:flex;align-items:flex-end;justify-content:center;position:relative"><div style="position:absolute;inset:26px 10px 8px;border-radius:50% 50% 24px 24px;background:radial-gradient(circle at 50% 34%,rgba(255,233,174,.72),rgba(206,230,195,.24) 52%,transparent 73%)"></div><img src="${evelynPortrait}" alt="Evelyn" style="position:relative;width:100%;max-width:260px;aspect-ratio:1;object-fit:cover;border-radius:26px;border:2px solid rgba(183,139,66,.72);box-shadow:0 18px 35px rgba(59,72,48,.2)"/></div><div style="align-self:center;padding:10px 0 4px"><div style="color:#af7d31;font-size:13px;font-family:system-ui,sans-serif;font-weight:800;letter-spacing:.18em;text-transform:uppercase">A note from the Wedding Garden</div><h2 style="margin:8px 0 0;font-size:clamp(29px,4vw,45px);line-height:1.08;color:#11284a;font-weight:700">For Maria — In Every Season</h2><div style="width:96px;height:2px;background:linear-gradient(90deg,#b78b42,rgba(183,139,66,0));margin:17px 0 20px"></div><p style="margin:0;max-width:650px;font-size:clamp(18px,2.15vw,25px);line-height:1.55;color:#2c4362">Some things are beautiful because they last. Others are beautiful because we choose them again with every season.</p><p style="margin:17px 0 0;max-width:650px;font-size:clamp(17px,2vw,23px);line-height:1.5;color:#526179;font-style:italic">Evelyn looks toward the Conservatory. “Now you're ready to see what the garden was protecting.”</p><button data-continue style="width:min(520px,100%);margin-top:28px;padding:15px 24px;border-radius:999px;border:2px solid #c7a35d;background:linear-gradient(180deg,#183653,#0b2645);box-shadow:0 8px 18px rgba(11,38,69,.2),inset 0 1px rgba(255,255,255,.18);color:#fff8e8;font-family:Georgia,'Times New Roman',serif;font-size:19px;font-weight:700;cursor:pointer">Continue</button></div></div></div>`;
+  document.body.appendChild(overlay);
+  const close=()=>{overlay.remove();scene.scene?.resume?.();};
+  overlay.querySelector("[data-close]")?.addEventListener("click",close);
+  overlay.querySelector("[data-continue]")?.addEventListener("click",close);
+  overlay.addEventListener("click",(ev)=>{if(ev.target===overlay)close();});
+  if(window.matchMedia("(max-width: 700px)").matches){
+    const card=overlay.querySelector("[data-card]") as HTMLElement;
+    const layout=overlay.querySelector("[data-layout]") as HTMLElement;
+    const portrait=overlay.querySelector("[data-portrait-wrap]") as HTMLElement;
+    card.style.minHeight="0";
+    layout.style.gridTemplateColumns="1fr";
+    layout.style.gap="12px";
+    layout.style.padding="64px 24px 28px";
+    portrait.style.minHeight="0";
+    const img=portrait.querySelector("img") as HTMLElement;
+    img.style.width="116px";
+  }
+  scene.scene?.pause?.();
+}
+
 function talkToKeeper(scene:any){
   const n=Math.max(0,Math.min(4,Number(scene.zoneState?.["keysFound"]??0)));
   scene.zoneState["keeperMet"]=true;
@@ -227,7 +253,7 @@ function talkToKeeper(scene:any){
 
 function readGardenLetter(scene:any){
   scene.zoneState["gardenLetterRead"]=true;
-  scene.openModal({type:"info",title:"For Maria — In Every Season",body:"Some things are beautiful because they last. Others are beautiful because we choose them again with every season.\n\nEvelyn looks toward the Conservatory. “Now you're ready to see what the garden was protecting.”"});
+  showGardenLetter(scene);
   scene.objective="All four seasons are restored — enter the Grand Conservatory.";
 }
 
@@ -235,7 +261,7 @@ export function installAct2GardenKeeper(QuestScene:any){
   const proto=QuestScene?.prototype;if(!proto||proto.__act2GardenKeeperInstalled)return;proto.__act2GardenKeeperInstalled=true;
   const originalSpawnActGuide=proto.spawnActGuide;proto.spawnActGuide=function(tx:number,ty:number){if(this.save?.current_zone===ZONE)return originalSpawnActGuide.call(this,GUIDE_X,GUIDE_Y);return originalSpawnActGuide.call(this,tx,ty);};
   const originalAddBlacksmith=proto.addBlacksmith;proto.addBlacksmith=function(tx:number,ty:number){if(this.save?.current_zone===ZONE)return originalAddBlacksmith.call(this,SMITH_X,SMITH_Y);return originalAddBlacksmith.call(this,tx,ty);};
-  const originalAddGuest=proto.addGuest;proto.addGuest=function(guest:any,tx:number,ty:number){if(this.save?.current_zone===ZONE)return originalAddGuest.call(this,guest,GUEST_X,GUEST_Y);return originalAddGuest.call(this,guest,tx,ty);};
+  const originalAddGuest=proto.addGuest;proto.addGuest=function(guest:any,tx:number,ty:number){if(this.save?.current_zone===ZONE)return originalAddGuest.call(this,{...guest,prompt:"Talk"},GUEST_X,GUEST_Y);return originalAddGuest.call(this,guest,tx,ty);};
   const originalAddDogOffer=proto.addDogOffer;proto.addDogOffer=function(tx:number,ty:number){if(this.save?.current_zone===ZONE)return;return originalAddDogOffer.call(this,tx,ty);};
 
   const originalHouseSpot=proto.houseSpot;
