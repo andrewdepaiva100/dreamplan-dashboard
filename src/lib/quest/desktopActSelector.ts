@@ -4,6 +4,7 @@ import type { ZoneId } from "./content";
 const DEV_ACT_KEY = "marias-quest-dev-act-once";
 const ROOT_ID = "marias-quest-desktop-act-selector";
 const MODAL_ID = "marias-quest-desktop-act-selector-modal";
+const QUEST_RUNTIME_READY_EVENT = "quest:runtime-ready";
 
 const ACTS: { label: string; subtitle: string; zone: ZoneId }[] = [
   { label: "Act I", subtitle: "Sunlit Shores", zone: "sunlit_shores" },
@@ -14,6 +15,7 @@ const ACTS: { label: string; subtitle: string; zone: ZoneId }[] = [
 ];
 
 let sceneOverrideReady = false;
+let actLaunchPending = false;
 
 function isDesktopTitle() {
   return typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
@@ -22,18 +24,47 @@ function titleIsVisible() {
   return Boolean(document.querySelector('img[alt^="Pixel-art Andrew and Maria"]'));
 }
 function closeModal() { document.getElementById(MODAL_ID)?.remove(); }
+function runtimeIsReady() { return Boolean((window as any).__questRuntimeReady); }
+function waitForRuntimeReady() {
+  if (runtimeIsReady()) return Promise.resolve();
+  return new Promise<void>((resolve) => {
+    window.addEventListener(QUEST_RUNTIME_READY_EVENT, () => resolve(), { once: true });
+  });
+}
+function setActButtonsWaiting(selected: HTMLButtonElement, label: string) {
+  const modal = document.getElementById(MODAL_ID);
+  if (!modal) return;
+  for (const button of Array.from(modal.querySelectorAll("button[data-act-zone]")) as HTMLButtonElement[]) {
+    button.disabled = true;
+    button.style.cursor = "wait";
+    button.style.opacity = button === selected ? "1" : ".45";
+  }
+  selected.textContent = `Loading ${label}…`;
+}
 
 /**
  * A DEV jump always starts from the clean New Game data, then the scene init
  * swaps only current_zone. This avoids Continue restoring the player's normal
  * Act I save and keeps the real journey untouched.
  */
-function launchAct(zone: ZoneId) {
+async function launchAct(zone: ZoneId, sourceButton: HTMLButtonElement, label: string) {
+  if (actLaunchPending) return;
+  actLaunchPending = true;
+
+  if (!runtimeIsReady()) {
+    setActButtonsWaiting(sourceButton, label);
+    await waitForRuntimeReady();
+  }
+
   if (!sceneOverrideReady) {
-    console.error("[quest] developer act selector is not ready yet");
+    console.error("[quest] developer act selector runtime became ready before scene override installed");
+    actLaunchPending = false;
     return;
   }
-  try { window.sessionStorage.setItem(DEV_ACT_KEY, zone); } catch { return; }
+  try { window.sessionStorage.setItem(DEV_ACT_KEY, zone); } catch {
+    actLaunchPending = false;
+    return;
+  }
   closeModal();
 
   const newGame = Array.from(document.querySelectorAll("button")).find(
@@ -42,9 +73,11 @@ function launchAct(zone: ZoneId) {
   if (!newGame) {
     console.error("[quest] New Game button not found for developer act jump");
     window.sessionStorage.removeItem(DEV_ACT_KEY);
+    actLaunchPending = false;
     return;
   }
   newGame.click();
+  actLaunchPending = false;
 }
 
 function openModal() {
@@ -61,14 +94,14 @@ function openModal() {
   const title=document.createElement("div"); title.textContent="Jump to an Act"; Object.assign(title.style,{marginBottom:"18px",color:"#f3d78b",fontSize:"30px",fontWeight:"700"});
   const grid=document.createElement("div"); Object.assign(grid.style,{display:"grid",gap:"9px"});
   for(const act of ACTS){
-    const button=document.createElement("button"); button.type="button"; button.innerHTML=`<span style="font-weight:800;color:#f1cb70">${act.label}</span><span style="opacity:.78;margin-left:10px">${act.subtitle}</span>`;
+    const button=document.createElement("button"); button.type="button"; button.dataset.actZone=act.zone; button.innerHTML=`<span style="font-weight:800;color:#f1cb70">${act.label}</span><span style="opacity:.78;margin-left:10px">${act.subtitle}</span>`;
     Object.assign(button.style,{width:"100%",minHeight:"50px",padding:"12px 16px",border:"1px solid rgba(222,184,103,.42)",borderRadius:"12px",background:"rgba(255,255,255,.055)",color:"#f8edd7",textAlign:"left",cursor:"pointer",fontFamily:"Georgia, 'Times New Roman', serif",fontSize:"14px"});
-    button.addEventListener("mouseenter",()=>{button.style.background="rgba(221,180,93,.14)";button.style.borderColor="rgba(241,203,112,.82)";});
-    button.addEventListener("mouseleave",()=>{button.style.background="rgba(255,255,255,.055)";button.style.borderColor="rgba(222,184,103,.42)";});
-    button.addEventListener("click",()=>launchAct(act.zone)); grid.appendChild(button);
+    button.addEventListener("mouseenter",()=>{if(!button.disabled){button.style.background="rgba(221,180,93,.14)";button.style.borderColor="rgba(241,203,112,.82)";}});
+    button.addEventListener("mouseleave",()=>{if(!button.disabled){button.style.background="rgba(255,255,255,.055)";button.style.borderColor="rgba(222,184,103,.42)";}});
+    button.addEventListener("click",()=>{void launchAct(act.zone,button,act.label);}); grid.appendChild(button);
   }
   const cancel=document.createElement("button"); cancel.type="button"; cancel.textContent="Cancel"; Object.assign(cancel.style,{width:"100%",marginTop:"12px",padding:"10px",border:"0",background:"transparent",color:"rgba(240,230,210,.65)",cursor:"pointer",fontFamily:"system-ui, sans-serif",fontSize:"12px"});
-  cancel.addEventListener("click",closeModal); backdrop.addEventListener("click",e=>{if(e.target===backdrop)closeModal();});
+  cancel.addEventListener("click",closeModal); backdrop.addEventListener("click",e=>{if(e.target===backdrop&&!actLaunchPending)closeModal();});
   card.append(eyebrow,title,grid,cancel); backdrop.appendChild(card); document.body.appendChild(backdrop);
 }
 
