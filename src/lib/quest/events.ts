@@ -44,6 +44,7 @@ if (typeof window !== "undefined") {
       import("./desktopActSelector"),
       import("./desktopControlsPolish"),
       import("./interactionPolish"),
+      import("./wrenIntro"),
     ])
       .then(([
         sceneModule,
@@ -79,6 +80,7 @@ if (typeof window !== "undefined") {
         desktopActSelector,
         desktopControlsPolish,
         interactionPolish,
+        wrenIntro,
       ]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
         const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
@@ -109,10 +111,13 @@ if (typeof window !== "undefined") {
         act2BramForgemaster.installAct2BramForgemaster(QuestScene);
         act2BramWeaponOwnership.installAct2BramWeaponOwnership(QuestScene);
         act2SeasonChallenges.installAct2SeasonChallenges(QuestScene);
-        global25DPolish.installGlobal25DPolish(QuestScene);
+        global25DPolish.installGlobal2_5dPolish?.(QuestScene);
+        if (!global25DPolish.installGlobal2_5dPolish) global25DPolish.installGlobal2_5dPolish = global25DPolish.installGlobal25DPolish;
+        global25DPolish.installGlobal25DPolish?.(QuestScene);
         desktopActSelector.installDesktopActSelector(QuestScene);
         desktopControlsPolish.installDesktopControlsPolish();
         interactionPolish.installInteractionPolish(QuestScene);
+        wrenIntro.installWrenIntro(QuestScene);
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
   });
