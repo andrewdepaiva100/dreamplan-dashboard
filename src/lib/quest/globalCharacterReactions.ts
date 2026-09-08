@@ -11,11 +11,66 @@ const CHARACTER_KINDS = new Set([
 
 const CHARACTER_WORDS = /\b(?:talk|wren|silas|elara|pip|maeve|evelyn|bram|andrew|pastor|guide|guest|keeper|smith|forgemaster)\b/i;
 const GREETINGS: Record<string, string[]> = {
-  sunlit_shores: ["Maria!", "Good to see you.", "Safe travels, Maria."],
-  wedding_garden: ["Maria! The garden is glowing.", "There you are!", "What a beautiful day."],
-  the_haven: ["Maria! Welcome.", "Good to see you here.", "The Haven feels brighter today."],
-  starry_ascent: ["Maria... look at those stars.", "Glad to see you.", "Keep going, Maria."],
-  cathedral: ["Maria!", "Everything is nearly ready.", "What a beautiful day for you both."],
+  sunlit_shores: [
+    "Maria!",
+    "Good to see you.",
+    "Safe travels, Maria.",
+    "The shore's calm today.",
+    "Watch your step by the tide.",
+    "Beautiful light on the water.",
+    "You look ready for adventure.",
+    "The sea's been kind today.",
+    "Glad you came this way.",
+    "Keep your eyes on the horizon.",
+  ],
+  wedding_garden: [
+    "Maria! The garden is glowing.",
+    "There you are!",
+    "What a beautiful day.",
+    "The flowers are showing off today.",
+    "Everything is coming together.",
+    "You picked the perfect day for this.",
+    "The garden feels extra bright today.",
+    "Everyone's excited to see you.",
+    "You should see the roses by the path.",
+    "It really feels like a celebration now.",
+  ],
+  the_haven: [
+    "Maria! Welcome.",
+    "Good to see you here.",
+    "The Haven feels brighter today.",
+    "The square's lively again.",
+    "People have been asking about you.",
+    "You brought some hope with you.",
+    "It's good having you around.",
+    "Take a moment to enjoy the town.",
+    "Things feel steadier with you here.",
+    "You always seem to arrive when needed.",
+  ],
+  starry_ascent: [
+    "Maria... look at those stars.",
+    "Glad to see you.",
+    "Keep going, Maria.",
+    "The night feels peaceful up here.",
+    "The stars are unusually bright.",
+    "You've come a long way.",
+    "Quiet place, isn't it?",
+    "The path ahead is worth it.",
+    "Feels like the whole sky is listening.",
+    "Take your time up here.",
+  ],
+  cathedral: [
+    "Maria!",
+    "Everything is nearly ready.",
+    "What a beautiful day for you both.",
+    "You made it.",
+    "The courtyard looks wonderful.",
+    "Everyone's been waiting for this moment.",
+    "You look radiant, Maria.",
+    "The whole place feels full of joy.",
+    "It's finally here.",
+    "This is a day worth remembering.",
+  ],
 };
 
 function isCharacter(it: any) {
@@ -52,6 +107,11 @@ function acknowledge(scene: SceneLike, obj: any) {
   });
 }
 
+function speechY(obj: any) {
+  const nameplateY = obj.y - Math.max(24, (obj.displayHeight ?? 32) * 0.62);
+  return nameplateY - 18;
+}
+
 function greeting(scene: SceneLike, it: any) {
   const obj = it?.obj;
   if (!obj?.active || scene.frozen || obj.getData?.("npc-greeting-active")) return;
@@ -62,7 +122,7 @@ function greeting(scene: SceneLike, it: any) {
   obj.setData?.("npc-greeting-active", true);
   const lines = GREETINGS[String(scene.save?.current_zone ?? "")] ?? GREETINGS.sunlit_shores;
   const line = lines[Phaser.Math.Between(0, lines.length - 1)]!;
-  const text = scene.add.text(obj.x, obj.y - Math.max(34, (obj.displayHeight ?? 30) * 0.72), line, {
+  const text = scene.add.text(obj.x, speechY(obj), line, {
     fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     fontSize: "8px", fontStyle: "600", color: "#fff8df",
     backgroundColor: "rgba(8,20,40,.88)", padding: { x: 6, y: 4 },
@@ -70,7 +130,7 @@ function greeting(scene: SceneLike, it: any) {
   }).setOrigin(0.5, 1).setDepth(99989).setAlpha(0);
   scene.tweens.add({ targets: text, alpha: 0.96, y: text.y - 2, duration: 150, ease: "Sine.easeOut" });
   const follow = () => {
-    if (text.active && obj?.active) text.setPosition(obj.x, obj.y - Math.max(34, (obj.displayHeight ?? 30) * 0.72) - 2);
+    if (text.active && obj?.active) text.setPosition(obj.x, speechY(obj) - 2);
   };
   scene.events.on("update", follow);
   scene.time.delayedCall(2300, () => {
