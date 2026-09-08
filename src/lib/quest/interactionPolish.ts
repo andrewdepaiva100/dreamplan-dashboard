@@ -20,52 +20,80 @@ export function installInteractionPolish(QuestScene: any) {
   const originalBuildAct2 = proto.buildAct2;
   const originalSpawnActBoss = proto.spawnActBoss;
   const originalCheckCutscene = proto.checkCutscene;
+  const originalInteract = proto.interact;
 
-  // Give the Stress Spectre roughly 20% more room without touching the rest of
-  // Act II progression. The existing 40x42 Conservatory becomes a 48x50 open
-  // marble court, and the door/landmark are pulled toward its new centre.
+  // The Conservatory stays roomier than the original, but backs off from the
+  // previous 48x50 court to a 44x46 enclosed arena. A hedge perimeter gives
+  // the boss room a clear silhouette, with one broad west-facing entrance.
   proto.buildAct2 = function interactionPolishBuildAct2(...args: any[]) {
     const result = originalBuildAct2.apply(this, args);
     const marble = this.layer?.getTileAt(this.sx(92), this.sy(30))?.index;
-    if (typeof marble === "number") this.rectLive(84, 26, 48, 50, marble);
+    const hedge = this.layer?.getTileAt(this.sx(110), this.sy(34))?.index;
+
+    if (typeof marble === "number") this.rectLive(88, 28, 44, 46, marble);
+    if (typeof hedge === "number") {
+      this.rectLive(88, 28, 44, 1, hedge);
+      this.rectLive(88, 73, 44, 1, hedge);
+      this.rectLive(131, 28, 1, 46, hedge);
+      this.rectLive(88, 28, 1, 18, hedge);
+      this.rectLive(88, 56, 1, 18, hedge);
+      // Seal the entrance itself until the four seasonal keys open the door.
+      this.rectLive(88, 46, 2, 10, hedge);
+    }
 
     const door = Array.isArray(this.interactables)
       ? this.interactables.find((it: any) => it?.kind === "conservatory")
       : null;
-    door?.obj?.setPosition?.(this.wx(112), this.wy(51));
+    door?.obj?.setPosition?.(this.wx(89), this.wy(51));
     if (this.landmark?.title === "The Grand Conservatory") {
-      this.landmark.sprite?.setPosition?.(this.wx(116), this.wy(42));
+      this.landmark.sprite?.setPosition?.(this.wx(111), this.wy(39));
     }
     return result;
   };
 
-  // Keep the Act II boss centred in the expanded court. All other bosses and
-  // all boss stats/attacks continue through the original shared method.
+  // Keep the Stress Spectre near the centre of the resized enclosed arena.
+  // Every other boss and all combat tuning still use the original method.
   proto.spawnActBoss = function interactionPolishSpawnActBoss(tx: number, ty: number, ...rest: any[]) {
     if (this.save?.current_zone === "wedding_garden" && tx === 121 && ty === 51 && !rest[0]) {
-      return originalSpawnActBoss.call(this, 112, 51, ...rest);
+      return originalSpawnActBoss.call(this, 111, 51, ...rest);
     }
     return originalSpawnActBoss.call(this, tx, ty, ...rest);
   };
 
-  // The Conservatory already gets the cream info modal. Suppress only its
-  // duplicate Act-title card so the two presentations can never overlap.
+  // Opening the existing Conservatory interaction also opens the new west
+  // entrance in the hedge perimeter. Key requirements and boss spawning remain
+  // owned by the original interaction code.
+  proto.interact = function interactionPolishInteract(...args: any[]) {
+    const near = typeof this.nearest === "function" ? this.nearest() : null;
+    const openingConservatory =
+      this.save?.current_zone === "wedding_garden" &&
+      near?.kind === "conservatory" &&
+      (((this.zoneState?.["keysFound"] as number) ?? 0) >= 4);
+
+    const result = originalInteract.apply(this, args);
+
+    if (openingConservatory) {
+      const marble = this.layer?.getTileAt(this.sx(92), this.sy(30))?.index;
+      if (typeof marble === "number") this.rectLive(88, 46, 3, 10, marble);
+    }
+    return result;
+  };
+
+  // The Conservatory uses only its cream info modal. Unlike the shared
+  // landmark cutscene, this does not silently freeze Maria for 2.6 seconds
+  // before anything appears on screen.
   proto.checkCutscene = function interactionPolishCheckCutscene(...args: any[]) {
     if (this.save?.current_zone !== "wedding_garden" || this.landmark?.title !== "The Grand Conservatory") {
       return originalCheckCutscene.apply(this, args);
     }
-    const events = this.game?.events;
-    const emit = events?.emit;
-    if (typeof emit !== "function") return originalCheckCutscene.apply(this, args);
-    events.emit = function patchedEmit(event: any, ...payload: any[]) {
-      if (payload?.[0]?.title === "The Grand Conservatory") return false;
-      return emit.call(this, event, ...payload);
-    };
-    try {
-      return originalCheckCutscene.apply(this, args);
-    } finally {
-      events.emit = emit;
-    }
+    if (this.cutscenePlayed || !this.landmark) return;
+    if (this.boss?.active || this.bossTalking || this.frozen) return;
+    if (this.time.now - this.realmEnteredAt < 4200) return;
+    const l = this.landmark;
+    if (Phaser.Math.Distance.Between(this.player.x, this.player.y, l.sprite.x, l.sprite.y) > 230) return;
+    this.cutscenePlayed = true;
+    this.player.setVelocity(0, 0);
+    this.openModal({ type: "info", title: l.title, body: l.body });
   };
 
   const approach = (current: number, target: number, delta: number, speed: number) =>
