@@ -20,7 +20,7 @@ if (typeof window !== "undefined") {
       import("./lastCrossingDefense"), import("./majesticPortal"), import("./relicPresentation"), import("./act2Enemies"),
       import("./act2GardenKeeper"), import("./act2EvelynSprite"), import("./act2VisualTuning"), import("./act2GuideCleanup"),
       import("./act2SeasonIdentity"), import("./act2BramForgemaster"), import("./act2BramWeaponOwnership"), import("./act2SeasonChallenges"),
-      import("./global2_5dPolish"), import("./desktopActSelector"), import("./desktopControlsPolish"), import("./interactionPolish"),
+      import("./act2BossRemaster"), import("./global2_5dPolish"), import("./desktopActSelector"), import("./desktopControlsPolish"), import("./interactionPolish"),
       import("./wrenIntro"), import("./lastCrossingDialogueRebind"), import("./weaponVisualSync"), import("./introUiPolish"),
       import("./mariaMovementPolish"), import("./mariaCombatAnimation"), import("./globalCharacterReactions"), import("./enemyReactionPolish"),
       import("./actArrivalCinematics"), import("./environmentalMicroLife"),
@@ -29,7 +29,7 @@ if (typeof window !== "undefined") {
       silasPlacementFix, lastCrossingLifecycle, act1GameplayPolish, fallenCrossingShrine, fallenCrossingJournalBook,
       wardenCombat, act1WoodenBridges, wardenTidalRings, act1ExplorationArt, lastCrossingDefense, majesticPortal,
       relicPresentation, act2Enemies, act2GardenKeeper, act2EvelynSprite, act2VisualTuning, act2GuideCleanup,
-      act2SeasonIdentity, act2BramForgemaster, act2BramWeaponOwnership, act2SeasonChallenges, global25DPolish,
+      act2SeasonIdentity, act2BramForgemaster, act2BramWeaponOwnership, act2SeasonChallenges, act2BossRemaster, global25DPolish,
       desktopActSelector, desktopControlsPolish, interactionPolish, wrenIntro, lastCrossingDialogueRebind, weaponVisualSync,
       introUiPolish, mariaMovementPolish, mariaCombatAnimation, globalCharacterReactions, enemyReactionPolish, actArrivalCinematics,
       environmentalMicroLife,
@@ -64,6 +64,7 @@ if (typeof window !== "undefined") {
       act2BramForgemaster.installAct2BramForgemaster(QuestScene);
       act2BramWeaponOwnership.installAct2BramWeaponOwnership(QuestScene);
       act2SeasonChallenges.installAct2SeasonChallenges(QuestScene);
+      act2BossRemaster.installAct2BossRemaster(QuestScene);
       global25DPolish.installGlobal25DPolish(QuestScene);
       desktopActSelector.installDesktopActSelector(QuestScene);
       desktopControlsPolish.installDesktopControlsPolish();
