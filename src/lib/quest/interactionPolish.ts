@@ -22,8 +22,9 @@ export function installInteractionPolish(QuestScene: any) {
     const lower = raw.toLowerCase();
 
     if (/evelyn|bram|wren|keeper|guide|guest|pastor|andrew/.test(`${kind} ${lower}`)) {
-      if (/^talk to /i.test(raw)) return raw;
-      return `Talk to ${raw}`;
+      // Normalize any pre-existing or accidentally duplicated verb prefixes.
+      const subject = raw.replace(/^(?:talk\s+to\s+)+/i, "").trim();
+      return `Talk to ${subject || "them"}`;
     }
     if (/rest|bed|hearth|camp|stone/.test(`${kind} ${lower}`)) {
       return lower.startsWith("rest") ? raw : `Rest at ${raw}`;
