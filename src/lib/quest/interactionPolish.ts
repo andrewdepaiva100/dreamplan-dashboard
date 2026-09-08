@@ -17,6 +17,56 @@ export function installInteractionPolish(QuestScene: any) {
   const nameplateAlpha = new WeakMap<object, number>();
   const promptState = new WeakMap<object, { alpha: number; label: string }>();
   const originalUpdate = proto.update;
+  const originalBuildAct2 = proto.buildAct2;
+  const originalSpawnActBoss = proto.spawnActBoss;
+  const originalCheckCutscene = proto.checkCutscene;
+
+  // Give the Stress Spectre roughly 20% more room without touching the rest of
+  // Act II progression. The existing 40x42 Conservatory becomes a 48x50 open
+  // marble court, and the door/landmark are pulled toward its new centre.
+  proto.buildAct2 = function interactionPolishBuildAct2(...args: any[]) {
+    const result = originalBuildAct2.apply(this, args);
+    const marble = this.layer?.getTileAt(this.sx(92), this.sy(30))?.index;
+    if (typeof marble === "number") this.rectLive(84, 26, 48, 50, marble);
+
+    const door = Array.isArray(this.interactables)
+      ? this.interactables.find((it: any) => it?.kind === "conservatory")
+      : null;
+    door?.obj?.setPosition?.(this.wx(112), this.wy(51));
+    if (this.landmark?.title === "The Grand Conservatory") {
+      this.landmark.sprite?.setPosition?.(this.wx(116), this.wy(42));
+    }
+    return result;
+  };
+
+  // Keep the Act II boss centred in the expanded court. All other bosses and
+  // all boss stats/attacks continue through the original shared method.
+  proto.spawnActBoss = function interactionPolishSpawnActBoss(tx: number, ty: number, ...rest: any[]) {
+    if (this.save?.current_zone === "wedding_garden" && tx === 121 && ty === 51 && !rest[0]) {
+      return originalSpawnActBoss.call(this, 112, 51, ...rest);
+    }
+    return originalSpawnActBoss.call(this, tx, ty, ...rest);
+  };
+
+  // The Conservatory already gets the cream info modal. Suppress only its
+  // duplicate Act-title card so the two presentations can never overlap.
+  proto.checkCutscene = function interactionPolishCheckCutscene(...args: any[]) {
+    if (this.save?.current_zone !== "wedding_garden" || this.landmark?.title !== "The Grand Conservatory") {
+      return originalCheckCutscene.apply(this, args);
+    }
+    const events = this.game?.events;
+    const emit = events?.emit;
+    if (typeof emit !== "function") return originalCheckCutscene.apply(this, args);
+    events.emit = function patchedEmit(event: any, ...payload: any[]) {
+      if (payload?.[0]?.title === "The Grand Conservatory") return false;
+      return emit.call(this, event, ...payload);
+    };
+    try {
+      return originalCheckCutscene.apply(this, args);
+    } finally {
+      events.emit = emit;
+    }
+  };
 
   const approach = (current: number, target: number, delta: number, speed: number) =>
     Phaser.Math.Linear(current, target, 1 - Math.exp(-Math.max(0, delta) / speed));
@@ -25,6 +75,10 @@ export function installInteractionPolish(QuestScene: any) {
     const raw = String(it?.label ?? "Interact").trim();
     const kind = String(it?.kind ?? "").toLowerCase();
     const lower = raw.toLowerCase();
+
+    // A deliberately concise NPC label is already complete. In particular,
+    // never turn the authored label "Talk" into the nonsensical "Talk to Talk".
+    if (lower === "talk") return "Talk";
 
     // Authored labels that already contain an action are complete prompts.
     // Keep exactly one verb instead of producing combinations such as
