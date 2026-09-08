@@ -148,8 +148,7 @@ function LiveMapCanvas({ snap }: { snap: MapSnapshot }) {
     ctx.fillStyle = "#eee1bf";
     ctx.fillRect(0, 0, c.width, c.height);
     ctx.save();
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
+    ctx.imageSmoothingEnabled = false;
     ctx.globalAlpha = 0.96;
     ctx.drawImage(source, 0, 0, c.width, c.height);
     ctx.restore();
