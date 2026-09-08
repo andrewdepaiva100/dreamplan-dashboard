@@ -46,6 +46,7 @@ if (typeof window !== "undefined") {
       import("./interactionPolish"),
       import("./wrenIntro"),
       import("./lastCrossingDialogueRebind"),
+      import("./weaponVisualSync"),
     ])
       .then(([
         sceneModule,
@@ -83,6 +84,7 @@ if (typeof window !== "undefined") {
         interactionPolish,
         wrenIntro,
         lastCrossingDialogueRebind,
+        weaponVisualSync,
       ]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
         const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
@@ -121,6 +123,9 @@ if (typeof window !== "undefined") {
         // This must be the final interact wrapper so the Last Crossing's premium
         // conversations cannot be shadowed by older scene decorators.
         lastCrossingDialogueRebind.rebindLastCrossingDialoguePolish(QuestScene);
+        // Install after every gameplay decorator so equipped-weapon visuals are
+        // authoritative, including runtime-added weapons like the Crossing Blade.
+        weaponVisualSync.installWeaponVisualSync(QuestScene);
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
   });
