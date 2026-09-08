@@ -53,6 +53,24 @@ import bossGarden from "@/assets/quest/boss-garden.png";
 import bossHaven from "@/assets/quest/boss-haven.png";
 import bossStar from "@/assets/quest/boss-star.png";
 import bossHollow from "@/assets/quest/boss-hollow.png";
+import mapTileMeadow from "@/assets/quest/tile-meadow.jpg";
+import mapTileBloom from "@/assets/quest/tile-bloom.jpg";
+import mapTileWater from "@/assets/quest/tile-water.jpg";
+import mapTileWall from "@/assets/quest/tile-wall.jpg";
+import mapTileMarble from "@/assets/quest/tile-marble.jpg";
+import mapTileHedge from "@/assets/quest/tile-hedge.jpg";
+import mapTileVoid from "@/assets/quest/tile-void.jpg";
+import mapTileSky from "@/assets/quest/tile-sky.jpg";
+import mapTilePath from "@/assets/quest/tile-path.jpg";
+import mapMaria from "@/assets/quest/maria-down.png";
+import mapRelic from "@/assets/quest/relic.png";
+import mapGuide from "@/assets/quest/guide.png";
+import mapPortal from "@/assets/quest/portal.png";
+import mapLandmarkTemple from "@/assets/quest/landmark-temple.png";
+import mapLandmarkConservatory from "@/assets/quest/landmark-conservatory.png";
+import mapLandmarkTownhall from "@/assets/quest/landmark-townhall.png";
+import mapLandmarkObservatory from "@/assets/quest/landmark-observatory.png";
+import mapLandmarkCathedral from "@/assets/quest/landmark-cathedral.png";
 
 
 
@@ -92,18 +110,26 @@ type MapSnapshot = {
   unlocked: ZoneId[];
 };
 
-const MAP_TILE_COLORS = [
-  "#6f9f52",
-  "#91b86a",
-  "#4b9bc4",
-  "#756c5f",
-  "#ddd8c7",
-  "#376f42",
-  "#293649",
-  "#5a4d6c",
-  "#c6a474",
-  "#385f82",
+const MAP_TILE_ART = [
+  mapTileMeadow,
+  mapTileBloom,
+  mapTileWater,
+  mapTileWall,
+  mapTileMarble,
+  mapTileHedge,
+  mapTileVoid,
+  mapTileSky,
+  mapTilePath,
+  mapTileWater,
 ];
+
+const MAP_LANDMARK_ART: Record<ZoneId, string> = {
+  sunlit_shores: mapLandmarkTemple,
+  wedding_garden: mapLandmarkConservatory,
+  the_haven: mapLandmarkTownhall,
+  starry_ascent: mapLandmarkObservatory,
+  cathedral: mapLandmarkCathedral,
+};
 
 const MAP_ZONE_MOOD: Record<ZoneId, { wash: string; note: string }> = {
   sunlit_shores: { wash: "#f7e3a5", note: "Where the road begins in light" },
@@ -112,6 +138,21 @@ const MAP_ZONE_MOOD: Record<ZoneId, { wash: string; note: string }> = {
   starry_ascent: { wash: "#c9c7e7", note: "Rest beneath the stars, then rise" },
   cathedral: { wash: "#eadbb9", note: "At the end of the road, a promise" },
 };
+
+const MAP_IMAGE_CACHE = new Map<string, Promise<HTMLImageElement>>();
+function loadMapImage(src: string) {
+  const cached = MAP_IMAGE_CACHE.get(src);
+  if (cached) return cached;
+  const pending = new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.decoding = "async";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+  MAP_IMAGE_CACHE.set(src, pending);
+  return pending;
+}
 
 function mapPinType(pin: MapSnapshot["pins"][number]) {
   const haystack = `${pin.kind} ${pin.label}`.toLowerCase();
@@ -122,7 +163,7 @@ function mapPinType(pin: MapSnapshot["pins"][number]) {
   return "point";
 }
 
-/** Renders the live world snapshot as a softened illustrated realm chart. */
+/** Renders the live world snapshot with the same art language as the playable realm. */
 function LiveMapCanvas({ snap }: { snap: MapSnapshot }) {
   const ref = useRef<HTMLCanvasElement | null>(null);
   useEffect(() => {
@@ -130,151 +171,174 @@ function LiveMapCanvas({ snap }: { snap: MapSnapshot }) {
     if (!c) return;
     const ctx = c.getContext("2d");
     if (!ctx) return;
-    const n = snap.rows.length || 1;
-    const source = document.createElement("canvas");
-    source.width = n;
-    source.height = n;
-    const sctx = source.getContext("2d");
-    if (!sctx) return;
+    let cancelled = false;
 
-    snap.rows.forEach((row, y) => {
-      for (let x = 0; x < row.length; x++) {
-        sctx.fillStyle = MAP_TILE_COLORS[Number(row[x])] ?? MAP_TILE_COLORS[0]!;
-        sctx.fillRect(x, y, 1, 1);
-      }
-    });
-
-    ctx.clearRect(0, 0, c.width, c.height);
-    ctx.fillStyle = "#eee1bf";
-    ctx.fillRect(0, 0, c.width, c.height);
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-    ctx.globalAlpha = 0.96;
-    ctx.drawImage(source, 0, 0, c.width, c.height);
-    ctx.restore();
-
-    const mood = MAP_ZONE_MOOD[snap.zone];
-    const wash = ctx.createRadialGradient(
-      c.width * 0.5,
-      c.height * 0.42,
-      40,
-      c.width * 0.5,
-      c.height * 0.5,
-      c.width * 0.72,
+    const required = Array.from(
+      new Set([
+        ...MAP_TILE_ART,
+        MAP_LANDMARK_ART[snap.zone],
+        mapMaria,
+        mapRelic,
+        mapGuide,
+        mapPortal,
+      ]),
     );
-    wash.addColorStop(0, `${mood.wash}18`);
-    wash.addColorStop(0.65, `${mood.wash}0d`);
-    wash.addColorStop(1, "rgba(21,31,36,.18)");
-    ctx.fillStyle = wash;
-    ctx.fillRect(0, 0, c.width, c.height);
 
-    let seed = snap.zone.length * 977 + 41;
-    const rnd = () => {
-      seed = (seed * 1664525 + 1013904223) >>> 0;
-      return seed / 0xffffffff;
-    };
-    for (let i = 0; i < 430; i++) {
-      const x = rnd() * c.width;
-      const y = rnd() * c.height;
-      ctx.beginPath();
-      ctx.arc(x, y, 0.45 + rnd() * 0.8, 0, Math.PI * 2);
-      ctx.fillStyle = rnd() > 0.55 ? "rgba(255,249,225,.10)" : "rgba(30,57,43,.08)";
-      ctx.fill();
-    }
+    void Promise.all(required.map((src) => loadMapImage(src).catch(() => null))).then((loaded) => {
+      if (cancelled) return;
+      const images = new Map<string, HTMLImageElement>();
+      required.forEach((src, i) => {
+        const image = loaded[i];
+        if (image) images.set(src, image);
+      });
 
-    ctx.strokeStyle = "rgba(52,68,50,.11)";
-    ctx.lineWidth = 1;
-    for (let i = 1; i <= 4; i++) {
-      ctx.beginPath();
-      const y = (c.height / 5) * i;
-      ctx.moveTo(18, y + Math.sin(i) * 4);
-      ctx.bezierCurveTo(c.width * 0.28, y - 7, c.width * 0.66, y + 9, c.width - 18, y - 2);
-      ctx.stroke();
-    }
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.fillStyle = "#e9d9b5";
+      ctx.fillRect(0, 0, c.width, c.height);
 
-    const drawBadge = (x: number, y: number, fill: string, stroke: string, radius = 11) => {
-      ctx.beginPath();
-      ctx.arc(x, y, radius + 3, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(255,248,228,.92)";
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = fill;
-      ctx.fill();
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    };
+      const rows = snap.rows;
+      const rowCount = Math.max(1, rows.length);
+      const columnCount = Math.max(1, ...rows.map((row) => row.length));
+      const tileW = c.width / columnCount;
+      const tileH = c.height / rowCount;
 
-    for (const pin of snap.pins) {
-      const x = pin.x * c.width;
-      const y = pin.y * c.height;
-      const type = mapPinType(pin);
-      if (type === "landmark") {
-        drawBadge(x, y, "#c99a32", "#6e5423");
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      rows.forEach((row, y) => {
+        for (let x = 0; x < row.length; x++) {
+          const index = Number(row[x]);
+          const src = MAP_TILE_ART[index] ?? MAP_TILE_ART[0]!;
+          const image = images.get(src);
+          if (image) {
+            ctx.drawImage(
+              image,
+              x * tileW - 0.35,
+              y * tileH - 0.35,
+              Math.ceil(tileW) + 0.8,
+              Math.ceil(tileH) + 0.8,
+            );
+          } else {
+            ctx.fillStyle = index === 2 || index === 9 ? "#4c99b8" : "#709b59";
+            ctx.fillRect(x * tileW, y * tileH, Math.ceil(tileW) + 1, Math.ceil(tileH) + 1);
+          }
+        }
+      });
+      ctx.restore();
+
+      const mood = MAP_ZONE_MOOD[snap.zone];
+      const wash = ctx.createRadialGradient(
+        c.width * 0.48,
+        c.height * 0.4,
+        40,
+        c.width * 0.5,
+        c.height * 0.5,
+        c.width * 0.76,
+      );
+      wash.addColorStop(0, `${mood.wash}08`);
+      wash.addColorStop(0.68, `${mood.wash}05`);
+      wash.addColorStop(1, "rgba(24,32,34,.18)");
+      ctx.fillStyle = wash;
+      ctx.fillRect(0, 0, c.width, c.height);
+
+      const vignette = ctx.createRadialGradient(
+        c.width / 2,
+        c.height / 2,
+        c.width * 0.28,
+        c.width / 2,
+        c.height / 2,
+        c.width * 0.72,
+      );
+      vignette.addColorStop(0, "rgba(255,255,255,0)");
+      vignette.addColorStop(1, "rgba(32,24,15,.16)");
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, c.width, c.height);
+
+      const drawFramedSprite = (
+        image: HTMLImageElement | undefined,
+        x: number,
+        y: number,
+        size: number,
+        ring: string,
+        fill = "rgba(255,249,232,.94)",
+      ) => {
         ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(Math.PI / 4);
-        ctx.fillStyle = "#fff5c9";
-        ctx.fillRect(-4, -4, 8, 8);
-        ctx.restore();
-      } else if (type === "portal") {
-        drawBadge(x, y, "#e7f5f7", "#257eaa", 10);
+        ctx.shadowColor = "rgba(22,26,32,.38)";
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetY = 3;
         ctx.beginPath();
-        ctx.arc(x, y, 5, 0, Math.PI * 2);
-        ctx.strokeStyle = "#258ed0";
+        ctx.arc(x, y, size * 0.62, 0, Math.PI * 2);
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.shadowColor = "transparent";
+        ctx.strokeStyle = ring;
         ctx.lineWidth = 3;
         ctx.stroke();
-      } else if (type === "guide") {
-        drawBadge(x, y, "#f6efe1", "#263c5b", 10);
-        ctx.beginPath();
-        ctx.arc(x, y - 2, 3.2, 0, Math.PI * 2);
-        ctx.fillStyle = "#263c5b";
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(x, y + 5, 5, Math.PI, 0);
-        ctx.fill();
-      } else if (type === "relic") {
-        drawBadge(x, y, "#f8f3e5", "#33435d", 10);
-        ctx.strokeStyle = "#33435d";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x - 5, y - 3, 10, 7);
-        ctx.beginPath();
-        ctx.moveTo(x - 5, y - 3);
-        ctx.quadraticCurveTo(x, y - 8, x + 5, y - 3);
-        ctx.stroke();
-      } else {
-        drawBadge(x, y, "#fffaf0", "#3a4b5e", 8);
+        if (image) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.drawImage(image, x - size / 2, y - size / 2, size, size);
+        }
+        ctx.restore();
+      };
+
+      const landmarkImage = images.get(MAP_LANDMARK_ART[snap.zone]);
+      for (const pin of snap.pins) {
+        const x = pin.x * c.width;
+        const y = pin.y * c.height;
+        const type = mapPinType(pin);
+        if (type === "landmark") {
+          if (landmarkImage) {
+            const size = Math.max(72, Math.min(102, c.width * 0.14));
+            ctx.save();
+            ctx.shadowColor = "rgba(39,31,20,.35)";
+            ctx.shadowBlur = 14;
+            ctx.shadowOffsetY = 5;
+            ctx.drawImage(landmarkImage, x - size / 2, y - size * 0.78, size, size);
+            ctx.restore();
+            ctx.beginPath();
+            ctx.arc(x, y + 6, 12, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(201,154,50,.95)";
+            ctx.fill();
+            ctx.strokeStyle = "#fff0be";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
+        } else if (type === "portal") {
+          drawFramedSprite(images.get(mapPortal), x, y, 32, "#258ed0", "rgba(231,245,247,.95)");
+        } else if (type === "guide") {
+          drawFramedSprite(images.get(mapGuide), x, y, 30, "#33435d");
+        } else if (type === "relic") {
+          drawFramedSprite(images.get(mapRelic), x, y, 30, "#b8912f");
+        } else {
+          ctx.beginPath();
+          ctx.arc(x, y, 7, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,250,238,.96)";
+          ctx.fill();
+          ctx.strokeStyle = "#40516c";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
       }
-    }
 
-    const px = snap.player.x * c.width;
-    const py = snap.player.y * c.height;
-    ctx.beginPath();
-    ctx.arc(px, py, 17, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(220,77,105,.18)";
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(px, py, 10, 0, Math.PI * 2);
-    ctx.fillStyle = "#d94e69";
-    ctx.fill();
-    ctx.strokeStyle = "#fff5eb";
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    for (let i = 0; i < 5; i++) {
-      const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+      const px = snap.player.x * c.width;
+      const py = snap.player.y * c.height;
       ctx.beginPath();
-      ctx.arc(px + Math.cos(angle) * 4, py + Math.sin(angle) * 4, 2.6, 0, Math.PI * 2);
-      ctx.fillStyle = "#fff1e9";
+      ctx.arc(px, py, 24, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(217,78,105,.2)";
       ctx.fill();
-    }
+      drawFramedSprite(images.get(mapMaria), px, py, 34, "#d94e69", "rgba(255,247,237,.97)");
 
-    ctx.strokeStyle = "rgba(103,75,37,.56)";
-    ctx.lineWidth = 4;
-    ctx.strokeRect(2, 2, c.width - 4, c.height - 4);
-    ctx.strokeStyle = "rgba(255,248,225,.62)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(8, 8, c.width - 16, c.height - 16);
+      ctx.strokeStyle = "rgba(103,75,37,.6)";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(2, 2, c.width - 4, c.height - 4);
+      ctx.strokeStyle = "rgba(255,248,225,.72)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(8, 8, c.width - 16, c.height - 16);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [snap]);
   return (
     <canvas
@@ -301,11 +365,9 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
     const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return;
     let ctx = ctxRef.current;
-    // A context torn down by a previous unmount can never make sound again.
     if (!ctx || ctx.state === "closed") ctx = new AC();
     ctxRef.current = ctx;
     void ctx.resume();
-    // Browsers keep audio suspended until the player interacts with the page.
     const wake = () => void ctx.resume();
     for (const ev of ["pointerdown", "keydown", "touchstart"] as const) {
       window.addEventListener(ev, wake, { passive: true });
@@ -316,26 +378,19 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
       }
     };
 
-    // semitone -> Hz, A4 = 440
     const hz = (n: number) => 440 * Math.pow(2, (n - 9) / 12);
-    // Each act gets its own melody, tempo, register and tone colour so the
-    // five realms never sound like variations of one another.
     type Voice = {
       melody: number[];
       step: number;
       bass: number;
-      /** Overtone character of each note. */
       overtone: OscillatorType;
       overtoneAmp: number;
-      /** Note length and low-pass brightness. */
       dur: number;
       cutoff: number;
-      /** How often a beat is simply held as silence. */
       density: number;
       swing: number;
     };
     const VOICES: Record<string, Voice> = {
-      // Act I — bright, open seaside melody
       sunlit_shores: {
         melody: [0, 4, 7, 12, 14, 12, 7, 9, 5, 9, 12, 16, 14, 12, 7, 4],
         step: 0.95,
@@ -347,7 +402,6 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
         density: 0.9,
         swing: 0.35,
       },
-      // Act II — light waltz, three-beat lilt
       wedding_garden: {
         melody: [7, 11, 14, 9, 12, 16, 7, 11, 14, 12, 9, 5, 4, 7, 11, 9],
         step: 0.62,
@@ -359,7 +413,6 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
         density: 0.95,
         swing: 0.12,
       },
-      // Act III — warm, folky town tune
       the_haven: {
         melody: [5, 7, 9, 12, 9, 7, 5, 2, 0, 2, 5, 9, 7, 5, 4, 2],
         step: 0.8,
@@ -371,7 +424,6 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
         density: 0.92,
         swing: 0.2,
       },
-      // Act IV — slow, airy night sky; sparse high notes
       starry_ascent: {
         melody: [19, 24, 21, 16, 19, 26, 21, 19, 14, 19, 23, 21, 16, 14, 12, 16],
         step: 1.9,
@@ -383,7 +435,6 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
         density: 0.62,
         swing: 0.8,
       },
-      // Act V — solemn organ-like processional
       cathedral: {
         melody: [0, 0, 5, 7, 12, 7, 5, 0, -5, 0, 4, 7, 12, 7, 4, 0],
         step: 1.5,
@@ -396,7 +447,6 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
         swing: 0,
       },
     };
-    // Battle: low, dissonant minor motif with a tritone — menacing, not heroic.
     const BATTLE = [-7, -7, -6, -7, -2, -1, -7, -13, -7, -7, -6, -7, 0, -1, -2, -6];
     const HOME = [0, 4, 7, 4, 5, 2, 0, -5, 0, 4, 9, 7, 5, 4, 2, 0];
     const act = VOICES[zone] ?? VOICES["sunlit_shores"]!;
@@ -412,14 +462,12 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
     master.connect(ctx.destination);
     master.gain.exponentialRampToValueAtTime(mode === "battle" ? 0.0825 : 0.066, ctx.currentTime + 2.5);
 
-    // warm, soft-felt tone: heavy low-pass so nothing sounds pixelated
     const soft = ctx.createBiquadFilter();
     soft.type = "lowpass";
     soft.frequency.value = mode === "battle" ? 1500 : mode === "home" ? 1000 : act.cutoff;
     soft.Q.value = 0.4;
     soft.connect(master);
 
-    /** A felt note: sine body plus the act's own overtone colour. */
     const note = (freq: number, at: number, dur: number, gain: number) => {
       for (const [type, mul, amp] of [
         ["sine", 1, 1],
@@ -438,7 +486,6 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
       }
     };
 
-    // a slow pad underneath, the way ambient game scores hold a room together
     const padOsc = ctx.createOscillator();
     const padGain = ctx.createGain();
     padOsc.type = mode === "explore" && zone === "cathedral" ? "triangle" : "sine";
@@ -448,7 +495,6 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
     padOsc.connect(padGain).connect(soft);
     padOsc.start();
 
-    // Battle drums: a heavy low thud on every beat keeps the dread driving.
     const thud = (at: number) => {
       const o = ctx.createOscillator();
       o.type = "sine";
@@ -470,7 +516,6 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
         if (mode === "battle") thud(next);
         const n = melody[i % melody.length]!;
         const rest = mode === "battle" ? 0 : Math.random();
-        // let phrases breathe: sometimes simply hold the silence
         if (rest < density) {
           note(hz(n), next, noteDur, mode === "battle" ? 0.32 : 0.24);
           if (i % 4 === 0) note(hz(n + 7) / 2, next + 0.12, noteDur + 0.8, 0.09);
@@ -500,8 +545,6 @@ function useActMusic(zone: ZoneId | undefined, muted: boolean, mode: MusicMode =
     };
     return () => stopRef.current?.();
   }, [zone, muted, mode]);
-  // Deliberately never close the context here: React remounts (and StrictMode's
-  // double-invoke) would leave a dead context behind and silence the score.
 
 }
 
@@ -516,8 +559,7 @@ function playSwing(id: string) {
   if (!AC) return;
   const ctx = (swingCtx ??= new AC());
   void ctx.resume();
-  const SWING = 0.0165; // 1/4 of the 0.066 music master
-  // f0 -> f1 sweep, duration, waveform, optional high chime frequency
+  const SWING = 0.0165;
   const VOICES: Record<string, [number, number, number, OscillatorType, number?]> = {
     "spark-wand": [900, 380, 0.14, "triangle", 1800],
     "ember-blade": [520, 160, 0.2, "sawtooth"],
@@ -570,13 +612,11 @@ function buzz(ms = 18) {
 }
 
 type MusicMode = "explore" | "battle" | "home";
-
 type Screen = "title" | "playing";
 type TitleOverlay = null | "story" | "guide";
 
 const HEART = "♥";
 
-/** Maria's dialogue portrait — her expression carries the scene. */
 function MariaPortrait({ caption }: { caption?: string }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-rose-gold/40 bg-white/70 p-2">
@@ -650,10 +690,6 @@ function GlassPanel({
   );
 }
 
-/**
- * Minecraft-style slot grid with press-and-move dragging that works with a
- * finger, a mouse or a trackpad. Tapping a slot still acts instantly.
- */
 function ItemGrid({
   items,
   slots = 20,
@@ -666,7 +702,6 @@ function ItemGrid({
   slots?: number;
   selected?: string | null;
   onPick?: (id: string) => void;
-  /** Shared key so two grids can drag items between each other. */
   dragGroup?: string;
   onDropIn?: (id: string, from: string) => void;
 }) {
@@ -677,7 +712,6 @@ function ItemGrid({
   const filled = Object.entries(items).filter(([, n]) => n > 0);
   const cells = Array.from({ length: Math.max(slots, filled.length) }, (_, i) => filled[i] ?? null);
 
-  // Another grid asks us to accept an item / highlight while hovered.
   useEffect(() => {
     if (!dragGroup) return;
     const onDrop = (e: Event) => {
@@ -794,11 +828,6 @@ function ItemGrid({
   );
 }
 
-/**
- * Cinematic NPC conversation: a large painted portrait beside a typewriter
- * dialogue box, tapped through line by line like a premium RPG.
- */
-/** A long, paged conversation with an act guide — weapon handed over at the end. */
 function GuideTalk({
   name,
   pages,
@@ -970,10 +999,6 @@ const BOSS_ART: Record<string, string> = {
   "boss-hollow": bossHollow,
 };
 
-/**
- * Five-beat boss confrontation: the creature speaks, Maria answers, it answers
- * back. Whichever tone she uses most decides the boon she carries into combat.
- */
 function BossDialogue({
   name,
   role,
@@ -1130,9 +1155,6 @@ function BossDialogue({
   );
 }
 
-
-
-/** Ambient background canvas: drifting gold motes and falling rose petals. */
 function AmbientCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -1189,7 +1211,6 @@ function AmbientCanvas() {
       last = now;
       ctx.clearRect(0, 0, w, h);
 
-      // soft rose-gold vignette gradient
       const g = ctx.createRadialGradient(w / 2, h / 2, h * 0.2, w / 2, h / 2, h * 0.9);
       g.addColorStop(0, "rgba(255, 230, 235, 0.08)");
       g.addColorStop(0.5, "rgba(201, 162, 75, 0.04)");
@@ -1197,7 +1218,6 @@ function AmbientCanvas() {
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
 
-      // gold motes
       for (const m of motes) {
         m.a += 0.02 * dt;
         m.x += Math.cos(m.a) * m.s * dt;
@@ -1214,7 +1234,6 @@ function AmbientCanvas() {
         ctx.fill();
       }
 
-      // rose petals
       for (const p of petals) {
         p.x += p.dx * dt;
         p.y += p.dy * dt;
@@ -1288,7 +1307,6 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
     window.localStorage.setItem("quest-muted", muted ? "1" : "0");
   }, [muted]);
 
-  // lock page scroll while the full-screen game is up
   useEffect(() => {
     if (screen !== "playing") return;
     const prev = document.body.style.overflow;
@@ -1328,7 +1346,6 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
         if (!host || gameRef.current) return;
         const game = createQuestGame(host, save);
         gameRef.current = game;
-
 
         game.events.on(EV.hud, (s: HudState) => setHud(s));
         game.events.on(EV.modal, (m: ModalPayload) => {
@@ -1375,7 +1392,6 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
     };
   }, []);
 
-  // live map polling while the overlay is open
   useEffect(() => {
     if (!showMap) return;
     const read = () => {
@@ -1410,7 +1426,6 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
     setScreen("title");
   }, [destroyGame]);
 
-  // ---------------- touch controls --------------------------------------
   const stickRef = useRef<HTMLDivElement | null>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
   const pointerId = useRef<number | null>(null);
@@ -1450,7 +1465,6 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
     [modal],
   );
 
-  // ---------------- 3D realm --------------------------------------------
   if (realm3d) {
     return (
       <Suspense
@@ -1465,7 +1479,6 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
     );
   }
 
-  // ---------------- title screen ----------------------------------------
   if (screen === "title") {
     return (
       <div className="relative overflow-hidden rounded-2xl border border-rose-gold/30 bg-[image:var(--gradient-cover)] px-6 py-12 text-center">
@@ -1564,12 +1577,10 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
     );
   }
 
-  // ---------------- playing ---------------------------------------------
   return (
     <div className="fixed inset-0 z-[100] h-[100dvh] w-screen overflow-hidden bg-[#0b1e3d]">
       <div ref={hostRef} className="absolute inset-0 h-full w-full touch-none" />
 
-      {/* HUD */}
       {hud ? (
         <div
           className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-2 p-3 text-white"
@@ -1617,7 +1628,6 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
             ) : null}
           </div>
 
-          {/* objective tracker — top centre */}
           <div className="max-w-[28%] rounded-md border border-gold/40 bg-[rgba(11,30,61,0.78)] px-1.5 py-1 text-center backdrop-blur">
             <p className="text-[6px] uppercase tracking-[0.16em] text-gold">
               {hud.act} · {hud.zoneTitle}
@@ -1713,7 +1723,6 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
         </div>
       ) : null}
 
-      {/* boss health bar */}
       {hud?.boss ? (
         <div className="pointer-events-none absolute inset-x-0 top-28 z-20 flex justify-center px-6">
           <div className="w-full max-w-sm rounded-xl border border-[#ff6b7a]/50 bg-[rgba(11,30,61,0.8)] px-4 py-2 backdrop-blur">
@@ -1730,7 +1739,6 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
         </div>
       ) : null}
 
-      {/* weapon belt */}
       {hud && hud.weapons.length > 0 ? (
         <div className="pointer-events-auto absolute bottom-44 right-4 z-20 flex flex-col gap-1.5">
           {hud.weapons.map((id) => {
@@ -1760,7 +1768,6 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
         </div>
       ) : null}
 
-
       {toast ? (
         <div className="pointer-events-none absolute inset-x-0 top-24 z-30 flex justify-center px-6">
           <span className="rounded-xl bg-[rgba(253,250,243,0.95)] px-4 py-2 text-center text-xs font-medium text-navy shadow-lg">
@@ -1769,7 +1776,6 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
         </div>
       ) : null}
 
-      {/* touch controls */}
       <div
         className="absolute inset-x-0 bottom-0 z-20 flex select-none items-end justify-between p-4"
         style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
@@ -1828,7 +1834,6 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
         </div>
       </div>
 
-      {/* modals */}
       {modal?.type === "relic" && relic ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
           <div
@@ -2094,7 +2099,6 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
           }}
         />
       ) : null}
-
 
       {modal?.type === "guide" ? (
         <GlassPanel title="Realm Map" onClose={closeModal} wide>
@@ -2383,23 +2387,23 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
               </div>
               <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-[#c8ad79]/40 bg-[#f7efdc]/80 p-2 text-[10px] font-semibold text-navy/75 sm:grid-cols-5">
                 <span className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-full border-2 border-white bg-[#d94e69] shadow-sm" />
+                  <img src={mapMaria} alt="" className="h-5 w-5 object-contain" />
                   You
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rotate-45 border border-[#6e5423] bg-[#c99a32]" />
+                  <img src={MAP_LANDMARK_ART[mapSnap.zone]} alt="" className="h-5 w-5 object-contain" />
                   Landmark
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-[2px] border-2 border-[#33435d] bg-white" />
+                  <img src={mapRelic} alt="" className="h-5 w-5 object-contain" />
                   Relic
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-full border-2 border-[#263c5b] bg-[#f6efe1]" />
+                  <img src={mapGuide} alt="" className="h-5 w-5 object-contain" />
                   Guide
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-full border-[3px] border-[#258ed0] bg-[#e7f5f7]" />
+                  <img src={mapPortal} alt="" className="h-5 w-5 object-contain" />
                   Portal
                 </span>
               </div>
@@ -2412,8 +2416,9 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
                 </div>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
                   {REALM_LANDMARKS.map((lm) => {
-                    const unlocked = mapSnap.unlocked.includes(lm.zone as ZoneId);
-                    const here = mapSnap.zone === lm.zone;
+                    const zone = lm.zone as ZoneId;
+                    const unlocked = mapSnap.unlocked.includes(zone);
+                    const here = mapSnap.zone === zone;
                     return (
                       <button
                         key={lm.zone}
@@ -2424,7 +2429,7 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
                           emit(EV.travel, lm.zone);
                           setShowMap(false);
                         }}
-                        className={`rounded-xl border p-2.5 text-left transition ${
+                        className={`flex items-center gap-3 rounded-xl border p-2.5 text-left transition ${
                           here
                             ? "border-[#b99855]/70 bg-[#efe1bf]"
                             : unlocked
@@ -2432,15 +2437,22 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
                               : "border-navy/10 bg-white/35 opacity-45"
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-gold">
-                            {lm.direction} · {lm.act}
-                          </p>
-                          <span className="text-[9px] font-semibold text-navy/50">
-                            {here ? "HERE" : unlocked ? "TRAVEL" : "SEALED"}
+                        <img
+                          src={MAP_LANDMARK_ART[zone]}
+                          alt=""
+                          className="h-12 w-12 shrink-0 rounded-lg border border-[#c7a76b]/35 bg-[#efe2bd] object-cover"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center justify-between gap-2">
+                            <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-gold">
+                              {lm.direction} · {lm.act}
+                            </span>
+                            <span className="text-[9px] font-semibold text-navy/50">
+                              {here ? "HERE" : unlocked ? "TRAVEL" : "SEALED"}
+                            </span>
                           </span>
-                        </div>
-                        <p className="mt-0.5 text-xs font-semibold text-navy">{lm.name}</p>
+                          <span className="mt-0.5 block text-xs font-semibold text-navy">{lm.name}</span>
+                        </span>
                       </button>
                     );
                   })}
@@ -2501,7 +2513,6 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
         </GlassPanel>
       ) : null}
 
-      {/* ceremony */}
       {ceremony ? (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-[rgba(6,10,24,0.88)] p-4">
           <div className="w-full max-w-lg max-h-full overflow-y-auto rounded-2xl border border-gold/60 bg-[#fdfaf3] p-6 text-center">
@@ -2581,7 +2592,6 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
             ) : null}
 
             {ceremony.phase === "finale" ? (
-
               <>
                 <h3 className="font-display text-2xl font-extrabold text-navy">
                   Realm of the Golden Ring
