@@ -47,6 +47,7 @@ if (typeof window !== "undefined") {
       import("./wrenIntro"),
       import("./lastCrossingDialogueRebind"),
       import("./weaponVisualSync"),
+      import("./globalCharacterDialogue"),
     ])
       .then(([
         sceneModule,
@@ -85,6 +86,7 @@ if (typeof window !== "undefined") {
         wrenIntro,
         lastCrossingDialogueRebind,
         weaponVisualSync,
+        globalCharacterDialogue,
       ]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
         const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
@@ -126,6 +128,9 @@ if (typeof window !== "undefined") {
         // Install after every gameplay decorator so equipped-weapon visuals are
         // authoritative, including runtime-added weapons like the Crossing Blade.
         weaponVisualSync.installWeaponVisualSync(QuestScene);
+        // Character-bearing generic modals are routed last so guides, guests,
+        // Andrew and Max all receive the same premium Maria-response treatment.
+        globalCharacterDialogue.installGlobalCharacterDialogue(QuestScene);
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
   });
