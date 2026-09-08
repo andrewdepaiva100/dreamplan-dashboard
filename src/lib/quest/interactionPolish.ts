@@ -21,21 +21,24 @@ export function installInteractionPolish(QuestScene: any) {
     const kind = String(it?.kind ?? "").toLowerCase();
     const lower = raw.toLowerCase();
 
+    // Authored labels that already contain an action are complete prompts.
+    // Keep exactly one verb instead of producing combinations such as
+    // "Interact with Look at...", "Read Look into...", or "Open Examine...".
+    if (/^(?:look\s+(?:at|into|in|through)\b|examine\b|inspect\b|read\b|open\b|talk\s+to\b|rest\b|enter\b|use\b|take\b|pick\b|collect\b|touch\b|activate\b|light\b|sit\b|sleep\b|cook\b|store\b|leave\b|return\b)/i.test(raw)) {
+      return raw;
+    }
+
     if (/evelyn|bram|wren|keeper|guide|guest|pastor|andrew/.test(`${kind} ${lower}`)) {
-      // Normalize any pre-existing or accidentally duplicated verb prefixes.
       const subject = raw.replace(/^(?:talk\s+to\s+)+/i, "").trim();
       return `Talk to ${subject || "them"}`;
     }
-    if (/rest|bed|hearth|camp|stone/.test(`${kind} ${lower}`)) {
-      return lower.startsWith("rest") ? raw : `Rest at ${raw}`;
-    }
+    if (/rest|bed|hearth|camp|stone/.test(`${kind} ${lower}`)) return `Rest at ${raw}`;
     if (/key/.test(`${kind} ${lower}`)) return `Open ${raw}`;
     if (/chest|box|crate/.test(`${kind} ${lower}`)) return `Open ${raw}`;
     if (/sign|journal|book|letter|note/.test(`${kind} ${lower}`)) return `Read ${raw}`;
     if (/portal|gateway|gate|door|entrance/.test(`${kind} ${lower}`)) return `Enter ${raw}`;
     if (/forge|anvil/.test(`${kind} ${lower}`)) return `Use ${raw}`;
     if (/relic|pickup|heart|envelope/.test(`${kind} ${lower}`)) return `Take ${raw}`;
-    if (/talk|open|read|rest|enter|use|take/.test(lower)) return raw;
     return `Interact with ${raw}`;
   };
 
