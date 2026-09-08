@@ -5,14 +5,14 @@ import evelynPortrait from "../../assets/quest/portrait-evelyn.svg";
 const ZONE = "wedding_garden";
 const KEEPER_KIND = "garden-keeper";
 const LETTER_KIND = "garden-keeper-letter";
-const KEEPER_X = 70;
+const KEEPER_X = 96;
 const KEEPER_Y = 56;
-const GUIDE_X = 62;
+const GUIDE_X = 86;
 const GUIDE_Y = 34;
-const SMITH_X = 70;
+const SMITH_X = 104;
 const SMITH_Y = 38;
-const GUEST_X = 76;
-const GUEST_Y = 76;
+const GUEST_X = 108;
+const GUEST_Y = 78;
 
 const KEEPER_LINES = [
   "Welcome to the Wedding Garden, Maria. Long before the Conservatory was sealed, this realm was kept in balance by four Seasonal Keys — Spring to begin, Summer to flourish, Autumn to release, and Winter to rest. Something broke that rhythm. The seasons pulled apart, the garden's creatures turned restless, and the Grand Conservatory locked itself behind their silence. Your path through Act II is to explore the four corners of the garden, recover each Seasonal Key, and bring their cycle back into harmony. Every key you restore will change this place. When all four seasons are breathing together again, return to me before you enter the Conservatory.",
@@ -266,17 +266,17 @@ export function installAct2GardenKeeper(QuestScene:any){
 
   const originalHouseSpot=proto.houseSpot;
   proto.houseSpot=function(){
-    if(this.save?.current_zone===ZONE)return [this.wx(54),this.wy(72)];
-    return originalHouseSpot.call(this);
-  };
-
-  // The Act II house stays on the left plaza and gets no baked ground shadow.
-  const originalAddHouse=proto.addHouse;
-  proto.addHouse=function(){
-    if(this.save?.current_zone!==ZONE)return originalAddHouse.call(this);
-    const originalBakeShadow=this.bakeShadow;
-    this.bakeShadow=()=>{};
-    try{return originalAddHouse.call(this);}finally{this.bakeShadow=originalBakeShadow;}
+    const spot=originalHouseSpot.call(this);
+    if(this.save?.current_zone!==ZONE||!spot)return spot;
+    const [x,y]=spot;
+    const ex=this.wx(KEEPER_X), ey=this.wy(KEEPER_Y);
+    let dx=x-ex, dy=y-ey;
+    let len=Math.hypot(dx,dy);
+    if(len<1){dx=-1;dy=.35;len=Math.hypot(dx,dy);}
+    const push=190;
+    const maxX=Math.max(120,(this.mapW??56)*32-120);
+    const maxY=Math.max(120,(this.mapH??56)*32-120);
+    return [Math.max(120,Math.min(maxX,x+(dx/len)*push)),Math.max(120,Math.min(maxY,y+(dy/len)*push))];
   };
 
   const originalBuildAct2=proto.buildAct2;proto.buildAct2=function(){const result=originalBuildAct2.call(this);removeActTwoDog(this);addKeeperStation(this);return result;};
