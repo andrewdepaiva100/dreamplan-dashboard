@@ -9,7 +9,10 @@ type Week = {
   total: number;
 };
 
-/** Weekly contributions from the shared Marriage & Honeymoon savings tracker. */
+/** Andrew's starting contribution put down before week 1 (Mar 1, 2026). */
+const ANDREW_START = 6300;
+
+/** Weekly wedding contributions from the shared tracker notes. */
 const WEEKS: Week[] = [
   { week: 1, ending: "Mar 7", andrew: 675, maria: 434.5, family: 0, total: 7400 },
   { week: 2, ending: "Mar 14", andrew: 600, maria: 374.11, family: 100, total: 8374 },
@@ -32,13 +35,31 @@ const WEEKS: Week[] = [
   { week: 19, ending: "Jul 11", andrew: 300, maria: 85, family: 440, total: 31440 },
 ];
 
-const GOAL = 29000;
+/** Starting balances from the honeymoon and apartment tracker notes. */
+const HONEYMOON_START = 4648;
+const APARTMENT_START = 2800;
+
+function StatCard({ label, value, color, note }: { label: string; value: number; color: string; note?: string }) {
+  return (
+    <div className="rounded-xl border border-mist bg-white/70 px-4 py-3">
+      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
+        <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />
+        {label}
+      </div>
+      <div className="mt-1 font-display text-lg font-bold tabular-nums text-navy">
+        {currency(value)}
+      </div>
+      {note ? <div className="text-[11px] text-ink-soft">{note}</div> : null}
+    </div>
+  );
+}
 
 export function SavingsTracker() {
-  const andrewTotal = WEEKS.reduce((a, w) => a + w.andrew, 0);
+  const andrewWeekly = WEEKS.reduce((a, w) => a + w.andrew, 0);
+  const andrewTotal = andrewWeekly + ANDREW_START;
   const mariaTotal = WEEKS.reduce((a, w) => a + w.maria, 0);
   const familyTotal = WEEKS.reduce((a, w) => a + w.family, 0);
-  const finalTotal = WEEKS[WEEKS.length - 1]!.total;
+  const weddingTotal = WEEKS[WEEKS.length - 1]!.total;
 
   const W = 780;
   const H = 300;
@@ -53,33 +74,42 @@ export function SavingsTracker() {
   const slot = innerW / WEEKS.length;
   const barW = Math.min(13, slot / 2.6);
 
-  const maxTotal = Math.max(finalTotal, GOAL);
+  const maxTotal = weddingTotal;
   const linePts = WEEKS.map((w, i) => {
     const x = padL + slot * i + slot / 2;
     const y = padT + innerH - (w.total / maxTotal) * innerH;
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(" ");
-  const goalY = padT + innerH - (GOAL / maxTotal) * innerH;
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: "Andrew saved", value: andrewTotal, color: "var(--navy)" },
-          { label: "Maria saved", value: mariaTotal, color: "var(--royal)" },
-          { label: "Family support", value: familyTotal, color: "var(--gold)" },
-          { label: "Running total", value: finalTotal, color: "var(--teal)" },
-        ].map((c) => (
-          <div key={c.label} className="rounded-xl border border-mist bg-white/70 px-4 py-3">
-            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.color }} />
-              {c.label}
-            </div>
-            <div className="mt-1 font-display text-lg font-bold tabular-nums text-navy">
-              {currency(c.value)}
-            </div>
-          </div>
-        ))}
+      {/* Wedding */}
+      <div className="space-y-3">
+        <h3 className="font-display text-base font-bold text-navy">💍 Wedding savings</h3>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard label="Andrew saved" value={andrewTotal} color="var(--navy)" note={`incl. ${currency(ANDREW_START)} put down at the start`} />
+          <StatCard label="Maria saved" value={mariaTotal} color="var(--royal)" />
+          <StatCard label="Family support" value={familyTotal} color="var(--gold)" />
+          <StatCard label="Running total" value={weddingTotal} color="var(--teal)" />
+        </div>
+      </div>
+
+      {/* Honeymoon & Apartment */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-mist bg-white/70 p-4">
+          <h4 className="font-display text-sm font-bold text-navy">🌴 Honeymoon</h4>
+          <p className="mt-1 font-display text-lg font-bold tabular-nums text-navy">
+            {currency(HONEYMOON_START)}
+          </p>
+          <p className="text-[11px] text-ink-soft">started with {currency(HONEYMOON_START)} · weekly joint contributions tracked in notes</p>
+        </div>
+        <div className="rounded-xl border border-mist bg-white/70 p-4">
+          <h4 className="font-display text-sm font-bold text-navy">🏠 Apartment move-in</h4>
+          <p className="mt-1 font-display text-lg font-bold tabular-nums text-navy">
+            {currency(APARTMENT_START)}
+          </p>
+          <p className="text-[11px] text-ink-soft">started with {currency(APARTMENT_START)} · weekly contributions tracked in notes</p>
+        </div>
       </div>
 
       <div className="rounded-xl border border-mist bg-white/70 p-4">
@@ -88,7 +118,7 @@ export function SavingsTracker() {
             Weekly contributions — Andrew vs. Maria
           </h3>
           <p className="text-xs text-ink-soft">
-            Goal {currency(GOAL)} · reached in week 17, finished at {currency(finalTotal)}
+            Week 1 (Mar 7) through week 19 (Jul 11) · total {currency(weddingTotal)}
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -142,15 +172,6 @@ export function SavingsTracker() {
               );
             })}
 
-            <line
-              x1={padL}
-              x2={W - padR}
-              y1={goalY}
-              y2={goalY}
-              stroke="var(--gold)"
-              strokeWidth="1.5"
-              strokeDasharray="6 5"
-            />
             <polyline points={linePts} fill="none" stroke="var(--teal)" strokeWidth="2.5" />
           </svg>
         </div>
@@ -159,7 +180,6 @@ export function SavingsTracker() {
             { label: "Andrew (weekly)", color: "var(--navy)" },
             { label: "Maria (weekly)", color: "var(--royal)" },
             { label: "Running total", color: "var(--teal)" },
-            { label: "$29,000 goal", color: "var(--gold)" },
           ].map((l) => (
             <li key={l.label} className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: l.color }} />
@@ -181,6 +201,16 @@ export function SavingsTracker() {
             </tr>
           </thead>
           <tbody>
+            <tr className="bg-gold/10">
+              <td className="px-3 py-1.5 text-ink-soft">—</td>
+              <td className="px-3 py-1.5 text-ink-soft">Mar 1</td>
+              <td className="px-3 py-1.5 tabular-nums">{currency(ANDREW_START)}</td>
+              <td className="px-3 py-1.5 tabular-nums">—</td>
+              <td className="px-3 py-1.5 tabular-nums text-ink-soft">—</td>
+              <td className="px-3 py-1.5 font-semibold tabular-nums text-navy">
+                {currency(ANDREW_START)} <span className="text-[11px] font-normal text-ink-soft">(starting amount Andrew put down)</span>
+              </td>
+            </tr>
             {WEEKS.map((w) => (
               <tr key={w.week} className="border-t border-mist/70">
                 <td className="px-3 py-1.5 text-ink-soft">{w.week}</td>
