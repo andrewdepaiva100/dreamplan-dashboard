@@ -96,6 +96,81 @@ export function installInteractionPolish(QuestScene: any) {
     this.openModal({ type: "info", title: l.title, body: l.body });
   };
 
+  // Reserve the whole enclosed Conservatory for the Stress Spectre encounter.
+  // Ambient props and accidental non-boss interactables are removed from the
+  // interior after all Act II decorators have finished building the scene.
+  const clearAct2Conservatory = (scene: any) => {
+    if (scene.save?.current_zone !== "wedding_garden" || scene.__act2BossRoomCleared) return;
+    scene.__act2BossRoomCleared = true;
+
+    const x1 = scene.wx(89);
+    const x2 = scene.wx(131);
+    const y1 = scene.wy(29);
+    const y2 = scene.wy(73);
+    const inside = (obj: any) => !!obj && obj.x > x1 && obj.x < x2 && obj.y > y1 && obj.y < y2;
+    const keep = new Set<any>([
+      scene.player,
+      scene.aura,
+      scene.promptText,
+      scene.landmark?.sprite,
+      scene.boss,
+      scene.bossHalo,
+    ]);
+    const door = Array.isArray(scene.interactables)
+      ? scene.interactables.find((it: any) => it?.kind === "conservatory")
+      : null;
+    if (door?.obj) keep.add(door.obj);
+
+    // No invisible static collisions may remain inside the boss room either.
+    const solids = scene.solidDecor?.getChildren?.() ?? [];
+    for (const obj of [...solids]) {
+      const key = obj?.texture?.key;
+      if (!inside(obj) || key === "landmark-conservatory") continue;
+      obj.destroy?.();
+    }
+
+    const decorativeKeys = new Set([
+      "flowers",
+      "tree",
+      "lamp",
+      "bench",
+      "house",
+      "cottage",
+      "blacksmith",
+      "smith",
+      "guest",
+      "act-guide",
+      "guide",
+      "keeper-nook",
+      "evelyn-keeper",
+      "dog",
+      "heart-pickup",
+      "golden-heart",
+    ]);
+    for (const obj of [...(scene.children?.list ?? [])]) {
+      if (!inside(obj) || keep.has(obj)) continue;
+      const key = obj?.texture?.key;
+      if (decorativeKeys.has(key)) obj.destroy?.();
+    }
+
+    // Gameplay interactables that somehow land inside are shifted to the left
+    // plaza instead of deleted. Seasonal keys outside the walls are untouched.
+    const fallbackSpots: Record<string, [number, number]> = {
+      "garden-keeper": [70, 56],
+      "garden-keeper-letter": [76, 60],
+      "act-guide": [62, 34],
+      smith: [70, 38],
+      guest: [76, 76],
+      house: [54, 72],
+      rest: [62, 60],
+    };
+    for (const it of scene.interactables ?? []) {
+      if (!it?.obj || it.kind === "conservatory" || !inside(it.obj)) continue;
+      const spot = fallbackSpots[it.kind] ?? [72, 64];
+      it.obj.setPosition?.(scene.wx(spot[0]), scene.wy(spot[1]));
+    }
+  };
+
   const approach = (current: number, target: number, delta: number, speed: number) =>
     Phaser.Math.Linear(current, target, 1 - Math.exp(-Math.max(0, delta) / speed));
 
@@ -168,6 +243,7 @@ export function installInteractionPolish(QuestScene: any) {
 
   proto.update = function interactionPolishUpdate(time: number, delta: number) {
     const result = originalUpdate.call(this, time, delta);
+    clearAct2Conservatory(this);
     const list = Array.isArray(this.interactables) ? this.interactables : [];
     const near = typeof this.nearest === "function" ? this.nearest() : null;
 
