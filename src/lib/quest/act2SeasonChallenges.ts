@@ -18,7 +18,7 @@ function ensureState(scene: any) {
   if (!existing || typeof existing !== "object") {
     scene.zoneState["seasonMiniGames"] = {
       Spring: { progress: 0, done: false }, Summer: { defeated: 0, done: false },
-      Autumn: { progress: 0, done: false }, Winter: { lamps: [false, true, false], done: false },
+      Autumn: { progress: 0, done: false }, Winter: { lamps: [false, true,false], done: false },
     };
   }
   return scene.zoneState["seasonMiniGames"];
@@ -100,13 +100,27 @@ function springInteract(scene:any,it:any) { const st=seasonState(scene,"Spring")
 function setupSummer(scene:any) {
   if(scene.save?.current_zone!==ZONE||scene.__summerTrialInitialized)return true; const st=seasonState(scene,"Summer"); if(st.done){scene.__summerTrialInitialized=true;return true;} if(!scene.enemies?.get||!scene.spawnEnemy)return false;
   scene.__summerGuardians=[]; const spots=[[89,22],[97,27],[105,22]];
-  try { spots.forEach(([tx,ty],i)=>{ const key=scene.textures?.exists?.("enemy-bramble-guardian")?"enemy-bramble-guardian":scene.textures?.exists?.("enemy-rose-crawler")?"enemy-rose-crawler":"enemy-rush"; const speeds=[48,51,54]; const speed=speeds[i]??51; const e=scene.spawnEnemy(scene.wx(tx),scene.wy(ty),key,0,true); if(!e)return; e.setData?.("seasonMiniGame","Summer");e.setData?.("summerGuardian",true);e.setData?.("summerAwake",false);e.setData?.("summerSpeed",speed);e.setData?.("hp",SUMMER_GUARDIAN_HP);e.setData?.("maxhp",SUMMER_GUARDIAN_HP);e.setVelocity?.(0,0);e.setTint?.(0xffcf62);scene.__summerGuardians.push(e); }); }
+  try { spots.forEach(([tx,ty],i)=>{ const key=scene.textures?.exists?.("enemy-bramble-guardian")?"enemy-bramble-guardian":scene.textures?.exists?.("enemy-rose-crawler")?"enemy-rose-crawler":"enemy-rush"; const speeds=[48,51,54]; const speed=speeds[i]??51; const e=scene.spawnEnemy(scene.wx(tx),scene.wy(ty),key,0,true); if(!e)return; e.setData?.("seasonMiniGame","Summer");e.setData?.("summerGuardian",true);e.setData?.("summerAwake",false);e.setData?.("summerDangerous",false);e.setData?.("summerSpeed",speed);e.setData?.("hp",SUMMER_GUARDIAN_HP);e.setData?.("maxhp",SUMMER_GUARDIAN_HP);e.setVelocity?.(0,0);e.setTint?.(0xffcf62);scene.__summerGuardians.push(e); }); }
   catch(error){console.error("[quest] Summer trial guardians could not spawn",error);scene.__summerGuardians=[];return false;}
   if(scene.__summerGuardians.length!==3){for(const e of scene.__summerGuardians)e?.disableBody?.(true,true);scene.__summerGuardians=[];return false;} scene.__summerTrialInitialized=true; return true;
 }
 function wakeSummerGuardians(scene:any) {
   if(scene.__summerGuardiansAwake)return; scene.__summerGuardiansAwake=true;
-  for(const e of scene.__summerGuardians??[]){if(!e?.active)continue;e.setData?.("summerAwake",true);e.setData?.("speed",Number(e.getData?.("summerSpeed")??51));}
+  for(const e of scene.__summerGuardians??[]){
+    if(!e?.active)continue;
+    e.setActive?.(true).setVisible?.(true);
+    if(e.body)e.body.enable=true;
+    e.setData?.("summerAwake",true);
+    e.setData?.("summerDangerous",true);
+    e.setData?.("speed",Number(e.getData?.("summerSpeed")??51));
+  }
+}
+function updateSummerGuardianContact(scene:any){
+  if(scene.save?.current_zone!==ZONE||!scene.player?.active||scene.frozen)return;
+  for(const e of scene.__summerGuardians??[]){
+    if(!e?.active||e.getData?.("summerAwake")!==true||e.getData?.("summerDangerous")!==true||!e.body?.enable)continue;
+    if(scene.physics?.overlap?.(scene.player,e))scene.hurtPlayer?.(e);
+  }
 }
 function onSummerGuardianDefeated(scene:any,enemy:any){if(enemy?.getData?.("summerCounted"))return;enemy?.setData?.("summerCounted",true);const st=seasonState(scene,"Summer");st.defeated=Math.min(3,Number(st.defeated??0)+1);if(st.defeated>=3)finishTrial(scene,"Summer");else{scene.objective=`Summer — clear the bramble guardians (${st.defeated}/3).`;scene.emitToast?.(`Summer guardians cleared ${st.defeated}/3.`);scene.pushHud?.(true);}}
 function hitSummerGuardian(scene:any,enemy:any){if(!enemy?.getData?.("summerAwake")){enemy.setVelocity?.(0,0);return false;}if(!scene.__summerSwordStrike)return false;const damage=Math.max(1,Number(scene.equippedWeapon?.()?.damage??1));const hp=Math.max(0,Number(enemy.getData?.("hp")??SUMMER_GUARDIAN_HP)-damage);enemy.setData?.("hp",hp);scene.floatText?.(enemy.x,enemy.y,`-${damage}`,"#ffe9a8");enemy.setTint?.(0xffe39a);scene.time?.delayedCall?.(90,()=>enemy?.active&&enemy.setTint?.(0xffcf62));return hp<=0;}
@@ -177,5 +191,5 @@ export function installAct2SeasonChallenges(QuestScene:any){const proto=QuestSce
   const originalAttack=proto.attack;proto.attack=function(...args:any[]){this.__summerSwordStrike=true;try{return originalAttack.apply(this,args);}finally{this.__summerSwordStrike=false;}};
   const originalTransformEnemy=proto.transformEnemy;proto.transformEnemy=function(enemy:any,...args:any[]){const summer=this.save?.current_zone===ZONE&&enemy?.active&&enemy?.getData?.("seasonMiniGame")==="Summer";if(summer){if(!hitSummerGuardian(this,enemy))return;const result=originalTransformEnemy.call(this,enemy,...args);onSummerGuardianDefeated(this,enemy);return result;}return originalTransformEnemy.call(this,enemy,...args);};
   const originalInteract=proto.interact;proto.interact=function(...args:any[]){if(this.save?.current_zone!==ZONE)return originalInteract.apply(this,args);const nearest=this.nearest?.();if(nearest?.kind==="season-mini-game"){const season=nearest.data?.season;if(season==="Spring")springInteract(this,nearest);else if(season==="Autumn")autumnInteract(this,nearest);else if(season==="Winter")winterInteract(this,nearest);return;}if(nearest?.kind==="season-key"&&SEASONS.includes(nearest.id)&&!challengeDone(this,nearest.id)){this.objective=`Complete the ${nearest.id} seasonal trial before opening its Key.`;this.emitToast?.(`${nearest.id}'s Key is sleeping. Finish this corner's trial first.`);this.pushHud?.(true);return;}const before=Number(this.zoneState?.["keysFound"]??0),id=nearest?.kind==="season-key"?nearest.id:null,result=originalInteract.apply(this,args),after=Number(this.zoneState?.["keysFound"]??0);if(id&&after>before)applyRestoration(this,id);return result;};
-  const originalUpdate=proto.update;proto.update=function(time:number,delta:number){const result=originalUpdate.call(this,time,delta);if(this.save?.current_zone===ZONE&&!this.__summerTrialInitialized)setupSummer(this);for(const e of this.__summerGuardians??[])if(e?.active&&!e.getData?.("summerAwake"))e.setVelocity?.(0,0);maybeShowProximityIntro(this);return result;};
+  const originalUpdate=proto.update;proto.update=function(time:number,delta:number){const result=originalUpdate.call(this,time,delta);if(this.save?.current_zone===ZONE&&!this.__summerTrialInitialized)setupSummer(this);for(const e of this.__summerGuardians??[])if(e?.active&&!e.getData?.("summerAwake"))e.setVelocity?.(0,0);updateSummerGuardianContact(this);maybeShowProximityIntro(this);return result;};
 }
