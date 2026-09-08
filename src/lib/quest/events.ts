@@ -10,7 +10,7 @@ import "./titleScreenCinematic.css";
 if (typeof window !== "undefined") {
   queueMicrotask(() => {
     void Promise.all([
-      import("./scene"), import("./house"), import("./upgrades"), import("./visualRemaster"), import("./homeRemaster"),
+      import("./scene"), import("./house"), import("./upgrades"), import("./visualRemaster"), import("./homeRemaster"), import("./homeScalePolish"),
       import("./act1WorldRemaster"), import("./lastCrossing"), import("./silasPolish"), import("./silasPlacementFix"),
       import("./lastCrossingLifecycle"), import("./act1GameplayPolish"), import("./fallenCrossingShrine"), import("./fallenCrossingJournalBook"),
       import("./wardenCombat"), import("./act1WoodenBridges"), import("./wardenTidalRings"), import("./act1ExplorationArt"),
@@ -20,7 +20,7 @@ if (typeof window !== "undefined") {
       import("./global2_5dPolish"), import("./desktopActSelector"), import("./desktopControlsPolish"), import("./interactionPolish"),
       import("./wrenIntro"), import("./lastCrossingDialogueRebind"), import("./weaponVisualSync"), import("./introUiPolish"),
     ]).then(([
-      sceneModule, houseModule, upgrades, visualRemaster, homeRemaster, act1WorldRemaster, lastCrossing, silasPolish,
+      sceneModule, houseModule, upgrades, visualRemaster, homeRemaster, homeScalePolish, act1WorldRemaster, lastCrossing, silasPolish,
       silasPlacementFix, lastCrossingLifecycle, act1GameplayPolish, fallenCrossingShrine, fallenCrossingJournalBook,
       wardenCombat, act1WoodenBridges, wardenTidalRings, act1ExplorationArt, lastCrossingDefense, majesticPortal,
       relicPresentation, act2Enemies, act2GardenKeeper, act2EvelynSprite, act2VisualTuning, act2GuideCleanup,
@@ -33,6 +33,7 @@ if (typeof window !== "undefined") {
       upgrades.installQuestUpgrades(QuestScene);
       visualRemaster.installVisualRemaster(QuestScene);
       homeRemaster.installHomeRemaster(QuestScene, QuestHouseScene);
+      homeScalePolish.installHomeScalePolish(QuestHouseScene);
       act1WorldRemaster.installAct1WorldRemaster(QuestScene);
       lastCrossing.installLastCrossing(QuestScene);
       silasPolish.installSilasPolish(QuestScene);
