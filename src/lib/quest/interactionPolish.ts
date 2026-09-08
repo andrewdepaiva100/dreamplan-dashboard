@@ -1,6 +1,5 @@
 // @ts-nocheck -- Runtime scene decorator for low-risk interaction polish.
 import "./objectivePolish.css";
-import { installLastCrossingDialoguePolish } from "./lastCrossingDialoguePolish";
 
 /**
  * Gives the nearest usable interactable a gentle proximity pulse, upgrades the
@@ -12,11 +11,6 @@ export function installInteractionPolish(QuestScene: any) {
   const proto = QuestScene?.prototype;
   if (!proto || proto.__interactionPolishInstalled) return;
   proto.__interactionPolishInstalled = true;
-
-  // The Last Crossing uses the same interaction entry point, but its premium
-  // conversations are isolated in their own decorator so combat/progression
-  // logic stays in lastCrossing.ts.
-  installLastCrossingDialoguePolish(QuestScene);
 
   const baseAlpha = new WeakMap<object, number>();
   const nameplates = new WeakMap<object, any>();
