@@ -111,9 +111,7 @@ if (typeof window !== "undefined") {
         act2BramForgemaster.installAct2BramForgemaster(QuestScene);
         act2BramWeaponOwnership.installAct2BramWeaponOwnership(QuestScene);
         act2SeasonChallenges.installAct2SeasonChallenges(QuestScene);
-        global25DPolish.installGlobal2_5dPolish?.(QuestScene);
-        if (!global25DPolish.installGlobal2_5dPolish) global25DPolish.installGlobal2_5dPolish = global25DPolish.installGlobal25DPolish;
-        global25DPolish.installGlobal25DPolish?.(QuestScene);
+        global25DPolish.installGlobal25DPolish(QuestScene);
         desktopActSelector.installDesktopActSelector(QuestScene);
         desktopControlsPolish.installDesktopControlsPolish();
         interactionPolish.installInteractionPolish(QuestScene);
