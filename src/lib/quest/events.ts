@@ -45,6 +45,7 @@ if (typeof window !== "undefined") {
       import("./desktopControlsPolish"),
       import("./interactionPolish"),
       import("./wrenIntro"),
+      import("./lastCrossingDialogueRebind"),
     ])
       .then(([
         sceneModule,
@@ -81,6 +82,7 @@ if (typeof window !== "undefined") {
         desktopControlsPolish,
         interactionPolish,
         wrenIntro,
+        lastCrossingDialogueRebind,
       ]) => {
         const QuestScene = sceneModule.QuestScene as unknown as any;
         const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
@@ -116,6 +118,9 @@ if (typeof window !== "undefined") {
         desktopControlsPolish.installDesktopControlsPolish();
         interactionPolish.installInteractionPolish(QuestScene);
         wrenIntro.installWrenIntro(QuestScene);
+        // This must be the final interact wrapper so the Last Crossing's premium
+        // conversations cannot be shadowed by older scene decorators.
+        lastCrossingDialogueRebind.rebindLastCrossingDialoguePolish(QuestScene);
       })
       .catch((error) => console.error("[quest] premium upgrade install failed", error));
   });
