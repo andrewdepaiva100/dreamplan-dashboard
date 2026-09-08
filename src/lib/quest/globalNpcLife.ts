@@ -54,10 +54,15 @@ function isNpc(it: any) {
   return NPC_KINDS.has(kind) || /\b(?:guest|guide|evelyn|bram|wren|silas|pastor|keeper|smith)\b/i.test(`${kind} ${it.label ?? ""}`);
 }
 
+function speechY(obj: any) {
+  const nameplateY = obj.y - Math.max(24, (obj.displayHeight ?? 32) * 0.62);
+  return nameplateY - 18;
+}
+
 function bubble(scene: SceneLike, obj: any, line: string, duration = 2500) {
   if (!obj?.active || obj.getData?.("npc-life-bubble")) return;
   obj.setData?.("npc-life-bubble", true);
-  const text = scene.add.text(obj.x, obj.y - Math.max(34, (obj.displayHeight ?? 30) * 0.72), line, {
+  const text = scene.add.text(obj.x, speechY(obj), line, {
     fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     fontSize: "8px",
     fontStyle: "600",
@@ -72,7 +77,7 @@ function bubble(scene: SceneLike, obj: any, line: string, duration = 2500) {
   scene.tweens.add({ targets: text, alpha: 0.96, y: text.y - 2, duration: 160, ease: "Sine.easeOut" });
   const follow = () => {
     if (!text.active || !obj?.active) return;
-    text.setPosition(obj.x, obj.y - Math.max(34, (obj.displayHeight ?? 30) * 0.72) - 2);
+    text.setPosition(obj.x, speechY(obj) - 2);
   };
   scene.events.on("update", follow);
   scene.time.delayedCall(duration, () => {
