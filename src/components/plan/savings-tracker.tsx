@@ -42,7 +42,7 @@ const SOURCE: Contribution[] = [
   ["2026-09-09","andrew",400],
 ].map((x, i) => ({ id: `source-${i}`, date: x[0] as string, owner: x[1] as Owner, amount: x[2] as number }));
 
-function parseDate(s: string) { const [y,m,d]=s.split("-").map(Number); return new Date(Date.UTC(y,m-1,d)); }
+function parseDate(s: string) { const [y,m,d]=s.split("-").map(Number); return new Date(Date.UTC(y!,m!-1,d!)); }
 function iso(d: Date) { return d.toISOString().slice(0,10); }
 function addDays(s: string, n: number) { const d=parseDate(s); d.setUTCDate(d.getUTCDate()+n); return iso(d); }
 function fmt(s: string) { return parseDate(s).toLocaleDateString("en-US",{month:"short",day:"numeric",timeZone:"UTC"}); }
