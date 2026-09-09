@@ -442,6 +442,9 @@ function Index() {
                           className="w-24 text-center text-[13.5px]"
                         />
                         )
+                        <span className="ml-2 inline-flex rounded-full bg-teal/10 px-2 py-0.5 text-[10.5px] font-semibold text-teal">
+                          Saving for: Adding
+                        </span>
                       </span>
                     </span>
                   </Td>
@@ -469,6 +472,9 @@ function Index() {
                           className="w-24 text-center text-[13.5px]"
                         />
                         )
+                        <span className="ml-2 inline-flex rounded-full bg-royal/10 px-2 py-0.5 text-[10.5px] font-semibold text-royal">
+                          Saving for: Honeymoon
+                        </span>
                       </span>
                     </span>
                   </Td>
@@ -496,6 +502,9 @@ function Index() {
                           className="w-24 text-center text-[13.5px]"
                         />
                         )
+                        <span className="ml-2 inline-flex rounded-full bg-sky/20 px-2 py-0.5 text-[10.5px] font-semibold text-deep-blue">
+                          Saving for: Furniture
+                        </span>
                       </span>
                     </span>
                   </Td>
@@ -523,6 +532,9 @@ function Index() {
                           className="w-24 text-center text-[13.5px]"
                         />
                         )
+                        <span className="ml-2 inline-flex rounded-full bg-gold/15 px-2 py-0.5 text-[10.5px] font-semibold text-gold">
+                          Saving for: Apartment
+                        </span>
                       </span>
                     </span>
                   </Td>
