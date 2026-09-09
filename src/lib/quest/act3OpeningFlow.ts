@@ -5,8 +5,11 @@ const ZONE = "the_haven";
 const PENDING = "act3ClamourPending";
 const AWAKENED = "act3ClamourAwakened";
 
+// The dialogue presentation recognizes this marker and expands it into the
+// longer Andrew/Maria conversation. Mechanics still come from the original
+// Andrew interaction: Love Sword grant, saves, objectives and sheet tracking.
 const ANDREW_INTRO =
-  "I know — I was supposed to be waiting for you at the Cathedral. I was. Then the wedding melody we were carrying ahead for the ceremony was caught in the disturbance here and three pages scattered across Haven. I came back because it's our song, Maria. I wasn't willing to leave a single page behind. Then the Clamour rose around Town Hall and turned the whole square restless. Take this — the Love Sword. Find the three pages while I hold my ground here. When this is finished, I'm going ahead. The next time you see me waiting, it'll be where I promised.";
+  "Maria... there you are. I know I was supposed to be waiting for you at the Cathedral. I promise I'll explain. But first — I have something for you. A sword. Yours, if you'll take it.";
 
 export function installAct3OpeningFlow(QuestScene: any) {
   const proto = QuestScene?.prototype;
@@ -43,7 +46,8 @@ export function installAct3OpeningFlow(QuestScene: any) {
   };
 
   // Keep every mechanical effect of Andrew's original first interaction, but
-  // replace only its spoken line so his Haven detour fits the Cathedral setup.
+  // replace only its spoken line. The custom Haven dialogue expands this into
+  // a warm multi-beat exchange: Cathedral explanation, Love Sword, then sheets.
   proto.openModal = function act3AndrewStoryModal(payload: any) {
     if (
       this.save?.current_zone === ZONE &&
