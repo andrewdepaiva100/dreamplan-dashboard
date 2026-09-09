@@ -668,9 +668,17 @@ function spreadTownHallDecor(scene: SceneLike, runBuild: () => any) {
       const foot = children[before] ?? children[children.length - 1];
       const sprite = scene.landmark?.sprite;
       const body = foot?.body as Phaser.Physics.Arcade.StaticBody | undefined;
-      if (body && sprite) {
-        const width = Math.max(34, sprite.width * 0.28);
-        const height = Math.max(9, sprite.height * 0.055);
+      if (body && sprite && foot) {
+        // The Town Hall's painted shadow is purely visual. Keep the collider
+        // tucked directly under the masonry base so Maria can walk into that
+        // shadow and right alongside the building without walking through it.
+        const width = Math.max(52, sprite.displayWidth * 0.48);
+        const height = Math.max(10, sprite.displayHeight * 0.065);
+        const baseY = sprite.y + sprite.displayHeight * 0.31;
+        foot.setPosition?.(sprite.x, baseY);
+        foot.setDisplaySize?.(width, height);
+        foot.setAlpha?.(0.001);
+        foot.refreshBody?.();
         body.setSize(width, height, true);
         body.updateFromGameObject?.();
       }
@@ -701,6 +709,33 @@ export function installAct3SheetScenes(QuestScene: SceneCtor) {
       decorateSheet(this, "2");
     }
     return result;
+  };
+
+  // The landmark cutscene emits its title banner, then the base scene opens
+  // the info card 2.6s later. React keeps the title banner up for 3.6s, so the
+  // two overlap. Only in Haven, extend that one 2.6s callback long enough for
+  // the Act III title card to disappear first.
+  const originalCheckCutscene = proto.checkCutscene;
+  proto.checkCutscene = function act3TownHallCutscene(...args: any[]) {
+    if (this.save?.current_zone !== ZONE || !originalCheckCutscene) {
+      return originalCheckCutscene?.apply(this, args);
+    }
+    const clock = this.time;
+    const originalDelayedCall = clock.delayedCall;
+    clock.delayedCall = function act3TownHallDelay(
+      delay: number,
+      callback: (...cbArgs: any[]) => void,
+      callbackArgs?: any[],
+      callbackScope?: any,
+    ) {
+      const safeDelay = delay === 2600 ? 3900 : delay;
+      return originalDelayedCall.call(clock, safeDelay, callback, callbackArgs, callbackScope);
+    };
+    try {
+      return originalCheckCutscene.apply(this, args);
+    } finally {
+      clock.delayedCall = originalDelayedCall;
+    }
   };
 
   const originalInteract = proto.interact;
