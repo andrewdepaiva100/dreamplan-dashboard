@@ -231,3 +231,45 @@ main.mx-auto.max-w-\[900px\]::after {
   pointer-events: none;
   white-space: nowrap;
 }
+
+/* Overview navigation: high-contrast light treatment on the navy page. */
+main > nav.relative.z-30 > section {
+  background: rgb(255 255 255 / 0.96) !important;
+  border-color: rgb(255 255 255 / 0.92) !important;
+  box-shadow: 0 18px 34px -24px rgb(3 19 48 / 0.55);
+}
+
+main > nav.relative.z-30 > section h2 {
+  color: var(--navy) !important;
+}
+
+main > nav.relative.z-30 > section > div:first-of-type p,
+main > nav.relative.z-30 > section > div:first-of-type > span {
+  color: var(--deep-blue) !important;
+}
+
+main > nav.relative.z-30 > section > div.grid > :is(button, a) {
+  background: rgb(255 255 255 / 0.93) !important;
+  border-color: color-mix(in oklab, var(--line) 78%, white) !important;
+  box-shadow: 0 10px 24px -20px rgb(3 19 48 / 0.45);
+}
+
+main > nav.relative.z-30 > section > div.grid > :is(button, a):nth-child(1) {
+  background: color-mix(in oklab, var(--sky) 10%, white) !important;
+  border-color: color-mix(in oklab, var(--sky) 30%, white) !important;
+}
+
+main > nav.relative.z-30 > section > div.grid > :is(button, a):nth-child(2) {
+  background: color-mix(in oklab, var(--teal) 9%, white) !important;
+  border-color: color-mix(in oklab, var(--teal) 26%, white) !important;
+}
+
+main > nav.relative.z-30 > section > div.grid > :is(button, a):nth-child(3) {
+  background: color-mix(in oklab, var(--royal) 8%, white) !important;
+  border-color: color-mix(in oklab, var(--royal) 23%, white) !important;
+}
+
+main > nav.relative.z-30 > section > div.grid > :is(button, a):nth-child(4) {
+  background: color-mix(in oklab, var(--gold) 10%, white) !important;
+  border-color: color-mix(in oklab, var(--gold) 28%, white) !important;
+}
