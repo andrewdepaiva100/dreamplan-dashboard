@@ -15,7 +15,8 @@ export function installAct3OpeningFlow(QuestScene: any) {
   const originalResume = proto.onResume;
 
   // Build Haven exactly as before, except hold back its opening boss until
-  // Maria has actually completed her first conversation with Andrew.
+  // Maria has recovered all three music sheets. The held spawn preserves the
+  // boss's authored Town Hall position and all existing encounter decorators.
   proto.buildAct3 = function act3OpeningBuild(...args: any[]) {
     const scene = this;
     const originalSpawnActBoss = scene.spawnActBoss;
@@ -38,35 +39,47 @@ export function installAct3OpeningFlow(QuestScene: any) {
     }
   };
 
-  // The base scene grants the Love Sword and opens Andrew's first modal in one
-  // interaction. The dialogue layer recognizes that exact Love Sword line and
-  // expands it into the full sword + three-sheet conversation. This wrapper
-  // only remembers that the first interaction happened so the Clamour can wake
-  // after the conversation closes.
+  // Andrew's first conversation arms the eventual confrontation, but no boss
+  // can wake yet. On the third sheet the base handler remains responsible for
+  // incrementing the sheet counter and spawning Andrew through the established
+  // companion system; this wrapper only updates the encounter objective.
   proto.interact = function act3OpeningInteract(...args: any[]) {
     const scene = this;
     const beforeHadLoveSword = scene.save?.weapons?.includes?.("love-sword") === true;
+    const nearby = scene.save?.current_zone === ZONE ? scene.nearest?.() : null;
     const nearbyAndrew =
-      scene.save?.current_zone === ZONE &&
       !beforeHadLoveSword &&
-      scene.interactables?.find?.((it: any) =>
-        it?.enabled &&
-        it?.obj?.active &&
-        it.kind === "andrew" &&
-        Phaser.Math.Distance.Between(scene.player.x, scene.player.y, it.obj.x, it.obj.y) <= (it.radius ?? 54),
-      );
+      nearby?.enabled &&
+      nearby?.obj?.active &&
+      nearby.kind === "andrew" &&
+      Phaser.Math.Distance.Between(scene.player.x, scene.player.y, nearby.obj.x, nearby.obj.y) <= (nearby.radius ?? 54);
+    const collectingSheet = nearby?.kind === "sheet";
 
     const result = originalInteract.apply(scene, args);
-    if (nearbyAndrew && scene.save?.weapons?.includes?.("love-sword") === true) scene.zoneState[PENDING] = true;
+
+    if (nearbyAndrew && scene.save?.weapons?.includes?.("love-sword") === true) {
+      scene.zoneState[PENDING] = true;
+    }
+
+    if (collectingSheet && ((scene.zoneState?.["sheets"] as number) ?? 0) >= 3) {
+      // spawnCompanion() is already called by the base third-sheet handler, so
+      // Andrew arrives with his existing blue blade, follow AI, and ally damage.
+      scene.zoneState[PENDING] = true;
+      scene.objective = "The melody is whole — Andrew joins you as the Clamour stirs at Town Hall.";
+      scene.pushHud?.(true);
+    }
+
     return result;
   };
 
   proto.onResume = function act3OpeningResume(...args: any[]) {
     const result = originalResume.apply(this, args);
     const scene = this;
+    const sheets = (scene.zoneState?.["sheets"] as number) ?? 0;
     if (
       scene.save?.current_zone !== ZONE ||
       !scene.zoneState?.[PENDING] ||
+      sheets < 3 ||
       scene.zoneState?.[AWAKENED] ||
       scene.boss?.active
     ) return result;
@@ -75,14 +88,18 @@ export function installAct3OpeningFlow(QuestScene: any) {
     scene.zoneState[AWAKENED] = true;
     const held = scene.zoneState.act3HeldClamour ?? { tx: 66, ty: 28 };
 
-    scene.time.delayedCall(280, () => {
+    // The third sheet's discovery modal closes into this beat: Andrew is now
+    // beside Maria, then the existing Clamour encounter wakes at Town Hall.
+    scene.time.delayedCall(520, () => {
       if (!scene.scene?.isActive?.() || scene.save?.current_zone !== ZONE || scene.boss?.active) return;
       const x = scene.wx(held.tx);
       const y = scene.wy(held.ty);
       scene.spawnSparkle(x, y, 0xd9a441, 20);
       scene.cameras.main.flash(220, 217, 164, 65);
       scene.spawnActBoss(held.tx, held.ty, held.override);
-      scene.emitToast("A restless murmur rises from the Town Hall steps.");
+      scene.objective = "The Clamour of Doubt — fight together with Andrew.";
+      scene.pushHud?.(true);
+      scene.emitToast("Andrew draws his blue blade as the Clamour rises at Town Hall.");
     });
 
     return result;
