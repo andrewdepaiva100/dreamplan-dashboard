@@ -112,7 +112,6 @@ function addWeddingPageFrame(scene: SceneLike, it: any, id: string, visuals: any
     ease: "Sine.easeInOut",
   });
 
-  // Larger cream parchment with a rose-gold double border.
   const outer = scene.add
     .rectangle(x, y, 47, 58, 0xfff6df, 0.98)
     .setDepth(pageDepth - 2)
@@ -129,7 +128,6 @@ function addWeddingPageFrame(scene: SceneLike, it: any, id: string, visuals: any
 
   addSheetInk(scene, x, y - 1, pageDepth + 1, visuals);
 
-  // Tiny floral/heart flourishes make the collectible read like a keepsake.
   const flourishes = [
     [-20, -25, "❦"],
     [20, -25, "❦"],
@@ -187,8 +185,6 @@ function addWeddingPageFrame(scene: SceneLike, it: any, id: string, visuals: any
     });
   });
 
-  // Keep the original pickup visible as a warm central emblem, but let the
-  // authored parchment artwork carry the silhouette.
   it.obj.setScale(0.74).setTint(0xffe6c2).setDepth(pageDepth + 2).setAlpha(0.72);
   scene.tweens.add({
     targets: [outer, inner],
@@ -314,8 +310,6 @@ function addRevealNotes(scene: SceneLike, x: number, y: number, accent: number) 
     });
   }
 
-  // Small gold sparks fill the space between the two note arcs without making
-  // the reveal feel like a dense explosion.
   for (let i = 0; i < 7; i++) {
     const side = i % 2 === 0 ? -1 : 1;
     const spark = scene.add.circle(x, y, 1.8 + (i % 2) * 0.7, 0xffe7a1, 0.9).setDepth(19);
@@ -385,6 +379,45 @@ function playDiscovery(scene: SceneLike, it: any) {
   scene.time.delayedCall(100, () => scene.openModal?.({ type: "info", title: cfg.title, body: cfg.body }));
 }
 
+function spreadTownHallDecor(scene: SceneLike, runBuild: () => any) {
+  const originalScatterDecor = scene.scatterDecor;
+  const originalAddStalls = scene.addStalls;
+
+  scene.scatterDecor = function act3SpreadVillage(seed: number, options: any, ...rest: any[]) {
+    if (seed === 33 && Array.isArray(options?.village)) {
+      const village = options.village.map((spot: number[]) => {
+        const [x, y] = spot;
+        if (x === 40 && y === 34) return [36, 38];
+        if (x === 82 && y === 30) return [90, 34];
+        return spot;
+      });
+      return originalScatterDecor.call(scene, seed, { ...options, village }, ...rest);
+    }
+    return originalScatterDecor.call(scene, seed, options, ...rest);
+  };
+
+  scene.addStalls = function act3SpreadStalls(spots: number[][], ...rest: any[]) {
+    const moved = Array.isArray(spots)
+      ? spots.map((spot: number[]) => {
+          const [x, y] = spot;
+          if (x === 52 && y === 30) return [46, 32];
+          if (x === 60 && y === 30) return [54, 32];
+          if (x === 76 && y === 30) return [80, 32];
+          if (x === 84 && y === 30) return [88, 32];
+          return spot;
+        })
+      : spots;
+    return originalAddStalls.call(scene, moved, ...rest);
+  };
+
+  try {
+    return runBuild();
+  } finally {
+    scene.scatterDecor = originalScatterDecor;
+    scene.addStalls = originalAddStalls;
+  }
+}
+
 export function installAct3SheetScenes(QuestScene: SceneCtor) {
   const proto = QuestScene?.prototype;
   if (!proto || proto.__act3SheetScenesInstalled) return;
@@ -392,7 +425,7 @@ export function installAct3SheetScenes(QuestScene: SceneCtor) {
 
   const originalBuildAct3 = proto.buildAct3;
   proto.buildAct3 = function act3SheetScenesBuild(...args: any[]) {
-    const result = originalBuildAct3.apply(this, args);
+    const result = spreadTownHallDecor(this, () => originalBuildAct3.apply(this, args));
     if (this.save?.current_zone === ZONE) {
       decorateSheet(this, "0");
       decorateSheet(this, "1");
@@ -409,8 +442,6 @@ export function installAct3SheetScenes(QuestScene: SceneCtor) {
 
     clearSheetScene(this, it);
     playDiscovery(this, it);
-    // The base handler remains the single source of truth for removal, sheet
-    // counting, 3/3 objective changes, companion spawn, and Andrew progression.
     return originalInteract.apply(this, args);
   };
 }
