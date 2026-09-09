@@ -5,6 +5,9 @@ const ZONE = "the_haven";
 const PENDING = "act3ClamourPending";
 const AWAKENED = "act3ClamourAwakened";
 
+const ANDREW_INTRO =
+  "I know — I was supposed to be waiting for you at the Cathedral. I was. Then the wedding melody we were carrying ahead for the ceremony was caught in the disturbance here and three pages scattered across Haven. I came back because it's our song, Maria. I wasn't willing to leave a single page behind. Then the Clamour rose around Town Hall and turned the whole square restless. Take this — the Love Sword. Find the three pages while I hold my ground here. When this is finished, I'm going ahead. The next time you see me waiting, it'll be where I promised.";
+
 export function installAct3OpeningFlow(QuestScene: any) {
   const proto = QuestScene?.prototype;
   if (!proto || proto.__act3OpeningFlowInstalled) return;
@@ -13,6 +16,7 @@ export function installAct3OpeningFlow(QuestScene: any) {
   const originalBuildAct3 = proto.buildAct3;
   const originalInteract = proto.interact;
   const originalResume = proto.onResume;
+  const originalOpenModal = proto.openModal;
 
   // Build Haven exactly as before, except hold back its opening boss until
   // Maria has actually met Andrew by the fountain.
@@ -36,6 +40,19 @@ export function installAct3OpeningFlow(QuestScene: any) {
     } finally {
       scene.spawnActBoss = originalSpawnActBoss;
     }
+  };
+
+  // Keep every mechanical effect of Andrew's original first interaction, but
+  // replace only its spoken line so his Haven detour fits the Cathedral setup.
+  proto.openModal = function act3AndrewStoryModal(payload: any) {
+    if (
+      this.save?.current_zone === ZONE &&
+      payload?.type === "andrew" &&
+      !this.save?.weapons?.includes?.("love-sword")
+    ) {
+      return originalOpenModal.call(this, { ...payload, line: ANDREW_INTRO });
+    }
+    return originalOpenModal.call(this, payload);
   };
 
   // The first Andrew conversation still grants the Love Sword and starts the
