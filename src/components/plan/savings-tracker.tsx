@@ -6,6 +6,7 @@ type Contribution = { id: string; date: string; owner: Owner; amount: number; no
 type Week = { week: number; start: string; end: string; label: string; andrew: number; maria: number; family: number; other: number; total: number };
 
 const ANDREW_START = 6300;
+const ANDREW_FAMILY = 6038;
 const STORAGE_KEY = "dreamplan-savings-contributions-v1";
 const OWNER_LABEL: Record<Owner, string> = { andrew: "Andrew", maria: "Maria", family: "Maria's Family", other: "Other" };
 
@@ -18,7 +19,7 @@ const SOURCE: Contribution[] = [
   ["2026-03-28","andrew",1200],["2026-03-28","maria",371.9],["2026-03-28","family",1000],
   ["2026-04-04","andrew",850],["2026-04-04","maria",377.42],["2026-04-04","family",900],
   ["2026-04-11","andrew",400],["2026-04-11","maria",312],["2026-04-11","family",1000],
-  ["2026-04-18","andrew",40],["2026-04-18","maria",384],["2026-04-18","other",400],
+  ["2026-04-18","andrew",40],["2026-04-18","maria",400],
   ["2026-04-25","andrew",60],["2026-04-25","maria",374],
   ["2026-05-02","andrew",875],["2026-05-02","maria",381],["2026-05-02","family",1000],
   ["2026-05-09","andrew",830],["2026-05-09","maria",374],["2026-05-09","family",1000],
