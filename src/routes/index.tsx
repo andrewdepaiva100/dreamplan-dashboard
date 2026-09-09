@@ -100,6 +100,46 @@ const SECTION_LINKS = [
 
 ];
 
+const NAV_GROUPS = [
+  {
+    title: "Financial Overview",
+    description: "Track, plan, and grow your money together.",
+    ids: ["s1", "tracker", "payments", "s3"],
+  },
+  {
+    title: "Home & Future",
+    description: "Plan your home, setup, and long-term goals.",
+    ids: ["s2", "s4", "s5", "calendar"],
+  },
+  {
+    title: "Together",
+    description: "Nurture your relationship and shared journey.",
+    ids: ["devotionals", "quest"],
+  },
+  {
+    title: "Tools & Utilities",
+    description: "Stay organized and informed.",
+    ids: ["notifications", "assistant", "activity", "health"],
+  },
+] as const;
+
+const NAV_CARD_STYLE: Record<string, string> = {
+  s1: "border-sky/40 bg-sky/15",
+  tracker: "border-teal/40 bg-teal/10",
+  payments: "border-royal/30 bg-royal/10",
+  s3: "border-gold/40 bg-gold/10",
+  s2: "border-sky/35 bg-sky/10",
+  s4: "border-teal/35 bg-teal/10",
+  s5: "border-gold/30 bg-gold/10",
+  calendar: "border-sky/40 bg-sky/15",
+  devotionals: "border-gold/30 bg-gold/10",
+  quest: "border-royal/30 bg-royal/10",
+  notifications: "border-sky/35 bg-sky/10",
+  assistant: "border-gold/35 bg-gold/10",
+  activity: "border-teal/35 bg-teal/10",
+  health: "border-royal/30 bg-royal/10",
+};
+
 const BUDGET_ROWS: { key: keyof ReturnType<typeof usePlan>["plan"]["budget"]; label: string }[] = [
   { key: "venue", label: "Marriage (Venue & Operations)" },
   { key: "honeymoon", label: "Honeymoon Budget" },
@@ -305,35 +345,61 @@ function Index() {
 
       {/* SECTION QUICK NAV (overview only) */}
       {!active && (
-        <nav className="relative z-30 mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-          {SECTION_LINKS.map((s) => {
-            const inner = (
-              <>
-              <span
-                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-110 ${s.tint}`}
+        <nav className="relative z-30 mt-6 space-y-4">
+          {NAV_GROUPS.map((group) => {
+            const links = group.ids
+              .map((id) => SECTION_LINKS.find((item) => item.id === id))
+              .filter((item): item is (typeof SECTION_LINKS)[number] => Boolean(item));
+            const together = group.title === "Together";
+            return (
+              <section
+                key={group.title}
+                className="rounded-2xl border border-white/15 bg-navy/20 p-3.5 shadow-sm backdrop-blur-sm sm:p-4"
               >
-                <s.Icon size={19} strokeWidth={2} />
-              </span>
-              <span>
-                <span className="block text-[13.5px] font-bold leading-snug text-navy">
-                  {s.label}
-                </span>
-                <span className="mt-0.5 block text-[11px] leading-snug text-ink-soft">
-                  {s.desc}
-                </span>
-              </span>
-              </>
-            );
-            const cls =
-              "card-surface group flex flex-col items-start gap-2.5 rounded-2xl px-4 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-[var(--shadow-cover)]";
-            return "href" in s && s.href ? (
-              <Link key={s.id} to={s.href} className={cls}>
-                {inner}
-              </Link>
-            ) : (
-              <button key={s.id} type="button" onClick={() => goTo(s.id)} className={cls}>
-                {inner}
-              </button>
+                <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-1">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <h2 className={`text-[12px] font-bold uppercase tracking-[0.16em] ${together ? "text-gold" : "text-sky"}`}>
+                      {group.title}
+                    </h2>
+                    <p className="text-[11px] text-sky/75">{group.description}</p>
+                  </div>
+                  <span className="text-[10.5px] font-medium text-sky/60">
+                    {links.length} {links.length === 1 ? "tool" : "tools"}
+                  </span>
+                </div>
+                <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${together ? "lg:grid-cols-2" : "lg:grid-cols-4"}`}>
+                  {links.map((s) => {
+                    const inner = (
+                      <>
+                        <span
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105 ${s.tint}`}
+                        >
+                          <s.Icon size={19} strokeWidth={2} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[13.5px] font-bold leading-snug text-navy">
+                            {s.label}
+                          </span>
+                          <span className="mt-0.5 block text-[11px] leading-snug text-ink-soft">
+                            {s.desc}
+                          </span>
+                        </span>
+                        <span className="ml-auto text-base font-semibold text-navy/45 transition-transform group-hover:translate-x-0.5">›</span>
+                      </>
+                    );
+                    const cls = `group flex min-h-[112px] items-center gap-3 rounded-2xl border px-4 py-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)] ${NAV_CARD_STYLE[s.id] ?? "border-mist bg-white"}`;
+                    return "href" in s && s.href ? (
+                      <Link key={s.id} to={s.href} className={cls}>
+                        {inner}
+                      </Link>
+                    ) : (
+                      <button key={s.id} type="button" onClick={() => goTo(s.id)} className={cls}>
+                        {inner}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
             );
           })}
         </nav>
