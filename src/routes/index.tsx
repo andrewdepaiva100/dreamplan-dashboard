@@ -86,7 +86,7 @@ const SECTION_LINKS = [
   { id: "payments", label: "Wedding Payments", desc: "6 installments & balance", Icon: CreditCard, tint: "bg-royal/10 text-royal" },
   { id: "s2", label: "Monthly & Lease", desc: "Overhead & lease reserve", Icon: CalendarDays, tint: "bg-sky/20 text-deep-blue" },
   { id: "s3", label: "Savings Roadmap", desc: "Milestones & countdowns", Icon: Map, tint: "bg-gold/15 text-gold" },
-  { id: "tracker", label: "Weekly Savings Tracker", desc: "Andrew vs. Maria each week", Icon: PiggyBank, tint: "bg-teal/10 text-teal" },
+  { id: "tracker", label: "Total Funds Tracker", desc: "Andrew vs. Maria each week", Icon: PiggyBank, tint: "bg-teal/10 text-teal" },
   { id: "s4", label: "Furnishing Budget", desc: "Room-by-room tiers", Icon: Sofa, tint: "bg-teal/10 text-teal" },
 
   { id: "s5", label: "Final Goal & Emergency", desc: "$20k buffer fund", Icon: ShieldCheck, tint: "bg-navy/10 text-navy" },
@@ -1174,7 +1174,7 @@ function Index() {
       )}
 
       {active === "tracker" && (
-      <Page id="tracker" title="Marriage & Honeymoon Savings Tracker">
+      <Page id="tracker" title="Total Funds Tracker">
         <SavingsTracker />
       </Page>
       )}
