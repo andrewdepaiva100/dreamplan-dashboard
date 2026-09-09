@@ -4,10 +4,8 @@ import * as Phaser from "phaser";
 const ZONE = "the_haven";
 const PENDING = "act3ClamourPending";
 const AWAKENED = "act3ClamourAwakened";
+const FIRST_MARKER = "act3AndrewFirstConversation";
 
-// The dialogue presentation recognizes this marker and expands it into the
-// longer Andrew/Maria conversation. Mechanics still come from the original
-// Andrew interaction: Love Sword grant, saves, objectives and sheet tracking.
 const ANDREW_INTRO =
   "Maria... there you are. I know I was supposed to be waiting for you at the Cathedral. I promise I'll explain. But first — I have something for you. A sword. Yours, if you'll take it.";
 
@@ -21,8 +19,6 @@ export function installAct3OpeningFlow(QuestScene: any) {
   const originalResume = proto.onResume;
   const originalOpenModal = proto.openModal;
 
-  // Build Haven exactly as before, except hold back its opening boss until
-  // Maria has actually met Andrew by the fountain.
   proto.buildAct3 = function act3OpeningBuild(...args: any[]) {
     const scene = this;
     const originalSpawnActBoss = scene.spawnActBoss;
@@ -45,23 +41,20 @@ export function installAct3OpeningFlow(QuestScene: any) {
     }
   };
 
-  // Keep every mechanical effect of Andrew's original first interaction, but
-  // replace only its spoken line. The custom Haven dialogue expands this into
-  // a warm multi-beat exchange: Cathedral explanation, Love Sword, then sheets.
+  // The base Andrew interaction grants the Love Sword immediately before it
+  // opens his modal. interact() therefore sets an explicit one-call marker
+  // before delegating, rather than trying to infer "first meeting" afterward.
   proto.openModal = function act3AndrewStoryModal(payload: any) {
     if (
       this.save?.current_zone === ZONE &&
       payload?.type === "andrew" &&
-      !this.save?.weapons?.includes?.("love-sword")
+      this.zoneState?.[FIRST_MARKER]
     ) {
-      return originalOpenModal.call(this, { ...payload, line: ANDREW_INTRO });
+      return originalOpenModal.call(this, { ...payload, line: ANDREW_INTRO, act3FirstAndrew: true });
     }
     return originalOpenModal.call(this, payload);
   };
 
-  // The first Andrew conversation still grants the Love Sword and starts the
-  // sheet story exactly as before. We only mark the Clamour to awaken once
-  // that modal closes.
   proto.interact = function act3OpeningInteract(...args: any[]) {
     const scene = this;
     const beforeHadLoveSword = scene.save?.weapons?.includes?.("love-sword") === true;
@@ -75,9 +68,14 @@ export function installAct3OpeningFlow(QuestScene: any) {
         Phaser.Math.Distance.Between(scene.player.x, scene.player.y, it.obj.x, it.obj.y) <= (it.radius ?? 54),
       );
 
-    const result = originalInteract.apply(scene, args);
-    if (nearbyAndrew && scene.save?.weapons?.includes?.("love-sword") === true) scene.zoneState[PENDING] = true;
-    return result;
+    if (nearbyAndrew) scene.zoneState[FIRST_MARKER] = true;
+    try {
+      const result = originalInteract.apply(scene, args);
+      if (nearbyAndrew && scene.save?.weapons?.includes?.("love-sword") === true) scene.zoneState[PENDING] = true;
+      return result;
+    } finally {
+      if (nearbyAndrew) scene.zoneState[FIRST_MARKER] = false;
+    }
   };
 
   proto.onResume = function act3OpeningResume(...args: any[]) {
