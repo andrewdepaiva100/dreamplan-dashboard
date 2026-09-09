@@ -39,7 +39,6 @@ const SOURCE: Contribution[] = [
   ["2026-08-22","maria",316],["2026-08-22","andrew",100],["2026-08-22","maria",370],["2026-08-22","family",1000],
   ["2026-08-29","andrew",1000],["2026-08-29","maria",398],
   ["2026-09-05","andrew",135],
-  ["2026-09-09","andrew",400],
 ].map((x, i) => ({ id: `source-${i}`, date: x[0] as string, owner: x[1] as Owner, amount: x[2] as number }));
 
 function parseDate(s: string) { const [y,m,d]=s.split("-").map(Number); return new Date(Date.UTC(y!,m!-1,d!)); }
