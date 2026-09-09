@@ -124,20 +124,20 @@ const NAV_GROUPS = [
 ] as const;
 
 const NAV_CARD_STYLE: Record<string, string> = {
-  s1: "border-sky/40 bg-sky/15",
-  tracker: "border-teal/40 bg-teal/10",
-  payments: "border-royal/30 bg-royal/10",
-  s3: "border-gold/40 bg-gold/10",
-  s2: "border-sky/35 bg-sky/10",
-  s4: "border-teal/35 bg-teal/10",
-  s5: "border-gold/30 bg-gold/10",
-  calendar: "border-sky/40 bg-sky/15",
-  devotionals: "border-gold/30 bg-gold/10",
-  quest: "border-royal/30 bg-royal/10",
-  notifications: "border-sky/35 bg-sky/10",
-  assistant: "border-gold/35 bg-gold/10",
-  activity: "border-teal/35 bg-teal/10",
-  health: "border-royal/30 bg-royal/10",
+  s1: "border-sky/60 bg-sky/25",
+  tracker: "border-teal/55 bg-teal/20",
+  payments: "border-royal/50 bg-royal/20",
+  s3: "border-gold/55 bg-gold/20",
+  s2: "border-sky/50 bg-sky/20",
+  s4: "border-teal/50 bg-teal/20",
+  s5: "border-gold/50 bg-gold/20",
+  calendar: "border-sky/60 bg-sky/25",
+  devotionals: "border-gold/50 bg-gold/20",
+  quest: "border-royal/50 bg-royal/20",
+  notifications: "border-sky/50 bg-sky/20",
+  assistant: "border-gold/50 bg-gold/20",
+  activity: "border-teal/50 bg-teal/20",
+  health: "border-royal/50 bg-royal/20",
 };
 
 const BUDGET_ROWS: { key: keyof ReturnType<typeof usePlan>["plan"]["budget"]; label: string }[] = [
@@ -212,7 +212,7 @@ function Index() {
     if (bytes === 0) return "0 B";
     const k = 1024;
     const sizes = ["B", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    const i = Math.floor(Math.log(bytes) / Math.pow(k, i));
     return `${(bytes / Math.pow(k, i)).toFixed(i > 0 ? 2 : 0)} ${sizes[i]}`;
   };
 
