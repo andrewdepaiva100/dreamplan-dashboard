@@ -375,13 +375,263 @@ function playDiscovery(scene: SceneLike, it: any) {
       onComplete: () => pulse.destroy(),
     });
   }
+}
 
-  scene.time.delayedCall(100, () => scene.openModal?.({ type: "info", title: cfg.title, body: cfg.body }));
+function showSheetDiscoveryPanel(scene: SceneLike, id: string) {
+  if (typeof document === "undefined") return;
+  const cfg = SHEET_SCENES[id];
+  if (!cfg) return;
+
+  const parent = scene.game?.canvas?.parentElement ?? document.body;
+  parent.querySelector?.("[data-act3-sheet-panel]")?.remove?.();
+
+  const themes: Record<string, { accent: string; soft: string; glow: string; numeral: string }> = {
+    "0": { accent: "#b7657f", soft: "#f3d4dc", glow: "rgba(190,92,125,.24)", numeral: "I" },
+    "1": { accent: "#b68a3d", soft: "#f2dfb5", glow: "rgba(202,158,72,.24)", numeral: "II" },
+    "2": { accent: "#aa8844", soft: "#f6eac4", glow: "rgba(222,191,105,.23)", numeral: "III" },
+  };
+  const theme = themes[id] ?? themes["1"]!;
+
+  const overlay = document.createElement("div");
+  overlay.dataset.act3SheetPanel = id;
+  Object.assign(overlay.style, {
+    position: "absolute",
+    inset: "0",
+    zIndex: "1000",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "18px",
+    background: "radial-gradient(circle at 50% 42%, rgba(40,31,52,.44), rgba(6,9,20,.82))",
+    backdropFilter: "blur(5px)",
+    WebkitBackdropFilter: "blur(5px)",
+    fontFamily: "Inter, system-ui, sans-serif",
+  });
+
+  const card = document.createElement("div");
+  Object.assign(card.style, {
+    position: "relative",
+    width: "min(620px, 92vw)",
+    maxHeight: "88vh",
+    overflow: "auto",
+    borderRadius: "26px",
+    border: `2px solid ${theme.accent}`,
+    padding: "clamp(24px, 4vw, 42px)",
+    boxSizing: "border-box",
+    color: "#24324b",
+    background:
+      "radial-gradient(130% 90% at 18% 0%, rgba(255,255,255,.92) 0%, rgba(255,250,239,.94) 34%, rgba(247,236,216,.98) 100%)",
+    boxShadow: `0 28px 80px rgba(3,7,18,.48), 0 0 46px ${theme.glow}, inset 0 0 0 7px rgba(255,255,255,.44)`,
+  });
+
+  const innerBorder = document.createElement("div");
+  Object.assign(innerBorder.style, {
+    position: "absolute",
+    inset: "10px",
+    borderRadius: "18px",
+    border: `1px solid ${theme.accent}66`,
+    pointerEvents: "none",
+  });
+  card.appendChild(innerBorder);
+
+  const staff = document.createElement("div");
+  Object.assign(staff.style, {
+    position: "absolute",
+    left: "28px",
+    right: "28px",
+    top: "76px",
+    height: "54px",
+    opacity: ".16",
+    pointerEvents: "none",
+    background:
+      "repeating-linear-gradient(to bottom, transparent 0 7px, #6a4a45 7px 8px, transparent 8px 10px)",
+  });
+  card.appendChild(staff);
+
+  const notes = document.createElement("div");
+  notes.textContent = "♪   ♫   ♩   ♪      ♫   ♪";
+  Object.assign(notes.style, {
+    position: "absolute",
+    left: "50%",
+    top: "78px",
+    transform: "translateX(-50%) rotate(-2deg)",
+    width: "78%",
+    textAlign: "center",
+    color: theme.accent,
+    fontFamily: "Georgia, serif",
+    fontSize: "22px",
+    letterSpacing: "7px",
+    opacity: ".24",
+    pointerEvents: "none",
+  });
+  card.appendChild(notes);
+
+  const ribbon = document.createElement("div");
+  ribbon.textContent = `RECOVERED SHEET ${theme.numeral}`;
+  Object.assign(ribbon.style, {
+    position: "relative",
+    zIndex: "2",
+    width: "fit-content",
+    margin: "0 auto 13px",
+    padding: "7px 14px",
+    borderRadius: "999px",
+    border: `1px solid ${theme.accent}55`,
+    background: theme.soft,
+    color: theme.accent,
+    fontSize: "10px",
+    fontWeight: "800",
+    letterSpacing: ".22em",
+  });
+  card.appendChild(ribbon);
+
+  const flourish = document.createElement("div");
+  flourish.textContent = "❦  ♥  ❦";
+  Object.assign(flourish.style, {
+    position: "relative",
+    zIndex: "2",
+    textAlign: "center",
+    color: theme.accent,
+    fontFamily: "Georgia, serif",
+    fontSize: "18px",
+    opacity: ".85",
+    marginBottom: "8px",
+  });
+  card.appendChild(flourish);
+
+  const title = document.createElement("h2");
+  title.textContent = cfg.title;
+  Object.assign(title.style, {
+    position: "relative",
+    zIndex: "2",
+    margin: "0",
+    textAlign: "center",
+    color: "#0b2b55",
+    fontFamily: "Georgia, 'Times New Roman', serif",
+    fontSize: "clamp(28px, 5vw, 42px)",
+    lineHeight: "1.08",
+    fontWeight: "800",
+  });
+  card.appendChild(title);
+
+  const divider = document.createElement("div");
+  Object.assign(divider.style, {
+    position: "relative",
+    zIndex: "2",
+    height: "1px",
+    width: "72%",
+    margin: "18px auto",
+    background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)`,
+  });
+  card.appendChild(divider);
+
+  const body = document.createElement("p");
+  body.textContent = cfg.body;
+  Object.assign(body.style, {
+    position: "relative",
+    zIndex: "2",
+    margin: "0 auto",
+    maxWidth: "520px",
+    color: "#344360",
+    fontFamily: "Georgia, 'Times New Roman', serif",
+    fontSize: "clamp(16px, 2.3vw, 20px)",
+    lineHeight: "1.65",
+    textAlign: "left",
+  });
+  card.appendChild(body);
+
+  const monogram = document.createElement("div");
+  monogram.textContent = "A  ♥  M";
+  Object.assign(monogram.style, {
+    position: "relative",
+    zIndex: "2",
+    marginTop: "18px",
+    textAlign: "center",
+    color: theme.accent,
+    fontFamily: "Georgia, serif",
+    fontStyle: "italic",
+    fontWeight: "700",
+    letterSpacing: ".18em",
+  });
+  card.appendChild(monogram);
+
+  const close = () => {
+    if (!overlay.isConnected) return;
+    overlay.remove();
+    if (scene.scene?.isActive?.() !== false) scene.onResume?.();
+  };
+
+  const xButton = document.createElement("button");
+  xButton.type = "button";
+  xButton.setAttribute("aria-label", "Close recovered sheet");
+  xButton.textContent = "×";
+  Object.assign(xButton.style, {
+    position: "absolute",
+    zIndex: "4",
+    top: "16px",
+    right: "16px",
+    width: "40px",
+    height: "40px",
+    borderRadius: "999px",
+    border: `1px solid ${theme.accent}66`,
+    background: "rgba(255,255,255,.76)",
+    color: "#536078",
+    fontSize: "28px",
+    lineHeight: "34px",
+    cursor: "pointer",
+  });
+  xButton.addEventListener("click", close);
+  card.appendChild(xButton);
+
+  const continueButton = document.createElement("button");
+  continueButton.type = "button";
+  continueButton.textContent = "Continue the melody";
+  Object.assign(continueButton.style, {
+    position: "relative",
+    zIndex: "2",
+    display: "block",
+    width: "min(330px, 100%)",
+    margin: "24px auto 0",
+    padding: "13px 20px",
+    borderRadius: "999px",
+    border: `1px solid ${theme.accent}`,
+    background: `linear-gradient(135deg, ${theme.soft}, #fffaf0)`,
+    color: "#17345d",
+    boxShadow: `0 8px 24px ${theme.glow}`,
+    fontSize: "14px",
+    fontWeight: "800",
+    cursor: "pointer",
+  });
+  continueButton.addEventListener("click", close);
+  card.appendChild(continueButton);
+
+  for (const [left, top, glyph] of [["18px", "18px", "❦"], ["18px", "calc(100% - 42px)", "♥"], ["calc(100% - 38px)", "calc(100% - 42px)", "❦"]]) {
+    const corner = document.createElement("span");
+    corner.textContent = String(glyph);
+    Object.assign(corner.style, {
+      position: "absolute",
+      left: String(left),
+      top: String(top),
+      color: theme.accent,
+      fontFamily: "Georgia, serif",
+      opacity: ".46",
+      pointerEvents: "none",
+    });
+    card.appendChild(corner);
+  }
+
+  overlay.appendChild(card);
+  parent.appendChild(overlay);
+  scene.frozen = true;
+  scene.player?.setVelocity?.(0, 0);
+  scene.physics?.pause?.();
+
+  scene.events?.once?.("shutdown", () => overlay.remove());
 }
 
 function spreadTownHallDecor(scene: SceneLike, runBuild: () => any) {
   const originalScatterDecor = scene.scatterDecor;
   const originalAddStalls = scene.addStalls;
+  const originalAddLandmark = scene.addLandmark;
 
   scene.scatterDecor = function act3SpreadVillage(seed: number, options: any, ...rest: any[]) {
     if (seed === 33 && Array.isArray(options?.village)) {
@@ -410,11 +660,30 @@ function spreadTownHallDecor(scene: SceneLike, runBuild: () => any) {
     return originalAddStalls.call(scene, moved, ...rest);
   };
 
+  scene.addLandmark = function act3TownHallFootprint(key: string, ...args: any[]) {
+    const before = scene.solidDecor?.getChildren?.().length ?? 0;
+    const result = originalAddLandmark.call(scene, key, ...args);
+    if (key === "landmark-townhall") {
+      const children = scene.solidDecor?.getChildren?.() ?? [];
+      const foot = children[before] ?? children[children.length - 1];
+      const sprite = scene.landmark?.sprite;
+      const body = foot?.body as Phaser.Physics.Arcade.StaticBody | undefined;
+      if (body && sprite) {
+        const width = Math.max(34, sprite.width * 0.28);
+        const height = Math.max(9, sprite.height * 0.055);
+        body.setSize(width, height, true);
+        body.updateFromGameObject?.();
+      }
+    }
+    return result;
+  };
+
   try {
     return runBuild();
   } finally {
     scene.scatterDecor = originalScatterDecor;
     scene.addStalls = originalAddStalls;
+    scene.addLandmark = originalAddLandmark;
   }
 }
 
@@ -438,10 +707,13 @@ export function installAct3SheetScenes(QuestScene: SceneCtor) {
   proto.interact = function act3SheetScenesInteract(...args: any[]) {
     if (this.save?.current_zone !== ZONE || this.frozen) return originalInteract.apply(this, args);
     const it = this.nearest?.();
-    if (!it || it.kind !== "sheet" || !SHEET_SCENES[String(it.id ?? "")]) return originalInteract.apply(this, args);
+    const id = String(it?.id ?? "");
+    if (!it || it.kind !== "sheet" || !SHEET_SCENES[id]) return originalInteract.apply(this, args);
 
     clearSheetScene(this, it);
     playDiscovery(this, it);
-    return originalInteract.apply(this, args);
+    const result = originalInteract.apply(this, args);
+    showSheetDiscoveryPanel(this, id);
+    return result;
   };
 }
