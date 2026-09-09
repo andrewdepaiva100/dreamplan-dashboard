@@ -443,7 +443,7 @@ function Index() {
                         />
                         )
                         <span className="ml-2 inline-flex rounded-full bg-teal/10 px-2 py-0.5 text-[10.5px] font-semibold text-teal">
-                          Saving for: Adding
+                          Saving for: Wedding
                         </span>
                       </span>
                     </span>
