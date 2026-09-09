@@ -89,10 +89,14 @@ if (typeof window !== "undefined") {
       window.dispatchEvent(new Event(QUEST_RUNTIME_READY_EVENT));
 
       // Let Phaser/browser complete two paints before parsing and installing the
-      // large dialogue script. This removes it from the first playable frame.
+      // large dialogue scripts. Haven's Andrew layer installs last so it can
+      // specialize only his Act III conversations without changing anyone else.
       requestAnimationFrame(() => requestAnimationFrame(() => {
-        void import("./globalCharacterDialogue")
-          .then((dialogue) => dialogue.installGlobalCharacterDialogue(QuestScene))
+        void Promise.all([import("./globalCharacterDialogue"), import("./act3AndrewDialogue")])
+          .then(([dialogue, act3AndrewDialogue]) => {
+            dialogue.installGlobalCharacterDialogue(QuestScene);
+            act3AndrewDialogue.installAct3AndrewDialogue(QuestScene);
+          })
           .catch((error) => console.error("[quest] dialogue polish install failed", error));
       }));
     }).catch((error) => console.error("[quest] premium upgrade install failed", error));
