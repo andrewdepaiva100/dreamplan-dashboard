@@ -183,12 +183,12 @@ function spawnHavenMob(scene: SceneLike, key: string, tx: number, ty: number, sp
   if (key === VEILED_KEY) {
     enemy.setData("brute", true);
     enemy.setData("hp", 2);
-    enemy.setScale(1.02);
+    enemy.setScale(0.714);
     enemy.setSize(32, 40).setOffset(22, 42);
   } else {
     enemy.setData("brute", false);
     enemy.setData("hp", 1);
-    enemy.setScale(1.03);
+    enemy.setScale(0.721);
     enemy.setCircle(18, 14, 18);
   }
   return enemy;
