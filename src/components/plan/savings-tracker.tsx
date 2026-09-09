@@ -97,8 +97,8 @@ export function SavingsTracker() {
   }
 
   return <div className="space-y-6">
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-      <StatCard label="Andrew" value={totals.andrew}/><StatCard label="Maria" value={totals.maria}/><StatCard label="Maria's family" value={totals.family}/><StatCard label="Other" value={totals.other}/><StatCard label="Running total" value={running}/>
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <StatCard label="Andrew" value={totals.andrew}/><StatCard label="Maria" value={totals.maria}/><StatCard label="Andrew's Family" value={totals.andrewFamily}/><StatCard label="Maria's family" value={totals.family}/><StatCard label="Other" value={totals.other}/><StatCard label="Running total" value={running}/>
     </div>
 
     <form onSubmit={addContribution} className="rounded-xl border border-mist bg-white/70 p-4">
