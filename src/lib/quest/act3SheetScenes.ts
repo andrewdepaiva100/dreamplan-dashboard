@@ -39,21 +39,57 @@ function addOrbit(scene: SceneLike, x: number, y: number, index: number) {
   const mote = scene.add.circle(x, y, 4.5, index % 2 ? 0xff79ad : 0x8d5ba7, 0.82).setDepth(14);
   mote.setData("act3SheetScene", "0");
   const angle = (index / 3) * Math.PI * 2;
-  const radiusX = 26 + index * 4;
-  const radiusY = 15 + index * 2;
+  const radiusX = 30 + index * 5;
+  const radiusY = 18 + index * 2;
   scene.tweens.addCounter({
     from: 0,
     to: Math.PI * 2,
-    duration: 2300 + index * 280,
+    duration: 2400 + index * 280,
     repeat: -1,
     onUpdate: (tw: any) => {
       if (!mote.active) return;
       const a = angle + tw.getValue();
       mote.setPosition(x + Math.cos(a) * radiusX, y + Math.sin(a) * radiusY);
-      mote.setAlpha(0.5 + Math.sin(a * 2) * 0.22);
+      mote.setAlpha(0.48 + Math.sin(a * 2) * 0.24);
     },
   });
   return mote;
+}
+
+function addSheetInk(scene: SceneLike, x: number, y: number, depth: number, visuals: any[]) {
+  const ink = scene.add.graphics().setDepth(depth);
+  ink.lineStyle(1, 0x6b493d, 0.76);
+  for (let row = 0; row < 2; row++) {
+    const sy = y - 11 + row * 16;
+    for (let line = 0; line < 5; line++) {
+      ink.lineBetween(x - 17, sy + line * 2, x + 17, sy + line * 2);
+    }
+  }
+  ink.fillStyle(0x70453e, 0.9);
+  const notes = [
+    [-12, -8], [-4, -5], [5, -9], [13, -4],
+    [-14, 9], [-7, 13], [2, 8], [10, 12], [16, 7],
+  ];
+  notes.forEach(([ox, oy], i) => {
+    ink.fillEllipse(x + ox, y + oy, 3.2, 2.3);
+    ink.lineStyle(1, 0x70453e, 0.9);
+    ink.lineBetween(x + ox + 1.4, y + oy, x + ox + 1.4, y + oy - (i % 2 ? 7 : 6));
+  });
+  visuals.push(ink);
+
+  const monogram = scene.add
+    .text(x, y + 20, "A  ♥  M", {
+      fontFamily: "Georgia, serif",
+      fontSize: "7px",
+      fontStyle: "bold italic",
+      color: "#a46963",
+      stroke: "#fff0d2",
+      strokeThickness: 1,
+    })
+    .setOrigin(0.5)
+    .setDepth(depth + 1)
+    .setAlpha(0.9);
+  visuals.push(monogram);
 }
 
 function addWeddingPageFrame(scene: SceneLike, it: any, id: string, visuals: any[]) {
@@ -61,87 +97,103 @@ function addWeddingPageFrame(scene: SceneLike, it: any, id: string, visuals: any
   const x = it.obj.x;
   const y = it.obj.y;
   const accent = cfg?.accent ?? 0xffd98b;
+  const pageDepth = Math.max(8, it.obj.depth ?? 8);
 
-  // A shared ornate wedding-song silhouette makes all three pages read as one
-  // special set, while each page keeps its own authored mood around it.
-  const halo = scene.add.circle(x, y, 32, accent, 0.12).setDepth(2);
-  halo.setStrokeStyle(1.5, 0xffe7ad, 0.5);
+  const halo = scene.add.circle(x, y, 39, accent, 0.11).setDepth(2);
+  halo.setStrokeStyle(2, 0xffe7ad, 0.52);
   visuals.push(halo);
   scene.tweens.add({
     targets: halo,
-    alpha: { from: 0.08, to: 0.22 },
-    scale: { from: 0.94, to: 1.14 },
-    duration: 1500,
+    alpha: { from: 0.07, to: 0.21 },
+    scale: { from: 0.92, to: 1.16 },
+    duration: 1650,
     yoyo: true,
     repeat: -1,
     ease: "Sine.easeInOut",
   });
 
-  const parchment = scene.add
-    .rectangle(x, y, 31, 39, 0xfff2cf, 0.24)
-    .setDepth(Math.max(3, (it.obj.depth ?? 8) - 1))
-    .setStrokeStyle(1.5, 0xd9aa55, 0.86);
-  visuals.push(parchment);
-  scene.tweens.add({
-    targets: parchment,
-    alpha: { from: 0.2, to: 0.34 },
-    duration: 1250,
-    yoyo: true,
-    repeat: -1,
-    ease: "Sine.easeInOut",
+  // Larger cream parchment with a rose-gold double border.
+  const outer = scene.add
+    .rectangle(x, y, 47, 58, 0xfff6df, 0.98)
+    .setDepth(pageDepth - 2)
+    .setStrokeStyle(2, 0xc98b62, 0.96);
+  const inner = scene.add
+    .rectangle(x, y, 41, 52, 0xffefd0, 0.44)
+    .setDepth(pageDepth - 1)
+    .setStrokeStyle(1, 0xe4bd83, 0.92);
+  visuals.push(outer, inner);
+
+  const ribbonTop = scene.add.rectangle(x, y - 24, 31, 2, 0xd58a98, 0.68).setDepth(pageDepth);
+  const ribbonBottom = scene.add.rectangle(x, y + 24, 31, 2, 0xd58a98, 0.52).setDepth(pageDepth);
+  visuals.push(ribbonTop, ribbonBottom);
+
+  addSheetInk(scene, x, y - 1, pageDepth + 1, visuals);
+
+  // Tiny floral/heart flourishes make the collectible read like a keepsake.
+  const flourishes = [
+    [-20, -25, "❦"],
+    [20, -25, "❦"],
+    [-20, 25, "♥"],
+    [20, 25, "♥"],
+  ];
+  flourishes.forEach(([ox, oy, glyph], i) => {
+    const mark = scene.add
+      .text(x + Number(ox), y + Number(oy), String(glyph), {
+        fontFamily: "Georgia, serif",
+        fontSize: i < 2 ? "9px" : "7px",
+        color: i < 2 ? "#bc7a8a" : "#d69a68",
+      })
+      .setOrigin(0.5)
+      .setDepth(pageDepth + 2)
+      .setAlpha(0.92);
+    visuals.push(mark);
   });
 
-  for (const [ox, oy] of [
-    [-17, -21],
-    [17, -21],
-    [-17, 21],
-    [17, 21],
-  ]) {
-    const jewel = scene.add.circle(x + ox, y + oy, 2.3, 0xffd36d, 0.9).setDepth((it.obj.depth ?? 8) + 1);
+  for (const [ox, oy] of [[-24, -30], [24, -30], [-24, 30], [24, 30]]) {
+    const jewel = scene.add.circle(x + ox, y + oy, 2.5, 0xffd36d, 0.95).setDepth(pageDepth + 2);
     visuals.push(jewel);
     scene.tweens.add({
       targets: jewel,
-      alpha: { from: 0.45, to: 1 },
-      scale: { from: 0.75, to: 1.25 },
-      duration: 900 + Math.abs(ox * 13 + oy),
+      alpha: { from: 0.4, to: 1 },
+      scale: { from: 0.72, to: 1.28 },
+      duration: 900 + Math.abs(ox * 11 + oy),
       yoyo: true,
       repeat: -1,
     });
   }
 
-  const noteGlyphs = ["♪", "♫", "♪"];
+  const noteGlyphs = ["♪", "♫", "♪", "♩"];
   noteGlyphs.forEach((glyph, i) => {
     const note = scene.add
-      .text(x + (i - 1) * 18, y - 30 - (i % 2) * 5, glyph, {
+      .text(x + (i - 1.5) * 20, y - 39 - (i % 2) * 5, glyph, {
         fontFamily: "Georgia, serif",
-        fontSize: i === 1 ? "12px" : "10px",
-        color: i === 1 ? "#ffd46f" : "#ff9fbd",
+        fontSize: i === 1 ? "13px" : "10px",
+        color: i % 2 ? "#ffd46f" : "#ff9fbd",
         stroke: "#5a3658",
         strokeThickness: 1,
       })
       .setOrigin(0.5)
-      .setDepth((it.obj.depth ?? 8) + 2)
-      .setAlpha(0.78);
+      .setDepth(pageDepth + 3)
+      .setAlpha(0.8);
     visuals.push(note);
     scene.tweens.add({
       targets: note,
-      y: note.y - 8 - i * 2,
-      alpha: { from: 0.42, to: 0.95 },
-      duration: 1300 + i * 220,
+      y: note.y - 9 - i,
+      alpha: { from: 0.38, to: 0.96 },
+      duration: 1350 + i * 180,
       yoyo: true,
       repeat: -1,
       ease: "Sine.easeInOut",
     });
   });
 
-  // Let the actual collectible page become the visual focus instead of a tiny
-  // generic pickup floating inside the effects.
-  it.obj.setScale(1.22).setTint(0xfff0d0);
+  // Keep the original pickup visible as a warm central emblem, but let the
+  // authored parchment artwork carry the silhouette.
+  it.obj.setScale(0.74).setTint(0xffe6c2).setDepth(pageDepth + 2).setAlpha(0.72);
   scene.tweens.add({
-    targets: it.obj,
-    scaleX: 1.3,
-    scaleY: 1.3,
-    duration: 1450,
+    targets: [outer, inner],
+    y: y - 2,
+    duration: 1500,
     yoyo: true,
     repeat: -1,
     ease: "Sine.easeInOut",
@@ -170,40 +222,40 @@ function decorateSheet(scene: SceneLike, id: string) {
     });
     it.obj.setData("act3SheetTremble", tremble);
   } else if (id === "1") {
-    const memoryRing = scene.add.circle(x, y, 41, 0xffd98b, 0.08).setDepth(2);
-    memoryRing.setStrokeStyle(2, 0xffc86a, 0.42);
+    const memoryRing = scene.add.circle(x, y, 50, 0xffd98b, 0.07).setDepth(2);
+    memoryRing.setStrokeStyle(2, 0xffc86a, 0.4);
     visuals.push(memoryRing);
     scene.tweens.add({
       targets: memoryRing,
       alpha: 0.2,
-      scale: 1.16,
-      duration: 1350,
+      scale: 1.14,
+      duration: 1400,
       yoyo: true,
       repeat: -1,
       ease: "Sine.easeInOut",
     });
   } else {
-    const sanctuary = scene.add.circle(x, y, 48, 0xfff1bd, 0.07).setDepth(2);
+    const sanctuary = scene.add.circle(x, y, 56, 0xfff1bd, 0.065).setDepth(2);
     sanctuary.setStrokeStyle(1.5, 0xffe7ad, 0.4);
     visuals.push(sanctuary);
     scene.tweens.add({
       targets: sanctuary,
       alpha: 0.18,
       scale: 1.1,
-      duration: 1800,
+      duration: 1850,
       yoyo: true,
       repeat: -1,
       ease: "Sine.easeInOut",
     });
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 7; i++) {
       const petal = scene.add
-        .ellipse(x + Phaser.Math.Between(-34, 34), y + Phaser.Math.Between(-25, 25), 5, 3, 0xffb8cf, 0.72)
+        .ellipse(x + Phaser.Math.Between(-40, 40), y + Phaser.Math.Between(-30, 30), 5, 3, 0xffb8cf, 0.72)
         .setDepth(4);
       visuals.push(petal);
       scene.tweens.add({
         targets: petal,
-        y: petal.y - 14,
-        x: petal.x + Phaser.Math.Between(-9, 9),
+        y: petal.y - 16,
+        x: petal.x + Phaser.Math.Between(-10, 10),
         angle: Phaser.Math.Between(-80, 80),
         alpha: 0.15,
         duration: 1800 + i * 150,
@@ -229,37 +281,63 @@ function clearSheetScene(scene: SceneLike, it: any) {
 }
 
 function addRevealNotes(scene: SceneLike, x: number, y: number, accent: number) {
-  for (let i = 0; i < 8; i++) {
-    const angle = (i / 8) * Math.PI * 2;
+  const total = 14;
+  for (let i = 0; i < total; i++) {
+    const side = i % 2 === 0 ? -1 : 1;
+    const lane = Math.floor(i / 2);
+    const spreadX = 24 + lane * 10;
+    const rise = 30 + lane * 8;
     const note = scene.add
-      .text(x, y, i % 3 === 0 ? "♫" : "♪", {
+      .text(x + side * 4, y - 2, i % 4 === 0 ? "♫" : i % 3 === 0 ? "♩" : "♪", {
         fontFamily: "Georgia, serif",
-        fontSize: i % 3 === 0 ? "13px" : "10px",
+        fontSize: i % 4 === 0 ? "15px" : i % 3 === 0 ? "12px" : "10px",
         color: i % 2 === 0 ? "#ffe59a" : "#ff9fbd",
         stroke: "#60405f",
         strokeThickness: 1,
       })
       .setOrigin(0.5)
       .setDepth(20)
-      .setAlpha(0.92);
+      .setAlpha(0.94)
+      .setScale(0.72);
+
     scene.tweens.add({
       targets: note,
-      x: x + Math.cos(angle) * (42 + (i % 2) * 16),
-      y: y + Math.sin(angle) * (28 + (i % 2) * 10) - 10,
+      x: x + side * spreadX,
+      y: y - rise - (lane % 2) * 8,
+      angle: side * (8 + lane * 2),
       alpha: 0,
-      scale: 1.3,
-      duration: 850 + i * 35,
+      scale: 1.22 + (i % 3) * 0.08,
+      delay: lane * 55,
+      duration: 920 + lane * 55,
       ease: "Sine.easeOut",
       onComplete: () => note.destroy(),
     });
   }
 
-  const ring = scene.add.circle(x, y, 18, accent, 0.08).setDepth(7).setStrokeStyle(2, 0xffe8a6, 0.75);
+  // Small gold sparks fill the space between the two note arcs without making
+  // the reveal feel like a dense explosion.
+  for (let i = 0; i < 7; i++) {
+    const side = i % 2 === 0 ? -1 : 1;
+    const spark = scene.add.circle(x, y, 1.8 + (i % 2) * 0.7, 0xffe7a1, 0.9).setDepth(19);
+    scene.tweens.add({
+      targets: spark,
+      x: x + side * (18 + i * 8),
+      y: y - 24 - i * 9,
+      alpha: 0,
+      scale: 0.3,
+      delay: i * 45,
+      duration: 760 + i * 40,
+      ease: "Sine.easeOut",
+      onComplete: () => spark.destroy(),
+    });
+  }
+
+  const ring = scene.add.circle(x, y, 18, accent, 0.08).setDepth(7).setStrokeStyle(2, 0xffe8a6, 0.78);
   scene.tweens.add({
     targets: ring,
-    scale: 3.4,
+    scale: 4.1,
     alpha: 0,
-    duration: 950,
+    duration: 1050,
     ease: "Sine.easeOut",
     onComplete: () => ring.destroy(),
   });
