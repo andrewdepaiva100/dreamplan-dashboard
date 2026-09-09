@@ -4,10 +4,14 @@ import { currency } from "@/lib/plan-data";
 type Owner = "andrew" | "maria" | "family" | "other";
 type Contribution = { id: string; date: string; owner: Owner; amount: number; note?: string };
 type Week = { week: number; start: string; end: string; label: string; andrew: number; maria: number; family: number; other: number; total: number };
+type Overrides = Record<string, number>;
+type StartBalances = { andrew: number; andrewFamily: number };
 
 const ANDREW_START = 6300;
 const ANDREW_FAMILY = 6038;
 const STORAGE_KEY = "dreamplan-savings-contributions-v1";
+const OVERRIDES_KEY = "dreamplan-savings-week-overrides-v1";
+const START_BALANCES_KEY = "dreamplan-savings-start-balances-v1";
 const OWNER_LABEL: Record<Owner, string> = { andrew: "Andrew", maria: "Maria", family: "Maria's Family", other: "Other" };
 
 // Source entries transcribed from the supplied trackers. The original wedding tracker ends Jul 11;
@@ -47,16 +51,46 @@ function addDays(s: string, n: number) { const d=parseDate(s); d.setUTCDate(d.ge
 function fmt(s: string) { return parseDate(s).toLocaleDateString("en-US",{month:"short",day:"numeric",timeZone:"UTC"}); }
 function weekEndFor(date: string) { const d=parseDate(date); const day=d.getUTCDay(); const delta=(6-day+7)%7; d.setUTCDate(d.getUTCDate()+delta); return iso(d); }
 function todayIso() { return new Date().toISOString().slice(0,10); }
+function overrideKey(end: string, owner: Owner) { return `${end}:${owner}`; }
 
 function loadExtras(): Contribution[] {
   if (typeof window === "undefined") return [];
   try { const v=JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
 }
+function loadOverrides(): Overrides {
+  if (typeof window === "undefined") return {};
+  try { const v=JSON.parse(localStorage.getItem(OVERRIDES_KEY) ?? "{}"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch { return {}; }
+}
+function loadStartBalances(): StartBalances {
+  if (typeof window === "undefined") return { andrew: ANDREW_START, andrewFamily: ANDREW_FAMILY };
+  try {
+    const v=JSON.parse(localStorage.getItem(START_BALANCES_KEY) ?? "{}");
+    return {
+      andrew: Number.isFinite(Number(v?.andrew)) ? Number(v.andrew) : ANDREW_START,
+      andrewFamily: Number.isFinite(Number(v?.andrewFamily)) ? Number(v.andrewFamily) : ANDREW_FAMILY,
+    };
+  } catch { return { andrew: ANDREW_START, andrewFamily: ANDREW_FAMILY }; }
+}
 
 function StatCard({label,value}:{label:string;value:number}) { return <div className="rounded-xl border border-mist bg-white/70 px-4 py-3"><div className="text-[11px] font-semibold uppercase tracking-wider text-ink-soft">{label}</div><div className="mt-1 font-display text-lg font-bold tabular-nums text-navy">{currency(value)}</div></div>; }
 
+function EditableAmount({value,onSave,label}:{value:number;onSave:(value:number)=>void;label:string}) {
+  const [editing,setEditing]=useState(false);
+  const [draft,setDraft]=useState(String(value));
+  function begin(){setDraft(String(value));setEditing(true);}
+  function save(){
+    const n=Number(draft);
+    if(Number.isFinite(n)&&n>=0) onSave(Math.round(n*100)/100);
+    setEditing(false);
+  }
+  if(editing) return <input autoFocus type="number" min="0" step="0.01" inputMode="decimal" value={draft} onChange={e=>setDraft(e.target.value)} onBlur={save} onKeyDown={e=>{if(e.key==="Enter")e.currentTarget.blur();if(e.key==="Escape")setEditing(false);}} aria-label={label} className="w-24 rounded-md border border-navy/30 bg-white px-2 py-1 text-sm tabular-nums text-ink outline-none focus:ring-2 focus:ring-navy/20"/>;
+  return <button type="button" onClick={begin} className="min-w-12 rounded-md px-1.5 py-1 text-left tabular-nums hover:bg-gold/10 focus:outline-none focus:ring-2 focus:ring-navy/20" aria-label={`Edit ${label}`}>{value?currency(value):"—"}</button>;
+}
+
 export function SavingsTracker() {
   const [extras,setExtras]=useState<Contribution[]>(loadExtras);
+  const [overrides,setOverrides]=useState<Overrides>(loadOverrides);
+  const [startBalances,setStartBalances]=useState<StartBalances>(loadStartBalances);
   const [date,setDate]=useState(todayIso());
   const [amount,setAmount]=useState("");
   const [owner,setOwner]=useState<Owner>("andrew");
@@ -67,32 +101,47 @@ export function SavingsTracker() {
     const firstEnd="2026-03-07";
     const lastContribution=contributions.at(-1)?.date ?? firstEnd;
     const horizon=weekEndFor(lastContribution > todayIso() ? lastContribution : todayIso());
-    const result: Week[]=[]; let end=firstEnd; let running=ANDREW_START; let num=1;
+    const result: Week[]=[]; let end=firstEnd; let running=startBalances.andrew; let num=1;
     while(end<=horizon && num<80){
       const start=addDays(end,-6); const inWeek=contributions.filter(c=>c.date>=start&&c.date<=end);
-      const sums=(who:Owner)=>inWeek.filter(c=>c.owner===who).reduce((s,c)=>s+c.amount,0);
-      const andrew=sums("andrew"),maria=sums("maria"),family=sums("family"),other=sums("other");
+      const sum=(who:Owner)=>inWeek.filter(c=>c.owner===who).reduce((s,c)=>s+c.amount,0);
+      const value=(who:Owner)=>Object.prototype.hasOwnProperty.call(overrides,overrideKey(end,who))?overrides[overrideKey(end,who)]!:sum(who);
+      const andrew=value("andrew"),maria=value("maria"),family=value("family"),other=value("other");
       running+=andrew+maria+family+other;
       result.push({week:num,start,end,label:`${fmt(start)}–${fmt(end)}`,andrew,maria,family,other,total:running});
       end=addDays(end,7); num++;
     }
     return result;
-  },[contributions]);
+  },[contributions,overrides,startBalances.andrew]);
 
   const totals=useMemo(()=>({
-    andrew:ANDREW_START+contributions.filter(c=>c.owner==="andrew").reduce((s,c)=>s+c.amount,0),
-    maria:contributions.filter(c=>c.owner==="maria").reduce((s,c)=>s+c.amount,0),
-    andrewFamily:ANDREW_FAMILY,
-    family:contributions.filter(c=>c.owner==="family").reduce((s,c)=>s+c.amount,0),
-    other:contributions.filter(c=>c.owner==="other").reduce((s,c)=>s+c.amount,0),
-  }),[contributions]);
+    andrew:startBalances.andrew+weeks.reduce((s,w)=>s+w.andrew,0),
+    maria:weeks.reduce((s,w)=>s+w.maria,0),
+    andrewFamily:startBalances.andrewFamily,
+    family:weeks.reduce((s,w)=>s+w.family,0),
+    other:weeks.reduce((s,w)=>s+w.other,0),
+  }),[weeks,startBalances]);
   const running=totals.andrew+totals.maria+totals.andrewFamily+totals.family+totals.other;
 
   function addContribution(e: React.FormEvent){
     e.preventDefault(); const n=Number(amount);
     if(!date||!Number.isFinite(n)||n<=0){setMessage("Choose a date and enter an amount greater than $0.");return;}
     const item:Contribution={id:`manual-${Date.now()}`,date,owner,amount:Math.round(n*100)/100};
-    const next=[...extras,item]; setExtras(next); localStorage.setItem(STORAGE_KEY,JSON.stringify(next)); setAmount(""); setMessage(`${OWNER_LABEL[owner]} — ${currency(item.amount)} added to the week containing ${fmt(date)}.`);
+    const next=[...extras,item]; setExtras(next); localStorage.setItem(STORAGE_KEY,JSON.stringify(next));
+    const key=overrideKey(weekEndFor(date),owner);
+    if(Object.prototype.hasOwnProperty.call(overrides,key)){
+      const nextOverrides={...overrides,[key]:Math.round((overrides[key]!+item.amount)*100)/100};
+      setOverrides(nextOverrides); localStorage.setItem(OVERRIDES_KEY,JSON.stringify(nextOverrides));
+    }
+    setAmount(""); setMessage(`${OWNER_LABEL[owner]} — ${currency(item.amount)} added to the week containing ${fmt(date)}.`);
+  }
+  function saveWeekAmount(end:string,who:Owner,value:number){
+    const next={...overrides,[overrideKey(end,who)]:value}; setOverrides(next); localStorage.setItem(OVERRIDES_KEY,JSON.stringify(next));
+    setMessage(`${OWNER_LABEL[who]} — ${currency(value)} saved for the week ending ${fmt(end)}.`);
+  }
+  function saveStart(which:keyof StartBalances,value:number){
+    const next={...startBalances,[which]:value}; setStartBalances(next); localStorage.setItem(START_BALANCES_KEY,JSON.stringify(next));
+    setMessage(`${which==="andrew"?"Andrew":"Andrew's Family"} starting balance updated to ${currency(value)}.`);
   }
 
   return <div className="space-y-6">
@@ -101,7 +150,7 @@ export function SavingsTracker() {
     </div>
 
     <form onSubmit={addContribution} className="rounded-xl border border-mist bg-white/70 p-4">
-      <div className="mb-3"><h3 className="font-display text-base font-bold text-navy">Add savings</h3><p className="text-xs text-ink-soft">Pick the exact day. The contribution is placed into its weekly row automatically.</p></div>
+      <div className="mb-3"><h3 className="font-display text-base font-bold text-navy">Add savings</h3><p className="text-xs text-ink-soft">Pick the exact day. The contribution is placed into its weekly row automatically. You can also tap any weekly amount below to edit it directly.</p></div>
       <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
         <label className="text-xs font-semibold text-navy">Date<input type="date" value={date} onChange={e=>setDate(e.target.value)} className="mt-1 block min-h-11 w-full rounded-lg border border-mist bg-white px-3 text-base font-normal text-ink" required/></label>
         <label className="text-xs font-semibold text-navy">Amount<input type="number" min="0.01" step="0.01" inputMode="decimal" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="$0.00" className="mt-1 block min-h-11 w-full rounded-lg border border-mist bg-white px-3 text-base font-normal text-ink" required/></label>
@@ -112,14 +161,14 @@ export function SavingsTracker() {
     </form>
 
     <div className="overflow-x-auto rounded-xl border border-mist">
-      <table className="w-full min-w-[760px] border-collapse text-[13px]">
+      <table className="w-full min-w-[820px] border-collapse text-[13px]">
         <thead><tr className="bg-mist/40 text-left">{["Week","Dates","Andrew","Maria","Andrew's Family","Maria's Family","Other","Running total"].map(h=><th key={h} className="px-3 py-2 font-semibold text-navy">{h}</th>)}</tr></thead>
         <tbody>
-          <tr className="bg-gold/10"><td className="px-3 py-2">Start</td><td className="px-3 py-2 text-ink-soft">Mar 1</td><td className="px-3 py-2">{currency(ANDREW_START)}</td><td>—</td><td className="px-3 py-2">{currency(ANDREW_FAMILY)}</td><td>—</td><td>—</td><td className="px-3 py-2 font-semibold">{currency(ANDREW_START+ANDREW_FAMILY)}</td></tr>
-          {weeks.map(w=><tr key={w.week} className="border-t border-mist/70"><td className="px-3 py-2 text-ink-soft">{w.week}</td><td className="px-3 py-2 whitespace-nowrap text-ink-soft">{w.label}</td><td className="px-3 py-2 tabular-nums">{w.andrew?currency(w.andrew):"—"}</td><td className="px-3 py-2 tabular-nums">{w.maria?currency(w.maria):"—"}</td><td className="px-3 py-2 tabular-nums">{w.family?currency(w.family):"—"}</td><td className="px-3 py-2 tabular-nums">{w.other?currency(w.other):"—"}</td><td className="px-3 py-2 font-semibold tabular-nums text-navy">{currency(w.total)}</td></tr>)}
+          <tr className="bg-gold/10"><td className="px-3 py-2">Start</td><td className="px-3 py-2 text-ink-soft">Mar 1</td><td className="px-3 py-2"><EditableAmount value={startBalances.andrew} onSave={v=>saveStart("andrew",v)} label="Andrew starting balance"/></td><td className="px-3 py-2">—</td><td className="px-3 py-2"><EditableAmount value={startBalances.andrewFamily} onSave={v=>saveStart("andrewFamily",v)} label="Andrew's Family starting balance"/></td><td className="px-3 py-2">—</td><td className="px-3 py-2">—</td><td className="px-3 py-2 font-semibold tabular-nums">{currency(startBalances.andrew+startBalances.andrewFamily)}</td></tr>
+          {weeks.map(w=><tr key={w.week} className="border-t border-mist/70"><td className="px-3 py-2 text-ink-soft">{w.week}</td><td className="px-3 py-2 whitespace-nowrap text-ink-soft">{w.label}</td><td className="px-3 py-2"><EditableAmount value={w.andrew} onSave={v=>saveWeekAmount(w.end,"andrew",v)} label={`Andrew, ${w.label}`}/></td><td className="px-3 py-2"><EditableAmount value={w.maria} onSave={v=>saveWeekAmount(w.end,"maria",v)} label={`Maria, ${w.label}`}/></td><td className="px-3 py-2 text-ink-soft">—</td><td className="px-3 py-2"><EditableAmount value={w.family} onSave={v=>saveWeekAmount(w.end,"family",v)} label={`Maria's Family, ${w.label}`}/></td><td className="px-3 py-2"><EditableAmount value={w.other} onSave={v=>saveWeekAmount(w.end,"other",v)} label={`Other, ${w.label}`}/></td><td className="px-3 py-2 font-semibold tabular-nums text-navy">{currency(w.total+startBalances.andrewFamily)}</td></tr>)}
         </tbody>
       </table>
     </div>
-    <p className="text-[11px] text-ink-soft">Historical entries through Jul 11 come from the original tracker. Later entries are transcribed from the honeymoon and apartment sheets you provided. New entries are saved in this browser.</p>
+    <p className="text-[11px] text-ink-soft">Tap any weekly amount to edit it. Enter 0 to clear that amount. Historical entries through Jul 11 come from the original tracker; later entries are transcribed from the honeymoon and apartment sheets you provided. Direct edits and new entries are saved in this browser.</p>
   </div>;
 }
