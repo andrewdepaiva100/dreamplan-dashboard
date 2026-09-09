@@ -4,6 +4,8 @@ type Reply = { maria: string; andrew: string };
 type Beat = { andrew: string; replies: Reply[] };
 
 const ZONE = "the_haven";
+const FIRST_SWORD_LINE =
+  "I made this sword for you — I thought you might need it. Rose-pink, because that is what you are to me. I kept the blue one, so wherever this road goes, I'm swinging right beside you.";
 
 function setStyle(el: HTMLElement, values: Record<string, string>) { Object.assign(el.style, values); }
 const r = (maria: string, andrew: string): Reply => ({ maria, andrew });
@@ -98,13 +100,42 @@ function progressBeats(line: string): Beat[] {
   return [{ andrew: line, replies: [r("I'm with you.", "That's the part I never doubt."), r("We'll finish this together.", "Together. Even when one of us has to walk a few steps ahead.")] }];
 }
 
-function beatsFor(line: string): Beat[] {
-  if (line.includes("I have something for you. A sword")) return openingBeats();
+function beatsFor(line: string, firstTalk: boolean): Beat[] {
+  if (firstTalk || line === FIRST_SWORD_LINE) return openingBeats();
   return progressBeats(line);
 }
 
-function showAndrew(scene: any, line: string) {
-  const beats = beatsFor(line);
+function makeAndrewPortrait(scene: any): HTMLElement | null {
+  const andrew = scene.interactables?.find?.((it: any) => it?.kind === "andrew" && it?.obj?.active);
+  const sprite = andrew?.obj;
+  const frame = sprite?.frame;
+  const source = frame?.source?.image;
+  if (!frame || !source) return null;
+
+  const portrait = document.createElement("div");
+  portrait.className = "quest-act3-andrew-portrait";
+  setStyle(portrait, {
+    width: "108px", height: "108px", flex: "0 0 108px", borderRadius: "24px",
+    border: "2px solid rgba(255,159,197,.82)", background: "radial-gradient(circle,rgba(255,159,197,.2),rgba(7,18,33,.97))",
+    boxShadow: "0 10px 28px rgba(0,0,0,.38),0 0 22px rgba(255,159,197,.16)", display: "grid", placeItems: "center", overflow: "hidden"
+  });
+  const canvas = document.createElement("canvas");
+  canvas.width = 108; canvas.height = 108;
+  setStyle(canvas, { width: "100px", height: "100px", imageRendering: "pixelated" });
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.imageSmoothingEnabled = false;
+  const sw = frame.cutWidth ?? frame.width;
+  const sh = frame.cutHeight ?? frame.height;
+  const scale = Math.min(86 / sw, 86 / sh);
+  const dw = sw * scale, dh = sh * scale;
+  ctx.drawImage(source, frame.cutX ?? 0, frame.cutY ?? 0, sw, sh, (108 - dw) / 2, 108 - dh - 8, dw, dh);
+  portrait.append(canvas);
+  return portrait;
+}
+
+function showAndrew(scene: any, line: string, firstTalk = false) {
+  const beats = beatsFor(line, firstTalk);
   const parent = scene.game?.canvas?.parentElement ?? document.body;
   const mobile = window.innerWidth < 700;
   scene.frozen = true; scene.physics?.pause?.();
@@ -113,9 +144,17 @@ function showAndrew(scene: any, line: string) {
   setStyle(overlay, { position: "absolute", inset: "0", zIndex: "10070", display: "flex", alignItems: mobile ? "flex-end" : "center", justifyContent: "center", padding: mobile ? "10px" : "24px", boxSizing: "border-box", background: "radial-gradient(circle at 25% 28%,rgba(255,159,197,.16),rgba(3,8,18,.91) 64%)" });
   const card = document.createElement("div");
   setStyle(card, { width: "min(96vw,900px)", maxHeight: mobile ? "91vh" : "84vh", overflow: "auto", border: "2px solid rgba(255,159,197,.72)", borderRadius: mobile ? "18px" : "26px", background: "linear-gradient(145deg,rgba(36,23,38,.99),rgba(7,18,33,.99) 74%)", boxShadow: "0 24px 64px rgba(0,0,0,.55),0 0 34px rgba(255,159,197,.12)", color: "white", padding: mobile ? "18px" : "26px", boxSizing: "border-box" });
+
+  const header = document.createElement("div");
+  setStyle(header, { display: "flex", alignItems: "center", gap: mobile ? "14px" : "20px" });
+  const portrait = makeAndrewPortrait(scene);
+  if (portrait) header.append(portrait);
+  const headerCopy = document.createElement("div"); setStyle(headerCopy, { minWidth: "0", flex: "1" });
   const eyebrow = document.createElement("div"); eyebrow.textContent = "A CONVERSATION IN THE HAVEN"; setStyle(eyebrow, { fontSize: "10px", letterSpacing: ".2em", fontWeight: "900", color: "#f4d37d" });
   const title = document.createElement("div"); title.textContent = "♥  Andrew"; setStyle(title, { marginTop: "5px", fontFamily: "Georgia,serif", fontSize: mobile ? "25px" : "32px", fontWeight: "800", color: "#ff9fc5" });
   const role = document.createElement("div"); role.textContent = "Your person · here for the song before returning to the Cathedral"; setStyle(role, { marginTop: "4px", fontSize: "11px", color: "rgba(255,255,255,.58)" });
+  headerCopy.append(eyebrow, title, role); header.append(headerCopy);
+
   const progress = document.createElement("div"); setStyle(progress, { marginTop: "17px", fontSize: "10px", letterSpacing: ".14em", fontWeight: "900", color: "rgba(255,255,255,.4)" });
   const speech = document.createElement("div"); setStyle(speech, { marginTop: "12px", minHeight: "76px", fontFamily: "Georgia,serif", fontStyle: "italic", fontSize: mobile ? "15px" : "19px", lineHeight: "1.58", color: "rgba(255,255,255,.96)" });
   const prompt = document.createElement("div"); prompt.textContent = "Maria responds"; setStyle(prompt, { marginTop: "20px", marginBottom: "9px", fontSize: "10px", letterSpacing: ".14em", fontWeight: "900", color: "rgba(255,255,255,.48)", textTransform: "uppercase" });
@@ -144,7 +183,7 @@ function showAndrew(scene: any, line: string) {
   };
   next.onclick = () => { if (index >= beats.length - 1) close(); else { index += 1; render(); card.scrollTop = 0; } };
 
-  card.append(eyebrow, title, role, progress, speech, prompt, choices, response, next); overlay.append(card); parent.append(overlay); render();
+  card.append(header, progress, speech, prompt, choices, response, next); overlay.append(card); parent.append(overlay); render();
 }
 
 export function installAct3AndrewDialogue(QuestScene: any) {
@@ -154,12 +193,15 @@ export function installAct3AndrewDialogue(QuestScene: any) {
   const originalOpenModal = proto.openModal;
   if (typeof originalOpenModal !== "function") return;
 
-  // Installed after the global character-dialogue layer so Haven's Andrew
-  // conversations can use progress-aware Maria responses without affecting
-  // Andrew or any other character in other acts.
+  // Haven's first Andrew modal is the base Love Sword line. Recognize that
+  // exact payload directly so the same interaction continues through all eight
+  // beats, including the three-sheet explanation, without requiring a second
+  // Talk interaction.
   proto.openModal = function act3AndrewModal(payload: any) {
     if (this.save?.current_zone === ZONE && payload?.type === "andrew") {
-      showAndrew(this, String(payload.line ?? ""));
+      const line = String(payload.line ?? "");
+      const firstTalk = payload.act3FirstAndrew === true || line === FIRST_SWORD_LINE;
+      showAndrew(this, line, firstTalk);
       return;
     }
     return originalOpenModal.call(this, payload);
