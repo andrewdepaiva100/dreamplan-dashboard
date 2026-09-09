@@ -83,10 +83,11 @@ export function SavingsTracker() {
   const totals=useMemo(()=>({
     andrew:ANDREW_START+contributions.filter(c=>c.owner==="andrew").reduce((s,c)=>s+c.amount,0),
     maria:contributions.filter(c=>c.owner==="maria").reduce((s,c)=>s+c.amount,0),
+    andrewFamily:ANDREW_FAMILY,
     family:contributions.filter(c=>c.owner==="family").reduce((s,c)=>s+c.amount,0),
     other:contributions.filter(c=>c.owner==="other").reduce((s,c)=>s+c.amount,0),
   }),[contributions]);
-  const running=totals.andrew+totals.maria+totals.family+totals.other;
+  const running=totals.andrew+totals.maria+totals.andrewFamily+totals.family+totals.other;
 
   function addContribution(e: React.FormEvent){
     e.preventDefault(); const n=Number(amount);
@@ -96,8 +97,8 @@ export function SavingsTracker() {
   }
 
   return <div className="space-y-6">
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-      <StatCard label="Andrew" value={totals.andrew}/><StatCard label="Maria" value={totals.maria}/><StatCard label="Maria's family" value={totals.family}/><StatCard label="Other" value={totals.other}/><StatCard label="Running total" value={running}/>
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <StatCard label="Andrew" value={totals.andrew}/><StatCard label="Maria" value={totals.maria}/><StatCard label="Andrew's Family" value={totals.andrewFamily}/><StatCard label="Maria's family" value={totals.family}/><StatCard label="Other" value={totals.other}/><StatCard label="Running total" value={running}/>
     </div>
 
     <form onSubmit={addContribution} className="rounded-xl border border-mist bg-white/70 p-4">
@@ -113,9 +114,9 @@ export function SavingsTracker() {
 
     <div className="overflow-x-auto rounded-xl border border-mist">
       <table className="w-full min-w-[760px] border-collapse text-[13px]">
-        <thead><tr className="bg-mist/40 text-left">{["Week","Dates","Andrew","Maria","Maria's Family","Other","Running total"].map(h=><th key={h} className="px-3 py-2 font-semibold text-navy">{h}</th>)}</tr></thead>
+        <thead><tr className="bg-mist/40 text-left">{["Week","Dates","Andrew","Maria","Andrew's Family","Maria's Family","Other","Running total"].map(h=><th key={h} className="px-3 py-2 font-semibold text-navy">{h}</th>)}</tr></thead>
         <tbody>
-          <tr className="bg-gold/10"><td className="px-3 py-2">Start</td><td className="px-3 py-2 text-ink-soft">Mar 1</td><td className="px-3 py-2">{currency(ANDREW_START)}</td><td>—</td><td>—</td><td>—</td><td className="px-3 py-2 font-semibold">{currency(ANDREW_START)}</td></tr>
+          <tr className="bg-gold/10"><td className="px-3 py-2">Start</td><td className="px-3 py-2 text-ink-soft">Mar 1</td><td className="px-3 py-2">{currency(ANDREW_START)}</td><td>—</td><td className="px-3 py-2">{currency(ANDREW_FAMILY)}</td><td>—</td><td>—</td><td className="px-3 py-2 font-semibold">{currency(ANDREW_START+ANDREW_FAMILY)}</td></tr>
           {weeks.map(w=><tr key={w.week} className="border-t border-mist/70"><td className="px-3 py-2 text-ink-soft">{w.week}</td><td className="px-3 py-2 whitespace-nowrap text-ink-soft">{w.label}</td><td className="px-3 py-2 tabular-nums">{w.andrew?currency(w.andrew):"—"}</td><td className="px-3 py-2 tabular-nums">{w.maria?currency(w.maria):"—"}</td><td className="px-3 py-2 tabular-nums">{w.family?currency(w.family):"—"}</td><td className="px-3 py-2 tabular-nums">{w.other?currency(w.other):"—"}</td><td className="px-3 py-2 font-semibold tabular-nums text-navy">{currency(w.total)}</td></tr>)}
         </tbody>
       </table>
