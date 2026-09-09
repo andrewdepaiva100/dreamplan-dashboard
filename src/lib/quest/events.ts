@@ -20,7 +20,7 @@ if (typeof window !== "undefined") {
       import("./lastCrossingDefense"), import("./majesticPortal"), import("./relicPresentation"), import("./act2Enemies"),
       import("./act2GardenKeeper"), import("./act2EvelynSprite"), import("./act2VisualTuning"), import("./act2GuideCleanup"),
       import("./act2SeasonIdentity"), import("./act2BramForgemaster"), import("./act2BramWeaponOwnership"), import("./act2SeasonChallenges"),
-      import("./act2BossRemaster"), import("./act2Wildlife"), import("./act2Memorial"), import("./meleeHitPolish"), import("./act3OpeningFlow"), import("./act3Enemies"), import("./global2_5dPolish"), import("./desktopActSelector"), import("./desktopControlsPolish"), import("./interactionPolish"),
+      import("./act2BossRemaster"), import("./act2Wildlife"), import("./act2Memorial"), import("./meleeHitPolish"), import("./act3OpeningFlow"), import("./act3Enemies"), import("./act3BossPolish"), import("./global2_5dPolish"), import("./desktopActSelector"), import("./desktopControlsPolish"), import("./interactionPolish"),
       import("./wrenIntro"), import("./lastCrossingDialogueRebind"), import("./weaponVisualSync"), import("./introUiPolish"),
       import("./mariaMovementPolish"), import("./mariaCombatAnimation"), import("./globalCharacterReactions"), import("./globalNpcLife"), import("./enemyReactionPolish"),
       import("./actArrivalCinematics"), import("./environmentalMicroLife"),
@@ -29,7 +29,7 @@ if (typeof window !== "undefined") {
       silasPlacementFix, lastCrossingLifecycle, act1GameplayPolish, fallenCrossingShrine, fallenCrossingJournalBook,
       wardenCombat, act1WoodenBridges, wardenTidalRings, act1ExplorationArt, lastCrossingDefense, majesticPortal,
       relicPresentation, act2Enemies, act2GardenKeeper, act2EvelynSprite, act2VisualTuning, act2GuideCleanup,
-      act2SeasonIdentity, act2BramForgemaster, act2BramWeaponOwnership, act2SeasonChallenges, act2BossRemaster, act2Wildlife, act2Memorial, meleeHitPolish, act3OpeningFlow, act3Enemies, global25DPolish,
+      act2SeasonIdentity, act2BramForgemaster, act2BramWeaponOwnership, act2SeasonChallenges, act2BossRemaster, act2Wildlife, act2Memorial, meleeHitPolish, act3OpeningFlow, act3Enemies, act3BossPolish, global25DPolish,
       desktopActSelector, desktopControlsPolish, interactionPolish, wrenIntro, lastCrossingDialogueRebind, weaponVisualSync,
       introUiPolish, mariaMovementPolish, mariaCombatAnimation, globalCharacterReactions, globalNpcLife, enemyReactionPolish, actArrivalCinematics,
       environmentalMicroLife,
@@ -70,6 +70,7 @@ if (typeof window !== "undefined") {
       meleeHitPolish.installMeleeHitPolish(QuestScene);
       act3OpeningFlow.installAct3OpeningFlow(QuestScene);
       act3Enemies.installAct3Enemies(QuestScene);
+      act3BossPolish.installAct3BossPolish(QuestScene);
       global25DPolish.installGlobal25DPolish(QuestScene);
       desktopActSelector.installDesktopActSelector(QuestScene);
       desktopControlsPolish.installDesktopControlsPolish();
