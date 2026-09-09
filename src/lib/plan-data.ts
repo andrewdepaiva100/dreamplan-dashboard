@@ -11,6 +11,8 @@ export type PlanState = {
     checkingAcct: string;
     savings: number;
     savingsAcct: string;
+    savings2: number;
+    savings2Acct: string;
     marcus: number;
     marcusAcct: string;
     herParents: number;
@@ -124,6 +126,8 @@ export const DEFAULT_PLAN: PlanState = {
     checkingAcct: "****3574",
     savings: 8013.05,
     savingsAcct: "****7748",
+    savings2: 950,
+    savings2Acct: "****5611",
     marcus: 4425.61,
     marcusAcct: "****4845",
     herParents: 7864.12,
