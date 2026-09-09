@@ -83,10 +83,11 @@ export function SavingsTracker() {
   const totals=useMemo(()=>({
     andrew:ANDREW_START+contributions.filter(c=>c.owner==="andrew").reduce((s,c)=>s+c.amount,0),
     maria:contributions.filter(c=>c.owner==="maria").reduce((s,c)=>s+c.amount,0),
+    andrewFamily:ANDREW_FAMILY,
     family:contributions.filter(c=>c.owner==="family").reduce((s,c)=>s+c.amount,0),
     other:contributions.filter(c=>c.owner==="other").reduce((s,c)=>s+c.amount,0),
   }),[contributions]);
-  const running=totals.andrew+totals.maria+totals.family+totals.other;
+  const running=totals.andrew+totals.maria+totals.andrewFamily+totals.family+totals.other;
 
   function addContribution(e: React.FormEvent){
     e.preventDefault(); const n=Number(amount);
