@@ -119,6 +119,7 @@ const BUDGET_COLORS: Record<string, string> = {
 const FUND_COLORS = {
   checking: "var(--navy)",
   savings: "var(--royal)",
+  savings2: "var(--sky)",
   marcus: "var(--gold)",
   herParents: "var(--teal)",
   yourParents: "var(--sky)",
@@ -219,7 +220,7 @@ function Index() {
   }, [health.metrics, health.latest, logChange]);
 
   const targetBudget = sum(plan.budget);
-  const personalCash = plan.funds.checking + plan.funds.savings + plan.funds.marcus;
+  const personalCash = plan.funds.checking + plan.funds.savings + plan.funds.savings2 + plan.funds.marcus;
   const familyContrib = plan.funds.herParents + plan.funds.yourParents;
   const totalAvailable = personalCash + familyContrib;
   const surplus = totalAvailable - targetBudget;
@@ -251,6 +252,7 @@ function Index() {
   const fundSlices = [
     { label: "Checking", value: plan.funds.checking, color: FUND_COLORS.checking },
     { label: "Savings", value: plan.funds.savings, color: FUND_COLORS.savings },
+    { label: "Savings ****5611", value: plan.funds.savings2, color: FUND_COLORS.savings2 },
     { label: "Marcus HYSA", value: plan.funds.marcus, color: FUND_COLORS.marcus },
     { label: "Her Parents", value: plan.funds.herParents, color: FUND_COLORS.herParents },
     { label: "Your Parents", value: plan.funds.yourParents, color: FUND_COLORS.yourParents },
@@ -474,6 +476,33 @@ function Index() {
                     <MoneyInput
                       value={plan.funds.savings}
                       onCommit={(n) => setField("funds", "savings", n, "Savings balance", money)}
+                    />
+                  </Td>
+                </tr>
+                <tr className="transition-colors hover:bg-mist/70">
+                  <Td>
+                    <span className="flex items-center gap-2.5">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ background: FUND_COLORS.savings2 }}
+                      />
+                      <span>
+                        Savings (Acct{" "}
+                        <TextInput
+                          value={plan.funds.savings2Acct}
+                          onCommit={(v) =>
+                            setField("funds", "savings2Acct", v, "Second savings account number")
+                          }
+                          className="w-24 text-center text-[13.5px]"
+                        />
+                        )
+                      </span>
+                    </span>
+                  </Td>
+                  <Td num className="w-[130px]">
+                    <MoneyInput
+                      value={plan.funds.savings2}
+                      onCommit={(n) => setField("funds", "savings2", n, "Second savings balance", money)}
                     />
                   </Td>
                 </tr>
