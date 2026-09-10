@@ -9,7 +9,10 @@
 .absolute.inset-0.z-40 > div:has(.grid.grid-cols-5),
 .absolute.inset-0.z-40 > div:has(.mt-2.grid > button .font-display.text-sm.font-bold) {
   position: relative;
-  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid rgba(198, 154, 71, .58) !important;
   border-radius: 28px !important;
   background: linear-gradient(180deg, rgba(255, 252, 244, .985), rgba(242, 232, 211, .985)) !important;
