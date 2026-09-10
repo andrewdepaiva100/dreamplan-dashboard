@@ -53,7 +53,30 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
 
   return (
     <>
-      <style>{`button[aria-label="Memories"] { visibility: hidden !important; }`}</style>
+      <style>{`
+        button[aria-label="Memories"] { visibility: hidden !important; }
+        @media (hover: hover) and (pointer: fine) {
+          button[aria-label="Memory Journal"] {
+            width: 52px !important;
+            height: 52px !important;
+            min-width: 52px !important;
+            min-height: 52px !important;
+            right: 12px !important;
+            top: calc(max(0.75rem, env(safe-area-inset-top)) + 124px) !important;
+            padding: 3px !important;
+            gap: 3px !important;
+            box-sizing: border-box !important;
+          }
+          button[aria-label="Memory Journal"] > span:first-child {
+            font-size: 20px !important;
+          }
+          button[aria-label="Memory Journal"] > span:last-child {
+            font-size: 8px !important;
+            letter-spacing: .035em !important;
+            line-height: 1 !important;
+          }
+        }
+      `}</style>
       <QuestCore {...(onExit ? { onExit } : {})} />
 
       {playing ? (
