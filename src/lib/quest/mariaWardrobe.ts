@@ -5,16 +5,18 @@ import imgMariaDown from "@/assets/quest/maria-down.png";
 const STORAGE_KEY = "marias-quest-outfit-v1";
 
 const OUTFITS = [
-  { id: "classic", name: "Classic Maria", note: "Brave. Kind. You.", color: null, colors: ["#fff1d6", "#8a4f2b", "#123f73"] },
-  { id: "rose", name: "Rose Dress", note: "Romantic and radiant.", color: "#e83e72", colors: ["#ff6f9d", "#e83e72", "#8f173e"] },
-  { id: "golden", name: "Golden Traveler", note: "For the road ahead.", color: "#d99a12", colors: ["#ffd45a", "#d99a12", "#5e7d31"] },
-  { id: "garden", name: "Garden Dress", note: "Soft as the season.", color: "#3fa968", colors: ["#70d58f", "#3fa968", "#e85d91"] },
-  { id: "evening", name: "Evening Look", note: "Grace in the quiet.", color: "#244f9f", colors: ["#244f9f", "#62329c", "#e1b84f"] },
-  { id: "winter", name: "Winter Wrap", note: "Warm through anything.", color: "#63b9df", colors: ["#bcecff", "#63b9df", "#665c86"] },
-  { id: "sunlit", name: "Sunlit Dress", note: "Light finds you.", color: "#f0a51a", colors: ["#ffe36a", "#f0a51a", "#ef7130"] },
-  { id: "midnight", name: "Midnight Wanderer", note: "Bold and free.", color: "#3f287f", colors: ["#19172b", "#5a34a6", "#245aaa"] },
-  { id: "haven", name: "Heart of Haven", note: "Home, always.", color: "#168fba", colors: ["#2cb9e7", "#168fba", "#5aa66c"] },
-  { id: "crimson", name: "Crimson Trail", note: "Fierce and fearless.", color: "#a81834", colors: ["#e1334f", "#a81834", "#e2aa38"] },
+  { id: "rose", name: "Rose Dress", note: "Romantic and radiant.", color: "#f01861", colors: ["#ff6f9d", "#f01861", "#8f173e"] },
+  { id: "golden", name: "Golden Traveler", note: "For the road ahead.", color: "#e69a00", colors: ["#ffd34f", "#e69a00", "#54742b"] },
+  { id: "garden", name: "Garden Dress", note: "Soft as the season.", color: "#24b85f", colors: ["#63e58d", "#24b85f", "#ef4f8a"] },
+  { id: "evening", name: "Evening Look", note: "Grace in the quiet.", color: "#174fb8", colors: ["#174fb8", "#5f2bb0", "#e5b63c"] },
+  { id: "winter", name: "Winter Wrap", note: "Warm through anything.", color: "#45bfe9", colors: ["#bcefff", "#45bfe9", "#62558f"] },
+  { id: "sunlit", name: "Sunlit Dress", note: "Light finds you.", color: "#f29b00", colors: ["#ffe45d", "#f29b00", "#f06324"] },
+  { id: "midnight", name: "Midnight Wanderer", note: "Bold and free.", color: "#49208f", colors: ["#171326", "#6b2fc2", "#1d58bd"] },
+  { id: "haven", name: "Heart of Haven", note: "Home, always.", color: "#0099c8", colors: ["#24c5ee", "#0099c8", "#4eaa68"] },
+  { id: "crimson", name: "Crimson Trail", note: "Fierce and fearless.", color: "#b50d32", colors: ["#ef284b", "#b50d32", "#e7a72e"] },
+  { id: "lavender", name: "Lavender Dream", note: "Soft, bright, and a little enchanted.", color: "#9455d6", colors: ["#c99aef", "#9455d6", "#e36aa7"] },
+  { id: "ocean", name: "Ocean Breeze", note: "Cool as the open water.", color: "#00a9c9", colors: ["#58d8e9", "#00a9c9", "#1f78b8"] },
+  { id: "classic", name: "Original Dress", note: "Maria exactly as her journey began.", color: null, colors: ["#fff1d6", "#8a4f2b", "#123f73"] },
 ];
 
 function selectedId() {
@@ -26,24 +28,37 @@ function hexToRgb(hex: string) {
   return { r: (value >> 16) & 255, g: (value >> 8) & 255, b: value & 255 };
 }
 
-function recolorImageData(data: Uint8ClampedArray, hex: string) {
+function recolorDressPixels(data: Uint8ClampedArray, width: number, height: number, hex: string) {
   const target = hexToRgb(hex);
-  for (let i = 0; i < data.length; i += 4) {
-    const a = data[i + 3];
-    if (a < 20) continue;
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const chroma = max - min;
-    const light = (r + g + b) / 3;
-    if (light < 112 || chroma > 34) continue;
-    const shade = Math.max(0.42, Math.min(1.14, light / 214));
-    const highlight = Math.max(0, (light - 202) / 75);
-    data[i] = Math.min(255, target.r * shade + 42 * highlight);
-    data[i + 1] = Math.min(255, target.g * shade + 42 * highlight);
-    data[i + 2] = Math.min(255, target.b * shade + 42 * highlight);
+  const startY = Math.floor(height * 0.43);
+
+  // The old recolour pass selected every pale neutral pixel, which included
+  // Maria's face. Wardrobe colour is now spatially restricted to the clothing
+  // region in the lower portion of each sprite frame. Hair, face, skin, eyes,
+  // flower, shoes and other upper-body details are never recoloured.
+  for (let y = startY; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      const a = data[i + 3];
+      if (a < 20) continue;
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const chroma = max - min;
+      const light = (r + g + b) / 3;
+
+      // Maria's original dress is cream/white. Keep this intentionally strict
+      // so warm skin tones and colored accessories remain untouched.
+      if (light < 118 || chroma > 28) continue;
+
+      const shade = Math.max(0.4, Math.min(1.14, light / 212));
+      const highlight = Math.max(0, (light - 198) / 70);
+      data[i] = Math.min(255, target.r * shade + 46 * highlight);
+      data[i + 1] = Math.min(255, target.g * shade + 46 * highlight);
+      data[i + 2] = Math.min(255, target.b * shade + 46 * highlight);
+    }
   }
 }
 
@@ -57,7 +72,7 @@ function makePreviewDataUrl(image: HTMLImageElement, color: string | null) {
   ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
   if (color) {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    recolorImageData(imageData.data, color);
+    recolorDressPixels(imageData.data, canvas.width, canvas.height, color);
     ctx.putImageData(imageData, 0, 0);
   }
   return canvas.toDataURL("image/png");
@@ -113,7 +128,7 @@ export function openMariaWardrobe(onBegin: () => void) {
   const previewCache = new Map<string, string>();
 
   const updatePreview = () => {
-    const outfit = OUTFITS.find((o) => o.id === choice) ?? OUTFITS[0];
+    const outfit = OUTFITS.find((o) => o.id === choice) ?? OUTFITS[OUTFITS.length - 1];
     const name = root.querySelector(".mqw-preview-name");
     const note = root.querySelector(".mqw-preview-note");
     const swatches = root.querySelector(".mqw-preview-swatches");
@@ -135,7 +150,7 @@ export function openMariaWardrobe(onBegin: () => void) {
   sourceImg.onload = updatePreview;
   updatePreview();
 
-  root.querySelectorAll("[data-outfit]").forEach((card) => {
+  root.querySelectorAll(".mqw-card[data-outfit]").forEach((card) => {
     card.addEventListener("click", () => {
       choice = card.getAttribute("data-outfit") || "classic";
       root.querySelectorAll(".mqw-card[data-outfit]").forEach((c) => {
@@ -169,7 +184,7 @@ function recolorDressFrame(scene: any, sourceKey: string, targetKey: string, hex
   ctx.clearRect(0, 0, width, height);
   ctx.drawImage(source, 0, 0, width, height);
   const image = ctx.getImageData(0, 0, width, height);
-  recolorImageData(image.data, hex);
+  recolorDressPixels(image.data, width, height, hex);
   ctx.putImageData(image, 0, 0);
   tex.refresh();
 }
@@ -199,7 +214,7 @@ export function installMariaWardrobe(QuestScene: any) {
   QuestScene.prototype.addPlayer = function (...args: any[]) {
     const result = original.apply(this, args);
     const id = selectedId();
-    const outfit = OUTFITS.find((o) => o.id === id) ?? OUTFITS[0];
+    const outfit = OUTFITS.find((o) => o.id === id) ?? OUTFITS[OUTFITS.length - 1];
     const player = this.player;
     if (!player) return result;
     player.clearTint?.();
