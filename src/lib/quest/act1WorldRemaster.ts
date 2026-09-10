@@ -11,7 +11,6 @@ const DESIGN_W = 132;
 const DESIGN_H = 102;
 const ACT1_EXPANDED_W = 55;
 const ACT1_EXPANDED_H = 50;
-const WATER_TILE = 2;
 
 function seeded(seed: number) {
   let s = seed >>> 0;
@@ -149,40 +148,22 @@ function placeAct1Ruins(scene: SceneLike) {
 }
 
 /**
- * Act I's authored water tiles are still the source of collision and bridge logic,
- * but the bundled water texture reads as a dark vertical seam at this scale.
- * Paint a calm blue ground-surface directly over WATER tiles so the river reads
- * as water while preserving the exact tilemap underneath.
+ * The Act I tutorial marker is authored in act1GameplayPolish. A missing y3
+ * argument made its third vertex use the gold fill colour number as a Y value,
+ * stretching the tiny arrow into a millions-of-pixels-tall black/white triangle.
+ * Normalize that marker after update and before render, preserving the intended
+ * bobbing gold arrow above Wren while eliminating the vertical stripe.
  */
-function paintAct1WaterSurface(scene: SceneLike) {
+function fixIntroGuideMarker(scene: SceneLike) {
   if (scene.save?.current_zone !== "sunlit_shores") return;
-  if (!scene.layer?.forEachTile || scene.__act1WaterSurface?.active) return;
+  const marker = scene.__introGuideMarker;
+  if (!marker?.active || marker.getData?.("quest-intro-marker") !== true) return;
+  if (marker.__act1MarkerGeometryFixed) return;
 
-  const g = scene.add.graphics();
-  scene.__act1WaterSurface = g;
-  g.setDepth(Number(scene.layer.depth ?? 0) + 0.05);
-  g.setName?.("act1-water-surface");
-
-  scene.layer.forEachTile((tile: any) => {
-    if (!tile || tile.index !== WATER_TILE) return;
-    const x = Number(tile.pixelX ?? tile.x * 32);
-    const y = Number(tile.pixelY ?? tile.y * 32);
-    const w = Number(tile.width ?? 32);
-    const h = Number(tile.height ?? 32);
-
-    // Opaque enough to fully cover the black/white stripe, but still soft enough
-    // to blend naturally with the surrounding painted map.
-    g.fillStyle(0x4f9fd3, 0.96);
-    g.fillRect(x, y, w + 0.5, h + 0.5);
-
-    // Gentle surface variation keeps the river from becoming a flat blue bar.
-    g.fillStyle(0x75bce1, 0.34);
-    g.fillRect(x + 2, y + 5, Math.max(4, w - 8), 3);
-    g.fillStyle(0xc6e8f5, 0.22);
-    g.fillRect(x + 7, y + 16, Math.max(3, w - 14), 2);
-    g.fillStyle(0x2f79ad, 0.18);
-    g.fillRect(x + 3, y + h - 6, Math.max(4, w - 10), 2);
-  });
+  marker.setTo?.(0, 18, 10, 0, -10, 0);
+  marker.setFillStyle?.(0xffd84d, 1);
+  marker.setStrokeStyle?.(2, 0xffffff, 0.95);
+  marker.__act1MarkerGeometryFixed = true;
 }
 
 export function installAct1WorldRemaster(QuestScene: SceneCtor) {
@@ -196,9 +177,7 @@ export function installAct1WorldRemaster(QuestScene: SceneCtor) {
     this.mapH = ACT1_EXPANDED_H;
     this.sxF = this.mapW / DESIGN_W;
     this.syF = this.mapH / DESIGN_H;
-    const result = originalBuildAct1.apply(this, args);
-    paintAct1WaterSurface(this);
-    return result;
+    return originalBuildAct1.apply(this, args);
   };
 
   const originalCreate = proto.create;
@@ -208,6 +187,12 @@ export function installAct1WorldRemaster(QuestScene: SceneCtor) {
     thinTrees(this);
     clearHouseTrees(this);
     placeAct1Ruins(this);
+
+    const repairMarker = () => fixIntroGuideMarker(this);
+    this.events?.on?.(Phaser.Scenes.Events.POST_UPDATE, repairMarker);
+    this.events?.once?.(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.events?.off?.(Phaser.Scenes.Events.POST_UPDATE, repairMarker);
+    });
 
     return result;
   };
