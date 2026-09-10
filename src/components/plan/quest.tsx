@@ -4,6 +4,7 @@ import QuestJournal from "./QuestJournal";
 import { EMPTY_SAVE, loadSave, type QuestSave } from "@/lib/quest/save";
 import type { JournalProgress } from "@/lib/quest/journalContent";
 import "@/lib/quest/inventoryArmoryPolish";
+import "@/lib/quest/mariaWardrobe";
 
 function progressFromSave(save: QuestSave): JournalProgress {
   return {
