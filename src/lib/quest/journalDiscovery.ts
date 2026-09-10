@@ -165,25 +165,66 @@ function dialogueRootFor(node: Element) {
   return node.closest?.(DIALOGUE_SELECTORS) ?? node.querySelector?.(DIALOGUE_SELECTORS) ?? null;
 }
 
-function registerPeopleMentionedByDialogue(root: Element) {
-  const text = String(root.textContent ?? "").replace(/\s+/g, " ").trim();
-  if (!text) return;
-  const lower = text.toLowerCase();
+function normalizeForMatch(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
 
+function boundaryMatchIndex(haystack: string, needle: string) {
+  const source = normalizeForMatch(haystack);
+  const target = normalizeForMatch(needle);
+  if (!target) return -1;
+
+  let from = 0;
+  while (from <= source.length - target.length) {
+    const index = source.indexOf(target, from);
+    if (index < 0) return -1;
+    const before = index === 0 ? "" : source[index - 1]!;
+    const after = index + target.length >= source.length ? "" : source[index + target.length]!;
+    const beforeOk = !before || !/[a-z0-9]/i.test(before);
+    const afterOk = !after || !/[a-z0-9]/i.test(after);
+    if (beforeOk && afterOk) return index;
+    from = index + 1;
+  }
+  return -1;
+}
+
+function dialogueSpeaker(root: Element) {
+  // Character presentation consistently puts the actual speaker in the title/header
+  // before dialogue copy. Limit matching to the opening text so names merely mentioned
+  // later in conversation never unlock their Journal entries.
+  const openingText = String(root.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 320);
+  if (!openingText) return "";
+
+  let best: { name: string; index: number; length: number } | null = null;
   for (const canonical of JOURNAL_PEOPLE) {
     const variants = [canonical, ...Object.entries(ALIASES)
       .filter(([, target]) => target === canonical)
       .map(([alias]) => alias)];
-    if (variants.some((variant) => lower.includes(variant.toLowerCase()))) {
-      registerJournalPerson(canonical);
+
+    for (const variant of variants) {
+      const index = boundaryMatchIndex(openingText, variant);
+      if (index < 0) continue;
+      const candidate = { name: canonical, index, length: variant.length };
+      if (!best || candidate.index < best.index || (candidate.index === best.index && candidate.length > best.length)) {
+        best = candidate;
+      }
     }
   }
+  return best?.name ?? "";
+}
+
+function registerDialogueSpeaker(root: Element) {
+  const speaker = dialogueSpeaker(root);
+  if (speaker) registerJournalPerson(speaker);
 }
 
 function inspectAddedNode(node: Node) {
   if (!(node instanceof Element)) return;
   const root = dialogueRootFor(node);
-  if (root) registerPeopleMentionedByDialogue(root);
+  if (root) registerDialogueSpeaker(root);
 }
 
 function installPassiveDialogueDiscovery() {
@@ -202,7 +243,7 @@ function installPassiveDialogueDiscovery() {
 
     // Catch a dialogue that happened to mount in the same frame as this module.
     for (const root of Array.from(document.querySelectorAll(DIALOGUE_SELECTORS))) {
-      registerPeopleMentionedByDialogue(root);
+      registerDialogueSpeaker(root);
     }
   };
 
