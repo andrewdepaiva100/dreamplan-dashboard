@@ -14,21 +14,26 @@ function haven(scene: SceneLike) {
   return scene.save?.current_zone === ZONE;
 }
 
-function andrewNearby(scene: SceneLike) {
-  const andrew = scene.companion;
-  if (!andrew?.active || !scene.player?.active) return false;
-  return Phaser.Math.Distance.Between(scene.player.x, scene.player.y, andrew.x, andrew.y) <= ECHO_RANGE;
+function andrewTarget(scene: SceneLike) {
+  if (scene.companion?.active) return scene.companion;
+  return (scene.interactables ?? []).find((it: any) => it?.kind === "andrew" && it?.obj?.active)?.obj;
+}
+
+function nearbyAndrew(scene: SceneLike) {
+  const andrew = andrewTarget(scene);
+  if (!andrew?.active || !scene.player?.active) return undefined;
+  return Phaser.Math.Distance.Between(scene.player.x, scene.player.y, andrew.x, andrew.y) <= ECHO_RANGE ? andrew : undefined;
 }
 
 function melodyEcho(scene: SceneLike) {
-  if (!haven(scene) || !andrewNearby(scene)) return;
+  if (!haven(scene) || !nearbyAndrew(scene)) return;
   const maria = scene.player;
-  const andrew = scene.companion;
   const glyphs = ["♪", "♫", "♪", "♩", "♫", "♪"];
 
   glyphs.forEach((glyph, i) => {
     scene.time.delayedCall(i * 330, () => {
-      if (!scene.sys?.isActive?.() || !haven(scene) || !andrewNearby(scene)) return;
+      const andrew = nearbyAndrew(scene);
+      if (!scene.sys?.isActive?.() || !haven(scene) || !andrew) return;
       const startX = maria.x + (i % 2 ? 8 : -8);
       const startY = maria.y - 24 - (i % 3) * 4;
       const targetX = andrew.x + (i % 2 ? -7 : 7);
@@ -41,8 +46,6 @@ function melodyEcho(scene: SceneLike) {
         strokeThickness: 1,
       }).setOrigin(0.5).setDepth(24).setAlpha(0.96);
 
-      // Two-stage arc keeps the echo romantic and readable instead of firing
-      // straight at Andrew like a projectile.
       const midX = (startX + targetX) / 2 + (i % 2 ? 18 : -18);
       const midY = Math.min(startY, targetY) - 26 - (i % 3) * 4;
       scene.tweens.add({
@@ -53,7 +56,7 @@ function melodyEcho(scene: SceneLike) {
         duration: 520,
         ease: "Sine.easeOut",
         onComplete: () => {
-          if (!note.active || !andrew?.active) {
+          if (!note.active || !andrew.active) {
             note.destroy?.();
             return;
           }
@@ -115,8 +118,6 @@ export function installAct3AndrewPresence(QuestScene: SceneCtor) {
   if (!proto || proto.__act3AndrewPresenceInstalled) return;
   proto.__act3AndrewPresenceInstalled = true;
 
-  // act3SheetScenes is installed before this module. Capture a genuine sheet
-  // interaction, then wait for that module's custom panel to close via onResume.
   const originalInteract = proto.interact;
   proto.interact = function act3AndrewPresenceInteract(...args: any[]) {
     if (haven(this) && !this.frozen) {
@@ -133,22 +134,16 @@ export function installAct3AndrewPresence(QuestScene: SceneCtor) {
     const pending = haven(this) ? this.act3MelodyEchoPending : undefined;
     this.act3MelodyEchoPending = undefined;
     const result = originalResume.apply(this, args);
-    if (pending !== undefined) {
-      this.time?.delayedCall?.(120, () => melodyEcho(this));
-    }
+    if (pending !== undefined) this.time?.delayedCall?.(120, () => melodyEcho(this));
     return result;
   };
 
-  // Observe the proven base damage path without altering it. A bark only fires
-  // when health actually drops, so invulnerability frames never create false reactions.
   const originalHurt = proto.hurtPlayerDirect;
   proto.hurtPlayerDirect = function act3AndrewPresenceHurt(...args: any[]) {
     const before = this.save?.player_health;
     const result = originalHurt.apply(this, args);
     const after = this.save?.player_health;
-    if (typeof before === "number" && typeof after === "number" && after < before) {
-      protectiveBark(this);
-    }
+    if (typeof before === "number" && typeof after === "number" && after < before) protectiveBark(this);
     return result;
   };
 }
