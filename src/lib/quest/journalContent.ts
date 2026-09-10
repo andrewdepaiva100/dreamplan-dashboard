@@ -49,6 +49,15 @@ export function hasReachedZone(progress: JournalProgress, zone: ZoneId) {
   return JOURNAL_ZONE_ORDER.indexOf(progress.zone) >= JOURNAL_ZONE_ORDER.indexOf(zone);
 }
 
+function hasLocalDiscovery(key: string) {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+
 const PEOPLE: JournalEntry[] = [
   {
     id: "maria",
@@ -79,6 +88,16 @@ const PEOPLE: JournalEntry[] = [
     body: "Wren was the first voice waiting for me on the Sunlit Shores. She taught me that the creatures in my path were worries given shape, not enemies that deserved cruelty, and she trusted me with the Radiant Spark Wand so I could bring light where fear had taken hold.",
     quote: "Today you only need the road in front of your feet.",
     unlocked: (p) => p.weapons.includes("spark-wand"),
+  },
+  {
+    id: "silas",
+    tab: "people",
+    title: "Silas",
+    eyebrow: "Cartographer of the Last Crossing",
+    icon: "⌖",
+    body: "Silas met me at the bridge with a mapmaker's habit of noticing where courage needs a little direction. He did not tell me to turn back — only to listen first, learn what the crossing had cost other travelers, and remember that confidence is stronger when it makes room for wisdom.",
+    quote: "Confidence is useful; information is better.",
+    unlocked: () => hasLocalDiscovery("marias-quest-journal-silas-met"),
   },
   {
     id: "wedding-family",
