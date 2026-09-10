@@ -7,6 +7,12 @@ import "./titleScreenCinematic.css";
 
 const QUEST_RUNTIME_READY_EVENT = "quest:runtime-ready";
 
+function releaseQuestRuntimeReady() {
+  if (typeof window === "undefined") return;
+  (window as any).__questRuntimeReady = true;
+  window.dispatchEvent(new Event(QUEST_RUNTIME_READY_EVENT));
+}
+
 if (typeof window !== "undefined") {
   (window as any).__questRuntimeReady = false;
   queueMicrotask(() => {
@@ -92,8 +98,7 @@ if (typeof window !== "undefined") {
       romanticMicroPolish.installRomanticMicroPolish(QuestScene);
       npcPresencePolish.installNpcPresencePolish(QuestScene);
 
-      (window as any).__questRuntimeReady = true;
-      window.dispatchEvent(new Event(QUEST_RUNTIME_READY_EVENT));
+      releaseQuestRuntimeReady();
       requestAnimationFrame(() => requestAnimationFrame(() => {
         void Promise.all([import("./globalCharacterDialogue"), import("./act3AndrewDialogue")])
           .then(([dialogue, act3AndrewDialogue]) => {
@@ -102,7 +107,18 @@ if (typeof window !== "undefined") {
           })
           .catch((error) => console.error("[quest] dialogue polish install failed", error));
       }));
-    }).catch((error) => console.error("[quest] premium upgrade install failed", error));
+    }).catch((error) => {
+      console.error("[quest] premium upgrade install failed", error);
+      // Keep the developer act selector usable even when an optional polish
+      // module fails to import. Install only the selector's scene hook, then
+      // release the runtime-ready gate instead of leaving the menu waiting.
+      void Promise.all([import("./scene"), import("./desktopActSelector")])
+        .then(([sceneModule, desktopActSelector]) => {
+          desktopActSelector.installDesktopActSelector(sceneModule.QuestScene as unknown as any);
+        })
+        .catch((fallbackError) => console.error("[quest] developer act selector fallback failed", fallbackError))
+        .finally(releaseQuestRuntimeReady);
+    });
   });
 }
 
