@@ -1,4 +1,4 @@
-// @ts-nocheck -- isolated presentation gate + Maria palette selection.
+// @ts-nocheck -- isolated presentation gate + Maria outfit selection.
 import "./mariaWardrobe.css";
 import imgMariaDown from "@/assets/quest/maria-down.png";
 
@@ -28,67 +28,78 @@ function hexToRgb(hex: string) {
   return { r: (value >> 16) & 255, g: (value >> 8) & 255, b: value & 255 };
 }
 
+function isSkinLike(r: number, g: number, b: number) {
+  return r > 135 && g > 75 && b > 45 && r > g + 12 && g >= b && r - b > 35;
+}
+
+function isDressPixel(r: number, g: number, b: number) {
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const chroma = max - min;
+  const light = (r + g + b) / 3;
+
+  // Preserve dark outlines, saturated flowers/accessories and warm skin.
+  if (light < 92 || chroma > 72) return false;
+  if (isSkinLike(r, g, b)) return false;
+  return true;
+}
+
 function recolorDressPixels(data: Uint8ClampedArray, width: number, height: number, hex: string) {
   const target = hexToRgb(hex);
 
-  // Maria's dress is made of two visually separate light-fabric areas: the
-  // upper bodice/sleeves and the skirt. The previous connected-mask approach
-  // only reached the skirt, which is why every option looked like a coloured
-  // skirt with the original white top. Use explicit garment zones instead,
-  // while still requiring pixels to be pale/neutral fabric before recolouring.
-  const bodiceTop = Math.floor(height * 0.36);
-  const bodiceBottom = Math.floor(height * 0.61);
-  const skirtTop = Math.floor(height * 0.50);
-  const skirtBottom = Math.floor(height * 0.87);
-  const bodiceLeft = Math.floor(width * 0.23);
-  const bodiceRight = Math.ceil(width * 0.77);
-  const skirtLeft = Math.floor(width * 0.12);
-  const skirtRight = Math.ceil(width * 0.88);
+  // Work against Maria's original full-resolution source artwork. These bounds
+  // deliberately cover the bodice/sleeves and skirt while excluding the head,
+  // hair, flower and shoes. Recolouring before the game downsamples to 24x34
+  // avoids the blended face/dress pixels that caused the previous bleeding.
+  const top = Math.floor(height * 0.355);
+  const bottom = Math.floor(height * 0.885);
+  const center = width / 2;
 
-  for (let y = bodiceTop; y <= skirtBottom; y++) {
-    for (let x = 0; x < width; x++) {
-      const inBodice = y <= bodiceBottom && x >= bodiceLeft && x <= bodiceRight;
-      const inSkirt = y >= skirtTop && x >= skirtLeft && x <= skirtRight;
-      if (!inBodice && !inSkirt) continue;
+  for (let y = top; y <= bottom; y++) {
+    const t = (y - top) / Math.max(1, bottom - top);
+    // Narrow through the bodice, widening naturally into the skirt.
+    const halfWidth = width * (0.20 + 0.27 * Math.pow(t, 0.8));
+    const left = Math.max(0, Math.floor(center - halfWidth));
+    const right = Math.min(width - 1, Math.ceil(center + halfWidth));
 
+    for (let x = left; x <= right; x++) {
       const i = (y * width + x) * 4;
       if (data[i + 3] < 20) continue;
-
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      const chroma = max - min;
+      if (!isDressPixel(r, g, b)) continue;
+
       const light = (r + g + b) / 3;
-
-      // Only pale neutral cloth. Skin stays warm/chromatic, hair is dark,
-      // flowers are saturated, and shoes fall outside the garment bounds.
-      if (light < 122 || chroma > 24) continue;
-
-      const shade = Math.max(0.4, Math.min(1.14, light / 212));
-      const highlight = Math.max(0, (light - 198) / 70);
-      data[i] = Math.min(255, target.r * shade + 46 * highlight);
-      data[i + 1] = Math.min(255, target.g * shade + 46 * highlight);
-      data[i + 2] = Math.min(255, target.b * shade + 46 * highlight);
+      const shade = Math.max(0.34, Math.min(1.12, light / 205));
+      const highlight = Math.max(0, (light - 205) / 65);
+      data[i] = Math.min(255, target.r * shade + 34 * highlight);
+      data[i + 1] = Math.min(255, target.g * shade + 34 * highlight);
+      data[i + 2] = Math.min(255, target.b * shade + 34 * highlight);
     }
   }
 }
 
-function makePreviewDataUrl(image: HTMLImageElement, color: string | null) {
+function recoloredCanvas(source: CanvasImageSource, width: number, height: number, color: string | null) {
   const canvas = document.createElement("canvas");
-  canvas.width = image.naturalWidth || image.width;
-  canvas.height = image.naturalHeight || image.height;
+  canvas.width = width;
+  canvas.height = height;
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  if (!ctx) return image.src;
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+  if (!ctx) return canvas;
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(source, 0, 0, width, height);
   if (color) {
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    recolorDressPixels(imageData.data, canvas.width, canvas.height, color);
-    ctx.putImageData(imageData, 0, 0);
+    const image = ctx.getImageData(0, 0, width, height);
+    recolorDressPixels(image.data, width, height, color);
+    ctx.putImageData(image, 0, 0);
   }
-  return canvas.toDataURL("image/png");
+  return canvas;
+}
+
+function makePreviewDataUrl(image: HTMLImageElement, color: string | null) {
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+  return recoloredCanvas(image, width, height, color).toDataURL("image/png");
 }
 
 export function openMariaWardrobe(onBegin: () => void) {
@@ -182,34 +193,61 @@ export function openMariaWardrobe(onBegin: () => void) {
   });
 }
 
+function bakedTextureKey(outfitId: string, dir: string) {
+  return `maria-outfit-source-${outfitId}-${dir}`;
+}
+
 function outfitTextureKey(outfitId: string, dir: string, frame: number) {
   return `maria-outfit-${outfitId}-${dir}-${frame}`;
 }
 
-function recolorDressFrame(scene: any, sourceKey: string, targetKey: string, hex: string) {
-  if (scene.textures.exists(targetKey) || !scene.textures.exists(sourceKey)) return;
-  const source = scene.textures.get(sourceKey).getSourceImage();
-  const width = source.width || 48;
-  const height = source.height || 68;
-  const tex = scene.textures.createCanvas(targetKey, width, height);
+function bakeOutfitSource(scene: any, outfit: any, dir: string) {
+  const key = bakedTextureKey(outfit.id, dir);
+  if (scene.textures.exists(key)) return key;
+  const artKey = `art-maria-${dir}`;
+  if (!scene.textures.exists(artKey)) return null;
+
+  const source = scene.textures.get(artKey).getSourceImage();
+  const width = source.naturalWidth || source.width;
+  const height = source.naturalHeight || source.height;
+  const tex = scene.textures.createCanvas(key, width, height);
   const ctx = tex.getContext();
-  ctx.imageSmoothingEnabled = false;
+  ctx.imageSmoothingEnabled = true;
   ctx.clearRect(0, 0, width, height);
   ctx.drawImage(source, 0, 0, width, height);
   const image = ctx.getImageData(0, 0, width, height);
-  recolorDressPixels(image.data, width, height, hex);
+  recolorDressPixels(image.data, width, height, outfit.color);
   ctx.putImageData(image, 0, 0);
+  tex.refresh();
+  return key;
+}
+
+function buildOutfitFrame(scene: any, bakedKey: string, targetKey: string, step: number) {
+  if (scene.textures.exists(targetKey)) return;
+  const source = scene.textures.get(bakedKey).getSourceImage();
+  const tex = scene.textures.createCanvas(targetKey, 24, 34);
+  const ctx = tex.getContext();
+  ctx.imageSmoothingEnabled = true;
+  const bob = step === 0 ? 0 : 1;
+  const squash = step === 0 ? 0 : 2;
+  const lean = step === 1 ? -1 : step === 2 ? 1 : 0;
+  ctx.clearRect(0, 0, 24, 34);
+  ctx.drawImage(source, squash / 2 + lean, bob, 24 - squash, 34 - bob);
   tex.refresh();
 }
 
 function installOutfitFrames(scene: any, outfit: any) {
   if (!outfit?.color) return false;
   const dirs = ["down", "side", "up"];
+
   for (const dir of dirs) {
+    const baked = bakeOutfitSource(scene, outfit, dir);
+    if (!baked) return false;
     for (let frame = 0; frame < 3; frame++) {
-      recolorDressFrame(scene, `maria-${dir}-${frame}`, outfitTextureKey(outfit.id, dir, frame), outfit.color);
+      buildOutfitFrame(scene, baked, outfitTextureKey(outfit.id, dir, frame), frame);
     }
   }
+
   for (const dir of dirs) {
     scene.anims.remove(`maria-walk-${dir}`);
     scene.anims.remove(`maria-idle-${dir}`);
