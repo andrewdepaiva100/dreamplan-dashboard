@@ -64,8 +64,6 @@ function addMusicHouseRoof(scene: any, c: any, p: any) {
   roof.fillStyle(p.roof, 1);
   roof.lineStyle(3, p.dark, 0.95);
   roof.beginPath();
-  // The lower edge deliberately overlaps the facade top (-38) by 8px so the
-  // roof reads as physically seated on the building, never floating above it.
   roof.moveTo(-64, -30);
   roof.lineTo(-35, -67);
   roof.lineTo(0, -84);
@@ -88,8 +86,6 @@ function addMusicHouseRoof(scene: any, c: any, p: any) {
 }
 
 function addPromiseArchiveRoof(scene: any, c: any, p: any) {
-  // Formal roofline with a deep base overlapping the wall, then a raised civic
-  // cap and pediment. The base reaches down to -27, well into the facade.
   const roofBase = scene.add.rectangle(0, -37, 112, 22, p.roof, 1).setStrokeStyle(3, p.dark, 0.95);
   const lowerCornice = scene.add.rectangle(0, -27, 118, 7, p.trim, 1).setStrokeStyle(1, p.dark, 0.8);
   const cap = scene.add.rectangle(0, -51, 118, 7, 0x6d89a6, 1).setStrokeStyle(1, p.dark, 0.75);
@@ -185,24 +181,47 @@ function showAndrewReaction(scene: any, id: string) {
   const line = ANDREW_REACTIONS[id];
   const andrew = scene.companion;
   if (!line || !andrew?.active || scene.save?.current_zone !== ZONE) return;
+
+  scene.__act3AndrewReactionPoseUntil = Number(scene.time?.now ?? 0) + 650;
   scene.spawnSparkle?.(andrew.x - 7, andrew.y - 8, 0x78baff, 6);
   scene.spawnSparkle?.(andrew.x + 7, andrew.y - 8, 0xff9fc5, 5);
+
   const text = scene.add.text(andrew.x, andrew.y - 42, `Andrew: “${line}”`, {
     fontFamily: "Georgia, serif",
     fontSize: "12px",
     fontStyle: "italic",
     color: "#fff6df",
-    backgroundColor: "rgba(24,35,61,.72)",
+    backgroundColor: "rgba(24,35,61,.78)",
     padding: { x: 10, y: 7 },
     stroke: "#243b61",
     strokeThickness: 4,
     align: "center",
     wordWrap: { width: 270, useAdvancedWrap: true },
   }).setOrigin(0.5, 1).setDepth(982).setAlpha(0);
-  scene.tweens.add({ targets: text, alpha: 0.98, y: text.y - 5, duration: 280, ease: "Sine.easeOut" });
-  scene.time?.delayedCall?.(6500, () => {
+
+  const follow = scene.time?.addEvent?.({
+    delay: 16,
+    loop: true,
+    callback: () => {
+      if (!text?.active || !andrew?.active || scene.save?.current_zone !== ZONE) {
+        follow?.destroy?.();
+        if (text?.active) text.destroy();
+        return;
+      }
+      text.setPosition(andrew.x, andrew.y - 42);
+    },
+  });
+
+  scene.tweens.add({ targets: text, alpha: 0.98, duration: 250, ease: "Sine.easeOut" });
+  scene.time?.delayedCall?.(3950, () => {
     if (!text?.active) return;
-    scene.tweens.add({ targets: text, y: text.y - 18, alpha: 0, duration: 1500, ease: "Sine.easeIn", onComplete: () => text.destroy() });
+    scene.tweens.add({
+      targets: text,
+      alpha: 0,
+      duration: 550,
+      ease: "Sine.easeIn",
+      onComplete: () => { follow?.destroy?.(); text.destroy(); },
+    });
   });
 }
 
@@ -325,6 +344,22 @@ function thinCrowdedHavenTrees(scene: any) {
   }
 }
 
+function removeMusicHouseNeighbor(scene: any) {
+  const children = (scene.solidDecor?.getChildren?.() ?? []) as Phaser.Physics.Arcade.Sprite[];
+  const expectedX = scene.wx(40), expectedY = scene.wy(34);
+  let closest: Phaser.Physics.Arcade.Sprite | null = null;
+  let best = Infinity;
+  for (const obj of children) {
+    if (!obj?.active || !["house", "cottage"].includes(obj.texture?.key ?? "")) continue;
+    const d = Phaser.Math.Distance.Between(obj.x, obj.y, expectedX, expectedY);
+    if (d < best) { closest = obj; best = d; }
+  }
+  if (!closest || best > 90) return;
+  scene.tweens?.killTweensOf?.(closest);
+  closest.disableBody?.(true, true);
+  closest.destroy?.();
+}
+
 export function installAct3HavenLandmarks(QuestScene: SceneCtor) {
   const proto = QuestScene.prototype as any;
   if (proto.__act3HavenLandmarksInstalled) return;
@@ -335,6 +370,7 @@ export function installAct3HavenLandmarks(QuestScene: SceneCtor) {
     const result = originalBuildAct3.apply(this, args);
     if (this.save?.current_zone === ZONE) {
       thinCrowdedHavenTrees(this);
+      removeMusicHouseNeighbor(this);
       BUILDINGS.forEach((cfg) => makeBuilding(this, cfg));
     }
     return result;
@@ -365,5 +401,21 @@ export function installAct3HavenLandmarks(QuestScene: SceneCtor) {
     seen.add(id);
     this.time?.delayedCall?.(320, () => showAndrewReaction(this, id));
     return result;
+  };
+
+  const originalUpdateCompanion = proto.updateCompanion;
+  proto.updateCompanion = function act3LandmarkReactionPose(...args: any[]) {
+    if (
+      this.save?.current_zone === ZONE &&
+      this.companion?.active &&
+      Number(this.time?.now ?? 0) < Number(this.__act3AndrewReactionPoseUntil ?? 0)
+    ) {
+      const c = this.companion;
+      c.setFlipX?.((this.player?.x ?? c.x) < c.x);
+      c.anims?.play?.("andrew-idle-side", true);
+      c.setDepth?.(this.dsort?.(c.y) ?? c.depth);
+      return;
+    }
+    return originalUpdateCompanion.apply(this, args);
   };
 }
