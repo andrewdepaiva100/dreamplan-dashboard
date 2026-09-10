@@ -1,5 +1,6 @@
 // @ts-nocheck -- Reuses the existing quest music modes; no second audio engine.
 import * as Phaser from "phaser";
+import { installAct3CompanionPolish } from "./act3CompanionPolish";
 
 const ZONE = "the_haven";
 const MUSIC_EVENT = "quest:music";
@@ -10,6 +11,10 @@ const MUSIC_EVENT = "quest:music";
  * cadence. Boss state still owns the established battle transition.
  */
 export function installAct3MusicIdentity(QuestScene: any) {
+  // Keep the small Haven companion/wildlife pass in the existing Act III
+  // installer chain so no global scene behavior changes outside this realm.
+  installAct3CompanionPolish(QuestScene);
+
   const proto = QuestScene?.prototype;
   if (!proto || proto.__act3MusicIdentityInstalled) return;
   proto.__act3MusicIdentityInstalled = true;
