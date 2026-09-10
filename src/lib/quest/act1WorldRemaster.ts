@@ -61,7 +61,6 @@ function drawBrokenHouse(scene: SceneLike, x: number, y: number, variant: number
   const roof = variant === 1 ? 0x3c4150 : 0x47495a;
   const dark = 0x2e2522;
 
-  // Uneven foundation and collapsed wall body.
   g.fillStyle(0x6f665f, 1);
   g.fillRect(x - 42, y + 24, 84, 9);
   g.fillStyle(wall, 1);
@@ -71,7 +70,6 @@ function drawBrokenHouse(scene: SceneLike, x: number, y: number, variant: number
   g.fillRect(x + 10, y - 4, 5, 30);
   g.fillRect(x + 33, y - 4, 5, 30);
 
-  // Missing/collapsed roof sections.
   g.fillStyle(roof, 1);
   g.beginPath();
   g.moveTo(x - 48, y - 3);
@@ -85,7 +83,6 @@ function drawBrokenHouse(scene: SceneLike, x: number, y: number, variant: number
   g.closePath();
   g.fill();
 
-  // Black, broken windows and a crooked door opening.
   g.fillStyle(dark, 1);
   g.fillRect(x - 27, y + 5, 15, 12);
   g.fillRect(x + 20, y + 2, 13, 13);
@@ -93,7 +90,6 @@ function drawBrokenHouse(scene: SceneLike, x: number, y: number, variant: number
   g.fillStyle(0x6e4a35, 1);
   g.fillRect(x + 3, y + 9, 4, 18);
 
-  // Roof rubble and broken beams.
   g.lineStyle(5, timber, 1);
   g.lineBetween(x - 30, y - 10, x - 3, y + 18);
   g.lineBetween(x + 31, y - 12, x + 12, y + 14);
@@ -101,7 +97,6 @@ function drawBrokenHouse(scene: SceneLike, x: number, y: number, variant: number
   g.lineBetween(x - 51, y + 32, x - 34, y + 25);
   g.lineBetween(x + 31, y + 31, x + 50, y + 25);
 
-  // Overgrowth, kept low so the ruin reads clearly.
   for (const [ox, oy] of [[-37, 25], [-24, 29], [27, 27], [39, 22]] as [number, number][]) {
     g.fillStyle(0x58704b, 1);
     g.fillCircle(x + ox, y + oy, 7);
@@ -109,7 +104,6 @@ function drawBrokenHouse(scene: SceneLike, x: number, y: number, variant: number
     g.fillCircle(x + ox + 4, y + oy - 4, 4);
   }
 
-  // Invisible collision footprint through the existing solid scenery group.
   if (scene.solidDecor) {
     const blocker = scene.solidDecor.create(x, y + 13, "block") as Phaser.Physics.Arcade.Sprite;
     blocker.setVisible(false).setAlpha(0.001).setScale(2.7, 1.35);
@@ -133,7 +127,6 @@ function placeAct1Ruins(scene: SceneLike) {
 
   let guard = 0;
   while (chosen.length < RUIN_COUNT && guard++ < 1200) {
-    // Keep ruins in different broad thirds of the act while still varying within them.
     const band = chosen.length;
     const txMin = 12 + band * Math.floor((mapW - 24) / 3);
     const txMax = Math.min(mapW - 12, txMin + Math.floor((mapW - 24) / 3) - 5);
@@ -158,79 +151,138 @@ function objectBounds(obj: any) {
   try {
     const bounds = obj?.getBounds?.();
     if (bounds && Number.isFinite(bounds.width) && Number.isFinite(bounds.height)) {
-      return { width: Math.abs(Number(bounds.width)), height: Math.abs(Number(bounds.height)) };
+      return {
+        x: Number(bounds.x ?? obj?.x ?? 0),
+        y: Number(bounds.y ?? obj?.y ?? 0),
+        width: Math.abs(Number(bounds.width)),
+        height: Math.abs(Number(bounds.height)),
+      };
     }
   } catch {
     // Fall through to display dimensions.
   }
   return {
+    x: Number(obj?.x ?? 0),
+    y: Number(obj?.y ?? 0),
     width: Math.abs(Number(obj?.displayWidth ?? obj?.width ?? 0)),
     height: Math.abs(Number(obj?.displayHeight ?? obj?.height ?? 0)),
   };
 }
 
+function flattenNumbers(value: any, out: number[], depth = 0) {
+  if (depth > 5 || out.length > 1400 || value == null) return;
+  if (typeof value === "number") {
+    if (Number.isFinite(value)) out.push(value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) flattenNumbers(item, out, depth + 1);
+    return;
+  }
+  if (typeof value === "object") {
+    for (const key of Object.keys(value)) {
+      if (key === "scene" || key === "parentContainer" || key === "displayList") continue;
+      flattenNumbers(value[key], out, depth + 1);
+    }
+  }
+}
+
 /**
- * Act I has accumulated many optional presentation decorators. A malformed
- * decorative Graphics/Image can therefore become a world-height vertical bar.
- * Cull only the impossible "needle" shape: hundreds of pixels tall, very
- * narrow, and not one of the core world/gameplay objects.
+ * Graphics can report tiny/empty display bounds even when their command buffer
+ * contains a huge line or rectangle. Inspect adjacent numeric command values for
+ * the characteristic Act I defect: a near-world-height dimension paired with a
+ * very narrow dimension.
  */
+function graphicsCommandLooksLikeNeedle(obj: any, worldH: number) {
+  if (obj?.type !== "Graphics") return false;
+  const numbers: number[] = [];
+  flattenNumbers(obj.commandBuffer, numbers);
+  if (!numbers.length) return false;
+
+  const minHeight = Math.max(620, worldH * 0.42);
+  for (let i = 0; i < numbers.length - 1; i++) {
+    const a = Math.abs(numbers[i] ?? 0);
+    const b = Math.abs(numbers[i + 1] ?? 0);
+    const tall = Math.max(a, b);
+    const narrow = Math.min(a, b);
+    if (tall >= minHeight && narrow > 0 && narrow <= 48 && tall / narrow >= 12) return true;
+  }
+  return false;
+}
+
+function protectedArtifactObject(scene: SceneLike, obj: any) {
+  if (!obj) return true;
+  if (obj === scene.layer || obj === scene.player || obj === scene.boss || obj === scene.companion || obj === scene.hand || obj === scene.arrow || obj === scene.pingMarker || obj === scene.landmark?.sprite) return true;
+  if (obj.type === "TilemapLayer" || obj.type === "Camera") return true;
+  const textureKey = String(obj.texture?.key ?? "");
+  return textureKey.startsWith("landmark-") || textureKey === "gateway" || textureKey === "portal" || textureKey.startsWith("maria-") || textureKey.startsWith("andrew-") || textureKey.startsWith("boss-");
+}
+
+function nearAct1Start(scene: SceneLike, obj: any) {
+  const player = scene.player;
+  if (!player?.active) return true;
+  const b = objectBounds(obj);
+  const centerX = b.x + b.width / 2;
+  return Math.abs(centerX - Number(player.x ?? centerX)) <= 760;
+}
+
+function destroyArtifact(scene: SceneLike, obj: any, reason: string) {
+  if (!obj?.active || protectedArtifactObject(scene, obj)) return false;
+  const b = objectBounds(obj);
+  console.warn("[quest] removed rogue Act I vertical render artifact", {
+    reason,
+    type: obj.type,
+    texture: obj.texture?.key,
+    data: obj.data?.values,
+    x: obj.x,
+    y: obj.y,
+    bounds: b,
+  });
+  scene.tweens?.killTweensOf?.(obj);
+  obj.destroy?.();
+  return true;
+}
+
+function inspectArtifactCandidate(scene: SceneLike, obj: any, worldH: number, visited: Set<any>): boolean {
+  if (!obj || visited.has(obj) || obj.active === false) return false;
+  visited.add(obj);
+  if (protectedArtifactObject(scene, obj)) return false;
+
+  const b = objectBounds(obj);
+  const minHeight = Math.max(620, worldH * 0.42);
+  const boundsNeedle = Number.isFinite(b.width) && Number.isFinite(b.height) && b.height >= minHeight && b.width > 0 && b.width <= 72 && b.height / Math.max(b.width, 1) >= 10;
+  const commandNeedle = graphicsCommandLooksLikeNeedle(obj, worldH);
+
+  if ((boundsNeedle || commandNeedle) && nearAct1Start(scene, obj)) {
+    return destroyArtifact(scene, obj, commandNeedle ? "graphics-command-needle" : "bounds-needle");
+  }
+
+  // Containers were deliberately skipped by the first diagnostic. Recurse into
+  // their children because a small container can hold a Graphics child whose
+  // commands draw far outside the container's nominal dimensions.
+  if (obj.type === "Container" || Array.isArray(obj.list)) {
+    for (const child of [...(obj.list ?? [])]) {
+      if (inspectArtifactCandidate(scene, child, worldH, visited)) return true;
+    }
+  }
+  return false;
+}
+
 function removeRogueVerticalArtifacts(scene: SceneLike) {
   if (scene.save?.current_zone !== "sunlit_shores") return;
-
   const worldH = Math.max(1, Number(scene.mapH ?? ACT1_EXPANDED_H) * 32);
-  const minHeight = Math.max(620, worldH * 0.42);
-  const protectedObjects = new Set<any>([
-    scene.layer,
-    scene.player,
-    scene.boss,
-    scene.companion,
-    scene.hand,
-    scene.arrow,
-    scene.pingMarker,
-    scene.landmark?.sprite,
-  ].filter(Boolean));
-
+  const visited = new Set<any>();
   for (const child of [...(scene.children?.list ?? [])]) {
-    const obj = child as any;
-    if (!obj?.active || protectedObjects.has(obj)) continue;
-    if (obj.type === "TilemapLayer" || obj.type === "Camera" || obj.type === "Container") continue;
-    if (obj.getData?.("act1-vertical-artifact-checked")) continue;
-    obj.setData?.("act1-vertical-artifact-checked", true);
-
-    const { width, height } = objectBounds(obj);
-    if (!Number.isFinite(width) || !Number.isFinite(height)) continue;
-    const looksLikeNeedle = height >= minHeight && width > 0 && width <= 64 && height / Math.max(width, 1) >= 10;
-    if (!looksLikeNeedle) continue;
-
-    const textureKey = String(obj.texture?.key ?? "");
-    const protectedTexture =
-      textureKey.startsWith("landmark-") ||
-      textureKey === "gateway" ||
-      textureKey === "portal" ||
-      textureKey.startsWith("maria-") ||
-      textureKey.startsWith("andrew-") ||
-      textureKey.startsWith("boss-");
-    if (protectedTexture) continue;
-
-    console.warn("[quest] removed rogue Act I vertical artifact", {
-      type: obj.type,
-      texture: textureKey || undefined,
-      x: obj.x,
-      y: obj.y,
-      width,
-      height,
-    });
-    scene.tweens?.killTweensOf?.(obj);
-    obj.destroy?.();
+    inspectArtifactCandidate(scene, child, worldH, visited);
   }
 }
 
 function scheduleArtifactSweep(scene: SceneLike) {
   removeRogueVerticalArtifacts(scene);
-  scene.time?.delayedCall?.(80, () => removeRogueVerticalArtifacts(scene));
-  scene.time?.delayedCall?.(260, () => removeRogueVerticalArtifacts(scene));
-  scene.time?.delayedCall?.(700, () => removeRogueVerticalArtifacts(scene));
+  scene.time?.delayedCall?.(120, () => removeRogueVerticalArtifacts(scene));
+  scene.time?.delayedCall?.(360, () => removeRogueVerticalArtifacts(scene));
+  scene.time?.delayedCall?.(760, () => removeRogueVerticalArtifacts(scene));
+  scene.time?.delayedCall?.(1400, () => removeRogueVerticalArtifacts(scene));
 }
 
 export function installAct1WorldRemaster(QuestScene: SceneCtor) {
@@ -238,8 +290,6 @@ export function installAct1WorldRemaster(QuestScene: SceneCtor) {
   if (proto.__act1WorldRemasterInstalled) return;
   proto.__act1WorldRemasterInstalled = true;
 
-  // Restore the original Act I remaster roaming area. buildZone sets Act I to
-  // 50x50 immediately before buildAct1, so expand only during Act I generation.
   const originalBuildAct1 = proto.buildAct1;
   proto.buildAct1 = function expandedAct1(this: SceneLike, ...args: any[]) {
     this.mapW = ACT1_EXPANDED_W;
@@ -255,8 +305,6 @@ export function installAct1WorldRemaster(QuestScene: SceneCtor) {
   proto.create = function act1WorldRemasteredCreate(this: SceneLike, ...args: any[]) {
     const result = originalCreate.apply(this, args);
 
-    // First reduce general tree density by 10%, then enforce a much larger
-    // completely tree-free breathing zone around Maria's home.
     thinTrees(this);
     clearHouseTrees(this);
     placeAct1Ruins(this);
