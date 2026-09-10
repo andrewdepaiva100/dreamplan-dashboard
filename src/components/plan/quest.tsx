@@ -105,7 +105,7 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
   return (
     <>
       <style>{`button[aria-label="Memories"] { visibility: hidden !important; }`}</style>
-      <QuestCore onExit={onExit} />
+      <QuestCore {...(onExit ? { onExit } : {})} />
 
       {playing ? (
         <button
