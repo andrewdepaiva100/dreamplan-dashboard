@@ -1,8 +1,11 @@
 import * as Phaser from "phaser";
 
 const ZONE = "the_haven";
+const CLAMOUR_NAME = "The Clamour of Doubt";
 const ENEMY_REACH = 72;
 const BOSS_REACH = 82;
+const TOGETHER_WINDOW = 900;
+const TOGETHER_COOLDOWN = 2600;
 
 type SceneCtor = { prototype: any };
 
@@ -14,11 +17,109 @@ type AndrewMotion = {
   facing: 1 | -1;
 };
 
+function clamourActive(scene: any) {
+  return Boolean(
+    scene.save?.current_zone === ZONE &&
+      scene.boss?.active &&
+      scene.bossPhase === 1 &&
+      scene.bossName === CLAMOUR_NAME,
+  );
+}
+
+function togetherFlourish(scene: any) {
+  if (!clamourActive(scene) || !scene.player?.active || !scene.companion?.active) return;
+  const now = Number(scene.time?.now ?? 0);
+  if (now < (scene.__act3TogetherReadyAt ?? 0)) return;
+  scene.__act3TogetherReadyAt = now + TOGETHER_COOLDOWN;
+
+  const boss = scene.boss;
+  const maria = scene.player;
+  const andrew = scene.companion;
+  const depth = (boss.depth ?? 18) + 1;
+
+  scene.spawnSparkle?.(boss.x - 9, boss.y, 0xff8fb8, 8);
+  scene.spawnSparkle?.(boss.x + 9, boss.y, 0x78baff, 8);
+
+  const rose = scene.add.arc(maria.x, maria.y - 5, 18, -55, 55, false, 0xff8fb8, 0.42)
+    .setStrokeStyle(2, 0xffc4d8, 0.9).setDepth(depth);
+  const blue = scene.add.arc(andrew.x, andrew.y - 5, 18, 125, 235, false, 0x78baff, 0.42)
+    .setStrokeStyle(2, 0xc5ddff, 0.9).setDepth(depth);
+  scene.tweens.add({
+    targets: rose,
+    x: boss.x - 5,
+    y: boss.y,
+    alpha: 0,
+    scale: 0.45,
+    duration: 360,
+    ease: "Sine.easeIn",
+    onComplete: () => rose.destroy(),
+  });
+  scene.tweens.add({
+    targets: blue,
+    x: boss.x + 5,
+    y: boss.y,
+    alpha: 0,
+    scale: 0.45,
+    duration: 360,
+    ease: "Sine.easeIn",
+    onComplete: () => blue.destroy(),
+  });
+
+  const heart = scene.add.text(boss.x, boss.y - 20, "♥", {
+    fontFamily: "Georgia, serif",
+    fontSize: "20px",
+    fontStyle: "bold",
+    color: "#f2d9ff",
+    stroke: "#7a5ca6",
+    strokeThickness: 2,
+  }).setOrigin(0.5).setDepth(depth + 1).setAlpha(0.95);
+  scene.tweens.add({
+    targets: heart,
+    y: heart.y - 22,
+    scale: { from: 0.7, to: 1.25 },
+    alpha: 0,
+    duration: 700,
+    ease: "Sine.easeOut",
+    onComplete: () => heart.destroy(),
+  });
+
+  // The words appear only every other synchronized strike; the rose/blue burst
+  // can still quietly acknowledge the others without turning combat into UI spam.
+  scene.__act3TogetherCount = (scene.__act3TogetherCount ?? 0) + 1;
+  if (scene.__act3TogetherCount % 2 !== 1) return;
+  const text = scene.add.text(boss.x, boss.y - 44, "♥ Together ♥", {
+    fontFamily: "Georgia, serif",
+    fontSize: "13px",
+    fontStyle: "bold italic",
+    color: "#fff4fb",
+    stroke: "#6b5a91",
+    strokeThickness: 3,
+  }).setOrigin(0.5, 1).setDepth(depth + 2).setAlpha(0.98);
+  scene.tweens.add({
+    targets: text,
+    y: text.y - 24,
+    alpha: 0,
+    duration: 900,
+    hold: 180,
+    ease: "Sine.easeOut",
+    onComplete: () => text.destroy(),
+  });
+}
+
+function recordClamourHit(scene: any, partner: "maria" | "andrew") {
+  if (!clamourActive(scene)) return;
+  const now = Number(scene.time?.now ?? 0);
+  const previous = scene.__act3LastClamourHit as { partner: "maria" | "andrew"; at: number } | undefined;
+  if (previous && previous.partner !== partner && now - previous.at <= TOGETHER_WINDOW) togetherFlourish(scene);
+  scene.__act3LastClamourHit = { partner, at: now };
+}
+
 /**
  * Small Haven-only companion polish:
  * - adds a few extra non-blocking animals around authored social spaces;
  * - makes Andrew's blade connect only at believable melee distance;
- * - gives his follow movement Maria-like easing, facing, and walk cadence.
+ * - gives his follow movement Maria-like easing, facing, and walk cadence;
+ * - visually celebrates close-together Maria/Andrew Clamour hits without buffs.
  */
 export function installAct3CompanionPolish(QuestScene: SceneCtor) {
   const proto = QuestScene.prototype as any;
@@ -35,6 +136,14 @@ export function installAct3CompanionPolish(QuestScene: SceneCtor) {
       ["cat", 18, 20, 1],
       ["duck", 62, 53, 2],
     ]);
+    return result;
+  };
+
+  const originalAttack = proto.attack;
+  proto.attack = function act3TogetherMariaAttack(...args: any[]) {
+    const beforeHp = clamourActive(this) ? Number(this.bossHp) : NaN;
+    const result = originalAttack.apply(this, args);
+    if (Number.isFinite(beforeHp) && Number(this.bossHp) < beforeHp) recordClamourHit(this, "maria");
     return result;
   };
 
@@ -59,8 +168,10 @@ export function installAct3CompanionPolish(QuestScene: SceneCtor) {
 
     if (!hit && this.boss?.active && this.bossPhase === 1) {
       if (Phaser.Math.Distance.Between(this.boss.x, this.boss.y, c.x, c.y) < BOSS_REACH) {
+        const beforeHp = Number(this.bossHp);
         this.bossHitAt = 0;
         this.damageBoss(power);
+        if (Number(this.bossHp) < beforeHp) recordClamourHit(this, "andrew");
         hit = true;
       }
     }
