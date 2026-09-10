@@ -49,6 +49,12 @@ const BUILDINGS = [
   },
 ] as const;
 
+const ANDREW_REACTIONS: Record<string, string> = {
+  "music-house": "If they have our song in there, I'm requesting the version where I somehow know how to dance.",
+  "promise-archive": "I like that they kept the imperfect promises too. Those are probably the ones people had to choose more than once.",
+  "hearth-home": "That's the part I'm most excited for, you know. Not just the wedding. The Tuesdays after it.",
+};
+
 function addMusicHouseRoof(scene: any, c: any, p: any) {
   const roof = scene.add.graphics();
   roof.fillStyle(p.roof, 1);
@@ -153,10 +159,39 @@ function popupFlourish(scene: any, cfg: any, x: number, y: number) {
   scene.tweens.add({ targets: [halo, emblem], y: `-=18`, alpha: 0, scale: 1.28, duration: 650, ease: "Sine.easeOut", onComplete: () => { halo.destroy(); emblem.destroy(); } });
 }
 
+function showAndrewReaction(scene: any, id: string) {
+  const line = ANDREW_REACTIONS[id];
+  const andrew = scene.companion;
+  if (!line || !andrew?.active || scene.save?.current_zone !== ZONE) return;
+  scene.spawnSparkle?.(andrew.x - 7, andrew.y - 8, 0x78baff, 6);
+  scene.spawnSparkle?.(andrew.x + 7, andrew.y - 8, 0xff9fc5, 5);
+  const text = scene.add.text(andrew.x, andrew.y - 42, `Andrew: “${line}”`, {
+    fontFamily: "Georgia, serif",
+    fontSize: "12px",
+    fontStyle: "italic",
+    color: "#fff6df",
+    stroke: "#243b61",
+    strokeThickness: 4,
+    align: "center",
+    wordWrap: { width: 260, useAdvancedWrap: true },
+  }).setOrigin(0.5, 1).setDepth(982).setAlpha(0.98);
+  scene.tweens.add({
+    targets: text,
+    y: text.y - 26,
+    alpha: 0,
+    duration: 3200,
+    hold: 850,
+    ease: "Sine.easeOut",
+    onComplete: () => text.destroy(),
+  });
+}
+
 function openBuildingPopup(scene: any, it: any) {
   const cfg = BUILDINGS.find((b) => b.id === it.id);
   if (!cfg) return false;
   popupFlourish(scene, cfg, it.obj.x, it.obj.y);
+  const seen = (scene.__act3LandmarkReactionSeen ??= new Set<string>());
+  if (scene.companion?.active && !seen.has(cfg.id)) scene.__act3PendingLandmarkReaction = cfg.id;
   const divider = cfg.id === "music-house" ? "♪  ✦  ♪" : cfg.id === "promise-archive" ? "♥  ✦  ♥" : "✦  ♥  ✦";
   scene.openModal?.({
     type: "info",
@@ -210,5 +245,18 @@ export function installAct3HavenLandmarks(QuestScene: SceneCtor) {
       if (best && openBuildingPopup(this, best)) return;
     }
     return originalInteract.apply(this, args);
+  };
+
+  const originalResume = proto.onResume;
+  proto.onResume = function act3HavenLandmarkResume(...args: any[]) {
+    const result = originalResume.apply(this, args);
+    const id = this.__act3PendingLandmarkReaction as string | undefined;
+    if (!id || this.save?.current_zone !== ZONE || !this.companion?.active) return result;
+    this.__act3PendingLandmarkReaction = undefined;
+    const seen = (this.__act3LandmarkReactionSeen ??= new Set<string>());
+    if (seen.has(id)) return result;
+    seen.add(id);
+    this.time?.delayedCall?.(320, () => showAndrewReaction(this, id));
+    return result;
   };
 }
