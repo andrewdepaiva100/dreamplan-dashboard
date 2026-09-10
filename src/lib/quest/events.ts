@@ -44,7 +44,7 @@ if (typeof window !== "undefined") {
         act3OpeningFlow, act3Enemies, act3BossPolish, act3SheetScenes, act3MusicIdentity, act3HavenLandmarks, global25DPolish,
         desktopActSelector, desktopControlsPolish, interactionPolish, wrenIntro, lastCrossingDialogueRebind, weaponVisualSync,
         introUiPolish, mariaMovementPolish, mariaCombatAnimation, globalCharacterReactions, globalNpcLife, enemyReactionPolish, combatImpactPolish,
-        actArrivalCinematics, environmentalMicroLife, explorationFeedback, romanticMicroPolish, npcPresencePolish,
+        actArrivalCinematics, environmentalMicroLife, explorationFeedback, romanticMicroPolish, npcPresencePolish, canvasSeamPolish,
       ] = await Promise.all([
         safeImport("scene", () => import("./scene")), safeImport("house", () => import("./house")), safeImport("upgrades", () => import("./upgrades")), safeImport("visualRemaster", () => import("./visualRemaster")), safeImport("homeRemaster", () => import("./homeRemaster")), safeImport("homeScalePolish", () => import("./homeScalePolish")),
         safeImport("act1WorldRemaster", () => import("./act1WorldRemaster")), safeImport("lastCrossing", () => import("./lastCrossing")), safeImport("silasPolish", () => import("./silasPolish")), safeImport("silasPlacementFix", () => import("./silasPlacementFix")),
@@ -60,6 +60,7 @@ if (typeof window !== "undefined") {
         safeImport("weaponVisualSync", () => import("./weaponVisualSync")), safeImport("introUiPolish", () => import("./introUiPolish")), safeImport("mariaMovementPolish", () => import("./mariaMovementPolish")), safeImport("mariaCombatAnimation", () => import("./mariaCombatAnimation")),
         safeImport("globalCharacterReactions", () => import("./globalCharacterReactions")), safeImport("globalNpcLife", () => import("./globalNpcLife")), safeImport("enemyReactionPolish", () => import("./enemyReactionPolish")), safeImport("combatImpactPolish", () => import("./combatImpactPolish")),
         safeImport("actArrivalCinematics", () => import("./actArrivalCinematics")), safeImport("environmentalMicroLife", () => import("./environmentalMicroLife")), safeImport("explorationFeedback", () => import("./explorationFeedback")), safeImport("romanticMicroPolish", () => import("./romanticMicroPolish")), safeImport("npcPresencePolish", () => import("./npcPresencePolish")),
+        safeImport("canvasSeamPolish", () => import("./canvasSeamPolish")),
       ]);
 
       if (!sceneModule?.QuestScene) {
@@ -112,6 +113,7 @@ if (typeof window !== "undefined") {
       safeInstall("global2_5dPolish", global25DPolish ? () => global25DPolish.installGlobal25DPolish(QuestScene) : null);
       safeInstall("desktopActSelector", desktopActSelector ? () => desktopActSelector.installDesktopActSelector(QuestScene) : null);
       safeInstall("desktopControlsPolish", desktopControlsPolish ? () => desktopControlsPolish.installDesktopControlsPolish() : null);
+      safeInstall("canvasSeamPolish", canvasSeamPolish ? () => canvasSeamPolish.installCanvasSeamPolish() : null);
       safeInstall("interactionPolish", interactionPolish ? () => interactionPolish.installInteractionPolish(QuestScene) : null);
       safeInstall("wrenIntro", wrenIntro ? () => wrenIntro.installWrenIntro(QuestScene) : null);
       safeInstall("lastCrossingDialogueRebind", lastCrossingDialogueRebind ? () => lastCrossingDialogueRebind.rebindLastCrossingDialoguePolish(QuestScene) : null);
