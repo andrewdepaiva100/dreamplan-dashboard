@@ -1,7 +1,7 @@
 // @ts-nocheck -- Presentation-only polish for Backpack and Armory panels.
 import "./inventoryArmoryPolish.css";
 
-const PANEL_SELECTOR = ".absolute.inset-0.z-40 > div";
+const OVERLAY_SELECTOR = ".absolute.inset-0.z-40";
 
 function classifyPanel(panel: Element) {
   const title = panel.querySelector("h3")?.textContent?.trim();
@@ -14,9 +14,16 @@ function classifyPanel(panel: Element) {
   }
 }
 
+function classifyOverlay(overlay: Element) {
+  const panel = overlay.firstElementChild;
+  if (panel) classifyPanel(panel);
+}
+
 function scan(root: ParentNode = document) {
-  root.querySelectorAll?.(PANEL_SELECTOR).forEach(classifyPanel);
-  if (root instanceof Element && root.matches?.(PANEL_SELECTOR)) classifyPanel(root);
+  // MutationObserver usually receives the overlay as the newly-added root. Since
+  // querySelectorAll never includes the root itself, explicitly classify it first.
+  if (root instanceof Element && root.matches?.(OVERLAY_SELECTOR)) classifyOverlay(root);
+  root.querySelectorAll?.(OVERLAY_SELECTOR).forEach(classifyOverlay);
 }
 
 function installInventoryArmoryPolish() {
