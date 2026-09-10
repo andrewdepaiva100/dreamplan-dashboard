@@ -7,8 +7,6 @@ import "./titleScreenCinematic.css";
 
 const QUEST_RUNTIME_READY_EVENT = "quest:runtime-ready";
 
-// Install gameplay-critical scene decorators first. Presentation-only dialogue
-// is intentionally loaded after the browser has painted the playable scene.
 if (typeof window !== "undefined") {
   (window as any).__questRuntimeReady = false;
   queueMicrotask(() => {
@@ -20,7 +18,7 @@ if (typeof window !== "undefined") {
       import("./lastCrossingDefense"), import("./majesticPortal"), import("./relicPresentation"), import("./act2Enemies"),
       import("./act2GardenKeeper"), import("./act2EvelynSprite"), import("./act2VisualTuning"), import("./act2GuideCleanup"),
       import("./act2SeasonIdentity"), import("./act2BramForgemaster"), import("./act2BramWeaponOwnership"), import("./act2SeasonChallenges"),
-      import("./act2BossRemaster"), import("./act2Wildlife"), import("./act2Memorial"), import("./meleeHitPolish"), import("./act3OpeningFlow"), import("./act3Enemies"), import("./act3BossPolish"), import("./act3SheetScenes"), import("./act3MusicIdentity"), import("./global2_5dPolish"), import("./desktopActSelector"), import("./desktopControlsPolish"), import("./interactionPolish"),
+      import("./act2BossRemaster"), import("./act2Wildlife"), import("./act2Memorial"), import("./meleeHitPolish"), import("./act3OpeningFlow"), import("./act3Enemies"), import("./act3BossPolish"), import("./act3SheetScenes"), import("./act3MusicIdentity"), import("./act3HavenLandmarks"), import("./global2_5dPolish"), import("./desktopActSelector"), import("./desktopControlsPolish"), import("./interactionPolish"),
       import("./wrenIntro"), import("./lastCrossingDialogueRebind"), import("./weaponVisualSync"), import("./introUiPolish"),
       import("./mariaMovementPolish"), import("./mariaCombatAnimation"), import("./globalCharacterReactions"), import("./globalNpcLife"), import("./enemyReactionPolish"),
       import("./actArrivalCinematics"), import("./environmentalMicroLife"),
@@ -29,7 +27,7 @@ if (typeof window !== "undefined") {
       silasPlacementFix, lastCrossingLifecycle, act1GameplayPolish, fallenCrossingShrine, fallenCrossingJournalBook,
       wardenCombat, act1WoodenBridges, wardenTidalRings, act1ExplorationArt, lastCrossingDefense, majesticPortal,
       relicPresentation, act2Enemies, act2GardenKeeper, act2EvelynSprite, act2VisualTuning, act2GuideCleanup,
-      act2SeasonIdentity, act2BramForgemaster, act2BramWeaponOwnership, act2SeasonChallenges, act2BossRemaster, act2Wildlife, act2Memorial, meleeHitPolish, act3OpeningFlow, act3Enemies, act3BossPolish, act3SheetScenes, act3MusicIdentity, global25DPolish,
+      act2SeasonIdentity, act2BramForgemaster, act2BramWeaponOwnership, act2SeasonChallenges, act2BossRemaster, act2Wildlife, act2Memorial, meleeHitPolish, act3OpeningFlow, act3Enemies, act3BossPolish, act3SheetScenes, act3MusicIdentity, act3HavenLandmarks, global25DPolish,
       desktopActSelector, desktopControlsPolish, interactionPolish, wrenIntro, lastCrossingDialogueRebind, weaponVisualSync,
       introUiPolish, mariaMovementPolish, mariaCombatAnimation, globalCharacterReactions, globalNpcLife, enemyReactionPolish, actArrivalCinematics,
       environmentalMicroLife,
@@ -73,6 +71,7 @@ if (typeof window !== "undefined") {
       act3BossPolish.installAct3BossPolish(QuestScene);
       act3SheetScenes.installAct3SheetScenes(QuestScene);
       act3MusicIdentity.installAct3MusicIdentity(QuestScene);
+      act3HavenLandmarks.installAct3HavenLandmarks(QuestScene);
       global25DPolish.installGlobal25DPolish(QuestScene);
       desktopActSelector.installDesktopActSelector(QuestScene);
       desktopControlsPolish.installDesktopControlsPolish();
@@ -91,10 +90,6 @@ if (typeof window !== "undefined") {
 
       (window as any).__questRuntimeReady = true;
       window.dispatchEvent(new Event(QUEST_RUNTIME_READY_EVENT));
-
-      // Let Phaser/browser complete two paints before parsing and installing the
-      // large dialogue scripts. Haven's Andrew layer installs last so it can
-      // specialize only his Act III conversations without changing anyone else.
       requestAnimationFrame(() => requestAnimationFrame(() => {
         void Promise.all([import("./globalCharacterDialogue"), import("./act3AndrewDialogue")])
           .then(([dialogue, act3AndrewDialogue]) => {
