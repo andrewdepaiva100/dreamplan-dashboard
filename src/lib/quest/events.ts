@@ -21,7 +21,7 @@ if (typeof window !== "undefined") {
       import("./act2BossRemaster"), import("./act2Wildlife"), import("./act2Memorial"), import("./meleeHitPolish"), import("./act3OpeningFlow"), import("./act3Enemies"), import("./act3BossPolish"), import("./act3SheetScenes"), import("./act3MusicIdentity"), import("./act3HavenLandmarks"), import("./global2_5dPolish"), import("./desktopActSelector"), import("./desktopControlsPolish"), import("./interactionPolish"),
       import("./wrenIntro"), import("./lastCrossingDialogueRebind"), import("./weaponVisualSync"), import("./introUiPolish"),
       import("./mariaMovementPolish"), import("./mariaCombatAnimation"), import("./globalCharacterReactions"), import("./globalNpcLife"), import("./enemyReactionPolish"), import("./combatImpactPolish"),
-      import("./actArrivalCinematics"), import("./environmentalMicroLife"), import("./explorationFeedback"), import("./romanticMicroPolish"),
+      import("./actArrivalCinematics"), import("./environmentalMicroLife"), import("./explorationFeedback"), import("./romanticMicroPolish"), import("./npcPresencePolish"),
     ]).then(([
       sceneModule, houseModule, upgrades, visualRemaster, homeRemaster, homeScalePolish, act1WorldRemaster, lastCrossing, silasPolish,
       silasPlacementFix, lastCrossingLifecycle, act1GameplayPolish, fallenCrossingShrine, fallenCrossingJournalBook,
@@ -30,7 +30,7 @@ if (typeof window !== "undefined") {
       act2SeasonIdentity, act2BramForgemaster, act2BramWeaponOwnership, act2SeasonChallenges, act2BossRemaster, act2Wildlife, act2Memorial, meleeHitPolish, act3OpeningFlow, act3Enemies, act3BossPolish, act3SheetScenes, act3MusicIdentity, act3HavenLandmarks, global25DPolish,
       desktopActSelector, desktopControlsPolish, interactionPolish, wrenIntro, lastCrossingDialogueRebind, weaponVisualSync,
       introUiPolish, mariaMovementPolish, mariaCombatAnimation, globalCharacterReactions, globalNpcLife, enemyReactionPolish, combatImpactPolish, actArrivalCinematics,
-      environmentalMicroLife, explorationFeedback, romanticMicroPolish,
+      environmentalMicroLife, explorationFeedback, romanticMicroPolish, npcPresencePolish,
     ]) => {
       const QuestScene = sceneModule.QuestScene as unknown as any;
       const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
@@ -60,7 +60,7 @@ if (typeof window !== "undefined") {
       act2GuideCleanup.installAct2GuideCleanup(QuestScene);
       act2SeasonIdentity.installAct2SeasonIdentity(QuestScene);
       act2BramForgemaster.installAct2BramForgemaster(QuestScene);
-      act2BramWeaponOwnership.installAct2BramWeaponOwnership(QuestScene);
+      act2BramWeaponOwnership.installBramWeaponOwnership(QuestScene);
       act2SeasonChallenges.installAct2SeasonChallenges(QuestScene);
       act2BossRemaster.installAct2BossRemaster(QuestScene);
       act2Wildlife.installAct2Wildlife(QuestScene);
@@ -90,6 +90,7 @@ if (typeof window !== "undefined") {
       environmentalMicroLife.installEnvironmentalMicroLife(QuestScene);
       explorationFeedback.installExplorationFeedback(QuestScene);
       romanticMicroPolish.installRomanticMicroPolish(QuestScene);
+      npcPresencePolish.installNpcPresencePolish(QuestScene);
 
       (window as any).__questRuntimeReady = true;
       window.dispatchEvent(new Event(QUEST_RUNTIME_READY_EVENT));
