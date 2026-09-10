@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import QuestCore from "./questCore";
 import QuestJournal from "./QuestJournal";
 import { EMPTY_SAVE, loadSave, type QuestSave } from "@/lib/quest/save";
 import type { JournalProgress } from "@/lib/quest/journalContent";
 import "@/lib/quest/inventoryArmoryPolish";
-import "@/lib/quest/mariaWardrobe";
+import { openMariaWardrobe } from "@/lib/quest/mariaWardrobe";
 
 function progressFromSave(save: QuestSave): JournalProgress {
   return {
@@ -25,6 +25,7 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
   const [playing, setPlaying] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
   const [progress, setProgress] = useState<JournalProgress>(() => progressFromSave({ ...EMPTY_SAVE }));
+  const wardrobeBypassRef = useRef(false);
 
   useEffect(() => {
     const refreshPlaying = () => {
@@ -53,6 +54,23 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
     setJournalOpen(false);
   }, []);
 
+  const interceptNewGame = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (wardrobeBypassRef.current) {
+      wardrobeBypassRef.current = false;
+      return;
+    }
+
+    const button = (event.target as Element | null)?.closest?.("button");
+    if (!button || button.textContent?.trim() !== "New Game") return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    openMariaWardrobe(() => {
+      wardrobeBypassRef.current = true;
+      button.click();
+    });
+  }, []);
+
   return (
     <>
       <style>{`
@@ -79,7 +97,9 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
           }
         }
       `}</style>
-      <QuestCore {...(onExit ? { onExit } : {})} />
+      <div onClickCapture={interceptNewGame}>
+        <QuestCore {...(onExit ? { onExit } : {})} />
+      </div>
 
       {playing ? (
         <button
