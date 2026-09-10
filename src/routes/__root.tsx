@@ -8,7 +8,8 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -83,53 +84,65 @@ function RootShell({ children }: { children: ReactNode }) {
   return <html lang="en"><head><HeadContent /></head><body>{children}<Scripts /></body></html>;
 }
 
-function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
+function PlanningCardPortal() {
   const location = useLocation();
+  const [target, setTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (location.pathname !== "/") return;
+    if (location.pathname !== "/") {
+      setTarget(null);
+      return;
+    }
 
-    const installPlanningCard = () => {
-      const nav = document.querySelector("main nav");
-      if (!nav || document.getElementById("marriage-invitations-planning-group")) return false;
-
-      const section = document.createElement("section");
-      section.id = "marriage-invitations-planning-group";
-      section.className = "rounded-2xl border border-white/15 bg-navy/20 p-3.5 shadow-sm backdrop-blur-sm sm:p-4";
-      section.innerHTML = `
-        <div class="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-1">
-          <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h2 class="text-[12px] font-bold uppercase tracking-[0.16em] text-gold">Planning</h2>
-            <p class="text-[11px] text-sky/75">Wedding details and guest organization.</p>
-          </div>
-          <span class="text-[10.5px] font-medium text-sky/60">1 tool</span>
-        </div>
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <a href="/guests" class="group flex min-h-[112px] items-center gap-3 rounded-2xl border border-gold/55 bg-gold/20 px-4 py-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)]">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold/15 text-xl transition-transform group-hover:scale-105" aria-hidden="true">💍</span>
-            <span class="min-w-0 flex-1">
-              <span class="block text-[13.5px] font-bold leading-snug text-navy">Marriage Invitations</span>
-              <span class="mt-0.5 block text-[11px] leading-snug text-ink-soft">View, add, remove & organize guests</span>
-            </span>
-            <span class="ml-auto text-base font-semibold text-navy/45">›</span>
-          </a>
-        </div>`;
-      nav.appendChild(section);
-      return true;
+    const findTarget = () => {
+      const navs = Array.from(document.querySelectorAll("main nav")) as HTMLElement[];
+      const dashboardNav = navs.find((nav) => nav.querySelector("section"));
+      setTarget(dashboardNav ?? null);
+      return Boolean(dashboardNav);
     };
 
-    if (installPlanningCard()) return;
-    const observer = new MutationObserver(() => {
-      if (installPlanningCard()) observer.disconnect();
-    });
+    findTarget();
+    const observer = new MutationObserver(findTarget);
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, [location.pathname]);
 
+  if (!target || location.pathname !== "/") return null;
+
+  return createPortal(
+    <section className="rounded-2xl border border-white/15 bg-navy/20 p-3.5 shadow-sm backdrop-blur-sm sm:p-4">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-1">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h2 className="text-[12px] font-bold uppercase tracking-[0.16em] text-gold">Planning</h2>
+          <p className="text-[11px] text-sky/75">Wedding details and guest organization.</p>
+        </div>
+        <span className="text-[10.5px] font-medium text-sky/60">1 tool</span>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Link
+          to="/guests"
+          className="group flex min-h-[112px] items-center gap-3 rounded-2xl border border-gold/55 bg-gold/20 px-4 py-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)]"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold/15 text-xl transition-transform group-hover:scale-105" aria-hidden="true">💍</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[13.5px] font-bold leading-snug text-navy">Marriage Invitations</span>
+            <span className="mt-0.5 block text-[11px] leading-snug text-ink-soft">View, add, remove &amp; organize guests</span>
+          </span>
+          <span className="ml-auto text-base font-semibold text-navy/45 transition-transform group-hover:translate-x-0.5">›</span>
+        </Link>
+      </div>
+    </section>,
+    target,
+  );
+}
+
+function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
+
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <PlanningCardPortal />
     </QueryClientProvider>
   );
 }
