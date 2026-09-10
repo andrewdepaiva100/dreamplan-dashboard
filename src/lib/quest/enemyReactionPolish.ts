@@ -4,6 +4,46 @@ import * as Phaser from "phaser";
 type SceneLike = Phaser.Scene & Record<string, any>;
 type SceneCtor = { prototype: SceneLike };
 
+function contactRing(scene: SceneLike, enemy: Phaser.Physics.Arcade.Sprite, tint: number) {
+  const ring = scene.add.circle(enemy.x, enemy.y, 9, tint, 0.05)
+    .setStrokeStyle(2, tint, 0.9)
+    .setDepth((enemy.depth ?? 15) + 0.5)
+    .setBlendMode(Phaser.BlendModes.ADD);
+  scene.tweens.add({
+    targets: ring,
+    radius: 25,
+    alpha: 0,
+    duration: 125,
+    ease: "Quad.easeOut",
+    onComplete: () => ring.destroy(),
+  });
+}
+
+function contactSparks(scene: SceneLike, enemy: Phaser.Physics.Arcade.Sprite, tint: number, count: number) {
+  const sourceX = scene.player?.x ?? enemy.x - 1;
+  const sourceY = scene.player?.y ?? enemy.y;
+  const away = Math.atan2(enemy.y - sourceY, enemy.x - sourceX);
+  for (let i = 0; i < count; i++) {
+    const a = away + Phaser.Math.FloatBetween(-0.8, 0.8);
+    const d = Phaser.Math.Between(9, 22);
+    const spark = scene.add.sprite(enemy.x, enemy.y, "spark")
+      .setDepth((enemy.depth ?? 15) + 0.6)
+      .setTint(i % 3 === 0 ? 0xffffff : tint)
+      .setAlpha(0.9)
+      .setScale(Phaser.Math.FloatBetween(0.28, 0.56));
+    scene.tweens.add({
+      targets: spark,
+      x: enemy.x + Math.cos(a) * d,
+      y: enemy.y + Math.sin(a) * d,
+      alpha: 0,
+      scale: 0.12,
+      duration: Phaser.Math.Between(100, 165),
+      ease: "Quad.easeOut",
+      onComplete: () => spark.destroy(),
+    });
+  }
+}
+
 function hitReaction(scene: SceneLike, enemy: Phaser.Physics.Arcade.Sprite) {
   if (!enemy?.active) return;
   const now = scene.time.now;
@@ -12,27 +52,36 @@ function hitReaction(scene: SceneLike, enemy: Phaser.Physics.Arcade.Sprite) {
 
   const baseX = enemy.x;
   const baseY = enemy.y;
+  const baseScaleX = enemy.scaleX;
+  const baseScaleY = enemy.scaleY;
   const dx = enemy.x - (scene.player?.x ?? enemy.x - 1);
   const dy = enemy.y - (scene.player?.y ?? enemy.y);
   const len = Math.max(1, Math.hypot(dx, dy));
-  const kickX = (dx / len) * 4;
-  const kickY = (dy / len) * 3;
+  const kickX = (dx / len) * 5;
+  const kickY = (dy / len) * 3.5;
+  const meleeContact = Number(scene.__combatImpactMariaSwingUntil ?? -Infinity) >= now;
+  const tint = meleeContact ? Number(scene.equippedWeapon?.()?.color ?? 0xffc8d6) : 0xffc8d6;
 
-  enemy.setTint(0xffd7df);
+  enemy.setTint(0xfff2f5);
+  contactRing(scene, enemy, tint);
+  contactSparks(scene, enemy, tint, meleeContact ? 6 : 4);
   scene.tweens.add({
     targets: enemy,
     x: baseX + kickX,
     y: baseY + kickY,
-    duration: 55,
+    scaleX: baseScaleX * 1.045,
+    scaleY: baseScaleY * 0.94,
+    duration: 52,
     yoyo: true,
     ease: "Quad.easeOut",
     onComplete: () => {
       if (!enemy.active) return;
       enemy.setPosition(baseX, baseY);
+      enemy.setScale(baseScaleX, baseScaleY);
       enemy.clearTint();
     },
   });
-  scene.spawnSparkle?.(enemy.x, enemy.y, 0xffc8d6, 4);
+  scene.spawnSparkle?.(enemy.x, enemy.y, tint, meleeContact ? 5 : 3);
 }
 
 function deathPresentation(scene: SceneLike, enemy: Phaser.Physics.Arcade.Sprite) {
