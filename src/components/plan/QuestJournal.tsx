@@ -148,6 +148,19 @@ export function QuestJournal({ progress, onClose }: { progress: JournalProgress;
   const selected = visibleEntries.find((entry) => entry.id === selectedId) ?? visibleEntries[0] ?? null;
   const unlockedSelected = selected ? selected.unlocked(progress) : false;
 
+  const openSection = (nextTab: JournalTab) => {
+    const nextEntries = journalEntriesFor(nextTab);
+    const nextVisible =
+      nextTab === "people" || nextTab === "places"
+        ? nextEntries.filter((entry) => entry.unlocked(progress))
+        : nextTab === "letters"
+          ? nextEntries.filter((entry) => entry.id !== "wedding-hour" || entry.unlocked(progress))
+          : nextEntries;
+    const firstEntry = nextVisible.find((entry) => entry.unlocked(progress)) ?? nextVisible[0] ?? null;
+    setTab(nextTab);
+    setSelectedId(firstEntry?.id ?? null);
+  };
+
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(7,10,22,0.86)] p-2 backdrop-blur-md sm:p-5">
       <div className="relative flex h-[min(94dvh,920px)] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-[#d6b86f]/70 bg-[#ead9b6] shadow-[0_30px_100px_rgba(0,0,0,.55)]">
@@ -177,15 +190,12 @@ export function QuestJournal({ progress, onClose }: { progress: JournalProgress;
               ✧ Journey
             </button>
             {JOURNAL_TABS.map((item) => {
-              const active = tab === item.id;
+              const active = selectedId !== null && tab === item.id;
               return (
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => {
-                    setTab(item.id);
-                    setSelectedId(null);
-                  }}
+                  onClick={() => openSection(item.id)}
                   className={`shrink-0 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.16em] transition ${active ? "border-[#9a7335] bg-[#26324d] text-[#f5dfaa] shadow" : "border-[#aa8e60]/35 bg-white/30 text-[#725f42] hover:bg-white/55"}`}
                 >
                   <span className="mr-1.5">{item.icon}</span>{item.label}
@@ -248,10 +258,7 @@ export function QuestJournal({ progress, onClose }: { progress: JournalProgress;
                     <button
                       key={`open-${item.id}`}
                       type="button"
-                      onClick={() => {
-                        setTab(item.id);
-                        setSelectedId(tabEntries.find((entry) => entry.unlocked(progress))?.id ?? tabEntries[0]?.id ?? null);
-                      }}
+                      onClick={() => openSection(item.id)}
                       className="rounded-xl border border-[#b39156]/45 bg-[#fff8e8]/55 p-3 text-left transition hover:bg-[#fffaf0]"
                     >
                       <span className="text-lg text-[#906a2d]">{item.icon}</span>
