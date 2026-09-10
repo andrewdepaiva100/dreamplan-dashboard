@@ -13,111 +13,135 @@ function releaseQuestRuntimeReady() {
   window.dispatchEvent(new Event(QUEST_RUNTIME_READY_EVENT));
 }
 
+async function safeImport<T>(label: string, loader: () => Promise<T>): Promise<T | null> {
+  try {
+    return await loader();
+  } catch (error) {
+    console.error(`[quest] failed to import ${label}`, error);
+    return null;
+  }
+}
+
+function safeInstall(label: string, installer: (() => void) | null | undefined) {
+  if (!installer) return;
+  try {
+    installer();
+  } catch (error) {
+    console.error(`[quest] failed to install ${label}`, error);
+  }
+}
+
 if (typeof window !== "undefined") {
   (window as any).__questRuntimeReady = false;
   queueMicrotask(() => {
-    void Promise.all([
-      import("./scene"), import("./house"), import("./upgrades"), import("./visualRemaster"), import("./homeRemaster"), import("./homeScalePolish"),
-      import("./act1WorldRemaster"), import("./lastCrossing"), import("./silasPolish"), import("./silasPlacementFix"),
-      import("./lastCrossingLifecycle"), import("./act1GameplayPolish"), import("./fallenCrossingShrine"), import("./fallenCrossingJournalBook"),
-      import("./wardenCombat"), import("./act1WoodenBridges"), import("./wardenTidalRings"), import("./act1ExplorationArt"),
-      import("./lastCrossingDefense"), import("./majesticPortal"), import("./relicPresentation"), import("./act2Enemies"),
-      import("./act2GardenKeeper"), import("./act2EvelynSprite"), import("./act2VisualTuning"), import("./act2GuideCleanup"),
-      import("./act2SeasonIdentity"), import("./act2BramForgemaster"), import("./act2BramWeaponOwnership"), import("./act2SeasonChallenges"),
-      import("./act2BossRemaster"), import("./act2Wildlife"), import("./act2Memorial"), import("./meleeHitPolish"), import("./act3OpeningFlow"), import("./act3Enemies"), import("./act3BossPolish"), import("./act3SheetScenes"), import("./act3MusicIdentity"), import("./act3HavenLandmarks"), import("./global2_5dPolish"), import("./desktopActSelector"), import("./desktopControlsPolish"), import("./interactionPolish"),
-      import("./wrenIntro"), import("./lastCrossingDialogueRebind"), import("./weaponVisualSync"), import("./introUiPolish"),
-      import("./mariaMovementPolish"), import("./mariaCombatAnimation"), import("./globalCharacterReactions"), import("./globalNpcLife"), import("./enemyReactionPolish"), import("./combatImpactPolish"),
-      import("./actArrivalCinematics"), import("./environmentalMicroLife"), import("./explorationFeedback"), import("./romanticMicroPolish"), import("./npcPresencePolish"),
-    ]).then(([
-      sceneModule, houseModule, upgrades, visualRemaster, homeRemaster, homeScalePolish, act1WorldRemaster, lastCrossing, silasPolish,
-      silasPlacementFix, lastCrossingLifecycle, act1GameplayPolish, fallenCrossingShrine, fallenCrossingJournalBook,
-      wardenCombat, act1WoodenBridges, wardenTidalRings, act1ExplorationArt, lastCrossingDefense, majesticPortal,
-      relicPresentation, act2Enemies, act2GardenKeeper, act2EvelynSprite, act2VisualTuning, act2GuideCleanup,
-      act2SeasonIdentity, act2BramForgemaster, act2BramWeaponOwnership, act2SeasonChallenges, act2BossRemaster, act2Wildlife, act2Memorial, meleeHitPolish, act3OpeningFlow, act3Enemies, act3BossPolish, act3SheetScenes, act3MusicIdentity, act3HavenLandmarks, global25DPolish,
-      desktopActSelector, desktopControlsPolish, interactionPolish, wrenIntro, lastCrossingDialogueRebind, weaponVisualSync,
-      introUiPolish, mariaMovementPolish, mariaCombatAnimation, globalCharacterReactions, globalNpcLife, enemyReactionPolish, combatImpactPolish, actArrivalCinematics,
-      environmentalMicroLife, explorationFeedback, romanticMicroPolish, npcPresencePolish,
-    ]) => {
+    void (async () => {
+      const [
+        sceneModule, houseModule, upgrades, visualRemaster, homeRemaster, homeScalePolish, act1WorldRemaster, lastCrossing, silasPolish,
+        silasPlacementFix, lastCrossingLifecycle, act1GameplayPolish, fallenCrossingShrine, fallenCrossingJournalBook,
+        wardenCombat, act1WoodenBridges, wardenTidalRings, act1ExplorationArt, lastCrossingDefense, majesticPortal,
+        relicPresentation, act2Enemies, act2GardenKeeper, act2EvelynSprite, act2VisualTuning, act2GuideCleanup,
+        act2SeasonIdentity, act2BramForgemaster, act2BramWeaponOwnership, act2SeasonChallenges, act2BossRemaster, act2Wildlife, act2Memorial, meleeHitPolish,
+        act3OpeningFlow, act3Enemies, act3BossPolish, act3SheetScenes, act3MusicIdentity, act3HavenLandmarks, global25DPolish,
+        desktopActSelector, desktopControlsPolish, interactionPolish, wrenIntro, lastCrossingDialogueRebind, weaponVisualSync,
+        introUiPolish, mariaMovementPolish, mariaCombatAnimation, globalCharacterReactions, globalNpcLife, enemyReactionPolish, combatImpactPolish,
+        actArrivalCinematics, environmentalMicroLife, explorationFeedback, romanticMicroPolish, npcPresencePolish,
+      ] = await Promise.all([
+        safeImport("scene", () => import("./scene")), safeImport("house", () => import("./house")), safeImport("upgrades", () => import("./upgrades")), safeImport("visualRemaster", () => import("./visualRemaster")), safeImport("homeRemaster", () => import("./homeRemaster")), safeImport("homeScalePolish", () => import("./homeScalePolish")),
+        safeImport("act1WorldRemaster", () => import("./act1WorldRemaster")), safeImport("lastCrossing", () => import("./lastCrossing")), safeImport("silasPolish", () => import("./silasPolish")), safeImport("silasPlacementFix", () => import("./silasPlacementFix")),
+        safeImport("lastCrossingLifecycle", () => import("./lastCrossingLifecycle")), safeImport("act1GameplayPolish", () => import("./act1GameplayPolish")), safeImport("fallenCrossingShrine", () => import("./fallenCrossingShrine")), safeImport("fallenCrossingJournalBook", () => import("./fallenCrossingJournalBook")),
+        safeImport("wardenCombat", () => import("./wardenCombat")), safeImport("act1WoodenBridges", () => import("./act1WoodenBridges")), safeImport("wardenTidalRings", () => import("./wardenTidalRings")), safeImport("act1ExplorationArt", () => import("./act1ExplorationArt")),
+        safeImport("lastCrossingDefense", () => import("./lastCrossingDefense")), safeImport("majesticPortal", () => import("./majesticPortal")), safeImport("relicPresentation", () => import("./relicPresentation")), safeImport("act2Enemies", () => import("./act2Enemies")),
+        safeImport("act2GardenKeeper", () => import("./act2GardenKeeper")), safeImport("act2EvelynSprite", () => import("./act2EvelynSprite")), safeImport("act2VisualTuning", () => import("./act2VisualTuning")), safeImport("act2GuideCleanup", () => import("./act2GuideCleanup")),
+        safeImport("act2SeasonIdentity", () => import("./act2SeasonIdentity")), safeImport("act2BramForgemaster", () => import("./act2BramForgemaster")), safeImport("act2BramWeaponOwnership", () => import("./act2BramWeaponOwnership")), safeImport("act2SeasonChallenges", () => import("./act2SeasonChallenges")),
+        safeImport("act2BossRemaster", () => import("./act2BossRemaster")), safeImport("act2Wildlife", () => import("./act2Wildlife")), safeImport("act2Memorial", () => import("./act2Memorial")), safeImport("meleeHitPolish", () => import("./meleeHitPolish")),
+        safeImport("act3OpeningFlow", () => import("./act3OpeningFlow")), safeImport("act3Enemies", () => import("./act3Enemies")), safeImport("act3BossPolish", () => import("./act3BossPolish")), safeImport("act3SheetScenes", () => import("./act3SheetScenes")),
+        safeImport("act3MusicIdentity", () => import("./act3MusicIdentity")), safeImport("act3HavenLandmarks", () => import("./act3HavenLandmarks")), safeImport("global2_5dPolish", () => import("./global2_5dPolish")), safeImport("desktopActSelector", () => import("./desktopActSelector")),
+        safeImport("desktopControlsPolish", () => import("./desktopControlsPolish")), safeImport("interactionPolish", () => import("./interactionPolish")), safeImport("wrenIntro", () => import("./wrenIntro")), safeImport("lastCrossingDialogueRebind", () => import("./lastCrossingDialogueRebind")),
+        safeImport("weaponVisualSync", () => import("./weaponVisualSync")), safeImport("introUiPolish", () => import("./introUiPolish")), safeImport("mariaMovementPolish", () => import("./mariaMovementPolish")), safeImport("mariaCombatAnimation", () => import("./mariaCombatAnimation")),
+        safeImport("globalCharacterReactions", () => import("./globalCharacterReactions")), safeImport("globalNpcLife", () => import("./globalNpcLife")), safeImport("enemyReactionPolish", () => import("./enemyReactionPolish")), safeImport("combatImpactPolish", () => import("./combatImpactPolish")),
+        safeImport("actArrivalCinematics", () => import("./actArrivalCinematics")), safeImport("environmentalMicroLife", () => import("./environmentalMicroLife")), safeImport("explorationFeedback", () => import("./explorationFeedback")), safeImport("romanticMicroPolish", () => import("./romanticMicroPolish")), safeImport("npcPresencePolish", () => import("./npcPresencePolish")),
+      ]);
+
+      if (!sceneModule?.QuestScene) {
+        console.error("[quest] scene module unavailable; premium decorators cannot install");
+        releaseQuestRuntimeReady();
+        return;
+      }
+
       const QuestScene = sceneModule.QuestScene as unknown as any;
-      const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
-      upgrades.installQuestUpgrades(QuestScene);
-      visualRemaster.installVisualRemaster(QuestScene);
-      homeRemaster.installHomeRemaster(QuestScene, QuestHouseScene);
-      homeScalePolish.installHomeScalePolish(QuestHouseScene);
-      act1WorldRemaster.installAct1WorldRemaster(QuestScene);
-      lastCrossing.installLastCrossing(QuestScene);
-      silasPolish.installSilasPolish(QuestScene);
-      silasPlacementFix.installSilasPlacementFix(QuestScene);
-      lastCrossingLifecycle.installLastCrossingLifecycle(QuestScene);
-      act1GameplayPolish.installAct1GameplayPolish(QuestScene);
-      fallenCrossingShrine.installFallenCrossingShrine(QuestScene);
-      fallenCrossingJournalBook.installFallenCrossingJournalBook(QuestScene);
-      wardenCombat.installWardenCombat(QuestScene);
-      act1WoodenBridges.installAct1WoodenBridges(QuestScene);
-      wardenTidalRings.installWardenTidalRings(QuestScene);
-      act1ExplorationArt.installAct1ExplorationArt(QuestScene);
-      lastCrossingDefense.installLastCrossingDefense(QuestScene);
-      majesticPortal.installMajesticPortal(QuestScene);
-      relicPresentation.installRelicPresentation();
-      act2Enemies.installAct2Enemies(QuestScene);
-      act2GardenKeeper.installAct2GardenKeeper(QuestScene);
-      act2EvelynSprite.installAct2EvelynSprite(QuestScene);
-      act2VisualTuning.installAct2VisualTuning(QuestScene);
-      act2GuideCleanup.installAct2GuideCleanup(QuestScene);
-      act2SeasonIdentity.installAct2SeasonIdentity(QuestScene);
-      act2BramForgemaster.installAct2BramForgemaster(QuestScene);
-      act2BramWeaponOwnership.installBramWeaponOwnership(QuestScene);
-      act2SeasonChallenges.installAct2SeasonChallenges(QuestScene);
-      act2BossRemaster.installAct2BossRemaster(QuestScene);
-      act2Wildlife.installAct2Wildlife(QuestScene);
-      act2Memorial.installAct2Memorial(QuestScene);
-      meleeHitPolish.installMeleeHitPolish(QuestScene);
-      act3OpeningFlow.installAct3OpeningFlow(QuestScene);
-      act3Enemies.installAct3Enemies(QuestScene);
-      act3BossPolish.installAct3BossPolish(QuestScene);
-      act3SheetScenes.installAct3SheetScenes(QuestScene);
-      act3MusicIdentity.installAct3MusicIdentity(QuestScene);
-      act3HavenLandmarks.installAct3HavenLandmarks(QuestScene);
-      global25DPolish.installGlobal25DPolish(QuestScene);
-      desktopActSelector.installDesktopActSelector(QuestScene);
-      desktopControlsPolish.installDesktopControlsPolish();
-      interactionPolish.installInteractionPolish(QuestScene);
-      wrenIntro.installWrenIntro(QuestScene);
-      lastCrossingDialogueRebind.rebindLastCrossingDialoguePolish(QuestScene);
-      weaponVisualSync.installWeaponVisualSync(QuestScene);
-      introUiPolish.installIntroUiPolish(QuestScene);
-      mariaMovementPolish.installMariaMovementPolish(QuestScene, QuestHouseScene);
-      mariaCombatAnimation.installMariaCombatAnimation(QuestScene);
-      globalCharacterReactions.installGlobalCharacterReactions(QuestScene);
-      globalNpcLife.installGlobalNpcLife(QuestScene);
-      enemyReactionPolish.installEnemyReactionPolish(QuestScene);
-      combatImpactPolish.installCombatImpactPolish(QuestScene);
-      actArrivalCinematics.installActArrivalCinematics(QuestScene);
-      environmentalMicroLife.installEnvironmentalMicroLife(QuestScene);
-      explorationFeedback.installExplorationFeedback(QuestScene);
-      romanticMicroPolish.installRomanticMicroPolish(QuestScene);
-      npcPresencePolish.installNpcPresencePolish(QuestScene);
+      const QuestHouseScene = houseModule?.QuestHouseScene as unknown as any;
+
+      safeInstall("upgrades", upgrades ? () => upgrades.installQuestUpgrades(QuestScene) : null);
+      safeInstall("visualRemaster", visualRemaster ? () => visualRemaster.installVisualRemaster(QuestScene) : null);
+      safeInstall("homeRemaster", homeRemaster && QuestHouseScene ? () => homeRemaster.installHomeRemaster(QuestScene, QuestHouseScene) : null);
+      safeInstall("homeScalePolish", homeScalePolish && QuestHouseScene ? () => homeScalePolish.installHomeScalePolish(QuestHouseScene) : null);
+      safeInstall("act1WorldRemaster", act1WorldRemaster ? () => act1WorldRemaster.installAct1WorldRemaster(QuestScene) : null);
+      safeInstall("lastCrossing", lastCrossing ? () => lastCrossing.installLastCrossing(QuestScene) : null);
+      safeInstall("silasPolish", silasPolish ? () => silasPolish.installSilasPolish(QuestScene) : null);
+      safeInstall("silasPlacementFix", silasPlacementFix ? () => silasPlacementFix.installSilasPlacementFix(QuestScene) : null);
+      safeInstall("lastCrossingLifecycle", lastCrossingLifecycle ? () => lastCrossingLifecycle.installLastCrossingLifecycle(QuestScene) : null);
+      safeInstall("act1GameplayPolish", act1GameplayPolish ? () => act1GameplayPolish.installAct1GameplayPolish(QuestScene) : null);
+      safeInstall("fallenCrossingShrine", fallenCrossingShrine ? () => fallenCrossingShrine.installFallenCrossingShrine(QuestScene) : null);
+      safeInstall("fallenCrossingJournalBook", fallenCrossingJournalBook ? () => fallenCrossingJournalBook.installFallenCrossingJournalBook(QuestScene) : null);
+      safeInstall("wardenCombat", wardenCombat ? () => wardenCombat.installWardenCombat(QuestScene) : null);
+      safeInstall("act1WoodenBridges", act1WoodenBridges ? () => act1WoodenBridges.installAct1WoodenBridges(QuestScene) : null);
+      safeInstall("wardenTidalRings", wardenTidalRings ? () => wardenTidalRings.installWardenTidalRings(QuestScene) : null);
+      safeInstall("act1ExplorationArt", act1ExplorationArt ? () => act1ExplorationArt.installAct1ExplorationArt(QuestScene) : null);
+      safeInstall("lastCrossingDefense", lastCrossingDefense ? () => lastCrossingDefense.installLastCrossingDefense(QuestScene) : null);
+      safeInstall("majesticPortal", majesticPortal ? () => majesticPortal.installMajesticPortal(QuestScene) : null);
+      safeInstall("relicPresentation", relicPresentation ? () => relicPresentation.installRelicPresentation() : null);
+      safeInstall("act2Enemies", act2Enemies ? () => act2Enemies.installAct2Enemies(QuestScene) : null);
+      safeInstall("act2GardenKeeper", act2GardenKeeper ? () => act2GardenKeeper.installAct2GardenKeeper(QuestScene) : null);
+      safeInstall("act2EvelynSprite", act2EvelynSprite ? () => act2EvelynSprite.installAct2EvelynSprite(QuestScene) : null);
+      safeInstall("act2VisualTuning", act2VisualTuning ? () => act2VisualTuning.installAct2VisualTuning(QuestScene) : null);
+      safeInstall("act2GuideCleanup", act2GuideCleanup ? () => act2GuideCleanup.installAct2GuideCleanup(QuestScene) : null);
+      safeInstall("act2SeasonIdentity", act2SeasonIdentity ? () => act2SeasonIdentity.installAct2SeasonIdentity(QuestScene) : null);
+      safeInstall("act2BramForgemaster", act2BramForgemaster ? () => act2BramForgemaster.installAct2BramForgemaster(QuestScene) : null);
+      safeInstall("act2BramWeaponOwnership", act2BramWeaponOwnership ? () => act2BramWeaponOwnership.installBramWeaponOwnership(QuestScene) : null);
+      safeInstall("act2SeasonChallenges", act2SeasonChallenges ? () => act2SeasonChallenges.installAct2SeasonChallenges(QuestScene) : null);
+      safeInstall("act2BossRemaster", act2BossRemaster ? () => act2BossRemaster.installAct2BossRemaster(QuestScene) : null);
+      safeInstall("act2Wildlife", act2Wildlife ? () => act2Wildlife.installAct2Wildlife(QuestScene) : null);
+      safeInstall("act2Memorial", act2Memorial ? () => act2Memorial.installAct2Memorial(QuestScene) : null);
+      safeInstall("meleeHitPolish", meleeHitPolish ? () => meleeHitPolish.installMeleeHitPolish(QuestScene) : null);
+      safeInstall("act3OpeningFlow", act3OpeningFlow ? () => act3OpeningFlow.installAct3OpeningFlow(QuestScene) : null);
+      safeInstall("act3Enemies", act3Enemies ? () => act3Enemies.installAct3Enemies(QuestScene) : null);
+      safeInstall("act3BossPolish", act3BossPolish ? () => act3BossPolish.installAct3BossPolish(QuestScene) : null);
+      safeInstall("act3SheetScenes", act3SheetScenes ? () => act3SheetScenes.installAct3SheetScenes(QuestScene) : null);
+      safeInstall("act3MusicIdentity", act3MusicIdentity ? () => act3MusicIdentity.installAct3MusicIdentity(QuestScene) : null);
+      safeInstall("act3HavenLandmarks", act3HavenLandmarks ? () => act3HavenLandmarks.installAct3HavenLandmarks(QuestScene) : null);
+      safeInstall("global2_5dPolish", global25DPolish ? () => global25DPolish.installGlobal25DPolish(QuestScene) : null);
+      safeInstall("desktopActSelector", desktopActSelector ? () => desktopActSelector.installDesktopActSelector(QuestScene) : null);
+      safeInstall("desktopControlsPolish", desktopControlsPolish ? () => desktopControlsPolish.installDesktopControlsPolish() : null);
+      safeInstall("interactionPolish", interactionPolish ? () => interactionPolish.installInteractionPolish(QuestScene) : null);
+      safeInstall("wrenIntro", wrenIntro ? () => wrenIntro.installWrenIntro(QuestScene) : null);
+      safeInstall("lastCrossingDialogueRebind", lastCrossingDialogueRebind ? () => lastCrossingDialogueRebind.rebindLastCrossingDialoguePolish(QuestScene) : null);
+      safeInstall("weaponVisualSync", weaponVisualSync ? () => weaponVisualSync.installWeaponVisualSync(QuestScene) : null);
+      safeInstall("introUiPolish", introUiPolish ? () => introUiPolish.installIntroUiPolish(QuestScene) : null);
+      safeInstall("mariaMovementPolish", mariaMovementPolish ? () => mariaMovementPolish.installMariaMovementPolish(QuestScene, QuestHouseScene) : null);
+      safeInstall("mariaCombatAnimation", mariaCombatAnimation ? () => mariaCombatAnimation.installMariaCombatAnimation(QuestScene) : null);
+      safeInstall("globalCharacterReactions", globalCharacterReactions ? () => globalCharacterReactions.installGlobalCharacterReactions(QuestScene) : null);
+      safeInstall("globalNpcLife", globalNpcLife ? () => globalNpcLife.installGlobalNpcLife(QuestScene) : null);
+      safeInstall("enemyReactionPolish", enemyReactionPolish ? () => enemyReactionPolish.installEnemyReactionPolish(QuestScene) : null);
+      safeInstall("combatImpactPolish", combatImpactPolish ? () => combatImpactPolish.installCombatImpactPolish(QuestScene) : null);
+      safeInstall("actArrivalCinematics", actArrivalCinematics ? () => actArrivalCinematics.installActArrivalCinematics(QuestScene) : null);
+      safeInstall("environmentalMicroLife", environmentalMicroLife ? () => environmentalMicroLife.installEnvironmentalMicroLife(QuestScene) : null);
+      safeInstall("explorationFeedback", explorationFeedback ? () => explorationFeedback.installExplorationFeedback(QuestScene) : null);
+      safeInstall("romanticMicroPolish", romanticMicroPolish ? () => romanticMicroPolish.installRomanticMicroPolish(QuestScene) : null);
+      safeInstall("npcPresencePolish", npcPresencePolish ? () => npcPresencePolish.installNpcPresencePolish(QuestScene) : null);
 
       releaseQuestRuntimeReady();
+
       requestAnimationFrame(() => requestAnimationFrame(() => {
-        void Promise.all([import("./globalCharacterDialogue"), import("./act3AndrewDialogue")])
-          .then(([dialogue, act3AndrewDialogue]) => {
-            dialogue.installGlobalCharacterDialogue(QuestScene);
-            act3AndrewDialogue.installAct3AndrewDialogue(QuestScene);
-          })
-          .catch((error) => console.error("[quest] dialogue polish install failed", error));
+        void (async () => {
+          const dialogue = await safeImport("globalCharacterDialogue", () => import("./globalCharacterDialogue"));
+          const act3AndrewDialogue = await safeImport("act3AndrewDialogue", () => import("./act3AndrewDialogue"));
+          safeInstall("globalCharacterDialogue", dialogue ? () => dialogue.installGlobalCharacterDialogue(QuestScene) : null);
+          safeInstall("act3AndrewDialogue", act3AndrewDialogue ? () => act3AndrewDialogue.installAct3AndrewDialogue(QuestScene) : null);
+        })();
       }));
-    }).catch((error) => {
-      console.error("[quest] premium upgrade install failed", error);
-      // Keep the developer act selector usable even when an optional polish
-      // module fails to import. Install only the selector's scene hook, then
-      // release the runtime-ready gate instead of leaving the menu waiting.
-      void Promise.all([import("./scene"), import("./desktopActSelector")])
-        .then(([sceneModule, desktopActSelector]) => {
-          desktopActSelector.installDesktopActSelector(sceneModule.QuestScene as unknown as any);
-        })
-        .catch((fallbackError) => console.error("[quest] developer act selector fallback failed", fallbackError))
-        .finally(releaseQuestRuntimeReady);
+    })().catch((error) => {
+      console.error("[quest] resilient premium install failed unexpectedly", error);
+      releaseQuestRuntimeReady();
     });
   });
 }
