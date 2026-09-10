@@ -7,6 +7,10 @@ type SceneCtor = { prototype: SceneLike };
 const HOUSE_CLEAR_RADIUS = 280;
 const TREE_KEEP_RATE = 0.9;
 const RUIN_COUNT = 3;
+const DESIGN_W = 132;
+const DESIGN_H = 102;
+const ACT1_EXPANDED_W = 55;
+const ACT1_EXPANDED_H = 50;
 
 function seeded(seed: number) {
   let s = seed >>> 0;
@@ -150,21 +154,113 @@ function placeAct1Ruins(scene: SceneLike) {
   chosen.forEach(([x, y], i) => drawBrokenHouse(scene, x, y, i));
 }
 
+function objectBounds(obj: any) {
+  try {
+    const bounds = obj?.getBounds?.();
+    if (bounds && Number.isFinite(bounds.width) && Number.isFinite(bounds.height)) {
+      return { width: Math.abs(Number(bounds.width)), height: Math.abs(Number(bounds.height)) };
+    }
+  } catch {
+    // Fall through to display dimensions.
+  }
+  return {
+    width: Math.abs(Number(obj?.displayWidth ?? obj?.width ?? 0)),
+    height: Math.abs(Number(obj?.displayHeight ?? obj?.height ?? 0)),
+  };
+}
+
+/**
+ * Act I has accumulated many optional presentation decorators. A malformed
+ * decorative Graphics/Image can therefore become a world-height vertical bar.
+ * Cull only the impossible "needle" shape: hundreds of pixels tall, very
+ * narrow, and not one of the core world/gameplay objects.
+ */
+function removeRogueVerticalArtifacts(scene: SceneLike) {
+  if (scene.save?.current_zone !== "sunlit_shores") return;
+
+  const worldH = Math.max(1, Number(scene.mapH ?? ACT1_EXPANDED_H) * 32);
+  const minHeight = Math.max(620, worldH * 0.42);
+  const protectedObjects = new Set<any>([
+    scene.layer,
+    scene.player,
+    scene.boss,
+    scene.companion,
+    scene.hand,
+    scene.arrow,
+    scene.pingMarker,
+    scene.landmark?.sprite,
+  ].filter(Boolean));
+
+  for (const child of [...(scene.children?.list ?? [])]) {
+    const obj = child as any;
+    if (!obj?.active || protectedObjects.has(obj)) continue;
+    if (obj.type === "TilemapLayer" || obj.type === "Camera" || obj.type === "Container") continue;
+    if (obj.getData?.("act1-vertical-artifact-checked")) continue;
+    obj.setData?.("act1-vertical-artifact-checked", true);
+
+    const { width, height } = objectBounds(obj);
+    if (!Number.isFinite(width) || !Number.isFinite(height)) continue;
+    const looksLikeNeedle = height >= minHeight && width > 0 && width <= 64 && height / Math.max(width, 1) >= 10;
+    if (!looksLikeNeedle) continue;
+
+    const textureKey = String(obj.texture?.key ?? "");
+    const protectedTexture =
+      textureKey.startsWith("landmark-") ||
+      textureKey === "gateway" ||
+      textureKey === "portal" ||
+      textureKey.startsWith("maria-") ||
+      textureKey.startsWith("andrew-") ||
+      textureKey.startsWith("boss-");
+    if (protectedTexture) continue;
+
+    console.warn("[quest] removed rogue Act I vertical artifact", {
+      type: obj.type,
+      texture: textureKey || undefined,
+      x: obj.x,
+      y: obj.y,
+      width,
+      height,
+    });
+    scene.tweens?.killTweensOf?.(obj);
+    obj.destroy?.();
+  }
+}
+
+function scheduleArtifactSweep(scene: SceneLike) {
+  removeRogueVerticalArtifacts(scene);
+  scene.time?.delayedCall?.(80, () => removeRogueVerticalArtifacts(scene));
+  scene.time?.delayedCall?.(260, () => removeRogueVerticalArtifacts(scene));
+  scene.time?.delayedCall?.(700, () => removeRogueVerticalArtifacts(scene));
+}
+
 export function installAct1WorldRemaster(QuestScene: SceneCtor) {
   const proto = QuestScene.prototype;
   if (proto.__act1WorldRemasterInstalled) return;
   proto.__act1WorldRemasterInstalled = true;
 
+  // Restore the original Act I remaster roaming area. buildZone sets Act I to
+  // 50x50 immediately before buildAct1, so expand only during Act I generation.
+  const originalBuildAct1 = proto.buildAct1;
+  proto.buildAct1 = function expandedAct1(this: SceneLike, ...args: any[]) {
+    this.mapW = ACT1_EXPANDED_W;
+    this.mapH = ACT1_EXPANDED_H;
+    this.sxF = this.mapW / DESIGN_W;
+    this.syF = this.mapH / DESIGN_H;
+    const result = originalBuildAct1.apply(this, args);
+    scheduleArtifactSweep(this);
+    return result;
+  };
+
   const originalCreate = proto.create;
   proto.create = function act1WorldRemasteredCreate(this: SceneLike, ...args: any[]) {
     const result = originalCreate.apply(this, args);
 
-    // Reduce general tree density by 10%, keep a larger tree-free breathing zone
-    // around Maria's home, and retain the Act I ruin dressing without changing
-    // the base scene's authored 50x50 map dimensions.
+    // First reduce general tree density by 10%, then enforce a much larger
+    // completely tree-free breathing zone around Maria's home.
     thinTrees(this);
     clearHouseTrees(this);
     placeAct1Ruins(this);
+    scheduleArtifactSweep(this);
 
     return result;
   };
