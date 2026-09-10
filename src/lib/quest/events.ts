@@ -4,6 +4,7 @@ import "./questMobilePolish.css";
 import "./act1EnvelopePolish.css";
 import "./relicPresentation.css";
 import "./titleScreenCinematic.css";
+import "./inventoryArmoryPolish.css";
 
 const QUEST_RUNTIME_READY_EVENT = "quest:runtime-ready";
 
