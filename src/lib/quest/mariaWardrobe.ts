@@ -30,19 +30,30 @@ function hexToRgb(hex: string) {
 
 function recolorDressPixels(data: Uint8ClampedArray, width: number, height: number, hex: string) {
   const target = hexToRgb(hex);
-  const candidate = new Uint8Array(width * height);
-  const visited = new Uint8Array(width * height);
-  const startY = Math.floor(height * 0.43);
 
-  // First identify only cream/white fabric candidates. We then keep ONLY the
-  // connected pale region that reaches the lower-center skirt. This prevents
-  // separate pale islands (skin, eyes, flower highlights, shoes/accessories)
-  // from inheriting the dress colour even when they have similar RGB values.
-  for (let y = startY; y < height; y++) {
+  // Maria's dress is made of two visually separate light-fabric areas: the
+  // upper bodice/sleeves and the skirt. The previous connected-mask approach
+  // only reached the skirt, which is why every option looked like a coloured
+  // skirt with the original white top. Use explicit garment zones instead,
+  // while still requiring pixels to be pale/neutral fabric before recolouring.
+  const bodiceTop = Math.floor(height * 0.36);
+  const bodiceBottom = Math.floor(height * 0.61);
+  const skirtTop = Math.floor(height * 0.50);
+  const skirtBottom = Math.floor(height * 0.87);
+  const bodiceLeft = Math.floor(width * 0.23);
+  const bodiceRight = Math.ceil(width * 0.77);
+  const skirtLeft = Math.floor(width * 0.12);
+  const skirtRight = Math.ceil(width * 0.88);
+
+  for (let y = bodiceTop; y <= skirtBottom; y++) {
     for (let x = 0; x < width; x++) {
-      const p = y * width + x;
-      const i = p * 4;
+      const inBodice = y <= bodiceBottom && x >= bodiceLeft && x <= bodiceRight;
+      const inSkirt = y >= skirtTop && x >= skirtLeft && x <= skirtRight;
+      if (!inBodice && !inSkirt) continue;
+
+      const i = (y * width + x) * 4;
       if (data[i + 3] < 20) continue;
+
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
@@ -50,55 +61,17 @@ function recolorDressPixels(data: Uint8ClampedArray, width: number, height: numb
       const min = Math.min(r, g, b);
       const chroma = max - min;
       const light = (r + g + b) / 3;
-      if (light >= 118 && chroma <= 28) candidate[p] = 1;
-    }
-  }
 
-  const queue: number[] = [];
-  // Seed from the lower-middle body where the dress/skirt lives, not from the
-  // frame edges. Multiple seeds make this robust across walking directions.
-  const seedTop = Math.floor(height * 0.52);
-  const seedBottom = Math.floor(height * 0.88);
-  const seedLeft = Math.floor(width * 0.25);
-  const seedRight = Math.ceil(width * 0.75);
-  for (let y = seedTop; y <= seedBottom; y++) {
-    for (let x = seedLeft; x <= seedRight; x++) {
-      const p = y * width + x;
-      if (!candidate[p] || visited[p]) continue;
-      visited[p] = 1;
-      queue.push(p);
-    }
-  }
+      // Only pale neutral cloth. Skin stays warm/chromatic, hair is dark,
+      // flowers are saturated, and shoes fall outside the garment bounds.
+      if (light < 122 || chroma > 24) continue;
 
-  // Flood only through adjacent cream fabric. Diagonals are allowed because
-  // pixel-art dress highlights often touch at corners between shaded pixels.
-  const offsets = [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]];
-  for (let q = 0; q < queue.length; q++) {
-    const p = queue[q];
-    const x = p % width;
-    const y = Math.floor(p / width);
-    for (const [dx, dy] of offsets) {
-      const nx = x + dx;
-      const ny = y + dy;
-      if (nx < 0 || nx >= width || ny < startY || ny >= height) continue;
-      const np = ny * width + nx;
-      if (!candidate[np] || visited[np]) continue;
-      visited[np] = 1;
-      queue.push(np);
+      const shade = Math.max(0.4, Math.min(1.14, light / 212));
+      const highlight = Math.max(0, (light - 198) / 70);
+      data[i] = Math.min(255, target.r * shade + 46 * highlight);
+      data[i + 1] = Math.min(255, target.g * shade + 46 * highlight);
+      data[i + 2] = Math.min(255, target.b * shade + 46 * highlight);
     }
-  }
-
-  for (const p of queue) {
-    const i = p * 4;
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    const light = (r + g + b) / 3;
-    const shade = Math.max(0.4, Math.min(1.14, light / 212));
-    const highlight = Math.max(0, (light - 198) / 70);
-    data[i] = Math.min(255, target.r * shade + 46 * highlight);
-    data[i + 1] = Math.min(255, target.g * shade + 46 * highlight);
-    data[i + 2] = Math.min(255, target.b * shade + 46 * highlight);
   }
 }
 
