@@ -37,8 +37,6 @@ function isDressPixel(r: number, g: number, b: number) {
   const min = Math.min(r, g, b);
   const chroma = max - min;
   const light = (r + g + b) / 3;
-
-  // Preserve dark outlines, saturated flowers/accessories and warm skin.
   if (light < 92 || chroma > 72) return false;
   if (isSkinLike(r, g, b)) return false;
   return true;
@@ -46,23 +44,24 @@ function isDressPixel(r: number, g: number, b: number) {
 
 function recolorDressPixels(data: Uint8ClampedArray, width: number, height: number, hex: string) {
   const target = hexToRgb(hex);
-
-  // Work against Maria's original full-resolution source artwork. These bounds
-  // deliberately cover the bodice/sleeves and skirt while excluding the head,
-  // hair, flower and shoes. Recolouring before the game downsamples to 24x34
-  // avoids the blended face/dress pixels that caused the previous bleeding.
   const top = Math.floor(height * 0.355);
   const bottom = Math.floor(height * 0.885);
   const center = width / 2;
+  const chinProtectBottom = Math.floor(height * 0.445);
+  const chinProtectHalfWidth = width * 0.16;
 
   for (let y = top; y <= bottom; y++) {
     const t = (y - top) / Math.max(1, bottom - top);
-    // Narrow through the bodice, widening naturally into the skirt.
     const halfWidth = width * (0.20 + 0.27 * Math.pow(t, 0.8));
     const left = Math.max(0, Math.floor(center - halfWidth));
     const right = Math.min(width - 1, Math.ceil(center + halfWidth));
 
     for (let x = left; x <= right; x++) {
+      // The pale anti-aliased pixels under Maria's face can resemble the white
+      // dress closely enough to pass the colour test. Keep a small upper-centre
+      // no-paint zone over her chin/neck; the dress begins outside/below it.
+      if (y <= chinProtectBottom && Math.abs(x - center) <= chinProtectHalfWidth) continue;
+
       const i = (y * width + x) * 4;
       if (data[i + 3] < 20) continue;
       const r = data[i];
