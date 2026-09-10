@@ -1,0 +1,141 @@
+// @ts-nocheck -- Act III environmental story landmarks only; no rewards or progression gates.
+import * as Phaser from "phaser";
+
+type SceneCtor = { prototype: any };
+const ZONE = "the_haven";
+
+const BUILDINGS = [
+  {
+    id: "music-house",
+    tx: 36,
+    ty: 84,
+    title: "The Haven Music House",
+    prompt: "Visit the Haven Music House",
+    body:
+      "The little rehearsal hall has kept Haven's wedding songs for generations. Handwritten arrangements fill the shelves inside, each one marked with the names of the people who first danced to it. A brass plaque by the door reads: ‘A good song is not perfect because nobody misses a note. It is beautiful because two people keep finding the rhythm again.’ Maria recognizes a phrase from her own missing melody in the practice notes pinned beside the window.",
+    palette: { wall: 0xffe8df, trim: 0xd68aa2, roof: 0x8f5f78, dark: 0x5d4055, glow: 0xffd98b },
+    sign: "MUSIC HOUSE",
+    emblem: "♫",
+  },
+  {
+    id: "promise-archive",
+    tx: 104,
+    ty: 34,
+    title: "The Promise Archive",
+    prompt: "Visit the Promise Archive",
+    body:
+      "Blue-grey stone protects thousands of promises from Haven's rain and years. Couples have brought copies of vows, letters, pressed flowers and tiny photographs here since the town was founded. The oldest inscription says: ‘A promise is not a prediction that life will stay easy. It is the choice to keep returning to one another when it does not.’ Among the newer drawers, Maria notices an empty rose-gold card waiting for a future memory of her own.",
+    palette: { wall: 0xd9e4ed, trim: 0x7898b8, roof: 0x536f8e, dark: 0x344a63, glow: 0xffdf91 },
+    sign: "PROMISE ARCHIVE",
+    emblem: "♥",
+  },
+] as const;
+
+function makeBuilding(scene: any, cfg: (typeof BUILDINGS)[number]) {
+  const x = scene.wx(cfg.tx);
+  const y = scene.wy(cfg.ty);
+  const p = cfg.palette;
+  const depth = scene.dsort(y);
+  const c = scene.add.container(x, y).setDepth(depth);
+
+  // Grounded 2.5D silhouette: shadow, stone step, wall, deep roof, then façade detail.
+  const shadow = scene.add.ellipse(0, 18, 118, 28, 0x342d38, 0.2);
+  const step = scene.add.rectangle(0, 19, 84, 10, 0xb8a69d, 0.95).setStrokeStyle(2, p.dark, 0.5);
+  const wall = scene.add.rectangle(0, -8, 100, 60, p.wall, 1).setStrokeStyle(3, p.trim, 1);
+  const roof = scene.add.triangle(0, -58, -60, 25, 0, -24, 60, 25, p.roof, 1).setStrokeStyle(3, p.dark, 0.95);
+  const roofBand = scene.add.rectangle(0, -34, 108, 7, p.trim, 1).setStrokeStyle(1, p.dark, 0.75);
+  const door = scene.add.rectangle(0, 3, 24, 42, p.dark, 1).setStrokeStyle(2, 0xffe9bd, 0.72);
+  const doorInset = scene.add.rectangle(0, 4, 15, 30, p.trim, 0.72);
+  const knob = scene.add.circle(7, 5, 2.2, 0xffd875, 1);
+  const leftWindow = scene.add.rectangle(-31, -4, 22, 25, 0x9ed9e5, 0.88).setStrokeStyle(3, p.trim, 1);
+  const rightWindow = scene.add.rectangle(31, -4, 22, 25, 0x9ed9e5, 0.88).setStrokeStyle(3, p.trim, 1);
+  const mullions = scene.add.graphics();
+  mullions.lineStyle(2, 0xfff1d8, 0.9);
+  for (const wx of [-31, 31]) {
+    mullions.lineBetween(wx, -16, wx, 8);
+    mullions.lineBetween(wx - 10, -4, wx + 10, -4);
+  }
+  const signPlate = scene.add.rectangle(0, -29, cfg.id === "promise-archive" ? 84 : 70, 15, 0xfff1d5, 0.98)
+    .setStrokeStyle(2, p.trim, 1);
+  const sign = scene.add.text(0, -29, cfg.sign, {
+    fontFamily: "Georgia, serif", fontSize: cfg.id === "promise-archive" ? "8px" : "9px", fontStyle: "bold",
+    color: "#5a4351",
+  }).setOrigin(0.5);
+  const emblem = scene.add.text(0, -55, cfg.emblem, {
+    fontFamily: "Georgia, serif", fontSize: "17px", fontStyle: "bold", color: "#ffe5a3",
+    stroke: "#5a4351", strokeThickness: 2,
+  }).setOrigin(0.5);
+
+  c.add([shadow, step, wall, roof, roofBand, door, doorInset, knob, leftWindow, rightWindow, mullions, signPlate, sign, emblem]);
+
+  // Building-specific authored props make each landmark read as a place, not a reskinned house.
+  if (cfg.id === "music-house") {
+    const awning = scene.add.rectangle(-34, 13, 30, 5, 0xffd2dc, 1).setStrokeStyle(1, p.dark, 0.6);
+    const harp = scene.add.text(35, 10, "♪", { fontFamily: "Georgia, serif", fontSize: "18px", color: "#d39b55" }).setOrigin(0.5);
+    const roses = [-48, -39, 40, 49].map((ox, i) => scene.add.circle(ox, 20 - (i % 2) * 3, 4.5, i % 2 ? 0xff9fbd : 0xffffff, 0.95));
+    c.add([awning, harp, ...roses]);
+  } else {
+    const columns = [-43, 43].map((ox) => scene.add.rectangle(ox, -1, 8, 47, 0xc3d0dc, 1).setStrokeStyle(1, p.dark, 0.45));
+    const plaque = scene.add.rectangle(31, 14, 25, 9, 0xcaa25f, 0.95).setStrokeStyle(1, 0xffe2a0, 0.8);
+    const ivy = [-50, -44, 44, 50].map((ox, i) => scene.add.circle(ox, 18 - (i % 2) * 6, 4, 0x789b72, 0.88));
+    c.add([...columns, plaque, ...ivy]);
+  }
+
+  const glow = scene.add.ellipse(x, y + 12, 104, 34, p.glow, 0.1).setDepth(depth - 0.2).setBlendMode(Phaser.BlendModes.ADD);
+  scene.tweens.add({ targets: glow, alpha: { from: 0.06, to: 0.16 }, scaleX: { from: 0.94, to: 1.08 }, duration: 1800, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+
+  // Shallow base-only collision leaves the surrounding Haven paths open.
+  if (!scene.solidDecor) scene.solidDecor = scene.physics.add.staticGroup();
+  const blocker = scene.solidDecor.create(x, y + 17, "block") as Phaser.Physics.Arcade.Sprite;
+  blocker.setVisible(false).setAlpha(0).setDisplaySize(76, 13).refreshBody?.();
+  const body = blocker.body as Phaser.Physics.Arcade.StaticBody;
+  body.setSize(76, 13).setOffset((blocker.width - 76) / 2, (blocker.height - 13) / 2);
+  body.updateFromGameObject?.();
+
+  // A tiny invisible interaction anchor keeps the prompt grounded at the front door.
+  const it = scene.addInteractable(x, y + 33, "spark", "haven-building", cfg.prompt, {
+    id: cfg.id,
+    radius: 62,
+    data: { title: cfg.title, body: cfg.body },
+    depth: depth + 1,
+  });
+  it.obj.setAlpha(0.001).setScale(0.15);
+  scene.tweens.killTweensOf(it.obj);
+  it.obj.setY(y + 33);
+}
+
+function openBuildingPopup(scene: any, it: any) {
+  const cfg = BUILDINGS.find((b) => b.id === it.id);
+  if (!cfg) return false;
+  scene.spawnSparkle?.(it.obj.x, it.obj.y - 18, cfg.palette.glow, 8);
+  scene.openModal?.({ type: "info", title: cfg.title, body: cfg.body });
+  return true;
+}
+
+export function installAct3HavenLandmarks(QuestScene: SceneCtor) {
+  const proto = QuestScene.prototype as any;
+  if (proto.__act3HavenLandmarksInstalled) return;
+  proto.__act3HavenLandmarksInstalled = true;
+
+  const originalBuildAct3 = proto.buildAct3;
+  proto.buildAct3 = function act3HavenLandmarksBuild(...args: any[]) {
+    const result = originalBuildAct3.apply(this, args);
+    if (this.save?.current_zone === ZONE) BUILDINGS.forEach((cfg) => makeBuilding(this, cfg));
+    return result;
+  };
+
+  const originalInteract = proto.interact;
+  proto.interact = function act3HavenLandmarkInteract(...args: any[]) {
+    if (this.save?.current_zone === ZONE && !this.frozen) {
+      let best: any = null;
+      let bestD = Infinity;
+      for (const it of this.interactables ?? []) {
+        if (!it?.enabled || !it.obj?.active || it.kind !== "haven-building") continue;
+        const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, it.obj.x, it.obj.y);
+        if (d <= (it.radius ?? 62) && d < bestD) { best = it; bestD = d; }
+      }
+      if (best && openBuildingPopup(this, best)) return;
+    }
+    return originalInteract.apply(this, args);
+  };
+}
