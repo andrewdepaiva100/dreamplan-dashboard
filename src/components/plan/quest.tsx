@@ -3,6 +3,7 @@ import QuestCore from "./questCore";
 import QuestJournal from "./QuestJournal";
 import { EMPTY_SAVE, loadSave, type QuestSave } from "@/lib/quest/save";
 import type { JournalProgress } from "@/lib/quest/journalContent";
+import "@/lib/quest/inventoryArmoryPolish";
 
 function progressFromSave(save: QuestSave): JournalProgress {
   return {
