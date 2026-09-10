@@ -55,33 +55,55 @@ const ANDREW_REACTIONS: Record<string, string> = {
   "hearth-home": "That's the part I'm most excited for, you know. Not just the wedding. The Tuesdays after it.",
 };
 
+function cssHex(n: number) {
+  return `#${n.toString(16).padStart(6, "0")}`;
+}
+
 function addMusicHouseRoof(scene: any, c: any, p: any) {
   const roof = scene.add.graphics();
   roof.fillStyle(p.roof, 1);
   roof.lineStyle(3, p.dark, 0.95);
   roof.beginPath();
-  roof.moveTo(-62, -35); roof.lineTo(-32, -68); roof.lineTo(0, -84); roof.lineTo(32, -68); roof.lineTo(62, -35); roof.closePath();
-  roof.fillPath(); roof.strokePath();
+  // The lower edge deliberately overlaps the facade top (-38) by 8px so the
+  // roof reads as physically seated on the building, never floating above it.
+  roof.moveTo(-64, -30);
+  roof.lineTo(-35, -67);
+  roof.lineTo(0, -84);
+  roof.lineTo(35, -67);
+  roof.lineTo(64, -30);
+  roof.lineTo(50, -30);
+  roof.lineTo(0, -72);
+  roof.lineTo(-50, -30);
+  roof.closePath();
+  roof.fillPath();
+  roof.strokePath();
   roof.lineStyle(2, p.trim, 0.95);
-  roof.lineBetween(-55, -40, 0, -76); roof.lineBetween(0, -76, 55, -40);
+  roof.lineBetween(-55, -35, 0, -76);
+  roof.lineBetween(0, -76, 55, -35);
+  const fascia = scene.add.rectangle(0, -31, 112, 9, p.trim, 1).setStrokeStyle(2, p.dark, 0.82);
+  const underEave = scene.add.rectangle(0, -27, 102, 4, p.dark, 0.9);
   const ridge = scene.add.rectangle(0, -78, 24, 5, 0xdcb0bd, 1).setStrokeStyle(1, p.dark, 0.8);
   const peak = scene.add.text(0, -89, "♫", { fontFamily: "Georgia, serif", fontSize: "12px", color: "#ffe2a0", stroke: "#5d4055", strokeThickness: 2 }).setOrigin(0.5);
-  c.add([roof, ridge, peak]);
+  c.add([roof, fascia, underEave, ridge, peak]);
 }
 
 function addPromiseArchiveRoof(scene: any, c: any, p: any) {
-  const parapet = scene.add.rectangle(0, -43, 112, 18, p.roof, 1).setStrokeStyle(3, p.dark, 0.95);
-  const cap = scene.add.rectangle(0, -54, 118, 6, 0x6d89a6, 1).setStrokeStyle(1, p.dark, 0.75);
-  const pediment = scene.add.triangle(0, -57, -34, 18, 0, -10, 34, 18, 0x7898b8, 1).setStrokeStyle(2, p.dark, 0.95);
-  const pedimentLine = scene.add.rectangle(0, -44, 74, 5, 0xb9c9d8, 1).setStrokeStyle(1, p.dark, 0.7);
-  const crest = scene.add.text(0, -61, "♥", { fontFamily: "Georgia, serif", fontSize: "11px", color: "#ffe2a0", stroke: "#344a63", strokeThickness: 2 }).setOrigin(0.5);
-  c.add([parapet, cap, pediment, pedimentLine, crest]);
+  // Formal roofline with a deep base overlapping the wall, then a raised civic
+  // cap and pediment. The base reaches down to -27, well into the facade.
+  const roofBase = scene.add.rectangle(0, -37, 112, 22, p.roof, 1).setStrokeStyle(3, p.dark, 0.95);
+  const lowerCornice = scene.add.rectangle(0, -27, 118, 7, p.trim, 1).setStrokeStyle(1, p.dark, 0.8);
+  const cap = scene.add.rectangle(0, -51, 118, 7, 0x6d89a6, 1).setStrokeStyle(1, p.dark, 0.75);
+  const pediment = scene.add.triangle(0, -55, -36, 18, 0, -12, 36, 18, 0x7898b8, 1).setStrokeStyle(2, p.dark, 0.95);
+  const pedimentLine = scene.add.rectangle(0, -43, 76, 5, 0xb9c9d8, 1).setStrokeStyle(1, p.dark, 0.7);
+  const crest = scene.add.text(0, -60, "♥", { fontFamily: "Georgia, serif", fontSize: "11px", color: "#ffe2a0", stroke: "#344a63", strokeThickness: 2 }).setOrigin(0.5);
+  c.add([roofBase, lowerCornice, cap, pediment, pedimentLine, crest]);
 }
 
 function addHearthRoof(scene: any, c: any, p: any) {
-  const roof = scene.add.triangle(0, -58, -60, 25, 0, -24, 60, 25, p.roof, 1).setStrokeStyle(3, p.dark, 0.95);
-  const roofBand = scene.add.rectangle(0, -34, 108, 7, p.trim, 1).setStrokeStyle(1, p.dark, 0.75);
-  c.add([roof, roofBand]);
+  const roof = scene.add.triangle(0, -55, -61, 27, 0, -26, 61, 27, p.roof, 1).setStrokeStyle(3, p.dark, 0.95);
+  const roofBand = scene.add.rectangle(0, -31, 110, 9, p.trim, 1).setStrokeStyle(2, p.dark, 0.75);
+  const underEave = scene.add.rectangle(0, -27, 102, 4, p.dark, 0.9);
+  c.add([roof, roofBand, underEave]);
 }
 
 function makeBuilding(scene: any, cfg: (typeof BUILDINGS)[number]) {
@@ -170,20 +192,110 @@ function showAndrewReaction(scene: any, id: string) {
     fontSize: "12px",
     fontStyle: "italic",
     color: "#fff6df",
+    backgroundColor: "rgba(24,35,61,.72)",
+    padding: { x: 10, y: 7 },
     stroke: "#243b61",
     strokeThickness: 4,
     align: "center",
-    wordWrap: { width: 260, useAdvancedWrap: true },
-  }).setOrigin(0.5, 1).setDepth(982).setAlpha(0.98);
-  scene.tweens.add({
-    targets: text,
-    y: text.y - 26,
-    alpha: 0,
-    duration: 3200,
-    hold: 850,
-    ease: "Sine.easeOut",
-    onComplete: () => text.destroy(),
+    wordWrap: { width: 270, useAdvancedWrap: true },
+  }).setOrigin(0.5, 1).setDepth(982).setAlpha(0);
+  scene.tweens.add({ targets: text, alpha: 0.98, y: text.y - 5, duration: 280, ease: "Sine.easeOut" });
+  scene.time?.delayedCall?.(6500, () => {
+    if (!text?.active) return;
+    scene.tweens.add({ targets: text, y: text.y - 18, alpha: 0, duration: 1500, ease: "Sine.easeIn", onComplete: () => text.destroy() });
   });
+}
+
+function showHavenStoryCard(scene: any, cfg: any) {
+  const parent = scene.game?.canvas?.parentElement ?? document.body;
+  const mobile = window.innerWidth < 700;
+  const p = cfg.palette;
+  const trim = cssHex(p.trim);
+  const glow = cssHex(p.glow);
+  const dark = cssHex(p.dark);
+  scene.frozen = true;
+  scene.physics?.pause?.();
+
+  const overlay = document.createElement("div");
+  overlay.className = `quest-haven-story-card quest-haven-story-${cfg.id}`;
+  Object.assign(overlay.style, {
+    position: "absolute", inset: "0", zIndex: "10065", display: "flex", alignItems: mobile ? "flex-end" : "center",
+    justifyContent: "center", padding: mobile ? "10px" : "28px", boxSizing: "border-box",
+    background: `radial-gradient(circle at 50% 36%,${trim}33,rgba(4,9,18,.92) 64%)`, backdropFilter: "blur(3px)",
+  });
+
+  const card = document.createElement("div");
+  Object.assign(card.style, {
+    position: "relative", width: "min(94vw,760px)", maxHeight: mobile ? "88vh" : "82vh", overflow: "auto",
+    border: `1px solid ${glow}aa`, borderRadius: mobile ? "20px" : "30px", padding: mobile ? "22px 18px 20px" : "34px 40px 30px",
+    boxSizing: "border-box", color: "#fff9ed",
+    background: `linear-gradient(155deg,${dark}fa,rgba(9,16,29,.985) 72%)`,
+    boxShadow: `0 30px 80px rgba(0,0,0,.6),0 0 0 5px ${trim}20,0 0 42px ${glow}22`,
+  });
+
+  const innerFrame = document.createElement("div");
+  Object.assign(innerFrame.style, {
+    position: "absolute", inset: mobile ? "8px" : "11px", border: `1px solid ${trim}66`, borderRadius: mobile ? "15px" : "22px",
+    pointerEvents: "none",
+  });
+
+  const seal = document.createElement("div");
+  seal.textContent = cfg.emblem;
+  Object.assign(seal.style, {
+    width: mobile ? "64px" : "78px", height: mobile ? "64px" : "78px", margin: "0 auto 14px", borderRadius: "50%",
+    display: "grid", placeItems: "center", fontFamily: "Georgia,serif", fontSize: mobile ? "30px" : "38px", fontWeight: "900",
+    color: "#fff7d5", border: `2px solid ${glow}`, background: `radial-gradient(circle,${trim}dd,${dark})`,
+    boxShadow: `0 0 0 6px ${glow}18,0 8px 24px rgba(0,0,0,.35),0 0 28px ${glow}30`,
+  });
+
+  const kicker = document.createElement("div");
+  kicker.textContent = cfg.kicker;
+  Object.assign(kicker.style, { textAlign: "center", fontSize: "10px", letterSpacing: ".23em", fontWeight: "900", color: glow, marginBottom: "8px" });
+
+  const title = document.createElement("div");
+  title.textContent = cfg.title;
+  Object.assign(title.style, { textAlign: "center", fontFamily: "Georgia,serif", fontSize: mobile ? "27px" : "36px", lineHeight: "1.12", fontWeight: "800", color: "#fffaf0", textShadow: `0 2px 14px ${glow}28` });
+
+  const ornament = document.createElement("div");
+  ornament.textContent = cfg.id === "music-house" ? "♪   ✦   ♫   ✦   ♪" : cfg.id === "promise-archive" ? "♥   ───   ✦   ───   ♥" : "✦   ♥   ✦   ♥   ✦";
+  Object.assign(ornament.style, { textAlign: "center", color: trim, fontSize: mobile ? "13px" : "15px", letterSpacing: ".12em", margin: "18px 0" });
+
+  const lore = document.createElement("div");
+  lore.textContent = cfg.body;
+  Object.assign(lore.style, { fontFamily: "Georgia,serif", fontSize: mobile ? "15px" : "17px", lineHeight: "1.72", color: "rgba(255,249,237,.92)", textAlign: "left" });
+
+  const quote = document.createElement("div");
+  quote.textContent = `“${cfg.quote}”`;
+  Object.assign(quote.style, {
+    margin: "22px 0 8px", padding: mobile ? "15px 16px" : "18px 24px", borderRadius: "16px", border: `1px solid ${glow}66`,
+    borderLeft: `4px solid ${glow}`, background: `${trim}16`, fontFamily: "Georgia,serif", fontStyle: "italic", fontWeight: "700",
+    fontSize: mobile ? "17px" : "21px", lineHeight: "1.45", color: "#fff2c7", textAlign: "center",
+    boxShadow: `inset 0 0 24px ${glow}0d`,
+  });
+
+  const footer = document.createElement("div");
+  footer.textContent = cfg.id === "music-house" ? "A song remembered in Haven" : cfg.id === "promise-archive" ? "A promise preserved in Haven" : "A future imagined in Haven";
+  Object.assign(footer.style, { marginTop: "17px", textAlign: "center", fontSize: "10px", letterSpacing: ".16em", textTransform: "uppercase", color: "rgba(255,255,255,.48)" });
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.textContent = "Return to Haven";
+  Object.assign(close.style, {
+    width: "100%", minHeight: "48px", marginTop: "18px", borderRadius: "14px", border: `1px solid ${glow}`,
+    background: `linear-gradient(180deg,${trim}38,${trim}18)`, color: "#fff4cf", fontWeight: "900", letterSpacing: ".06em", cursor: "pointer",
+    boxShadow: `0 8px 24px rgba(0,0,0,.24),inset 0 1px ${glow}44`,
+  });
+  const closeStory = () => {
+    if (!overlay.isConnected) return;
+    overlay.remove();
+    scene.onResume?.();
+  };
+  close.onclick = closeStory;
+  overlay.addEventListener("click", (ev) => { if (ev.target === overlay) closeStory(); });
+
+  card.append(innerFrame, seal, kicker, title, ornament, lore, quote, footer, close);
+  overlay.append(card);
+  parent.append(overlay);
 }
 
 function openBuildingPopup(scene: any, it: any) {
@@ -192,12 +304,7 @@ function openBuildingPopup(scene: any, it: any) {
   popupFlourish(scene, cfg, it.obj.x, it.obj.y);
   const seen = (scene.__act3LandmarkReactionSeen ??= new Set<string>());
   if (scene.companion?.active && !seen.has(cfg.id)) scene.__act3PendingLandmarkReaction = cfg.id;
-  const divider = cfg.id === "music-house" ? "♪  ✦  ♪" : cfg.id === "promise-archive" ? "♥  ✦  ♥" : "✦  ♥  ✦";
-  scene.openModal?.({
-    type: "info",
-    title: `${cfg.emblem}  ${cfg.title}`,
-    body: `${cfg.kicker}\n\n${divider}\n\n${cfg.body}\n\n“${cfg.quote}”\n\n${divider}`,
-  });
+  showHavenStoryCard(scene, cfg);
   return true;
 }
 
