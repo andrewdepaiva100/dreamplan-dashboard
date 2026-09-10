@@ -1,6 +1,9 @@
 // @ts-nocheck -- Lightweight, presentation-only discovery registry for Maria's Journal.
 
-const STORAGE_KEY = "marias-quest-journal-people-v1";
+// v1 could falsely unlock names that were only mentioned inside another person's
+// dialogue (for example Andre inside Andrew). Do not migrate that contaminated
+// registry: v2 starts clean and records only the actual conversation speaker.
+const STORAGE_KEY = "marias-quest-journal-people-v2";
 const LEGACY_SILAS_KEY = "marias-quest-journal-silas-met";
 const UPDATED_EVENT = "marias-quest-journal-people-updated";
 
