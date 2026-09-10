@@ -1,5 +1,6 @@
 // @ts-nocheck -- Presentation-only combat feedback; no damage, timing, or progression changes.
 import * as Phaser from "phaser";
+import { installBossFinisher } from "./bossFinisher";
 
 type SceneLike = Phaser.Scene & Record<string, any>;
 type SceneCtor = { prototype: SceneLike };
@@ -165,4 +166,9 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
     }
     return result;
   };
+
+  // Install the finishing-strike controller after the normal impact decorator
+  // so threshold hits retain all existing flash/recoil/spark feedback and the
+  // finisher can hand the lethal blow back through the canonical boss path.
+  installBossFinisher(QuestScene as any);
 }
