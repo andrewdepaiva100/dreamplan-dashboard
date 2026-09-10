@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 import QuestCore from "./questCore";
 import QuestJournal from "./QuestJournal";
 import { EMPTY_SAVE, loadSave, type QuestSave } from "@/lib/quest/save";
