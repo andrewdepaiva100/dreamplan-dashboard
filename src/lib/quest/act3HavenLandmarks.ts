@@ -96,10 +96,24 @@ function addPromiseArchiveRoof(scene: any, c: any, p: any) {
 }
 
 function addHearthRoof(scene: any, c: any, p: any) {
-  const roof = scene.add.triangle(0, -55, -61, 27, 0, -26, 61, 27, p.roof, 1).setStrokeStyle(3, p.dark, 0.95);
-  const roofBand = scene.add.rectangle(0, -31, 110, 9, p.trim, 1).setStrokeStyle(2, p.dark, 0.75);
+  const roof = scene.add.graphics();
+  roof.fillStyle(p.roof, 1);
+  roof.lineStyle(3, p.dark, 0.95);
+  roof.beginPath();
+  // Wall top is y=-38. The roof base sits at y=-31, overlapping the facade
+  // by 7px so the cottage roof is visibly attached instead of floating.
+  roof.moveTo(-63, -31);
+  roof.lineTo(0, -69);
+  roof.lineTo(63, -31);
+  roof.closePath();
+  roof.fillPath();
+  roof.strokePath();
+  roof.lineStyle(2, p.trim, 0.72);
+  roof.lineBetween(-55, -34, 0, -65);
+  roof.lineBetween(0, -65, 55, -34);
+  const fascia = scene.add.rectangle(0, -31, 112, 9, p.trim, 1).setStrokeStyle(2, p.dark, 0.82);
   const underEave = scene.add.rectangle(0, -27, 102, 4, p.dark, 0.9);
-  c.add([roof, roofBand, underEave]);
+  c.add([roof, fascia, underEave]);
 }
 
 function makeBuilding(scene: any, cfg: (typeof BUILDINGS)[number]) {
@@ -144,15 +158,45 @@ function makeBuilding(scene: any, cfg: (typeof BUILDINGS)[number]) {
   } else {
     const beams = scene.add.graphics(); beams.lineStyle(5, 0x7a503d, 0.9);
     beams.lineBetween(-48, -27, -48, 17); beams.lineBetween(48, -27, 48, 17); beams.lineBetween(-48, -24, -13, 15); beams.lineBetween(48, -24, 13, 15);
-    const chimney = scene.add.rectangle(38, -58, 13, 32, 0x8b5c4b, 1).setStrokeStyle(2, 0x49332f, 0.8);
-    const chimneyCap = scene.add.rectangle(38, -75, 17, 5, 0x49332f, 1);
+    // The chimney now grows from inside the attached roofline rather than
+    // reading as a separate floating vertical block.
+    const chimney = scene.add.rectangle(38, -51, 13, 31, 0x8b5c4b, 1).setStrokeStyle(2, 0x49332f, 0.8);
+    const chimneyCap = scene.add.rectangle(38, -68, 17, 5, 0x49332f, 1);
     const flowerBoxes = [-31, 31].map((ox) => scene.add.rectangle(ox, 10, 25, 6, 0x8d573d, 1).setStrokeStyle(1, 0x49332f, 0.7));
     const flowers = [-39, -32, -24, 23, 31, 39].map((ox, i) => scene.add.circle(ox, 6 - (i % 2) * 2, 3.2, i % 3 === 0 ? 0xfff1d0 : i % 2 ? 0xff8fa8 : 0xd98d64, 1));
     const wood = [-50, -44, -38].map((ox, i) => scene.add.rectangle(ox, 21 - i * 2, 14, 4, 0x79513d, 1).setAngle(i % 2 ? 8 : -7));
     const table = scene.add.rectangle(47, 23, 29, 6, 0x8a6046, 1).setStrokeStyle(1, 0x49332f, 0.7);
     const candle = scene.add.circle(47, 17, 3, 0xffd879, 0.95);
-    c.add([beams, chimney, chimneyCap, ...flowerBoxes, ...flowers, ...wood, table, candle]);
+    const windowWarmth = scene.add.rectangle(-31, -4, 18, 21, 0xffc96b, 0.12).setBlendMode(Phaser.BlendModes.ADD);
+    c.add([beams, chimney, chimneyCap, ...flowerBoxes, ...flowers, ...wood, table, candle, windowWarmth]);
     scene.tweens.add({ targets: candle, alpha: { from: 0.55, to: 1 }, scale: { from: 0.85, to: 1.2 }, duration: 620, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    scene.tweens.add({ targets: windowWarmth, alpha: { from: 0.08, to: 0.38 }, duration: 2200, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+
+    scene.time?.addEvent?.({
+      delay: 5600,
+      loop: true,
+      callback: () => {
+        if (!c?.active || scene.save?.current_zone !== ZONE) return;
+        const heart = scene.add.text(x + 38, y - 72, "♥", {
+          fontFamily: "Georgia, serif",
+          fontSize: "10px",
+          color: "#ffd48a",
+          stroke: "#60443d",
+          strokeThickness: 2,
+        }).setOrigin(0.5).setDepth(depth + 1).setAlpha(0);
+        scene.tweens.add({
+          targets: heart,
+          y: heart.y - 20,
+          x: heart.x + 4,
+          alpha: { from: 0, to: 0.72 },
+          duration: 900,
+          yoyo: true,
+          hold: 260,
+          ease: "Sine.easeOut",
+          onComplete: () => heart.destroy(),
+        });
+      },
+    });
   }
 
   const glow = scene.add.ellipse(x, y + 12, 104, 34, p.glow, 0.1).setDepth(depth - 0.2).setBlendMode(Phaser.BlendModes.ADD);
