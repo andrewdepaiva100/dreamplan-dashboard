@@ -3,6 +3,7 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
+  useLocation,
   useRouter,
   HeadContent,
   Scripts,
@@ -124,17 +125,33 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const location = useLocation();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <a
-        href="/guests"
-        className="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full border border-gold/50 bg-navy px-4 py-3 text-sm font-bold text-white shadow-lg transition-transform hover:-translate-y-0.5"
-        aria-label="Open Marriage Invitations guest list"
-      >
-        <span aria-hidden="true">💍</span>
-        Marriage Invitations
-      </a>
+      {location.pathname === "/" && (
+        <section className="mx-auto max-w-[900px] px-4 pt-6">
+          <div className="rounded-2xl border border-white/15 bg-navy/20 p-3.5 shadow-sm backdrop-blur-sm sm:p-4">
+            <div className="mb-3 px-1">
+              <h2 className="text-[12px] font-bold uppercase tracking-[0.16em] text-gold">Planning</h2>
+              <p className="mt-1 text-[11px] text-sky/75">Wedding details and guest organization.</p>
+            </div>
+            <Link
+              to="/guests"
+              className="group flex min-h-[96px] items-center gap-3 rounded-2xl border border-gold/55 bg-gold/20 px-4 py-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)]"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold/15 text-xl transition-transform group-hover:scale-105" aria-hidden="true">
+                💍
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13.5px] font-bold leading-snug text-navy">Marriage Invitations</span>
+                <span className="mt-0.5 block text-[11px] leading-snug text-ink-soft">View, add, remove, and organize wedding guests</span>
+              </span>
+              <span className="ml-auto text-base font-semibold text-navy/45 transition-transform group-hover:translate-x-0.5">›</span>
+            </Link>
+          </div>
+        </section>
+      )}
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>
