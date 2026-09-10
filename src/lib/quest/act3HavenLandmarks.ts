@@ -7,8 +7,8 @@ const ZONE = "the_haven";
 const BUILDINGS = [
   {
     id: "music-house",
-    tx: 36,
-    ty: 84,
+    tx: 42,
+    ty: 38,
     title: "The Haven Music House",
     prompt: "Visit the Haven Music House",
     body:
@@ -19,14 +19,26 @@ const BUILDINGS = [
   },
   {
     id: "promise-archive",
-    tx: 104,
-    ty: 34,
+    tx: 88,
+    ty: 44,
     title: "The Promise Archive",
     prompt: "Visit the Promise Archive",
     body:
       "Blue-grey stone protects thousands of promises from Haven's rain and years. Couples have brought copies of vows, letters, pressed flowers and tiny photographs here since the town was founded. The oldest inscription says: ‘A promise is not a prediction that life will stay easy. It is the choice to keep returning to one another when it does not.’ Among the newer drawers, Maria notices an empty rose-gold card waiting for a future memory of her own.",
     palette: { wall: 0xd9e4ed, trim: 0x7898b8, roof: 0x536f8e, dark: 0x344a63, glow: 0xffdf91 },
     sign: "PROMISE ARCHIVE",
+    emblem: "♥",
+  },
+  {
+    id: "hearth-home",
+    tx: 62,
+    ty: 84,
+    title: "The Hearth & Home",
+    prompt: "Visit the Hearth & Home",
+    body:
+      "For generations, newly married couples in Haven came here after the ceremony to share their first ordinary meal with neighbors: bread, soup, cake, whatever the town could bring. In harder years the same tables filled with casseroles, letters and quiet company; on anniversaries, couples returned to light one small candle in the front window. A carved line above the hearth reads: ‘The wedding is a day. The promise is a choice. The home is all the little days you build together.’ Maria lingers over the words. Beyond vows and songs, this is what she and Andrew are walking toward: not a perfect story, but a life made warm by returning, repairing, laughing, eating, resting and choosing each other again.",
+    palette: { wall: 0xffe4bd, trim: 0xb8734d, roof: 0x60443d, dark: 0x49332f, glow: 0xffbd62 },
+    sign: "HEARTH & HOME",
     emblem: "♥",
   },
 ] as const;
@@ -38,7 +50,6 @@ function makeBuilding(scene: any, cfg: (typeof BUILDINGS)[number]) {
   const depth = scene.dsort(y);
   const c = scene.add.container(x, y).setDepth(depth);
 
-  // Grounded 2.5D silhouette: shadow, stone step, wall, deep roof, then façade detail.
   const shadow = scene.add.ellipse(0, 18, 118, 28, 0x342d38, 0.2);
   const step = scene.add.rectangle(0, 19, 84, 10, 0xb8a69d, 0.95).setStrokeStyle(2, p.dark, 0.5);
   const wall = scene.add.rectangle(0, -8, 100, 60, p.wall, 1).setStrokeStyle(3, p.trim, 1);
@@ -55,36 +66,53 @@ function makeBuilding(scene: any, cfg: (typeof BUILDINGS)[number]) {
     mullions.lineBetween(wx, -16, wx, 8);
     mullions.lineBetween(wx - 10, -4, wx + 10, -4);
   }
-  const signPlate = scene.add.rectangle(0, -29, cfg.id === "promise-archive" ? 84 : 70, 15, 0xfff1d5, 0.98)
-    .setStrokeStyle(2, p.trim, 1);
+  const signWidth = cfg.id === "promise-archive" ? 84 : cfg.id === "hearth-home" ? 78 : 70;
+  const signPlate = scene.add.rectangle(0, -29, signWidth, 15, 0xfff1d5, 0.98).setStrokeStyle(2, p.trim, 1);
   const sign = scene.add.text(0, -29, cfg.sign, {
-    fontFamily: "Georgia, serif", fontSize: cfg.id === "promise-archive" ? "8px" : "9px", fontStyle: "bold",
-    color: "#5a4351",
+    fontFamily: "Georgia, serif", fontSize: cfg.id === "promise-archive" ? "8px" : "9px", fontStyle: "bold", color: "#5a4351",
   }).setOrigin(0.5);
   const emblem = scene.add.text(0, -55, cfg.emblem, {
-    fontFamily: "Georgia, serif", fontSize: "17px", fontStyle: "bold", color: "#ffe5a3",
-    stroke: "#5a4351", strokeThickness: 2,
+    fontFamily: "Georgia, serif", fontSize: "17px", fontStyle: "bold", color: "#ffe5a3", stroke: "#5a4351", strokeThickness: 2,
   }).setOrigin(0.5);
-
   c.add([shadow, step, wall, roof, roofBand, door, doorInset, knob, leftWindow, rightWindow, mullions, signPlate, sign, emblem]);
 
-  // Building-specific authored props make each landmark read as a place, not a reskinned house.
   if (cfg.id === "music-house") {
     const awning = scene.add.rectangle(-34, 13, 30, 5, 0xffd2dc, 1).setStrokeStyle(1, p.dark, 0.6);
     const harp = scene.add.text(35, 10, "♪", { fontFamily: "Georgia, serif", fontSize: "18px", color: "#d39b55" }).setOrigin(0.5);
     const roses = [-48, -39, 40, 49].map((ox, i) => scene.add.circle(ox, 20 - (i % 2) * 3, 4.5, i % 2 ? 0xff9fbd : 0xffffff, 0.95));
-    c.add([awning, harp, ...roses]);
-  } else {
+    const stand = scene.add.rectangle(-42, 5, 14, 10, 0x6b4b5d, 0.92).setAngle(-5);
+    const standPost = scene.add.rectangle(-42, 15, 2, 17, 0x6b4b5d, 0.9);
+    const poster = scene.add.rectangle(43, -15, 15, 18, 0xfff3dc, 0.95).setStrokeStyle(1, p.trim, 0.8);
+    c.add([awning, harp, ...roses, stand, standPost, poster]);
+    ["♪", "♫", "♪"].forEach((glyph, i) => {
+      const note = scene.add.text(x - 30 + i * 28, y - 70 - (i % 2) * 8, glyph, { fontFamily: "Georgia, serif", fontSize: "12px", color: i % 2 ? "#d68aa2" : "#d6a75c" }).setOrigin(0.5).setDepth(depth + 1).setAlpha(0.7);
+      scene.tweens.add({ targets: note, y: note.y - 10, alpha: { from: 0.35, to: 0.8 }, duration: 1100 + i * 180, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    });
+  } else if (cfg.id === "promise-archive") {
     const columns = [-43, 43].map((ox) => scene.add.rectangle(ox, -1, 8, 47, 0xc3d0dc, 1).setStrokeStyle(1, p.dark, 0.45));
     const plaque = scene.add.rectangle(31, 14, 25, 9, 0xcaa25f, 0.95).setStrokeStyle(1, 0xffe2a0, 0.8);
     const ivy = [-50, -44, 44, 50].map((ox, i) => scene.add.circle(ox, 18 - (i % 2) * 6, 4, 0x789b72, 0.88));
     c.add([...columns, plaque, ...ivy]);
+  } else {
+    // Hearth & Home: timber framing, chimney, flower boxes, firewood and a tiny shared table.
+    const beams = scene.add.graphics();
+    beams.lineStyle(5, 0x7a503d, 0.9);
+    beams.lineBetween(-48, -27, -48, 17); beams.lineBetween(48, -27, 48, 17);
+    beams.lineBetween(-48, -24, -13, 15); beams.lineBetween(48, -24, 13, 15);
+    const chimney = scene.add.rectangle(38, -58, 13, 32, 0x8b5c4b, 1).setStrokeStyle(2, 0x49332f, 0.8);
+    const chimneyCap = scene.add.rectangle(38, -75, 17, 5, 0x49332f, 1);
+    const flowerBoxes = [-31, 31].map((ox) => scene.add.rectangle(ox, 10, 25, 6, 0x8d573d, 1).setStrokeStyle(1, 0x49332f, 0.7));
+    const flowers = [-39, -32, -24, 23, 31, 39].map((ox, i) => scene.add.circle(ox, 6 - (i % 2) * 2, 3.2, i % 3 === 0 ? 0xfff1d0 : i % 2 ? 0xff8fa8 : 0xd98d64, 1));
+    const wood = [-50, -44, -38].map((ox, i) => scene.add.rectangle(ox, 21 - i * 2, 14, 4, 0x79513d, 1).setAngle(i % 2 ? 8 : -7));
+    const table = scene.add.rectangle(47, 23, 29, 6, 0x8a6046, 1).setStrokeStyle(1, 0x49332f, 0.7);
+    const candle = scene.add.circle(47, 17, 3, 0xffd879, 0.95);
+    c.add([beams, chimney, chimneyCap, ...flowerBoxes, ...flowers, ...wood, table, candle]);
+    scene.tweens.add({ targets: candle, alpha: { from: 0.55, to: 1 }, scale: { from: 0.85, to: 1.2 }, duration: 620, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
   }
 
   const glow = scene.add.ellipse(x, y + 12, 104, 34, p.glow, 0.1).setDepth(depth - 0.2).setBlendMode(Phaser.BlendModes.ADD);
   scene.tweens.add({ targets: glow, alpha: { from: 0.06, to: 0.16 }, scaleX: { from: 0.94, to: 1.08 }, duration: 1800, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
 
-  // Shallow base-only collision leaves the surrounding Haven paths open.
   if (!scene.solidDecor) scene.solidDecor = scene.physics.add.staticGroup();
   const blocker = scene.solidDecor.create(x, y + 17, "block") as Phaser.Physics.Arcade.Sprite;
   blocker.setVisible(false).setAlpha(0).setDisplaySize(76, 13).refreshBody?.();
@@ -92,12 +120,8 @@ function makeBuilding(scene: any, cfg: (typeof BUILDINGS)[number]) {
   body.setSize(76, 13).setOffset((blocker.width - 76) / 2, (blocker.height - 13) / 2);
   body.updateFromGameObject?.();
 
-  // A tiny invisible interaction anchor keeps the prompt grounded at the front door.
   const it = scene.addInteractable(x, y + 33, "spark", "haven-building", cfg.prompt, {
-    id: cfg.id,
-    radius: 62,
-    data: { title: cfg.title, body: cfg.body },
-    depth: depth + 1,
+    id: cfg.id, radius: 62, data: { title: cfg.title, body: cfg.body }, depth: depth + 1,
   });
   it.obj.setAlpha(0.001).setScale(0.15);
   scene.tweens.killTweensOf(it.obj);
