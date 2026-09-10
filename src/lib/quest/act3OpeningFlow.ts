@@ -15,8 +15,8 @@ export function installAct3OpeningFlow(QuestScene: any) {
   const originalResume = proto.onResume;
 
   // Build Haven exactly as before, except hold back its opening boss until
-  // Maria has recovered all three music sheets. The held spawn preserves the
-  // boss's authored Town Hall position and all existing encounter decorators.
+  // Maria and Andrew have recovered all three music sheets. The held spawn
+  // preserves the boss's authored Town Hall position and every encounter decorator.
   proto.buildAct3 = function act3OpeningBuild(...args: any[]) {
     const scene = this;
     const originalSpawnActBoss = scene.spawnActBoss;
@@ -39,10 +39,11 @@ export function installAct3OpeningFlow(QuestScene: any) {
     }
   };
 
-  // Andrew's first conversation arms the eventual confrontation, but no boss
-  // can wake yet. On the third sheet the base handler remains responsible for
-  // incrementing the sheet counter and spawning Andrew through the established
-  // companion system; this wrapper only updates the encounter objective.
+  // Andrew's first conversation still grants the Love Sword through the base
+  // interaction. Immediately afterward, let the established companion system
+  // create him early so his promise to help search is true in both story and play.
+  // The temporary sheet count only bypasses the old companion wait condition;
+  // the real count is restored before this interaction returns.
   proto.interact = function act3OpeningInteract(...args: any[]) {
     const scene = this;
     const beforeHadLoveSword = scene.save?.weapons?.includes?.("love-sword") === true;
@@ -58,14 +59,20 @@ export function installAct3OpeningFlow(QuestScene: any) {
     const result = originalInteract.apply(scene, args);
 
     if (nearbyAndrew && scene.save?.weapons?.includes?.("love-sword") === true) {
+      const realSheets = (scene.zoneState?.["sheets"] as number) ?? 0;
+      if (!scene.companion?.active) {
+        scene.zoneState["sheets"] = Math.max(3, realSheets);
+        scene.spawnCompanion?.();
+        scene.zoneState["sheets"] = realSheets;
+      }
       scene.zoneState[PENDING] = true;
+      scene.objective = "Search Haven together — recover the three scattered pages of your wedding melody.";
+      scene.pushHud?.(true);
     }
 
     if (collectingSheet && ((scene.zoneState?.["sheets"] as number) ?? 0) >= 3) {
-      // spawnCompanion() is already called by the base third-sheet handler, so
-      // Andrew arrives with his existing blue blade, follow AI, and ally damage.
       scene.zoneState[PENDING] = true;
-      scene.objective = "The melody is whole — Andrew joins you as the Clamour stirs at Town Hall.";
+      scene.objective = "The melody is whole — together, you and Andrew turn toward Town Hall.";
       scene.pushHud?.(true);
     }
 
@@ -88,8 +95,8 @@ export function installAct3OpeningFlow(QuestScene: any) {
     scene.zoneState[AWAKENED] = true;
     const held = scene.zoneState.act3HeldClamour ?? { tx: 66, ty: 28 };
 
-    // The third sheet's discovery modal closes into this beat: Andrew is now
-    // beside Maria, then the existing Clamour encounter wakes at Town Hall.
+    // The third sheet completes the shared search; Andrew is already walking
+    // beside Maria when the existing Clamour encounter wakes at Town Hall.
     scene.time.delayedCall(520, () => {
       if (!scene.scene?.isActive?.() || scene.save?.current_zone !== ZONE || scene.boss?.active) return;
       const x = scene.wx(held.tx);
@@ -99,7 +106,7 @@ export function installAct3OpeningFlow(QuestScene: any) {
       scene.spawnActBoss(held.tx, held.ty, held.override);
       scene.objective = "The Clamour of Doubt — fight together with Andrew.";
       scene.pushHud?.(true);
-      scene.emitToast("Andrew draws his blue blade as the Clamour rises at Town Hall.");
+      scene.emitToast("Andrew draws his blue blade beside you as the Clamour rises at Town Hall.");
     });
 
     return result;
