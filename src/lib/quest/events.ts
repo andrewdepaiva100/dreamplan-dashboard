@@ -100,10 +100,13 @@ if (typeof window !== "undefined") {
 
       releaseQuestRuntimeReady();
       requestAnimationFrame(() => requestAnimationFrame(() => {
-        void Promise.all([import("./globalCharacterDialogue"), import("./act3AndrewDialogue")])
-          .then(([dialogue, act3AndrewDialogue]) => {
+        void Promise.all([import("./globalCharacterDialogue"), import("./act3AndrewDialogue"), import("./journalDiscovery")])
+          .then(([dialogue, act3AndrewDialogue, journalDiscovery]) => {
             dialogue.installGlobalCharacterDialogue(QuestScene);
             act3AndrewDialogue.installAct3AndrewDialogue(QuestScene);
+            // Install last so every current Act I-V interaction/dialogue wrapper flows through
+            // the same discovery registry, including bespoke character conversations.
+            journalDiscovery.installJournalDiscovery(QuestScene);
           })
           .catch((error) => console.error("[quest] dialogue polish install failed", error));
       }));
