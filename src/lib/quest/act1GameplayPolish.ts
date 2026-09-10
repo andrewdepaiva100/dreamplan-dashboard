@@ -11,6 +11,7 @@ const STOMP_TELEGRAPH_MS = 700;
 const STOMP_COOLDOWN_MS = 5600;
 const STOMP_ZONES = new Set(["sunlit_shores", "starry_ascent"]);
 const INTRO_OBJECTIVE = "TALK TO WREN — Walk up to Wren and press E / TALK.";
+const SILAS_JOURNAL_KEY = "marias-quest-journal-silas-met";
 
 function isCoarsePointer() {
   return typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
@@ -53,7 +54,7 @@ function ensureIntroTutorial(scene: SceneLike) {
 
   if (!scene.__introGuideMarker?.active) {
     const marker = scene.add
-      .triangle(guide.obj.x, guide.obj.y - 46, 0, 18, 10, 0, -10, 0, 0xffd84d, 1)
+      .triangle(guide.obj.x, guide.obj.y - 46, 0, 18, 10, 0, -10, 0xffd84d, 1)
       .setStrokeStyle(2, 0xffffff, 0.95)
       .setDepth(990);
     marker.setData("quest-intro-marker", true);
@@ -292,6 +293,15 @@ function crossingState() {
   }
 }
 
+function markSilasMet() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(SILAS_JOURNAL_KEY, "1");
+  } catch {
+    /* Journal discovery should never interfere with gameplay. */
+  }
+}
+
 function silasPortrait() {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320"><rect width="320" height="320" fill="#33465d"/><circle cx="160" cy="126" r="76" fill="#d7a47b"/><path d="M82 126c4-70 42-99 83-99 50 0 86 34 87 97-24-17-40-47-54-69-24 28-62 50-116 71Z" fill="#5a402e"/><ellipse cx="132" cy="132" rx="8" ry="6" fill="#29231f"/><ellipse cx="188" cy="132" rx="8" ry="6" fill="#29231f"/><path d="M145 170q17 12 33 0" stroke="#915949" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M72 320c6-78 36-116 88-116 53 0 84 38 89 116Z" fill="#203b5a"/><path d="M95 222c38 24 89 24 129 0l-18 38c-31 14-61 14-94 0Z" fill="#a9513c"/><path d="M228 220l54 12-13 70-54-12Z" fill="#b58b57"/></svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -308,6 +318,7 @@ function showSilasBridgeDialogue(scene: SceneLike) {
   if (scene.__silasBridgeDialogueOpen) return;
   const parent = scene.game.canvas?.parentElement;
   if (!parent) return;
+  markSilasMet();
   scene.__silasBridgeDialogueOpen = true;
   scene.frozen = true;
   scene.physics.pause();
