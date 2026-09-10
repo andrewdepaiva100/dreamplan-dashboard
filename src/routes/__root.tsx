@@ -97,7 +97,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-{ rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", type: "image/png", href: "/favicon.png" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
@@ -127,6 +127,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <a
+        href="/guests"
+        className="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full border border-gold/50 bg-navy px-4 py-3 text-sm font-bold text-white shadow-lg transition-transform hover:-translate-y-0.5"
+        aria-label="Open Marriage Invitations guest list"
+      >
+        <span aria-hidden="true">💍</span>
+        Marriage Invitations
+      </a>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>
