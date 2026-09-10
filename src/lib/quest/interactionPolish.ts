@@ -63,6 +63,11 @@ export function installInteractionPolish(QuestScene: any) {
     // of whether their authored label said Talk, Talk with, Speak to, etc.
     if (name) return `Talk to ${name}`;
 
+    // Haven's three story buildings deliberately author their complete action
+    // labels ("Visit ..."). Keep those labels intact instead of prepending a
+    // second contextual verb such as "Rest at" or "Interact with".
+    if (kind === "haven-building") return raw;
+
     // Authored labels that already contain an action are complete prompts.
     if (/^(?:look\s+(?:at|into|in|through)\b|examine\b|inspect\b|read\b|open\b|talk\s+to\b|rest\b|enter\b|use\b|take\b|pick\b|collect\b|touch\b|activate\b|light\b|sit\b|sleep\b|cook\b|store\b|leave\b|return\b)/i.test(raw)) {
       return raw;
