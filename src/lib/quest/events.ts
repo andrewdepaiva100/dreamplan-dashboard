@@ -21,7 +21,7 @@ if (typeof window !== "undefined") {
       import("./act2BossRemaster"), import("./act2Wildlife"), import("./act2Memorial"), import("./meleeHitPolish"), import("./act3OpeningFlow"), import("./act3Enemies"), import("./act3BossPolish"), import("./act3SheetScenes"), import("./act3MusicIdentity"), import("./act3HavenLandmarks"), import("./global2_5dPolish"), import("./desktopActSelector"), import("./desktopControlsPolish"), import("./interactionPolish"),
       import("./wrenIntro"), import("./lastCrossingDialogueRebind"), import("./weaponVisualSync"), import("./introUiPolish"),
       import("./mariaMovementPolish"), import("./mariaCombatAnimation"), import("./globalCharacterReactions"), import("./globalNpcLife"), import("./enemyReactionPolish"), import("./combatImpactPolish"),
-      import("./actArrivalCinematics"), import("./environmentalMicroLife"),
+      import("./actArrivalCinematics"), import("./environmentalMicroLife"), import("./explorationFeedback"),
     ]).then(([
       sceneModule, houseModule, upgrades, visualRemaster, homeRemaster, homeScalePolish, act1WorldRemaster, lastCrossing, silasPolish,
       silasPlacementFix, lastCrossingLifecycle, act1GameplayPolish, fallenCrossingShrine, fallenCrossingJournalBook,
@@ -30,7 +30,7 @@ if (typeof window !== "undefined") {
       act2SeasonIdentity, act2BramForgemaster, act2BramWeaponOwnership, act2SeasonChallenges, act2BossRemaster, act2Wildlife, act2Memorial, meleeHitPolish, act3OpeningFlow, act3Enemies, act3BossPolish, act3SheetScenes, act3MusicIdentity, act3HavenLandmarks, global25DPolish,
       desktopActSelector, desktopControlsPolish, interactionPolish, wrenIntro, lastCrossingDialogueRebind, weaponVisualSync,
       introUiPolish, mariaMovementPolish, mariaCombatAnimation, globalCharacterReactions, globalNpcLife, enemyReactionPolish, combatImpactPolish, actArrivalCinematics,
-      environmentalMicroLife,
+      environmentalMicroLife, explorationFeedback,
     ]) => {
       const QuestScene = sceneModule.QuestScene as unknown as any;
       const QuestHouseScene = houseModule.QuestHouseScene as unknown as any;
@@ -88,6 +88,7 @@ if (typeof window !== "undefined") {
       combatImpactPolish.installCombatImpactPolish(QuestScene);
       actArrivalCinematics.installActArrivalCinematics(QuestScene);
       environmentalMicroLife.installEnvironmentalMicroLife(QuestScene);
+      explorationFeedback.installExplorationFeedback(QuestScene);
 
       (window as any).__questRuntimeReady = true;
       window.dispatchEvent(new Event(QUEST_RUNTIME_READY_EVENT));
