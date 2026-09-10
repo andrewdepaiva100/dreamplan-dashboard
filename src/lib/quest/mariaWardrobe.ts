@@ -20,7 +20,8 @@ function selectedId() {
   try { return window.localStorage.getItem(STORAGE_KEY) || "classic"; } catch { return "classic"; }
 }
 
-function showWardrobe(onBegin: () => void) {
+export function openMariaWardrobe(onBegin: () => void) {
+  if (typeof document === "undefined") return;
   if (document.getElementById("quest-maria-wardrobe")) return;
   let choice = selectedId();
   const root = document.createElement("div");
@@ -66,24 +67,6 @@ function showWardrobe(onBegin: () => void) {
   });
 }
 
-function installTitleGate() {
-  if (typeof document === "undefined" || (window as any).__mariaWardrobeGateInstalled) return;
-  (window as any).__mariaWardrobeGateInstalled = true;
-  let bypass = false;
-  document.addEventListener("click", (event) => {
-    if (bypass) { bypass = false; return; }
-    const button = (event.target as Element | null)?.closest?.("button");
-    if (!button || button.textContent?.trim() !== "New Game") return;
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-    showWardrobe(() => {
-      bypass = true;
-      button.click();
-    });
-  }, true);
-}
-
 export function installMariaWardrobe(QuestScene: any) {
   if (!QuestScene?.prototype || QuestScene.prototype.__mariaWardrobeInstalled) return;
   QuestScene.prototype.__mariaWardrobeInstalled = true;
@@ -102,8 +85,6 @@ export function installMariaWardrobe(QuestScene: any) {
     return result;
   };
 }
-
-installTitleGate();
 
 if (typeof window !== "undefined") {
   const installRuntime = () => {
