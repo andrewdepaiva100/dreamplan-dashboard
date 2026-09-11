@@ -1,4 +1,5 @@
 // @ts-nocheck -- Exact Act II interaction-copy + gameplay corrections.
+import * as Phaser from "phaser";
 
 function addExtraAct4Hearts(scene: any) {
   if (scene.save?.current_zone !== "starry_ascent" || !scene.hearts || !scene.layer) return;
