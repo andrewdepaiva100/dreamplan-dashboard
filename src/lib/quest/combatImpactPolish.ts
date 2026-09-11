@@ -102,7 +102,7 @@ function bossImpact(scene: SceneLike, boss: Phaser.Physics.Arcade.Sprite | null,
   const bossName = String(scene.bossName ?? "");
   if (!isWeariness(scene, bossName) && !isHollow(scene, bossName) && !isAct4ShardGuardian(scene, bossName)) impactRing(scene, x, y, tint, finishing);
   directionalSparks(scene, x, y, tint, scene.player?.x ?? x - 1, scene.player?.y ?? y, finishing ? 11 : 7);
-  if (boss?.active && boss.scene) bossFlashEcho(scene, boss, x, y, finishing);
+  if (boss?.active && boss.scene && !isHollow(scene, bossName)) bossFlashEcho(scene, boss, x, y, finishing);
   if (mariaHit) scene.cameras?.main?.shake?.(finishing ? 85 : 48, finishing ? 0.0022 : 0.00125);
 }
 
@@ -247,10 +247,10 @@ function updateHollowTeleport(scene: SceneLike, time: number) {
 
   for (let attempt = 0; attempt < 8; attempt++) {
     const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-    const distance = Phaser.Math.Between(135, 215);
+    const distance = Phaser.Math.Between(68, 108);
     const x = Phaser.Math.Clamp(scene.player.x + Math.cos(angle) * distance, 48, worldW - 48);
     const y = Phaser.Math.Clamp(scene.player.y + Math.sin(angle) * distance, 48, worldH - 48);
-    if (Phaser.Math.Distance.Between(x, y, scene.player.x, scene.player.y) < 120) continue;
+    if (Phaser.Math.Distance.Between(x, y, scene.player.x, scene.player.y) < 60) continue;
     const tile = scene.layer?.getTileAtWorldXY?.(x, y);
     if (tile?.collides) continue;
     destination = { x, y };
@@ -361,6 +361,7 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
         }
         if (name === HOLLOW_NAME) {
           this.__hollowNextTeleportAt = Number(this.time?.now ?? 0) + HOLLOW_TELEPORT_COOLDOWN_MIN;
+          this.boss?.setScale?.(1.2);
           removeHollowPulse(this);
         }
       }
@@ -385,6 +386,7 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
           tuneWeariness(this);
         } else if (name === HOLLOW_NAME) {
           removeHollowPulse(this);
+          this.boss?.setScale?.(1.2);
           updateHollowTeleport(this, time);
         }
       }
@@ -401,6 +403,7 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
     const x = boss?.x ?? 0;
     const y = boss?.y ?? 0;
     const result = originalDamageBoss.call(this, amount, ...args);
+    if (isHollow(this, bossNameBefore) && boss?.active && boss.scene) boss.setScale(1.2);
     const hpAfter = Number(this.bossHp ?? hpBefore);
     if (boss && hpAfter < hpBefore) {
       const mariaHit = Number(this.time?.now ?? 0) <= Number(this.__combatImpactMariaSwingUntil ?? -Infinity);
