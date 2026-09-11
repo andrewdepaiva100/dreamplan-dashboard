@@ -96,6 +96,10 @@ function isWeariness(scene: SceneLike, bossName = String(scene.bossName ?? "")) 
   return scene.save?.current_zone === ACT4_ZONE && bossName === WEARINESS_NAME;
 }
 
+function isAct4ShardGuardian(scene: SceneLike, bossName: string) {
+  return scene.save?.current_zone === ACT4_ZONE && /shard guardian/i.test(bossName);
+}
+
 function bossImpact(scene: SceneLike, boss: Phaser.Physics.Arcade.Sprite | null, x: number, y: number, finishing: boolean, mariaHit: boolean) {
   const now = Number(scene.time?.now ?? 0);
   const last = Number(scene.__combatBossReactionAt ?? -Infinity);
@@ -103,16 +107,15 @@ function bossImpact(scene: SceneLike, boss: Phaser.Physics.Arcade.Sprite | null,
   scene.__combatBossReactionAt = now;
 
   const tint = mariaHit ? weaponColor(scene) : 0xffd7e5;
-  // Weariness intentionally gets no expanding ring effect at all. Its ranged
-  // attack timer is also disabled below, so there is no impulse-ring path left.
-  if (!isWeariness(scene)) impactRing(scene, x, y, tint, finishing);
+  // No expanding ring is added by this polish to either Weariness or the five
+  // pillar guardians. Guardian combat otherwise stays on its original path.
+  const bossName = String(scene.bossName ?? "");
+  if (!isWeariness(scene, bossName) && !isAct4ShardGuardian(scene, bossName)) {
+    impactRing(scene, x, y, tint, finishing);
+  }
   directionalSparks(scene, x, y, tint, scene.player?.x ?? x - 1, scene.player?.y ?? y, finishing ? 11 : 7);
   if (boss?.active && boss.scene) bossFlashEcho(scene, boss, x, y, finishing);
   if (mariaHit) scene.cameras?.main?.shake?.(finishing ? 85 : 48, finishing ? 0.0022 : 0.00125);
-}
-
-function isAct4ShardGuardian(scene: SceneLike, bossName: string) {
-  return scene.save?.current_zone === ACT4_ZONE && /shard guardian/i.test(bossName);
 }
 
 function shardTint(name: string) {
@@ -150,7 +153,6 @@ function tuneShardGuardianStats(scene: SceneLike) {
   const boss = scene.boss as Phaser.Physics.Arcade.Sprite | null;
   if (!boss?.active || !isAct4ShardGuardian(scene, String(scene.bossName ?? ""))) return;
 
-  // Apply the requested +15% HP once per guardian spawn.
   if (!boss.getData?.("act4-guardian-hp-tuned")) {
     scene.bossHp = Math.round(Number(scene.bossHp ?? 0) * 1.15);
     scene.bossMax = Math.round(Number(scene.bossMax ?? 0) * 1.15);
@@ -164,17 +166,14 @@ function tuneWeariness(scene: SceneLike) {
   const boss = scene.boss as Phaser.Physics.Arcade.Sprite | null;
   if (!boss?.active) return;
 
-  // No pulse/breathing alpha animation.
   boss.setAlpha(1);
 
-  // Remove Weariness's ranged projectile/impulse path completely. The boss still
-  // chases Maria and summons its faster mob waves, but it no longer fires a ring/bolt.
+  // Only the real Act IV boss loses its ranged impulse/projectile attack.
   if (scene.bossShotTimer) {
     try { scene.bossShotTimer.remove?.(); } catch {}
     scene.bossShotTimer = undefined;
   }
 
-  // Base Act-IV boss movement resolved by scene.ts, then +5% for Weariness only.
   const body = boss.body as Phaser.Physics.Arcade.Body | undefined;
   if (body) {
     const vx = body.velocity.x;
@@ -182,7 +181,6 @@ function tuneWeariness(scene: SceneLike) {
     if (vx || vy) boss.setVelocity(vx * 1.05, vy * 1.05);
   }
 
-  // Existing minion timer runs twice as fast: 5200ms -> 2600ms effective cadence.
   if (scene.bossTimer && scene.__wearinessMobTimer !== scene.bossTimer) {
     scene.__wearinessMobTimer = scene.bossTimer;
     scene.bossTimer.timeScale = 2;
@@ -250,7 +248,6 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
         }
         if (name === WEARINESS_NAME) {
           this.__wearinessMobTimer = null;
-          // Remove the boss's outgoing ranged/impulse attack immediately.
           if (this.bossShotTimer) {
             try { this.bossShotTimer.remove?.(); } catch {}
             this.bossShotTimer = undefined;
@@ -273,8 +270,6 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
         const name = String(this.bossName ?? "");
         if (isAct4ShardGuardian(this, name)) {
           this.boss?.setAlpha?.(1);
-          // scene.ts resolves guardian pursuit speed first; multiply that resolved
-          // velocity once per frame to make every pillar guardian exactly 20% faster.
           const body = this.boss?.body as Phaser.Physics.Arcade.Body | undefined;
           if (body && (body.velocity.x || body.velocity.y)) {
             this.boss.setVelocity(body.velocity.x * 1.2, body.velocity.y * 1.2);
