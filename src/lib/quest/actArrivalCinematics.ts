@@ -1,6 +1,7 @@
 // @ts-nocheck -- Presentation-only scene decorator for authored realm arrivals.
 import * as Phaser from "phaser";
 import { ZONES } from "./content";
+import { EV } from "./events";
 import { installAct4StarryAscentRemaster } from "./act4StarryAscentRemaster";
 
 type SceneLike = Phaser.Scene & Record<string, any>;
@@ -13,6 +14,9 @@ const ARRIVALS: Record<string, any> = {
   starry_ascent: { subtitle: "Rest beneath the stars, then rise", tint: 0xb9b6ff, panX: 22, panY: -76, zoom: 0.93 },
   cathedral: { subtitle: "At the end of the road, a promise", tint: 0xffe0a6, panX: 0, panY: -88, zoom: 0.925 },
 };
+
+const NON_OVERLAP_ZONES = new Set(["sunlit_shores", "wedding_garden", "the_haven", "starry_ascent"]);
+const ACT_BANNER_HOLD_MS = 3850;
 
 function currentZoom(camera: any) {
   return {
@@ -34,6 +38,41 @@ function tweenCameraZoom(scene: SceneLike, camera: any, from: { x: number; y: nu
     onUpdate: () => camera.setZoom(proxy.x, proxy.y),
     onComplete: () => camera.setZoom(to.x, to.y),
   });
+}
+
+function visibleBlockingDialog() {
+  if (typeof document === "undefined") return false;
+  const candidates = document.querySelectorAll(
+    '[role="dialog"], [aria-modal="true"], .absolute.inset-0.z-40',
+  );
+  return Array.from(candidates).some((node: any) => {
+    if (!(node instanceof HTMLElement)) return false;
+    const style = window.getComputedStyle(node);
+    if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) return false;
+    const rect = node.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  });
+}
+
+function scheduleArrival(scene: SceneLike, delay = 650) {
+  if (scene.__actArrivalScheduled) return;
+  scene.__actArrivalScheduled = true;
+  const attempt = () => {
+    const zone = String(scene.save?.current_zone ?? "");
+    if (!scene.scene?.isActive?.()) {
+      scene.__actArrivalScheduled = false;
+      return;
+    }
+    // Acts I-IV must never put the Phaser arrival title over a React modal,
+    // dialogue, landmark card, or another blocking screen.
+    if (NON_OVERLAP_ZONES.has(zone) && (scene.frozen || visibleBlockingDialog())) {
+      scene.time.delayedCall(250, attempt);
+      return;
+    }
+    scene.__actArrivalScheduled = false;
+    playArrival(scene);
+  };
+  scene.time.delayedCall(delay, attempt);
 }
 
 function playArrival(scene: SceneLike) {
@@ -155,10 +194,32 @@ export function installActArrivalCinematics(QuestScene: SceneCtor) {
 
   installAct4StarryAscentRemaster(QuestScene as any);
 
+  const originalOpenModal = proto.openModal;
+  if (typeof originalOpenModal === "function") {
+    proto.openModal = function nonOverlappingActModal(this: SceneLike, payload: any, ...args: any[]) {
+      const zone = String(this.save?.current_zone ?? "");
+      const holdUntil = Number(this.__landmarkActBannerHoldUntil ?? 0);
+      if (NON_OVERLAP_ZONES.has(zone) && payload?.type === "info" && holdUntil > this.time.now) {
+        const wait = Math.max(40, holdUntil - this.time.now);
+        this.time.delayedCall(wait, () => originalOpenModal.call(this, payload, ...args));
+        return;
+      }
+      return originalOpenModal.call(this, payload, ...args);
+    };
+  }
+
   const originalCreate = proto.create;
   proto.create = function cinematicArrivalCreate(this: SceneLike, ...args: any[]) {
     const result = originalCreate.apply(this, args);
-    this.time.delayedCall(650, () => playArrival(this));
+
+    const markActBanner = () => {
+      const zone = String(this.save?.current_zone ?? "");
+      if (NON_OVERLAP_ZONES.has(zone)) this.__landmarkActBannerHoldUntil = this.time.now + ACT_BANNER_HOLD_MS;
+    };
+    this.game.events.on(EV.act, markActBanner);
+    this.events.once("shutdown", () => this.game.events.off(EV.act, markActBanner));
+
+    scheduleArrival(this, 650);
     return result;
   };
 
