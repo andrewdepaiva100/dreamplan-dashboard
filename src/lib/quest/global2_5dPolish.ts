@@ -164,12 +164,12 @@ export function installGlobal25DPolish(QuestScene: any) {
   const originalAddLandmark = proto.addLandmark;
   proto.addLandmark = function polished25DLandmark(...args: any[]) {
     // Landmark/building ground shadows were visually overpowering the art.
-    // Shrink only the building shadow footprint by 25% in every act, leaving
-    // character/animal contact shadows and gameplay geometry untouched.
+    // They were already reduced by 25%; reduce that footprint another 20%,
+    // for a final 60% of the original width in every act.
     const originalBakeShadow = this.bakeShadow;
     if (typeof originalBakeShadow === "function") {
       this.bakeShadow = function smallerLandmarkShadow(x: number, y: number, w: number, alpha?: number) {
-        return originalBakeShadow.call(this, x, y, w * 0.75, alpha);
+        return originalBakeShadow.call(this, x, y, w * 0.60, alpha);
       };
     }
     let result;
