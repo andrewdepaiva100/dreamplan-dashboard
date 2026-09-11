@@ -229,7 +229,10 @@ function installMemoryWalk() {
 
     const launch = () => {
       try {
-        if (!this.scene.manager.getScene(KEY)) this.scene.add(KEY, MemoryWalkScene, false);
+        if (!this.__memoryWalkSceneRegistered) {
+          this.scene.add(KEY, MemoryWalkScene, false);
+          this.__memoryWalkSceneRegistered = true;
+        }
         this.scene.launch(KEY, { parent: this, save: this.save });
         this.scene.pause();
       } catch (err) {
