@@ -58,6 +58,21 @@ export function installInteractionCopyFixes(QuestScene: any) {
     };
   }
 
+  // TEMP TEST BOOST: the hidden Act IV Crown of the Golden Ring one-shots any
+  // boss while equipped. Ordinary enemies already transform in one swing.
+  // Keep this isolated here so restoring production balance is a one-block removal.
+  const originalDamageBoss = proto.damageBoss;
+  if (typeof originalDamageBoss === "function") {
+    proto.damageBoss = function act4GoldenCrownTestDamage(amount: number, ...args: any[]) {
+      const boosted =
+        this.save?.current_zone === "starry_ascent" &&
+        this.save?.equipped_weapon === "golden-crown"
+          ? Math.max(Number(this.bossHp ?? 0), Number(this.bossMax ?? 0), 999999)
+          : amount;
+      return originalDamageBoss.call(this, boosted, ...args);
+    };
+  }
+
   const originalUpdate = proto.update;
   if (typeof originalUpdate === "function") {
     proto.update = function interactionCopyFixesUpdate(...args: any[]) {
