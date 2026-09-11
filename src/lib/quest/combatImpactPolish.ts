@@ -58,6 +58,9 @@ function directionalSparks(scene: SceneLike, x: number, y: number, tint: number,
 }
 
 function bossFlashEcho(scene: SceneLike, boss: Phaser.Physics.Arcade.Sprite, x: number, y: number, finishing: boolean) {
+  // A lethal hit can destroy the boss synchronously inside damageBoss().
+  // Never inspect a destroyed GameObject for texture/frame/scale data.
+  if (!boss?.active || !boss.scene) return;
   const texture = boss.texture?.key;
   if (!texture) return;
   const frame = boss.frame?.name;
@@ -89,7 +92,7 @@ function bossFlashEcho(scene: SceneLike, boss: Phaser.Physics.Arcade.Sprite, x: 
   });
 }
 
-function bossImpact(scene: SceneLike, boss: Phaser.Physics.Arcade.Sprite, x: number, y: number, finishing: boolean, mariaHit: boolean) {
+function bossImpact(scene: SceneLike, boss: Phaser.Physics.Arcade.Sprite | null, x: number, y: number, finishing: boolean, mariaHit: boolean) {
   const now = Number(scene.time?.now ?? 0);
   const last = Number(scene.__combatBossReactionAt ?? -Infinity);
   if (!finishing && now - last < BOSS_REACTION_LOCK) return;
@@ -98,7 +101,7 @@ function bossImpact(scene: SceneLike, boss: Phaser.Physics.Arcade.Sprite, x: num
   const tint = mariaHit ? weaponColor(scene) : 0xffd7e5;
   impactRing(scene, x, y, tint, finishing);
   directionalSparks(scene, x, y, tint, scene.player?.x ?? x - 1, scene.player?.y ?? y, finishing ? 11 : 7);
-  if (boss) bossFlashEcho(scene, boss, x, y, finishing);
+  if (boss?.active && boss.scene) bossFlashEcho(scene, boss, x, y, finishing);
 
   // Camera feedback is deliberately reserved for Maria's confirmed melee hits.
   // This is visual only and does not pause or alter the physics simulation.
@@ -160,11 +163,22 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
     const hpBefore = Number(this.bossHp ?? 0);
     const x = boss?.x ?? 0;
     const y = boss?.y ?? 0;
+
     const result = originalDamageBoss.call(this, amount, ...args);
     const hpAfter = Number(this.bossHp ?? hpBefore);
+
     if (boss && hpAfter < hpBefore) {
       const mariaHit = Number(this.time?.now ?? 0) <= Number(this.__combatImpactMariaSwingUntil ?? -Infinity);
-      bossImpact(this, boss, x, y, hpAfter <= 0, mariaHit);
+
+      // The canonical death path destroys the boss immediately. Preserve the
+      // impact at its cached coordinates, but only use sprite-dependent echo
+      // effects if the captured boss still exists after originalDamageBoss().
+      try {
+        bossImpact(this, boss?.active && boss.scene ? boss : null, x, y, hpAfter <= 0, mariaHit);
+      } catch (err) {
+        // Combat polish must never be allowed to break progression/death logic.
+        console.warn?.("[quest] combat impact skipped after boss state changed", err);
+      }
     }
     return result;
   };
