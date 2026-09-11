@@ -93,7 +93,8 @@ function makeState(scene: any) {
     shrineCores,
     summitHalo,
     edgeStars,
-    lastGuardians: -1,
+    lastPillarSignature: "",
+    lastGoldCount: 0,
     stairsCelebrated: false,
     nextRefreshAt: 0,
     nextStarAt: Number(scene.time?.now ?? 0) + Phaser.Math.Between(28000, 42000),
@@ -102,23 +103,29 @@ function makeState(scene: any) {
   };
 }
 
-function completedGuardians(scene: any): number[] {
-  const raw = scene.zoneState?.["guardians"];
-  return Array.isArray(raw) ? raw.filter((n: any) => Number.isInteger(n)) : [];
+function pillarValues(scene: any): number[] {
+  const raw = scene.zoneState?.["pillars"];
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, PILLARS.length).map((value: any) => Number(value));
+}
+
+function goldPillars(scene: any): number[] {
+  const values = pillarValues(scene);
+  const gold: number[] = [];
+  values.forEach((value, index) => {
+    if (value === 1) gold.push(index);
+  });
+  return gold;
 }
 
 function allPillarsGold(scene: any) {
-  const pillars = scene.zoneState?.["pillars"];
-  const guardians = completedGuardians(scene);
-  return Array.isArray(pillars)
-    && pillars.length === PILLARS.length
-    && pillars.every((value: any) => Number(value) === 1)
-    && PILLARS.every((_spot, index) => guardians.includes(index));
+  const pillars = pillarValues(scene);
+  return pillars.length === PILLARS.length && pillars.every((value) => value === 1);
 }
 
-function redrawBeams(scene: any, state: any, guardians: number[]) {
+function redrawBeams(scene: any, state: any, gold: number[]) {
   state.beamGfx.clear();
-  guardians.forEach((idx: number) => {
+  gold.forEach((idx: number) => {
     const spot = PILLARS[idx];
     if (!spot) return;
     const x = scene.wx(spot[0]);
@@ -134,15 +141,19 @@ function refreshPillars(scene: any, force = false) {
   if (scene.save?.current_zone !== ZONE) return;
   const state = scene[STATE];
   if (!state) return;
-  const guardians = completedGuardians(scene);
-  if (!force && guardians.length === state.lastGuardians) return;
 
-  const previous = state.lastGuardians;
-  state.lastGuardians = guardians.length;
-  redrawBeams(scene, state, guardians);
+  const values = pillarValues(scene);
+  const signature = values.join(",");
+  if (!force && signature === state.lastPillarSignature) return;
+
+  const previousGoldCount = Number(state.lastGoldCount ?? 0);
+  const gold = goldPillars(scene);
+  state.lastPillarSignature = signature;
+  state.lastGoldCount = gold.length;
+  redrawBeams(scene, state, gold);
 
   PILLARS.forEach((_spot, i) => {
-    const done = guardians.includes(i);
+    const done = gold.includes(i);
     const glow = state.shrineGlows[i];
     const core = state.shrineCores[i];
     glow?.setFillStyle?.(done ? 0xffd66f : 0x8298ff, done ? 0.16 : 0.055);
@@ -151,18 +162,17 @@ function refreshPillars(scene: any, force = false) {
     core?.setAlpha?.(done ? 0.9 : 0.48);
   });
 
-  if (previous >= 0 && guardians.length > previous) {
-    const known = Array.isArray(scene.__act4CelebratedGuardians) ? scene.__act4CelebratedGuardians : [];
-    const newest = guardians.find((i: number) => !known.includes(i));
-    scene.__act4CelebratedGuardians = Array.from(new Set([...known, ...guardians]));
-    if (newest != null) {
-      const [gx, gy] = PILLARS[newest];
+  if (!force && gold.length > previousGoldCount) {
+    const newlyGold = gold.find((index) => !String(state.previousGoldSignature ?? "").split(",").includes(String(index)));
+    if (newlyGold != null) {
+      const [gx, gy] = PILLARS[newlyGold];
       const x = scene.wx(gx), y = scene.wy(gy);
       scene.spawnSparkle?.(x, y - 18, 0xffe185, 28);
       scene.cameras?.main?.flash?.(180, 255, 239, 180);
-      scene.emitToast?.(`Pillar ${guardians.length}/5 awakens — its light reaches toward the summit.`);
+      scene.emitToast?.(`Pillar ${gold.length}/5 turns gold — its light reaches toward the summit.`);
     }
   }
+  state.previousGoldSignature = gold.join(",");
 }
 
 function celebrateStaircase(scene: any) {
@@ -327,9 +337,9 @@ export function installAct4StarryAscentRemaster(QuestScene: any) {
   if (!proto || proto.__act4StarryAscentRemasterInstalled) return;
   proto.__act4StarryAscentRemasterInstalled = true;
 
-  // Act IV's authored build used to create its main boss immediately. Hold only
-  // that default boss spawn while the realm is being built. Pillar guardians
-  // pass an explicit boss config, so they continue to spawn normally.
+  // Act IV's authored build creates its main boss immediately. Hold only that
+  // default boss spawn while the realm is being built. No pillar-guardian
+  // requirement exists here: the main boss is gated strictly by pillar color.
   const originalSpawnActBoss = proto.spawnActBoss;
   if (typeof originalSpawnActBoss === "function") {
     proto.spawnActBoss = function act4GoldenPillarBossGate(...args: any[]) {
@@ -382,9 +392,8 @@ export function installAct4StarryAscentRemaster(QuestScene: any) {
         refreshPillars(this);
       }
 
-      // The main Act IV boss now exists only after all five pillars are truly
-      // gold and all five pillar guardians have been defeated. This check runs
-      // after the original update so it never interferes with pillar handling.
+      // The main boss appears as soon as the existing pillar puzzle reaches
+      // its solved state: all five pillar values are gold (1).
       if (
         !this.__act4MainBossSpawned
         && this.__act4MainBossDeferred
@@ -411,7 +420,6 @@ export function installAct4StarryAscentRemaster(QuestScene: any) {
   if (typeof originalCreate === "function") {
     proto.create = function act4StarryRemasterCreate(...args: any[]) {
       this[STATE] = null;
-      this.__act4CelebratedGuardians = [];
       this.__act4BuildingBase = false;
       this.__act4MainBossDeferred = false;
       this.__act4MainBossSpawned = false;
