@@ -113,10 +113,8 @@ function isAct4ShardGuardian(scene: SceneLike, bossName: string) {
 }
 
 function recoverAfterShardGuardian(scene: SceneLike) {
-  // defeatActBoss() deliberately flashes the camera pink. If another decorator
-  // errors or the scene clock hiccups on the same lethal frame, Phaser can leave
-  // that camera FX half-applied. A browser-clock cleanup is independent of scene
-  // time and only runs for Act IV shard guardians.
+  // A shard guardian defeat must hand control straight back to exploration.
+  // Keep this recovery narrowly scoped to Act IV shard guardians only.
   const recover = () => {
     try {
       if (scene.save?.current_zone !== "starry_ascent") return;
@@ -124,25 +122,34 @@ function recoverAfterShardGuardian(scene: SceneLike) {
       cam?.resetFX?.();
       cam?.setAlpha?.(1);
 
-      // A shard defeat never opens a modal or intentionally freezes gameplay.
-      // Only release these states when there is no active boss conversation.
       if (!scene.bossTalking && Number(scene.bossPhase ?? 0) === 0) {
+        // The pillar fight itself never owns a modal/pause, so any paused scene,
+        // frozen flag, disabled player body, or suspended physics here is stale.
+        if (scene.scene?.isPaused?.()) scene.scene.resume();
         scene.frozen = false;
         scene.physics?.world?.resume?.();
+        if (scene.input) scene.input.enabled = true;
+        if (scene.input?.keyboard) scene.input.keyboard.enabled = true;
+        const body = scene.player?.body as Phaser.Physics.Arcade.Body | undefined;
+        if (body) body.enable = true;
+        scene.player?.setActive?.(true)?.setVisible?.(true);
         scene.player?.setVelocity?.(0, 0);
         if (scene.vel) { scene.vel.x = 0; scene.vel.y = 0; }
-        scene.stick = { x: 0, y: 0 };
+        // Do not overwrite scene.stick here. Touch/virtual-stick input is stateful;
+        // zeroing it after the fight can make Maria appear permanently immobile
+        // until the control emits another event.
       }
       scene.pushHud?.(true);
     } catch (err) {
-      console.warn?.("[quest] shard guardian screen recovery skipped", err);
+      console.warn?.("[quest] shard guardian movement recovery skipped", err);
     }
   };
 
-  // Normal Phaser-clock cleanup when the scene is healthy.
-  try { scene.time?.delayedCall?.(620, recover); } catch { /* optional */ }
-  // Independent fallback if scene time/update has stalled.
-  if (typeof window !== "undefined") window.setTimeout(recover, 700);
+  try { scene.time?.delayedCall?.(220, recover); } catch { /* optional */ }
+  if (typeof window !== "undefined") {
+    window.setTimeout(recover, 260);
+    window.setTimeout(recover, 750);
+  }
 }
 
 function swingAccent(scene: SceneLike) {
