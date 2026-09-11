@@ -84,41 +84,7 @@ export function installInteractionCopyFixes(QuestScene: any) {
     };
   }
 
-  const originalTransformEnemy = proto.transformEnemy;
-  if (typeof originalTransformEnemy === "function") {
-    proto.transformEnemy = function interactionHitFeedback(enemy: any, ...args: any[]) {
-      const isSummerGuardian =
-        this.save?.current_zone === "wedding_garden" &&
-        enemy?.active &&
-        (enemy.getData?.("summerGuardian") === true || enemy.getData?.("seasonMiniGame") === "Summer");
-
-      if (isSummerGuardian && this.__summerSwordStrike) {
-        const baseX = Number(enemy.getData?.("summerHitBaseScaleX") ?? enemy.scaleX ?? 1);
-        const baseY = Number(enemy.getData?.("summerHitBaseScaleY") ?? enemy.scaleY ?? 1);
-        enemy.setData?.("summerHitBaseScaleX", baseX);
-        enemy.setData?.("summerHitBaseScaleY", baseY);
-
-        const previousTween = enemy.getData?.("summerHitTween");
-        previousTween?.stop?.();
-        previousTween?.remove?.();
-
-        enemy.setScale?.(baseX, baseY);
-        const tween = this.tweens?.add?.({
-          targets: enemy,
-          scaleX: baseX * 1.18,
-          scaleY: baseY * 1.18,
-          duration: 70,
-          yoyo: true,
-          ease: "Quad.easeOut",
-          onComplete: () => {
-            if (enemy?.active) enemy.setScale?.(baseX, baseY);
-            enemy?.setData?.("summerHitTween", null);
-          },
-        });
-        enemy.setData?.("summerHitTween", tween ?? null);
-      }
-
-      return originalTransformEnemy.call(this, enemy, ...args);
-    };
-  }
+  // Do not wrap transformEnemy for Summer hit feedback here. A previous version
+  // animated scaleX/scaleY on every hit, which made the guardians appear to grow.
+  // The base Summer challenge already handles tint/damage feedback without scaling.
 }
