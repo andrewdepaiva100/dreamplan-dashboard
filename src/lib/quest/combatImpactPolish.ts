@@ -107,8 +107,6 @@ function bossImpact(scene: SceneLike, boss: Phaser.Physics.Arcade.Sprite | null,
   scene.__combatBossReactionAt = now;
 
   const tint = mariaHit ? weaponColor(scene) : 0xffd7e5;
-  // No expanding ring is added by this polish to either Weariness or the five
-  // pillar guardians. Guardian combat otherwise stays on its original path.
   const bossName = String(scene.bossName ?? "");
   if (!isWeariness(scene, bossName) && !isAct4ShardGuardian(scene, bossName)) {
     impactRing(scene, x, y, tint, finishing);
@@ -126,10 +124,6 @@ function shardTint(name: string) {
   return 0xffe79a;
 }
 
-/**
- * Pillar guardians use the small angular rush-enemy silhouette so they never
- * resemble The Weight of Weariness. Their pillar/death progression stays canonical.
- */
 function restyleShardGuardian(scene: SceneLike) {
   const boss = scene.boss as Phaser.Physics.Arcade.Sprite | null;
   const name = String(scene.bossName ?? "");
@@ -162,23 +156,17 @@ function tuneShardGuardianStats(scene: SceneLike) {
 }
 
 function removeWearinessPulse(scene: SceneLike) {
-  // Weariness must never show or fire a pulse/ring attack. Suppress the base
-  // breathing halo and also clear any already-live boss projectile sprites.
   const halo = scene.bossHalo;
   if (halo) {
     try {
       scene.tweens?.killTweensOf?.(halo);
       halo.setAlpha?.(0);
       halo.setVisible?.(false);
-    } catch {
-      // Cosmetic suppression must never interrupt combat.
-    }
+    } catch {}
   }
   try {
     scene.bolts?.clear?.(true, true);
-  } catch {
-    // Projectile cleanup is best-effort only.
-  }
+  } catch {}
 }
 
 function tuneWeariness(scene: SceneLike) {
@@ -189,7 +177,6 @@ function tuneWeariness(scene: SceneLike) {
   boss.setAlpha(1);
   removeWearinessPulse(scene);
 
-  // Only the real Act IV boss loses its ranged impulse/projectile attack.
   if (scene.bossShotTimer) {
     try { scene.bossShotTimer.remove?.(); } catch {}
     scene.bossShotTimer = undefined;
@@ -283,8 +270,6 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
     return result;
   };
 
-  // Hard-stop Weariness's projectile/pulse attack at the source too. This stays
-  // scoped to that one Act IV boss; every other boss keeps its normal fireBossBolt path.
   const originalFireBossBolt = proto.fireBossBolt;
   if (typeof originalFireBossBolt === "function") {
     proto.fireBossBolt = function combatImpactWearinessNoPulse(this: SceneLike, ...args: any[]) {
@@ -342,34 +327,21 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
 
   const originalDamageBoss = proto.damageBoss;
   proto.damageBoss = function combatImpactBossDamage(this: SceneLike, amount: number, ...args: any[]) {
-    const boss = this.boss as Phaser.Physics.Arcade.Sprite | null;
     const bossNameBefore = String(this.bossName ?? "");
-    const shardGuardian = isAct4ShardGuardian(this, bossNameBefore);
+
+    // Absolute hard bypass for Act IV pillar guardians. Their hit and death path
+    // must remain 100% canonical: no camera interception, no impact echo, no post-
+    // death sprite access, and no cosmetic callbacks after defeatActBoss destroys them.
+    if (isAct4ShardGuardian(this, bossNameBefore)) {
+      return originalDamageBoss.call(this, amount, ...args);
+    }
+
+    const boss = this.boss as Phaser.Physics.Arcade.Sprite | null;
     const hpBefore = Number(this.bossHp ?? 0);
-    const incoming = Math.max(0, Number(amount) || 0);
-    const lethalShardHit = shardGuardian && hpBefore > 0 && incoming >= hpBefore;
     const x = boss?.x ?? 0;
     const y = boss?.y ?? 0;
 
-    const cam = this.cameras?.main as any;
-    const originalFlash = cam?.flash;
-    if (lethalShardHit && cam && typeof originalFlash === "function") {
-      cam.flash = function suppressedShardDefeatFlash() { return cam; };
-    }
-
-    let result: any;
-    try {
-      result = originalDamageBoss.call(this, amount, ...args);
-    } finally {
-      if (lethalShardHit && cam && typeof originalFlash === "function") {
-        cam.flash = originalFlash;
-        try {
-          cam.resetFX?.();
-          cam.setAlpha?.(1);
-        } catch { /* cosmetic cleanup only */ }
-      }
-    }
-
+    const result = originalDamageBoss.call(this, amount, ...args);
     const hpAfter = Number(this.bossHp ?? hpBefore);
     if (boss && hpAfter < hpBefore) {
       const mariaHit = Number(this.time?.now ?? 0) <= Number(this.__combatImpactMariaSwingUntil ?? -Infinity);
