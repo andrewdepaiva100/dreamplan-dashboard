@@ -25,6 +25,41 @@ function styleFor(zone: string) {
   return { color: 0xffd977, accent: 0xffffff, subtitle: "FINAL STRIKE" };
 }
 
+function isAct4ShardGuardian(scene: any) {
+  return scene?.save?.current_zone === "starry_ascent"
+    && /shard guardian/i.test(String(scene?.bossName ?? ""));
+}
+
+function styleAct4ShardGuardian(scene: any) {
+  const boss = scene?.boss;
+  if (!boss?.active || !isAct4ShardGuardian(scene)) return;
+  if (boss.getData?.("act4-shard-styled")) return;
+  boss.setData?.("act4-shard-styled", true);
+
+  // Pillar encounters read as crystalline sentinels, not the Act IV boss:
+  // smaller silhouette, cool crystal tint and a rotating diamond outline.
+  boss.setTint?.(0x7fdcff);
+  boss.setScale?.(Math.max(0.72, Number(boss.scaleX || 1) * 0.78));
+  boss.setAlpha?.(0.92);
+
+  const diamond = scene.add.rectangle(boss.x, boss.y, 72, 72, 0x7fdcff, 0.025)
+    .setStrokeStyle(2, 0xbff4ff, 0.72)
+    .setRotation(Math.PI / 4)
+    .setDepth(18)
+    .setBlendMode(Phaser.BlendModes.ADD);
+  boss.setData?.("act4-shard-diamond", diamond);
+  scene.tweens.add({
+    targets: diamond,
+    angle: 405,
+    alpha: { from: 0.32, to: 0.78 },
+    scale: { from: 0.86, to: 1.08 },
+    duration: 1800,
+    yoyo: true,
+    repeat: -1,
+    ease: "Sine.easeInOut",
+  });
+}
+
 function destroySafe(obj: any) {
   try { obj?.destroy?.(); } catch { /* scene teardown can race callbacks */ }
 }
@@ -87,9 +122,6 @@ function armFinisher(scene: any, boss: Phaser.Physics.Arcade.Sprite) {
   };
   scene[STATE] = state;
 
-  // IMPORTANT: never set scene.frozen and never pause the Phaser scene/physics.
-  // Only the active boss is locally held. This prevents a finisher from ever
-  // deadlocking the whole game after the lethal hit.
   scene.player?.setVelocity?.(0, 0);
   boss.setVelocity?.(0, 0);
   if (body) body.enable = false;
@@ -148,8 +180,6 @@ function cleanupFinisher(scene: any, state: FinisherState) {
   destroySafe(state.ring);
   destroySafe(state.vignette);
 
-  // Restore boss-local locks only if this exact boss survived. If defeat spawned
-  // another boss, its own timers/body must remain exactly as authored.
   if (scene.boss?.active && scene.boss === state.boss) {
     const body = state.boss.body as Phaser.Physics.Arcade.Body | undefined;
     if (body) body.enable = state.bossBodyWasEnabled;
@@ -220,9 +250,6 @@ function executeFinisher(scene: any, originalDamageBoss: Function) {
       scene.tweens.add({ targets: slash, scale: 1.55, alpha: 0, duration: 280, ease: "Quad.easeOut", onComplete: () => destroySafe(slash) });
 
       impactBurst(scene, bx, by, style);
-
-      // Canonical lethal hit: use the already-decorated damageBoss chain so the
-      // normal boss defeat/reward/portal/guardian/second-boss logic runs once.
       scene.bossHp = 1;
       scene.bossHitAt = 0;
       state.allowLethal = true;
@@ -231,13 +258,8 @@ function executeFinisher(scene: any, originalDamageBoss: Function) {
       } finally {
         state.allowLethal = false;
       }
-
-      // The critical cleanup is immediate and does not rely on Phaser timers.
-      // Even if the normal defeat path opens a modal or pauses the scene, the
-      // finisher itself has already released every lock it owns.
       cleanupFinisher(scene, state);
 
-      // Cosmetic follow-through only. It is safe if it never runs.
       try {
         scene.tweens.add({ targets: player, x: throughX, y: throughY, duration: 220, ease: "Cubic.easeOut" });
         scene.tweens.add({ targets: title, alpha: 0, duration: 260, onComplete: () => destroySafe(title) });
@@ -247,7 +269,6 @@ function executeFinisher(scene: any, originalDamageBoss: Function) {
     },
   });
 
-  // Browser-clock failsafe: does not depend on scene time, physics, or tweens.
   if (typeof window !== "undefined") {
     window.setTimeout(() => {
       if (!state.cleaned) cleanupFinisher(scene, state);
@@ -273,6 +294,14 @@ export function installBossFinisher(QuestScene: any) {
     if (state?.mode === "executing" && state.allowLethal) return originalDamageBoss.call(this, amount, ...args);
     if (state && !state.cleaned) return;
 
+    // Act IV's shard sentinels belong to the pillar puzzle. They are deliberately
+    // NOT cinematic bosses: resolve their damage/death through the authored path
+    // so a FINAL STRIKE cannot lock the pillar progression. The true Act IV boss
+    // still receives the full finisher after all five pillars are gold.
+    if (isAct4ShardGuardian(this)) {
+      return originalDamageBoss.call(this, amount, ...args);
+    }
+
     const boss = this.boss as Phaser.Physics.Arcade.Sprite | null;
     const hp = Number(this.bossHp ?? 0);
     const max = Number(this.bossMax ?? 0);
@@ -283,9 +312,6 @@ export function installBossFinisher(QuestScene: any) {
     const projected = hp - incoming;
     if (projected > threshold) return originalDamageBoss.call(this, amount, ...args);
 
-    // Clamp every boss to 1 HP before it can die normally. No bossPhase check:
-    // this applies to main bosses, pillar guardians, second bosses, and future
-    // bosses that use QuestScene.damageBoss().
     const damageToOne = Math.max(0, hp - 1);
     if (damageToOne > 0) originalDamageBoss.call(this, damageToOne, ...args);
 
@@ -325,6 +351,18 @@ export function installBossFinisher(QuestScene: any) {
   if (typeof originalUpdate === "function") {
     p.update = function (...args: any[]) {
       const result = originalUpdate.apply(this, args);
+
+      // Keep Act IV pillar sentinels visually separate from the true boss and
+      // keep their crystal frame attached while they move.
+      styleAct4ShardGuardian(this);
+      const shard = this.boss;
+      const diamond = shard?.getData?.("act4-shard-diamond");
+      if (diamond?.active && shard?.active && isAct4ShardGuardian(this)) {
+        diamond.setPosition?.(shard.x, shard.y);
+      } else if (diamond?.active && (!shard?.active || !isAct4ShardGuardian(this))) {
+        destroySafe(diamond);
+      }
+
       const state = this[STATE] as FinisherState | undefined;
       if (state && !state.cleaned) {
         this.player?.setVelocity?.(0, 0);
@@ -345,6 +383,8 @@ export function installBossFinisher(QuestScene: any) {
       this.events?.once?.(Phaser.Scenes.Events.SHUTDOWN, () => {
         const state = this[STATE] as FinisherState | undefined;
         if (state && !state.cleaned) cleanupFinisher(this, state);
+        const diamond = this.boss?.getData?.("act4-shard-diamond");
+        destroySafe(diamond);
         this[STATE] = null;
       });
       return result;
