@@ -17,18 +17,26 @@ function safeDestroy(obj: any) {
 }
 
 /**
- * Static Act-IV scenery pass. Everything in here is presentation-only:
- * no physics bodies, no colliders, no timers, no per-frame updates, and no
- * progression state. That keeps the plateau richer without adding gameplay
- * risk or a meaningful runtime cost.
+ * High-detail Act-IV scenery drawn into a small number of Graphics objects.
+ * It is deliberately render-only: no physics bodies, no colliders, no input,
+ * no timers and no update-loop work. Keeping it out of Arcade Physics means
+ * this art can never block Maria's movement.
  */
 function addStaticScenery(scene: any) {
   const scenery: any[] = [];
-  const world = scene.add.graphics().setDepth(2).setBlendMode(Phaser.BlendModes.ADD);
-  scenery.push(world);
+  if (!scene?.add?.graphics || !scene?.wx || !scene?.wy) return scenery;
 
-  // Low-contrast constellation lines laid into open ground. One Graphics
-  // object draws every line so this stays extremely cheap to render.
+  const ground = scene.add.graphics().setDepth(2);
+  const decor = scene.add.graphics().setDepth(4);
+  const glow = scene.add.graphics().setDepth(3).setBlendMode(Phaser.BlendModes.ADD);
+  scenery.push(ground, glow, decor);
+
+  const X = (gx: number) => scene.wx(gx);
+  const Y = (gy: number) => scene.wy(gy);
+
+  // Layered constellation mosaics. Each chain has a soft outer trace, a crisp
+  // inner trace, star nodes and tiny satellite stars so the ground reads like
+  // an ancient celestial chart instead of simple connected dots.
   const constellations: [number, number][][] = [
     [[12, 18], [18, 22], [24, 18], [30, 24]],
     [[94, 34], [100, 30], [106, 36], [112, 31]],
@@ -36,103 +44,152 @@ function addStaticScenery(scene: any) {
     [[74, 72], [80, 76], [86, 72], [92, 78]],
     [[48, 88], [54, 84], [60, 90], [66, 86]],
   ];
-  for (const chain of constellations) {
-    world.lineStyle(1, 0xaec8ff, 0.16);
+  constellations.forEach((chain, ci) => {
+    glow.lineStyle(4, ci % 2 ? 0x8d9dff : 0x73c7ff, 0.035);
+    ground.lineStyle(1, ci % 2 ? 0xc8c4ff : 0xaedcff, 0.24);
     for (let i = 0; i < chain.length - 1; i++) {
       const [ax, ay] = chain[i]!;
       const [bx, by] = chain[i + 1]!;
-      world.lineBetween(scene.wx(ax), scene.wy(ay), scene.wx(bx), scene.wy(by));
+      glow.lineBetween(X(ax), Y(ay), X(bx), Y(by));
+      ground.lineBetween(X(ax), Y(ay), X(bx), Y(by));
     }
-    for (const [gx, gy] of chain) {
-      world.fillStyle(0xe5edff, 0.35);
-      world.fillCircle(scene.wx(gx), scene.wy(gy), 2.1);
-    }
-  }
-
-  // Edge crystal formations: small, static silhouettes outside the main paths.
-  // Triangles are non-interactive GameObjects and never receive physics bodies.
-  const crystalClusters: [number, number, number][] = [
-    [10, 30, 0x7da6ff], [16, 12, 0x9e8cff], [36, 10, 0x77b8ff],
-    [58, 12, 0x9d8dff], [116, 16, 0x7caeff], [120, 40, 0x8f9fff],
-    [118, 66, 0xb4a0ff], [110, 90, 0x7faeff], [72, 92, 0xa591ff],
-    [14, 88, 0x7cb5ff], [8, 68, 0x9d8cff], [98, 88, 0x79a9ff],
-  ];
-  crystalClusters.forEach(([gx, gy, tint], index) => {
-    const x = scene.wx(gx);
-    const y = scene.wy(gy);
-    const h = 14 + (index % 3) * 4;
-    const main = scene.add.triangle(x, y, 0, -h, -7, 8, 7, 8, tint, 0.34)
-      .setStrokeStyle(1, 0xdce7ff, 0.28)
-      .setDepth(4);
-    const shard = scene.add.triangle(x + 8, y + 3, 0, -(h * 0.65), -4, 5, 4, 5, 0xd7cbff, 0.24)
-      .setDepth(4);
-    scenery.push(main, shard);
+    chain.forEach(([gx, gy], i) => {
+      glow.fillStyle(i === 1 ? 0xffe7a6 : 0xb9d8ff, 0.16);
+      glow.fillCircle(X(gx), Y(gy), 5.5);
+      ground.fillStyle(i === 1 ? 0xffedb8 : 0xe9f1ff, 0.72);
+      ground.fillCircle(X(gx), Y(gy), i === 1 ? 2.5 : 1.8);
+      ground.fillStyle(0xb9c8ff, 0.42);
+      ground.fillCircle(X(gx + 1.4), Y(gy - 1.1), 0.9);
+    });
   });
 
-  // Small celestial stone clusters fill dead corners without narrowing any
-  // route. Ellipses are intentionally low and fully non-colliding.
-  const rockClusters: [number, number][] = [
+  // Faceted crystal gardens around the outer plateau. Every cluster gets a
+  // shadow, three differently sized shards, an illuminated facet and a small
+  // ground glint. These are drawings only and cannot enter the physics world.
+  const crystals: [number, number, number][] = [
+    [10, 30, 0x658de8], [16, 12, 0x8876db], [36, 10, 0x5e9de8],
+    [58, 12, 0x8675dd], [116, 16, 0x6698ea], [120, 40, 0x7889e6],
+    [118, 66, 0x9b83e8], [110, 90, 0x6899e9], [72, 92, 0x8c78e1],
+    [14, 88, 0x639ce8], [8, 68, 0x8b75df], [98, 88, 0x6694e2],
+  ];
+  crystals.forEach(([gx, gy, base], i) => {
+    const x = X(gx), y = Y(gy);
+    const h = 17 + (i % 3) * 4;
+    ground.fillStyle(0x070d22, 0.26);
+    ground.fillEllipse(x + 4, y + 7, 35, 11);
+    glow.fillStyle(i % 2 ? 0xbca9ff : 0x8fd7ff, 0.07);
+    glow.fillCircle(x, y - 4, 22);
+
+    decor.fillStyle(base, 0.82);
+    decor.fillTriangle(x - 7, y + 5, x, y - h, x + 6, y + 5);
+    decor.fillStyle(0xbdd6ff, 0.5);
+    decor.fillTriangle(x, y - h, x + 6, y + 5, x + 2, y - 2);
+    decor.fillStyle(i % 2 ? 0x705bc7 : 0x4777bf, 0.76);
+    decor.fillTriangle(x - 13, y + 6, x - 7, y - h * 0.58, x - 2, y + 6);
+    decor.fillStyle(0xd9d2ff, 0.58);
+    decor.fillTriangle(x + 5, y + 7, x + 11, y - h * 0.46, x + 15, y + 7);
+    decor.lineStyle(1, 0xeaf3ff, 0.42);
+    decor.lineBetween(x, y - h + 2, x, y + 3);
+    glow.fillStyle(0xffffff, 0.36);
+    glow.fillCircle(x + 1, y - h + 4, 1.5);
+  });
+
+  // Sculpted moonstone clusters: layered shadows, cool stone bodies, rim
+  // highlights and tiny embedded star flecks make these read as deliberate
+  // celestial geology rather than flat ellipses.
+  const rocks: [number, number][] = [
     [20, 34], [34, 74], [48, 28], [64, 64], [82, 40],
     [96, 76], [108, 48], [44, 82], [76, 18], [24, 46],
   ];
-  rockClusters.forEach(([gx, gy], i) => {
-    const x = scene.wx(gx);
-    const y = scene.wy(gy);
-    const shadow = scene.add.ellipse(x + 4, y + 5, 28, 10, 0x0a1026, 0.18).setDepth(2);
-    const a = scene.add.ellipse(x, y, 20 + (i % 3) * 4, 12, 0x34436d, 0.62)
-      .setStrokeStyle(1, 0x7d8db8, 0.2)
-      .setDepth(4);
-    const b = scene.add.ellipse(x + 10, y + 2, 12, 8, 0x46547d, 0.54).setDepth(4);
-    scenery.push(shadow, a, b);
+  rocks.forEach(([gx, gy], i) => {
+    const x = X(gx), y = Y(gy);
+    ground.fillStyle(0x070c20, 0.3);
+    ground.fillEllipse(x + 5, y + 6, 34, 12);
+    decor.fillStyle(0x26365e, 0.9);
+    decor.fillEllipse(x, y, 25 + (i % 3) * 3, 15);
+    decor.fillStyle(0x3f527f, 0.86);
+    decor.fillEllipse(x + 10, y + 2, 14, 9);
+    decor.lineStyle(1, 0x8fa7d4, 0.35);
+    decor.strokeEllipse(x - 2, y - 2, 17, 7);
+    decor.fillStyle(i % 3 === 0 ? 0xffdf8b : 0xa9c9ff, 0.72);
+    decor.fillCircle(x - 4, y - 2, 1.4);
+    decor.fillCircle(x + 7, y + 1, 1);
   });
 
-  // Star-flowers: reuse an already-loaded texture, but keep these completely
-  // static. No animation/tween is attached to any of them.
-  if (scene.textures?.exists?.("flowers")) {
-    const flowerSpots: [number, number, number][] = [
-      [30, 18, 0xcbd7ff], [38, 38, 0xe2d3ff], [52, 54, 0xbfd8ff],
-      [66, 82, 0xffe4ad], [80, 60, 0xd8c9ff], [94, 54, 0xbfdcff],
-      [106, 26, 0xe2d5ff], [102, 84, 0xffe6b7], [22, 78, 0xc9d8ff],
-      [58, 18, 0xd5c8ff], [86, 24, 0xbddcff], [112, 72, 0xdfd0ff],
-    ];
-    flowerSpots.forEach(([gx, gy, tint], i) => {
-      const f = scene.add.sprite(scene.wx(gx), scene.wy(gy), "flowers")
-        .setTint(tint)
-        .setScale(0.52 + (i % 3) * 0.08)
-        .setAlpha(0.68)
-        .setDepth(4);
-      scenery.push(f);
-    });
-  }
+  // Hand-drawn star flowers avoid depending on a texture or sprite factory.
+  // Each flower is five tiny petals around a warm/cool luminous center.
+  const flowers: [number, number, number][] = [
+    [30, 18, 0xb9d8ff], [38, 38, 0xd8c8ff], [52, 54, 0xaed9ff],
+    [66, 82, 0xffd88d], [80, 60, 0xcab9ff], [94, 54, 0xa9d9ff],
+    [106, 26, 0xd9c9ff], [102, 84, 0xffdda0], [22, 78, 0xb8d3ff],
+    [58, 18, 0xcabaff], [86, 24, 0xa9d9ff], [112, 72, 0xd6c5ff],
+  ];
+  flowers.forEach(([gx, gy, color], i) => {
+    const x = X(gx), y = Y(gy);
+    const r = 3.2 + (i % 2) * 0.6;
+    glow.fillStyle(color, 0.07);
+    glow.fillCircle(x, y, 11);
+    decor.fillStyle(color, 0.72);
+    for (let p = 0; p < 5; p++) {
+      const a = -Math.PI / 2 + p * Math.PI * 0.4;
+      decor.fillCircle(x + Math.cos(a) * r, y + Math.sin(a) * r, 1.8);
+    }
+    decor.fillStyle(0xffedaa, 0.95);
+    decor.fillCircle(x, y, 1.6);
+    decor.lineStyle(1, 0x7187a8, 0.34);
+    decor.lineBetween(x, y + 4, x - 1, y + 10);
+  });
 
-  // Give each pillar a subtle static four-point floor sigil. The pillar itself
-  // remains fully accessible because these are visual marks only.
+  // Ornate but restrained pillar sigils: double rings, cardinal rays and
+  // diagonal runes. They stay underneath gameplay and never become colliders.
   PILLARS.forEach(([gx, gy], i) => {
-    const x = scene.wx(gx);
-    const y = scene.wy(gy);
-    const g = scene.add.graphics().setDepth(3).setBlendMode(Phaser.BlendModes.ADD);
-    g.lineStyle(1, i % 2 ? 0xe0d5ff : 0xbcd6ff, 0.22);
-    g.lineBetween(x - 18, y, x + 18, y);
-    g.lineBetween(x, y - 12, x, y + 12);
-    g.strokeCircle(x, y, 16);
-    scenery.push(g);
+    const x = X(gx), y = Y(gy);
+    const c = i % 2 ? 0xd4c6ff : 0xb5d8ff;
+    glow.lineStyle(5, c, 0.035);
+    glow.strokeCircle(x, y, 21);
+    ground.lineStyle(1, c, 0.3);
+    ground.strokeCircle(x, y, 18);
+    ground.strokeCircle(x, y, 12);
+    ground.lineBetween(x - 24, y, x - 15, y);
+    ground.lineBetween(x + 15, y, x + 24, y);
+    ground.lineBetween(x, y - 21, x, y - 13);
+    ground.lineBetween(x, y + 13, x, y + 21);
+    ground.lineBetween(x - 13, y - 13, x - 8, y - 8);
+    ground.lineBetween(x + 8, y + 8, x + 13, y + 13);
+    ground.fillStyle(0xffe6a2, 0.55);
+    ground.fillCircle(x, y, 2);
   });
 
-  // Observatory approach markers: two quiet rows of star-stones that visually
-  // lead toward the landmark without creating a corridor or any collision.
+  // Observatory promenade. Instead of unsupported shape-factory calls, these
+  // star-stones are drawn directly into Graphics. This removes the risky
+  // construction path that could abort Act IV setup before controls recover.
   const approach: [number, number][] = [
     [86, 34], [90, 31], [94, 28], [98, 25],
     [88, 38], [92, 35], [96, 32], [100, 29],
   ];
   approach.forEach(([gx, gy], i) => {
-    const x = scene.wx(gx);
-    const y = scene.wy(gy);
-    const base = scene.add.ellipse(x, y + 3, 14, 6, 0x111a38, 0.24).setDepth(2);
-    const marker = scene.add.diamond(x, y, 8, 12, i % 2 ? 0xcbbcff : 0xffe3a0, 0.4)
-      .setStrokeStyle(1, 0xffffff, 0.22)
-      .setDepth(4);
-    scenery.push(base, marker);
+    const x = X(gx), y = Y(gy);
+    ground.fillStyle(0x090f27, 0.28);
+    ground.fillEllipse(x + 2, y + 4, 16, 7);
+    const c = i % 2 ? 0xbda9ff : 0xffdc82;
+    decor.fillStyle(c, 0.58);
+    decor.fillTriangle(x, y - 7, x - 4, y, x, y + 7);
+    decor.fillTriangle(x, y - 7, x + 4, y, x, y + 7);
+    decor.lineStyle(1, 0xf5f3ff, 0.42);
+    decor.lineBetween(x, y - 5, x, y + 4);
+    glow.fillStyle(c, 0.08);
+    glow.fillCircle(x, y, 10);
   });
+
+  // A broad, purely visual celestial threshold near the Observatory gives the
+  // destination more hierarchy while leaving the entire route physically open.
+  const ox = X(100), oy = Y(24);
+  ground.lineStyle(2, 0x9ebcff, 0.18);
+  ground.strokeEllipse(ox, oy + 12, 112, 34);
+  ground.lineStyle(1, 0xffe3a0, 0.22);
+  ground.strokeEllipse(ox, oy + 12, 88, 24);
+  glow.fillStyle(0x8caeff, 0.025);
+  glow.fillEllipse(ox, oy + 12, 118, 38);
 
   return scenery;
 }
