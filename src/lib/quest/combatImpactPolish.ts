@@ -162,16 +162,22 @@ function tuneShardGuardianStats(scene: SceneLike) {
 }
 
 function removeWearinessPulse(scene: SceneLike) {
-  // The base boss creates a breathing circular halo. Weariness should have no
-  // pulse-ring visual at all, so stop that tween and hide the halo completely.
+  // Weariness must never show or fire a pulse/ring attack. Suppress the base
+  // breathing halo and also clear any already-live boss projectile sprites.
   const halo = scene.bossHalo;
-  if (!halo) return;
+  if (halo) {
+    try {
+      scene.tweens?.killTweensOf?.(halo);
+      halo.setAlpha?.(0);
+      halo.setVisible?.(false);
+    } catch {
+      // Cosmetic suppression must never interrupt combat.
+    }
+  }
   try {
-    scene.tweens?.killTweensOf?.(halo);
-    halo.setAlpha?.(0);
-    halo.setVisible?.(false);
+    scene.bolts?.clear?.(true, true);
   } catch {
-    // Cosmetic suppression must never interrupt combat.
+    // Projectile cleanup is best-effort only.
   }
 }
 
@@ -232,6 +238,30 @@ function swingAccent(scene: SceneLike) {
   scene.tweens.add({ targets: glint, alpha: 0, scale: 0.15, duration: 115, ease: "Quad.easeOut", onComplete: () => glint.destroy() });
 }
 
+function halveAct4SwordKnockback(scene: SceneLike) {
+  if (scene.save?.current_zone !== ACT4_ZONE) return;
+  const weaponId = String(scene.save?.equipped_weapon ?? "").toLowerCase();
+  const weapon = scene.equippedWeapon?.();
+  if (!weapon || !weaponId.includes("sword") || !scene.player?.active) return;
+
+  const reach = Math.max(28, Number(weapon.reach ?? 44) * 1.35);
+  const px = scene.player.x;
+  const py = scene.player.y;
+  const targets: Phaser.Physics.Arcade.Sprite[] = [];
+
+  if (scene.boss?.active) targets.push(scene.boss);
+  for (const enemy of (scene.enemies?.getChildren?.() ?? []) as Phaser.Physics.Arcade.Sprite[]) {
+    if (enemy?.active) targets.push(enemy);
+  }
+
+  for (const target of targets) {
+    if (Phaser.Math.Distance.Between(px, py, target.x, target.y) > reach) continue;
+    const body = target.body as Phaser.Physics.Arcade.Body | undefined;
+    if (!body) continue;
+    target.setVelocity(body.velocity.x * 0.5, body.velocity.y * 0.5);
+  }
+}
+
 export function installCombatImpactPolish(QuestScene: SceneCtor) {
   const proto = QuestScene?.prototype;
   if (!proto || proto.__combatImpactPolishInstalled) return;
@@ -248,8 +278,20 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
       this.__combatImpactMariaSwingUntil = Number(this.time?.now ?? 0) + MARIA_CONTACT_WINDOW;
       swingAccent(this);
     }
-    return originalAttack.apply(this, args);
+    const result = originalAttack.apply(this, args);
+    if (canSwing) halveAct4SwordKnockback(this);
+    return result;
   };
+
+  // Hard-stop Weariness's projectile/pulse attack at the source too. This stays
+  // scoped to that one Act IV boss; every other boss keeps its normal fireBossBolt path.
+  const originalFireBossBolt = proto.fireBossBolt;
+  if (typeof originalFireBossBolt === "function") {
+    proto.fireBossBolt = function combatImpactWearinessNoPulse(this: SceneLike, ...args: any[]) {
+      if (isWeariness(this)) return;
+      return originalFireBossBolt.apply(this, args);
+    };
+  }
 
   const originalSpawnActBoss = proto.spawnActBoss;
   if (typeof originalSpawnActBoss === "function") {
