@@ -54,6 +54,9 @@ function hitReaction(scene: SceneLike, enemy: Phaser.Physics.Arcade.Sprite) {
   const baseY = enemy.y;
   const baseScaleX = enemy.scaleX;
   const baseScaleY = enemy.scaleY;
+  const isSummerGuardian =
+    enemy.getData?.("summerGuardian") === true ||
+    enemy.getData?.("seasonMiniGame") === "Summer";
   const dx = enemy.x - (scene.player?.x ?? enemy.x - 1);
   const dy = enemy.y - (scene.player?.y ?? enemy.y);
   const len = Math.max(1, Math.hypot(dx, dy));
@@ -65,22 +68,30 @@ function hitReaction(scene: SceneLike, enemy: Phaser.Physics.Arcade.Sprite) {
   enemy.setTint(0xfff2f5);
   contactRing(scene, enemy, tint);
   contactSparks(scene, enemy, tint, meleeContact ? 6 : 4);
-  scene.tweens.add({
+
+  const tweenConfig: Record<string, any> = {
     targets: enemy,
     x: baseX + kickX,
     y: baseY + kickY,
-    scaleX: baseScaleX * 1.045,
-    scaleY: baseScaleY * 0.94,
     duration: 52,
     yoyo: true,
     ease: "Quad.easeOut",
     onComplete: () => {
       if (!enemy.active) return;
       enemy.setPosition(baseX, baseY);
-      enemy.setScale(baseScaleX, baseScaleY);
+      if (!isSummerGuardian) enemy.setScale(baseScaleX, baseScaleY);
       enemy.clearTint();
     },
-  });
+  };
+
+  // Summer guardians must keep their exact authored scale while taking hits.
+  // Other enemies retain the squash/stretch impact feedback.
+  if (!isSummerGuardian) {
+    tweenConfig.scaleX = baseScaleX * 1.045;
+    tweenConfig.scaleY = baseScaleY * 0.94;
+  }
+
+  scene.tweens.add(tweenConfig);
   scene.spawnSparkle?.(enemy.x, enemy.y, tint, meleeContact ? 5 : 3);
 }
 
