@@ -147,10 +147,10 @@ function tuneShardGuardianStats(scene: SceneLike) {
   const boss = scene.boss as Phaser.Physics.Arcade.Sprite | null;
   if (!boss?.active || !isAct4ShardGuardian(scene, String(scene.bossName ?? ""))) return;
 
-  if (!boss.getData?.("act4-guardian-hp-tuned")) {
-    scene.bossHp = Math.round(Number(scene.bossHp ?? 0) * 1.15);
-    scene.bossMax = Math.round(Number(scene.bossMax ?? 0) * 1.15);
-    boss.setData?.("act4-guardian-hp-tuned", true);
+  if (!boss.getData?.("act4-guardian-hp-3000")) {
+    scene.bossHp = 3000;
+    scene.bossMax = 3000;
+    boss.setData?.("act4-guardian-hp-3000", true);
     scene.pushHud?.(true);
   }
 }
@@ -167,6 +167,10 @@ function removeWearinessPulse(scene: SceneLike) {
   try {
     scene.bolts?.clear?.(true, true);
   } catch {}
+  if (scene.bossShotTimer) {
+    try { scene.bossShotTimer.remove?.(); } catch {}
+    scene.bossShotTimer = undefined;
+  }
 }
 
 function tuneWeariness(scene: SceneLike) {
@@ -176,11 +180,6 @@ function tuneWeariness(scene: SceneLike) {
 
   boss.setAlpha(1);
   removeWearinessPulse(scene);
-
-  if (scene.bossShotTimer) {
-    try { scene.bossShotTimer.remove?.(); } catch {}
-    scene.bossShotTimer = undefined;
-  }
 
   const body = boss.body as Phaser.Physics.Arcade.Body | undefined;
   if (body) {
@@ -291,10 +290,6 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
         if (name === WEARINESS_NAME) {
           this.__wearinessMobTimer = null;
           removeWearinessPulse(this);
-          if (this.bossShotTimer) {
-            try { this.bossShotTimer.remove?.(); } catch {}
-            this.bossShotTimer = undefined;
-          }
           if (this.bossTimer) {
             this.__wearinessMobTimer = this.bossTimer;
             this.bossTimer.timeScale = 2;
@@ -315,7 +310,7 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
           this.boss?.setAlpha?.(1);
           const body = this.boss?.body as Phaser.Physics.Arcade.Body | undefined;
           if (body && (body.velocity.x || body.velocity.y)) {
-            this.boss.setVelocity(body.velocity.x * 1.2, body.velocity.y * 1.2);
+            this.boss.setVelocity(body.velocity.x * 1.1, body.velocity.y * 1.1);
           }
         } else if (name === WEARINESS_NAME) {
           tuneWeariness(this);
