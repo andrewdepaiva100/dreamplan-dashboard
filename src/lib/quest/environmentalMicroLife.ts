@@ -114,6 +114,39 @@ export function installEnvironmentalMicroLife(QuestScene: any) {
       });
     };
 
+    // Jewel-toned Act-IV butterflies. These are tiny display containers only:
+    // no physics, input, collision, save data, combat, or update-loop hooks.
+    const addExoticButterfly = (primary: number, secondary: number, scale = 1) => {
+      const container = keep(scene.add.container(xAt(0.12, 0.88), yAt(0.14, 0.88)).setDepth(9));
+      const left = scene.add.ellipse(-3, 0, 6, 4, primary, 0.72).setRotation(-0.18);
+      const right = scene.add.ellipse(3, 0, 6, 4, secondary, 0.72).setRotation(0.18);
+      const leftTip = scene.add.circle(-4.2, -0.5, 1.15, secondary, 0.82);
+      const rightTip = scene.add.circle(4.2, -0.5, 1.15, primary, 0.82);
+      const body = scene.add.ellipse(0, 0.6, 1.3, 5.2, 0x241b38, 0.9);
+      container.add([left, right, leftTip, rightTip, body]);
+      container.setScale(scale).setAlpha(0);
+
+      scene.tweens.add({ targets: container, alpha: 0.82, duration: 900, delay: rnd() * 900 });
+      scene.tweens.add({
+        targets: [left, right, leftTip, rightTip],
+        scaleX: { from: 0.38, to: 1 },
+        duration: 145 + rnd() * 80,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+      scene.tweens.add({
+        targets: container,
+        x: container.x + (rnd() - 0.45) * 90,
+        y: container.y + (rnd() - 0.5) * 48,
+        rotation: (rnd() - 0.5) * 0.16,
+        duration: 7200 + rnd() * 4200,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+    };
+
     const addSparkle = () => {
       const sparkle = keep(scene.add.circle(xAt(0.08, 0.9), yAt(0.55, 0.9), 1 + rnd() * 0.8, 0xfff0bf, 1).setDepth(6));
       sparkle.setAlpha(0);
@@ -166,6 +199,11 @@ export function installEnvironmentalMicroLife(QuestScene: any) {
         addSmokeWisp(worldW * 0.63, worldH * 0.39, 1350);
       } else if (zone === "starry_ascent") {
         for (let i = 0; i < 10; i++) addMote(0xd8d4ff, 0.16, 1.15 + rnd() * 0.45);
+        addExoticButterfly(0x36e5ff, 0x8d5cff, 1.08);
+        addExoticButterfly(0xff5fc8, 0x55f0c7, 0.94);
+        addExoticButterfly(0xffc857, 0x7f6cff, 1.16);
+        addExoticButterfly(0x69f0ff, 0xff79a8, 1.02);
+        addExoticButterfly(0xc86cff, 0x67ffb7, 0.9);
       } else if (zone === "cathedral") {
         for (let i = 0; i < 7; i++) addMote(0xffe7bd, 0.12, 1.1 + rnd() * 0.35);
       }
