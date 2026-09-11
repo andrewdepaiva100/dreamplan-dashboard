@@ -1,6 +1,7 @@
 // @ts-nocheck -- Presentation-only scene decorator for authored realm arrivals.
 import * as Phaser from "phaser";
 import { ZONES } from "./content";
+import { installAct4StarryAscentRemaster } from "./act4StarryAscentRemaster";
 
 type SceneLike = Phaser.Scene & Record<string, any>;
 type SceneCtor = { prototype: SceneLike };
@@ -121,6 +122,8 @@ export function installActArrivalCinematics(QuestScene: SceneCtor) {
   const proto = QuestScene?.prototype;
   if (!proto || proto.__actArrivalCinematicsInstalled) return;
   proto.__actArrivalCinematicsInstalled = true;
+
+  installAct4StarryAscentRemaster(QuestScene as any);
 
   const originalCreate = proto.create;
   proto.create = function cinematicArrivalCreate(this: SceneLike, ...args: any[]) {
