@@ -5,6 +5,7 @@ import { EMPTY_SAVE, loadSave, type QuestSave } from "@/lib/quest/save";
 import type { JournalProgress } from "@/lib/quest/journalContent";
 import "@/lib/quest/inventoryArmoryPolish";
 import "@/lib/quest/memoryWalk";
+import "@/lib/quest/act4MemoryWalkCompletionFix";
 import { openMariaWardrobe } from "@/lib/quest/mariaWardrobe";
 
 function progressFromSave(save: QuestSave): JournalProgress {
