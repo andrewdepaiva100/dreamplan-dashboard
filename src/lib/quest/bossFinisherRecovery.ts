@@ -3,13 +3,11 @@
 const STATE = "__bossFinisherState";
 
 /**
- * The finisher temporarily sets scene.frozen=true while it stages Maria's
- * strike. The lethal hit runs through the normal defeatActBoss() path, but the
- * finisher's surrounding finally block can momentarily restore that old frozen
- * value after the boss has already been defeated. This decorator makes boss
- * defeat authoritative: once the canonical defeat path completes, gameplay is
- * immediately restored unless another real modal/cutscene paused the Phaser
- * scene itself.
+ * The finisher stages its lethal hit while the quest scene is temporarily
+ * frozen. Some boss decorators can leave either the scene or Arcade Physics
+ * paused after that hit completes. This recovery layer makes the canonical
+ * boss defeat authoritative and explicitly restores play once the finisher's
+ * lethal strike has finished.
  */
 export function installBossFinisherRecovery(QuestScene: any) {
   const proto = QuestScene?.prototype;
@@ -26,27 +24,47 @@ export function installBossFinisherRecovery(QuestScene: any) {
 
     if (!wasFinishing) return result;
 
-    // The boss's normal defeat path has now owned progression/rewards. Mark the
-    // finisher's saved state as playable so its later cleanup cannot re-freeze
-    // Maria. The microtask runs after the finisher's lethal-hit finally block,
-    // which is the exact point where the stale `frozen=true` could be restored.
+    // The normal defeat path has already handled rewards, portals, guardians,
+    // second-boss state, and every other progression side effect. From here on
+    // the finisher owns only presentation, so it must never keep gameplay locked.
     if (this[STATE] === finisher) finisher.savedFrozen = false;
 
-    queueMicrotask(() => {
+    const restoreGameplay = () => {
       if (!this.sys?.isActive?.()) return;
-      const state = this[STATE];
-      if (state && state !== finisher && !state.cleaned) return;
 
-      // Do not fight a genuine Phaser scene pause created by a modal/cutscene.
-      // Normal boss defeat itself does not pause the scene.
-      if (!this.scene?.isPaused?.()) {
-        this.frozen = false;
-        this.physics?.resume?.();
-        this.player?.setVelocity?.(0, 0);
-        this.stick = { x: 0, y: 0 };
-        this.pushHud?.(true);
+      // Resume both layers deliberately. A Phaser scene pause prevents its own
+      // timers from advancing, so relying on a delayed in-scene cleanup can
+      // deadlock forever; browser-scheduled recovery avoids that failure mode.
+      try {
+        const key = this.sys?.settings?.key;
+        if (this.scene?.isPaused?.(key)) this.scene?.resume?.(key);
+      } catch {
+        try { this.scene?.resume?.(); } catch { /* scene may be shutting down */ }
       }
-    });
+
+      try { this.physics?.resume?.(); } catch { /* physics may already be running */ }
+
+      this.frozen = false;
+      this.player?.setVelocity?.(0, 0);
+      if (this.vel) {
+        this.vel.x = 0;
+        this.vel.y = 0;
+      }
+      this.stick = { x: 0, y: 0 };
+      this.pushHud?.(true);
+    };
+
+    // First pass runs after the finisher's synchronous lethal-hit finally block.
+    queueMicrotask(restoreGameplay);
+
+    // Two browser-clock fallbacks cover decorators that re-pause during their
+    // own immediate defeat feedback. They intentionally finish before the base
+    // game's delayed second-boss modal at 900ms, so genuine story modals still
+    // retain control when they appear.
+    if (typeof window !== "undefined") {
+      window.setTimeout(restoreGameplay, 120);
+      window.setTimeout(restoreGameplay, 650);
+    }
 
     return result;
   };
