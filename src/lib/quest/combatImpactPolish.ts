@@ -108,6 +108,43 @@ function bossImpact(scene: SceneLike, boss: Phaser.Physics.Arcade.Sprite | null,
   if (mariaHit) scene.cameras?.main?.shake?.(finishing ? 85 : 48, finishing ? 0.0022 : 0.00125);
 }
 
+function isAct4ShardGuardian(scene: SceneLike, bossName: string) {
+  return scene.save?.current_zone === "starry_ascent" && /shard guardian/i.test(bossName);
+}
+
+function recoverAfterShardGuardian(scene: SceneLike) {
+  // defeatActBoss() deliberately flashes the camera pink. If another decorator
+  // errors or the scene clock hiccups on the same lethal frame, Phaser can leave
+  // that camera FX half-applied. A browser-clock cleanup is independent of scene
+  // time and only runs for Act IV shard guardians.
+  const recover = () => {
+    try {
+      if (scene.save?.current_zone !== "starry_ascent") return;
+      const cam = scene.cameras?.main;
+      cam?.resetFX?.();
+      cam?.setAlpha?.(1);
+
+      // A shard defeat never opens a modal or intentionally freezes gameplay.
+      // Only release these states when there is no active boss conversation.
+      if (!scene.bossTalking && Number(scene.bossPhase ?? 0) === 0) {
+        scene.frozen = false;
+        scene.physics?.world?.resume?.();
+        scene.player?.setVelocity?.(0, 0);
+        if (scene.vel) { scene.vel.x = 0; scene.vel.y = 0; }
+        scene.stick = { x: 0, y: 0 };
+      }
+      scene.pushHud?.(true);
+    } catch (err) {
+      console.warn?.("[quest] shard guardian screen recovery skipped", err);
+    }
+  };
+
+  // Normal Phaser-clock cleanup when the scene is healthy.
+  try { scene.time?.delayedCall?.(620, recover); } catch { /* optional */ }
+  // Independent fallback if scene time/update has stalled.
+  if (typeof window !== "undefined") window.setTimeout(recover, 700);
+}
+
 function swingAccent(scene: SceneLike) {
   const player = scene.player;
   if (!player?.active) return;
@@ -160,11 +197,21 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
   const originalDamageBoss = proto.damageBoss;
   proto.damageBoss = function combatImpactBossDamage(this: SceneLike, amount: number, ...args: any[]) {
     const boss = this.boss as Phaser.Physics.Arcade.Sprite | null;
+    const bossNameBefore = String(this.bossName ?? "");
+    const shardGuardian = isAct4ShardGuardian(this, bossNameBefore);
     const hpBefore = Number(this.bossHp ?? 0);
     const x = boss?.x ?? 0;
     const y = boss?.y ?? 0;
 
-    const result = originalDamageBoss.call(this, amount, ...args);
+    let result: any;
+    try {
+      result = originalDamageBoss.call(this, amount, ...args);
+    } finally {
+      // Schedule from a finally block so even a presentation-layer exception on
+      // the lethal frame cannot leave the Act IV guardian defeat flash onscreen.
+      if (shardGuardian && boss && !boss.active) recoverAfterShardGuardian(this);
+    }
+
     const hpAfter = Number(this.bossHp ?? hpBefore);
 
     if (boss && hpAfter < hpBefore) {
