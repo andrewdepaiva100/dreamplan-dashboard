@@ -64,14 +64,24 @@ function shardTint(name: string) {
   return 0xffe79a;
 }
 
-function removeGuardianPulse(scene: SceneLike) {
+function removeGuardianImpulse(scene: SceneLike) {
   const halo = scene.bossHalo;
-  if (!halo) return;
-  try {
-    scene.tweens?.killTweensOf?.(halo);
-    halo.setAlpha?.(0);
-    halo.setVisible?.(false);
-  } catch {}
+  if (halo) {
+    try {
+      scene.tweens?.killTweensOf?.(halo);
+      halo.setAlpha?.(0);
+      halo.setVisible?.(false);
+    } catch {}
+  }
+
+  // Pillar guardians no longer get any ranged/impulse attack at all.
+  // Kill the timer created by the base boss spawner and clear any projectile
+  // that may already have been emitted before the decorator ran.
+  if (scene.bossShotTimer) {
+    try { scene.bossShotTimer.remove?.(); } catch {}
+    scene.bossShotTimer = undefined;
+  }
+  try { scene.bolts?.clear?.(true, true); } catch {}
 }
 
 function restyleShardGuardian(scene: SceneLike) {
@@ -85,7 +95,7 @@ function restyleShardGuardian(scene: SceneLike) {
     boss.setScale(1.65);
     boss.setAngle(0);
     (boss.body as Phaser.Physics.Arcade.Body | undefined)?.setCircle?.(12, 2, 2);
-    removeGuardianPulse(scene);
+    removeGuardianImpulse(scene);
   } catch (err) { console.warn?.("[quest] shard guardian visual restyle skipped", err); }
 }
 
@@ -159,15 +169,27 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
   };
 
   const originalFireBossBolt = proto.fireBossBolt;
-  if (typeof originalFireBossBolt === "function") proto.fireBossBolt = function(this: SceneLike, ...args: any[]) { if (isWeariness(this)) return; return originalFireBossBolt.apply(this, args); };
+  if (typeof originalFireBossBolt === "function") proto.fireBossBolt = function(this: SceneLike, ...args: any[]) {
+    const name = String(this.bossName ?? "");
+    if (isWeariness(this, name) || isAct4ShardGuardian(this, name)) return;
+    return originalFireBossBolt.apply(this, args);
+  };
 
   const originalSpawnActBoss = proto.spawnActBoss;
   if (typeof originalSpawnActBoss === "function") proto.spawnActBoss = function(this: SceneLike, ...args: any[]) {
     const result = originalSpawnActBoss.apply(this, args);
     if (this.save?.current_zone === ACT4_ZONE) {
       const name = String(this.bossName ?? "");
-      if (isAct4ShardGuardian(this, name)) { restyleShardGuardian(this); tuneShardGuardianStats(this); removeGuardianPulse(this); }
-      if (name === WEARINESS_NAME) { this.__wearinessMobTimer = null; removeWearinessPulse(this); if (this.bossTimer) { this.__wearinessMobTimer = this.bossTimer; this.bossTimer.timeScale = 2; } }
+      if (isAct4ShardGuardian(this, name)) {
+        restyleShardGuardian(this);
+        tuneShardGuardianStats(this);
+        removeGuardianImpulse(this);
+      }
+      if (name === WEARINESS_NAME) {
+        this.__wearinessMobTimer = null;
+        removeWearinessPulse(this);
+        if (this.bossTimer) { this.__wearinessMobTimer = this.bossTimer; this.bossTimer.timeScale = 2; }
+      }
     }
     return result;
   };
@@ -178,7 +200,7 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
     if (this.save?.current_zone === ACT4_ZONE) {
       const name = String(this.bossName ?? "");
       if (isAct4ShardGuardian(this, name)) {
-        removeGuardianPulse(this);
+        removeGuardianImpulse(this);
         this.boss?.setAlpha?.(1);
         const body = this.boss?.body as Phaser.Physics.Arcade.Body | undefined;
         if (body && (body.velocity.x || body.velocity.y)) this.boss.setVelocity(body.velocity.x * 1.1, body.velocity.y * 1.1);
