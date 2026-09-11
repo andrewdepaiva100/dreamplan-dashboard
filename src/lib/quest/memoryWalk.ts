@@ -177,7 +177,11 @@ function installMemoryWalk() {
   if (typeof originalAdvanceZone !== "function") return;
 
   proto.advanceZone = function memoryWalkAdvanceZone(this: any, ...args: any[]) {
-    if (this.save?.current_zone !== ACT4 || this.__memoryWalkLaunching) return originalAdvanceZone.apply(this, args);
+    if (this.save?.current_zone !== ACT4) return originalAdvanceZone.apply(this, args);
+    // A second completion signal can arrive while the fade/launch is already
+    // underway. Swallow it instead of falling through to the normal Act V
+    // restart, which would bypass the Memory Walk entirely.
+    if (this.__memoryWalkLaunching) return;
     this.__memoryWalkLaunching = true;
     this.traveling = true;
     this.frozen = true;
