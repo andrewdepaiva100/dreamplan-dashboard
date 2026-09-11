@@ -161,12 +161,27 @@ function tuneShardGuardianStats(scene: SceneLike) {
   }
 }
 
+function removeWearinessPulse(scene: SceneLike) {
+  // The base boss creates a breathing circular halo. Weariness should have no
+  // pulse-ring visual at all, so stop that tween and hide the halo completely.
+  const halo = scene.bossHalo;
+  if (!halo) return;
+  try {
+    scene.tweens?.killTweensOf?.(halo);
+    halo.setAlpha?.(0);
+    halo.setVisible?.(false);
+  } catch {
+    // Cosmetic suppression must never interrupt combat.
+  }
+}
+
 function tuneWeariness(scene: SceneLike) {
   if (!isWeariness(scene)) return;
   const boss = scene.boss as Phaser.Physics.Arcade.Sprite | null;
   if (!boss?.active) return;
 
   boss.setAlpha(1);
+  removeWearinessPulse(scene);
 
   // Only the real Act IV boss loses its ranged impulse/projectile attack.
   if (scene.bossShotTimer) {
@@ -248,6 +263,7 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
         }
         if (name === WEARINESS_NAME) {
           this.__wearinessMobTimer = null;
+          removeWearinessPulse(this);
           if (this.bossShotTimer) {
             try { this.bossShotTimer.remove?.(); } catch {}
             this.bossShotTimer = undefined;
