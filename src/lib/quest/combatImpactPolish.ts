@@ -58,8 +58,6 @@ function directionalSparks(scene: SceneLike, x: number, y: number, tint: number,
 }
 
 function bossFlashEcho(scene: SceneLike, boss: Phaser.Physics.Arcade.Sprite, x: number, y: number, finishing: boolean) {
-  // A lethal hit can destroy the boss synchronously inside damageBoss().
-  // Never inspect a destroyed GameObject for texture/frame/scale data.
   if (!boss?.active || !boss.scene) return;
   const texture = boss.texture?.key;
   if (!texture) return;
@@ -102,54 +100,11 @@ function bossImpact(scene: SceneLike, boss: Phaser.Physics.Arcade.Sprite | null,
   impactRing(scene, x, y, tint, finishing);
   directionalSparks(scene, x, y, tint, scene.player?.x ?? x - 1, scene.player?.y ?? y, finishing ? 11 : 7);
   if (boss?.active && boss.scene) bossFlashEcho(scene, boss, x, y, finishing);
-
-  // Camera feedback is deliberately reserved for Maria's confirmed melee hits.
-  // This is visual only and does not pause or alter the physics simulation.
   if (mariaHit) scene.cameras?.main?.shake?.(finishing ? 85 : 48, finishing ? 0.0022 : 0.00125);
 }
 
 function isAct4ShardGuardian(scene: SceneLike, bossName: string) {
   return scene.save?.current_zone === "starry_ascent" && /shard guardian/i.test(bossName);
-}
-
-function recoverAfterShardGuardian(scene: SceneLike) {
-  // A shard guardian defeat must hand control straight back to exploration.
-  // Keep this recovery narrowly scoped to Act IV shard guardians only.
-  const recover = () => {
-    try {
-      if (scene.save?.current_zone !== "starry_ascent") return;
-      const cam = scene.cameras?.main;
-      cam?.resetFX?.();
-      cam?.setAlpha?.(1);
-
-      if (!scene.bossTalking && Number(scene.bossPhase ?? 0) === 0) {
-        // The pillar fight itself never owns a modal/pause, so any paused scene,
-        // frozen flag, disabled player body, or suspended physics here is stale.
-        if (scene.scene?.isPaused?.()) scene.scene.resume();
-        scene.frozen = false;
-        scene.physics?.world?.resume?.();
-        if (scene.input) scene.input.enabled = true;
-        if (scene.input?.keyboard) scene.input.keyboard.enabled = true;
-        const body = scene.player?.body as Phaser.Physics.Arcade.Body | undefined;
-        if (body) body.enable = true;
-        scene.player?.setActive?.(true)?.setVisible?.(true);
-        scene.player?.setVelocity?.(0, 0);
-        if (scene.vel) { scene.vel.x = 0; scene.vel.y = 0; }
-        // Do not overwrite scene.stick here. Touch/virtual-stick input is stateful;
-        // zeroing it after the fight can make Maria appear permanently immobile
-        // until the control emits another event.
-      }
-      scene.pushHud?.(true);
-    } catch (err) {
-      console.warn?.("[quest] shard guardian movement recovery skipped", err);
-    }
-  };
-
-  try { scene.time?.delayedCall?.(220, recover); } catch { /* optional */ }
-  if (typeof window !== "undefined") {
-    window.setTimeout(recover, 260);
-    window.setTimeout(recover, 750);
-  }
 }
 
 function swingAccent(scene: SceneLike) {
@@ -207,39 +162,46 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
     const bossNameBefore = String(this.bossName ?? "");
     const shardGuardian = isAct4ShardGuardian(this, bossNameBefore);
     const hpBefore = Number(this.bossHp ?? 0);
+    const incoming = Math.max(0, Number(amount) || 0);
+    const lethalShardHit = shardGuardian && hpBefore > 0 && incoming >= hpBefore;
     const x = boss?.x ?? 0;
     const y = boss?.y ?? 0;
+
+    // The base Shard Guardian defeat uses the same full-screen pink camera flash
+    // as a real boss defeat. On some guardian kills Phaser can strand that flash
+    // overlay. Suppress only that one lethal guardian flash; progression, damage,
+    // pillar credit and every other camera effect still run normally.
+    const cam = this.cameras?.main as any;
+    const originalFlash = cam?.flash;
+    if (lethalShardHit && cam && typeof originalFlash === "function") {
+      cam.flash = function suppressedShardDefeatFlash() { return cam; };
+    }
 
     let result: any;
     try {
       result = originalDamageBoss.call(this, amount, ...args);
     } finally {
-      // Schedule from a finally block so even a presentation-layer exception on
-      // the lethal frame cannot leave the Act IV guardian defeat flash onscreen.
-      if (shardGuardian && boss && !boss.active) recoverAfterShardGuardian(this);
+      if (lethalShardHit && cam && typeof originalFlash === "function") {
+        cam.flash = originalFlash;
+        try {
+          cam.resetFX?.();
+          cam.setAlpha?.(1);
+        } catch { /* cosmetic cleanup only */ }
+      }
     }
 
     const hpAfter = Number(this.bossHp ?? hpBefore);
-
     if (boss && hpAfter < hpBefore) {
       const mariaHit = Number(this.time?.now ?? 0) <= Number(this.__combatImpactMariaSwingUntil ?? -Infinity);
-
-      // The canonical death path destroys the boss immediately. Preserve the
-      // impact at its cached coordinates, but only use sprite-dependent echo
-      // effects if the captured boss still exists after originalDamageBoss().
       try {
         bossImpact(this, boss?.active && boss.scene ? boss : null, x, y, hpAfter <= 0, mariaHit);
       } catch (err) {
-        // Combat polish must never be allowed to break progression/death logic.
         console.warn?.("[quest] combat impact skipped after boss state changed", err);
       }
     }
     return result;
   };
 
-  // Install the finishing-strike controller after the normal impact decorator
-  // so threshold hits retain all existing flash/recoil/spark feedback and the
-  // finisher can hand the lethal blow back through the canonical boss path.
   installBossFinisher(QuestScene as any);
   installBossFinisherRecovery(QuestScene as any);
   installInteractionCopyFixes(QuestScene as any);
