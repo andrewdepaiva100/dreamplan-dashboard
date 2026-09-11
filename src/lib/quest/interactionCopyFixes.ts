@@ -1,5 +1,44 @@
 // @ts-nocheck -- Exact Act II interaction-copy + gameplay corrections.
 
+function addExtraAct4Hearts(scene: any) {
+  if (scene.save?.current_zone !== "starry_ascent" || !scene.hearts || !scene.layer) return;
+
+  const worldW = Math.max(160, Number(scene.mapW ?? 35) * 16);
+  const worldH = Math.max(160, Number(scene.mapH ?? 35) * 16);
+
+  const place = (key: "heart-pickup" | "golden-heart", count: number) => {
+    let made = 0;
+    let tries = 0;
+    while (made < count && tries < count * 80) {
+      tries++;
+      const x = Phaser.Math.Between(56, Math.max(56, worldW - 56));
+      const y = Phaser.Math.Between(56, Math.max(56, worldH - 56));
+      const tile = scene.layer?.getTileAtWorldXY?.(x, y);
+      if (!tile || tile.collides) continue;
+      if (scene.player?.active && Phaser.Math.Distance.Between(x, y, scene.player.x, scene.player.y) < 100) continue;
+
+      const heart = scene.hearts.create(x, y, key) as Phaser.Physics.Arcade.Sprite | null;
+      if (!heart) continue;
+      heart.setDepth?.(9).setData?.("golden", key === "golden-heart");
+      const body = heart.body as Phaser.Physics.Arcade.Body | undefined;
+      body?.setAllowGravity?.(false);
+      scene.tweens?.add?.({
+        targets: heart,
+        y: y - 5,
+        duration: 1100,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+      made++;
+    }
+  };
+
+  // Act IV gets seven additional recovery pickups: four red and three golden.
+  place("heart-pickup", 4);
+  place("golden-heart", 3);
+}
+
 /**
  * Runs after the existing interaction polish so it can correct final
  * player-facing copy and small Act II regressions without rewriting the core scene.
@@ -8,6 +47,15 @@ export function installInteractionCopyFixes(QuestScene: any) {
   const proto = QuestScene?.prototype;
   if (!proto || proto.__interactionCopyFixesInstalled) return;
   proto.__interactionCopyFixesInstalled = true;
+
+  const originalSpawnHearts = proto.spawnHearts;
+  if (typeof originalSpawnHearts === "function") {
+    proto.spawnHearts = function extraAct4RecoveryHearts(...args: any[]) {
+      const result = originalSpawnHearts.apply(this, args);
+      addExtraAct4Hearts(this);
+      return result;
+    };
+  }
 
   const originalUpdate = proto.update;
   if (typeof originalUpdate === "function") {
