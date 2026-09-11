@@ -141,7 +141,8 @@ function cleanupFinisher(scene: any, state: FinisherState) {
   try {
     scene.player?.setVelocity?.(0, 0);
     if (scene.vel) { scene.vel.x = 0; scene.vel.y = 0; }
-    if (scene.stick) { scene.stick.x = 0; scene.stick.y = 0; }
+    // Do not zero scene.stick here. Touch controls own that state and clearing it
+    // can strand movement until another pointer event is emitted.
   } catch {}
 
   try {
@@ -241,9 +242,6 @@ function completeBossDefeat(scene: any, state: FinisherState, originalDamageBoss
     return;
   }
 
-  // Release every finisher-owned lock BEFORE entering the normal boss death path.
-  // This guarantees relic, portal, second-boss and scene decorators never run while
-  // the cinematic controller is still holding input/timers/UI state.
   cleanupFinisher(scene, state);
 
   scene.bossHp = 1;
@@ -253,8 +251,6 @@ function completeBossDefeat(scene: any, state: FinisherState, originalDamageBoss
     originalDamageBoss.call(scene, 1);
   } catch (error) {
     console.error("[quest] final strike canonical defeat failed; attempting safe boss fallback", error);
-    // If the canonical call threw before destroying the boss, use the scene's own
-    // defeat routine as a last resort rather than leaving the game locked at 1 HP.
     try {
       if (scene.boss === boss && boss.active && typeof scene.defeatActBoss === "function") {
         scene.bossHp = 0;
@@ -338,8 +334,6 @@ function executeFinisher(scene: any, originalDamageBoss: Function) {
     completeBossDefeat(scene, state, originalDamageBoss);
   }
 
-  // Independent watchdog: if any Phaser tween/callback is interrupted, the boss
-  // still resolves through the normal defeat path instead of trapping the game.
   if (typeof window !== "undefined") {
     window.setTimeout(() => {
       if (!state.cleaned && sceneActive(scene) && scene.boss === boss && boss.active) {
@@ -381,7 +375,6 @@ export function installBossFinisher(QuestScene: any) {
     const boss = this.boss as Phaser.Physics.Arcade.Sprite | null;
     markBossKind(this);
 
-    // Pillar shard guardians are miniboss puzzle sentinels, not cinematic bosses.
     if (!isFinisherEligible(this, boss)) return originalDamageBoss.call(this, amount, ...args);
 
     const hp = Number(this.bossHp ?? 0);
@@ -444,10 +437,28 @@ export function installBossFinisher(QuestScene: any) {
         destroySafe(diamond);
       }
 
-      const state = this[STATE] as FinisherState | undefined;
+      let state = this[STATE] as FinisherState | undefined;
+
+      // Shard Guardians must never inherit a Final Strike lock. They are regular
+      // pillar minibosses and Maria must remain fully mobile for the entire fight.
+      // If stale finisher state survives from another encounter, release it now.
+      if (isAct4ShardGuardian(this)) {
+        if (state && !state.cleaned) cleanupFinisher(this, state);
+        state = undefined;
+
+        if (!this.__actArrivalActive && !this.bossTalking) {
+          this.frozen = false;
+          try { this.physics?.world?.resume?.(); } catch {}
+          try { if (this.input) this.input.enabled = true; } catch {}
+          try {
+            const body = this.player?.body as Phaser.Physics.Arcade.Body | undefined;
+            if (body) body.enable = true;
+            this.player?.setActive?.(true)?.setVisible?.(true);
+          } catch {}
+        }
+      }
+
       if (state && !state.cleaned) {
-        // If another boss replaced this one, release immediately. This matters for
-        // multi-boss encounters in Act IV and future chained boss fights.
         if (!state.boss?.active || this.boss !== state.boss) {
           cleanupFinisher(this, state);
           return result;
@@ -455,7 +466,6 @@ export function installBossFinisher(QuestScene: any) {
         this.player?.setVelocity?.(0, 0);
         state.boss?.setVelocity?.(0, 0);
         if (this.vel) { this.vel.x = 0; this.vel.y = 0; }
-        if (this.stick) { this.stick.x = 0; this.stick.y = 0; }
         state.ring?.setPosition?.(state.boss.x, state.boss.y);
       }
       return result;
