@@ -107,6 +107,15 @@ function completedGuardians(scene: any): number[] {
   return Array.isArray(raw) ? raw.filter((n: any) => Number.isInteger(n)) : [];
 }
 
+function allPillarsGold(scene: any) {
+  const pillars = scene.zoneState?.["pillars"];
+  const guardians = completedGuardians(scene);
+  return Array.isArray(pillars)
+    && pillars.length === PILLARS.length
+    && pillars.every((value: any) => Number(value) === 1)
+    && PILLARS.every((_spot, index) => guardians.includes(index));
+}
+
 function redrawBeams(scene: any, state: any, guardians: number[]) {
   state.beamGfx.clear();
   guardians.forEach((idx: number) => {
@@ -318,10 +327,33 @@ export function installAct4StarryAscentRemaster(QuestScene: any) {
   if (!proto || proto.__act4StarryAscentRemasterInstalled) return;
   proto.__act4StarryAscentRemasterInstalled = true;
 
+  // Act IV's authored build used to create its main boss immediately. Hold only
+  // that default boss spawn while the realm is being built. Pillar guardians
+  // pass an explicit boss config, so they continue to spawn normally.
+  const originalSpawnActBoss = proto.spawnActBoss;
+  if (typeof originalSpawnActBoss === "function") {
+    proto.spawnActBoss = function act4GoldenPillarBossGate(...args: any[]) {
+      const explicitConfig = args[2];
+      if (this.save?.current_zone === ZONE && this.__act4BuildingBase && !explicitConfig) {
+        this.__act4MainBossDeferred = true;
+        return null;
+      }
+      return originalSpawnActBoss.apply(this, args);
+    };
+  }
+
   const originalBuildAct4 = proto.buildAct4;
   if (typeof originalBuildAct4 === "function") {
     proto.buildAct4 = function act4StarryRemasterBuild(...args: any[]) {
-      const result = originalBuildAct4.apply(this, args);
+      this.__act4BuildingBase = true;
+      this.__act4MainBossDeferred = false;
+      this.__act4MainBossSpawned = false;
+      let result: any;
+      try {
+        result = originalBuildAct4.apply(this, args);
+      } finally {
+        this.__act4BuildingBase = false;
+      }
       this[STATE] = makeState(this);
       refreshPillars(this, true);
       return result;
@@ -349,6 +381,27 @@ export function installAct4StarryAscentRemaster(QuestScene: any) {
         state.nextRefreshAt = time + 220;
         refreshPillars(this);
       }
+
+      // The main Act IV boss now exists only after all five pillars are truly
+      // gold and all five pillar guardians have been defeated. This check runs
+      // after the original update so it never interferes with pillar handling.
+      if (
+        !this.__act4MainBossSpawned
+        && this.__act4MainBossDeferred
+        && allPillarsGold(this)
+        && !this.boss?.active
+        && !this.bossTalking
+      ) {
+        this.__act4MainBossSpawned = true;
+        this.__act4MainBossDeferred = false;
+        originalSpawnActBoss?.call(this, 100, 32);
+        this.spawnSparkle?.(this.wx(100), this.wy(32), 0xffe59a, 34);
+        this.cameras?.main?.flash?.(220, 255, 239, 180);
+        this.emitToast?.("All five pillars burn gold — a presence awakens at the observatory.");
+        this.objective = `${this.bossName || "The final guardian"} awaits at the Starry Observatory.`;
+        this.pushHud?.(true);
+      }
+
       updateFallingStar(this, state, time);
       return result;
     };
@@ -359,6 +412,9 @@ export function installAct4StarryAscentRemaster(QuestScene: any) {
     proto.create = function act4StarryRemasterCreate(...args: any[]) {
       this[STATE] = null;
       this.__act4CelebratedGuardians = [];
+      this.__act4BuildingBase = false;
+      this.__act4MainBossDeferred = false;
+      this.__act4MainBossSpawned = false;
       return originalCreate.apply(this, args);
     };
   }
