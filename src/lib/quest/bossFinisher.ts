@@ -1,4 +1,4 @@
-// @ts-nocheck -- isolated cinematic finisher decorator for QuestScene bosses.
+// @ts-nocheck -- isolated, fail-safe cinematic finisher decorator for QuestScene bosses.
 import * as Phaser from "phaser";
 
 type FinisherState = {
@@ -8,14 +8,17 @@ type FinisherState = {
   subPrompt: Phaser.GameObjects.Text | null;
   ring: Phaser.GameObjects.Arc | null;
   vignette: Phaser.GameObjects.Rectangle | null;
+  title: Phaser.GameObjects.Text | null;
   savedZoom: number;
-  bossBodyWasEnabled: boolean;
+  savedInvulnUntil: number;
   allowLethal: boolean;
   cleaned: boolean;
 };
 
 const STATE = "__bossFinisherState";
 const INSTALLED = "__bossFinisherInstalled";
+const KIND = "final-strike-kind";
+const DONE = "final-strike-done";
 
 function styleFor(zone: string) {
   if (zone === "sunlit_shores") return { color: 0x72d8ff, accent: 0xffe08a, subtitle: "BREAK THE TIDE" };
@@ -30,14 +33,30 @@ function isAct4ShardGuardian(scene: any) {
     && /shard guardian/i.test(String(scene?.bossName ?? ""));
 }
 
+function markBossKind(scene: any) {
+  const boss = scene?.boss;
+  if (!boss?.active) return;
+  if (boss.getData?.(KIND)) return;
+  boss.setData?.(KIND, isAct4ShardGuardian(scene) ? "guardian" : "boss");
+}
+
+function isFinisherEligible(scene: any, boss: any) {
+  if (!boss?.active) return false;
+  markBossKind(scene);
+  if (boss.getData?.(KIND) === "guardian") return false;
+  if (boss.getData?.(DONE)) return false;
+  if (Number(scene?.bossPhase ?? 0) !== 1) return false;
+  if (!Number.isFinite(Number(scene?.bossHp)) || Number(scene?.bossHp) <= 0) return false;
+  if (!Number.isFinite(Number(scene?.bossMax)) || Number(scene?.bossMax) <= 0) return false;
+  return true;
+}
+
 function styleAct4ShardGuardian(scene: any) {
   const boss = scene?.boss;
   if (!boss?.active || !isAct4ShardGuardian(scene)) return;
+  markBossKind(scene);
   if (boss.getData?.("act4-shard-styled")) return;
   boss.setData?.("act4-shard-styled", true);
-
-  // Pillar encounters read as crystalline sentinels, not the Act IV boss:
-  // smaller silhouette, cool crystal tint and a rotating diamond outline.
   boss.setTint?.(0x7fdcff);
   boss.setScale?.(Math.max(0.72, Number(boss.scaleX || 1) * 0.78));
   boss.setAlpha?.(0.92);
@@ -62,6 +81,10 @@ function styleAct4ShardGuardian(scene: any) {
 
 function destroySafe(obj: any) {
   try { obj?.destroy?.(); } catch { /* scene teardown can race callbacks */ }
+}
+
+function sceneActive(scene: any) {
+  try { return Boolean(scene?.sys?.isActive?.()); } catch { return false; }
 }
 
 function clearBossBolts(scene: any) {
@@ -100,13 +123,43 @@ function fixedText(scene: any, y: number, text: string, size: string, color: str
   }).setOrigin(0.5).setScrollFactor(0).setDepth(depth);
 }
 
+function cleanupFinisher(scene: any, state: FinisherState) {
+  if (!state || state.cleaned) return;
+  state.cleaned = true;
+
+  try { scene.tweens?.killTweensOf?.([state.prompt, state.subPrompt, state.ring, state.vignette, state.title]); } catch {}
+  destroySafe(state.prompt);
+  destroySafe(state.subPrompt);
+  destroySafe(state.ring);
+  destroySafe(state.vignette);
+  destroySafe(state.title);
+
+  try {
+    if (scene.boss?.active && scene.boss === state.boss) pauseBossTimers(scene, false);
+  } catch {}
+
+  try {
+    scene.player?.setVelocity?.(0, 0);
+    if (scene.vel) { scene.vel.x = 0; scene.vel.y = 0; }
+    if (scene.stick) { scene.stick.x = 0; scene.stick.y = 0; }
+  } catch {}
+
+  try {
+    scene.invulnUntil = Math.max(Number(scene.invulnUntil ?? 0), state.savedInvulnUntil);
+    scene.cameras?.main?.setZoom?.(state.savedZoom);
+  } catch {}
+
+  try { scene.hand?.setVisible?.(true); } catch {}
+  if (scene[STATE] === state) scene[STATE] = null;
+  try { scene.pushHud?.(true); } catch {}
+}
+
 function armFinisher(scene: any, boss: Phaser.Physics.Arcade.Sprite) {
   const existing = scene[STATE] as FinisherState | undefined;
   if (existing && !existing.cleaned) return;
-  if (!boss?.active) return;
+  if (!isFinisherEligible(scene, boss)) return;
 
   const cam = scene.cameras.main;
-  const body = boss.body as Phaser.Physics.Arcade.Body | undefined;
   const style = styleFor(scene.save?.current_zone ?? "");
   const state: FinisherState = {
     mode: "armed",
@@ -115,83 +168,104 @@ function armFinisher(scene: any, boss: Phaser.Physics.Arcade.Sprite) {
     subPrompt: null,
     ring: null,
     vignette: null,
-    savedZoom: cam.zoom,
-    bossBodyWasEnabled: body?.enable !== false,
+    title: null,
+    savedZoom: Number(cam.zoom ?? 1),
+    savedInvulnUntil: Number(scene.invulnUntil ?? 0),
     allowLethal: false,
     cleaned: false,
   };
   scene[STATE] = state;
 
+  boss.setData?.(DONE, true);
   scene.player?.setVelocity?.(0, 0);
   boss.setVelocity?.(0, 0);
-  if (body) body.enable = false;
   pauseBossTimers(scene, true);
   clearBossBolts(scene);
+  scene.invulnUntil = Math.max(Number(scene.invulnUntil ?? 0), Number(scene.time?.now ?? 0) + 10000);
 
-  state.vignette = scene.add.rectangle(cam.width / 2, cam.height / 2, cam.width + 8, cam.height + 8, 0x07142c, 0.28)
-    .setScrollFactor(0).setDepth(982);
-  state.vignette.setBlendMode?.(Phaser.BlendModes.MULTIPLY);
+  try {
+    state.vignette = scene.add.rectangle(cam.width / 2, cam.height / 2, cam.width + 8, cam.height + 8, 0x07142c, 0.28)
+      .setScrollFactor(0).setDepth(982);
+    state.vignette.setBlendMode?.(Phaser.BlendModes.MULTIPLY);
 
-  state.ring = scene.add.circle(boss.x, boss.y, 36, style.color, 0.08)
-    .setStrokeStyle(3, style.accent, 0.95).setDepth(24);
-  scene.tweens.add({
-    targets: state.ring,
-    radius: { from: 34, to: 54 },
-    alpha: { from: 0.9, to: 0.35 },
-    duration: 700,
-    yoyo: true,
-    repeat: -1,
-    ease: "Sine.easeInOut",
-  });
+    state.ring = scene.add.circle(boss.x, boss.y, 36, style.color, 0.08)
+      .setStrokeStyle(3, style.accent, 0.95).setDepth(24);
+    scene.tweens.add({
+      targets: state.ring,
+      radius: { from: 34, to: 54 },
+      alpha: { from: 0.9, to: 0.35 },
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
 
-  state.prompt = fixedText(scene, cam.height * 0.38, "✦  FINAL STRIKE  ✦", "28px", "#ffe6a8", 991);
-  state.subPrompt = fixedText(scene, cam.height * 0.38 + 42, "SPACE / ACTION", "13px", "#ffffff", 991);
-  state.subPrompt.setAlpha(0.9);
-  scene.tweens.add({
-    targets: [state.prompt, state.subPrompt],
-    alpha: { from: 0.72, to: 1 },
-    scale: { from: 0.98, to: 1.035 },
-    duration: 620,
-    yoyo: true,
-    repeat: -1,
-    ease: "Sine.easeInOut",
-  });
+    state.prompt = fixedText(scene, cam.height * 0.38, "✦  FINAL STRIKE  ✦", "28px", "#ffe6a8", 991);
+    state.subPrompt = fixedText(scene, cam.height * 0.38 + 42, "SPACE / ACTION", "13px", "#ffffff", 991);
+    state.subPrompt.setAlpha(0.9);
+    scene.tweens.add({
+      targets: [state.prompt, state.subPrompt],
+      alpha: { from: 0.72, to: 1 },
+      scale: { from: 0.98, to: 1.035 },
+      duration: 620,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+    scene.spawnSparkle?.(boss.x, boss.y, style.color, 18);
+  } catch (error) {
+    console.error("[quest] final strike arm visual failed", error);
+  }
 
-  scene.spawnSparkle?.(boss.x, boss.y, style.color, 18);
   scene.pushHud?.(true);
 }
 
 function impactBurst(scene: any, x: number, y: number, style: any) {
-  const outer = scene.add.circle(x, y, 18, style.accent, 0.12).setStrokeStyle(5, style.accent, 1).setDepth(985);
-  const inner = scene.add.circle(x, y, 8, style.color, 0.35).setStrokeStyle(2, 0xffffff, 1).setDepth(986);
-  scene.tweens.add({ targets: outer, radius: 110, alpha: 0, duration: 420, ease: "Quad.easeOut", onComplete: () => destroySafe(outer) });
-  scene.tweens.add({ targets: inner, radius: 62, alpha: 0, duration: 260, ease: "Cubic.easeOut", onComplete: () => destroySafe(inner) });
-  scene.spawnSparkle?.(x, y, style.accent, 34);
-  scene.cameras.main.shake(170, 0.008);
-  scene.cameras.main.flash(120, 255, 246, 207);
+  try {
+    const outer = scene.add.circle(x, y, 18, style.accent, 0.12).setStrokeStyle(5, style.accent, 1).setDepth(985);
+    const inner = scene.add.circle(x, y, 8, style.color, 0.35).setStrokeStyle(2, 0xffffff, 1).setDepth(986);
+    scene.tweens.add({ targets: outer, radius: 110, alpha: 0, duration: 420, ease: "Quad.easeOut", onComplete: () => destroySafe(outer) });
+    scene.tweens.add({ targets: inner, radius: 62, alpha: 0, duration: 260, ease: "Cubic.easeOut", onComplete: () => destroySafe(inner) });
+    scene.spawnSparkle?.(x, y, style.accent, 34);
+    scene.cameras?.main?.shake?.(170, 0.008);
+    scene.cameras?.main?.flash?.(120, 255, 246, 207);
+  } catch (error) {
+    console.error("[quest] final strike impact visual failed", error);
+  }
 }
 
-function cleanupFinisher(scene: any, state: FinisherState) {
-  if (!state || state.cleaned) return;
-  state.cleaned = true;
-  scene.tweens?.killTweensOf?.([state.prompt, state.subPrompt, state.ring, state.vignette]);
-  destroySafe(state.prompt);
-  destroySafe(state.subPrompt);
-  destroySafe(state.ring);
-  destroySafe(state.vignette);
-
-  if (scene.boss?.active && scene.boss === state.boss) {
-    const body = state.boss.body as Phaser.Physics.Arcade.Body | undefined;
-    if (body) body.enable = state.bossBodyWasEnabled;
-    pauseBossTimers(scene, false);
+function completeBossDefeat(scene: any, state: FinisherState, originalDamageBoss: Function) {
+  const boss = state.boss;
+  if (!boss?.active || scene.boss !== boss) {
+    cleanupFinisher(scene, state);
+    return;
   }
 
-  scene.player?.setVelocity?.(0, 0);
-  if (scene.vel) { scene.vel.x = 0; scene.vel.y = 0; }
-  scene.stick = { x: 0, y: 0 };
-  try { scene.cameras?.main?.setZoom?.(state.savedZoom); } catch { /* scene changed */ }
-  if (scene[STATE] === state) scene[STATE] = null;
-  scene.pushHud?.(true);
+  // Release every finisher-owned lock BEFORE entering the normal boss death path.
+  // This guarantees relic, portal, second-boss and scene decorators never run while
+  // the cinematic controller is still holding input/timers/UI state.
+  cleanupFinisher(scene, state);
+
+  scene.bossHp = 1;
+  scene.bossHitAt = 0;
+  state.allowLethal = true;
+  try {
+    originalDamageBoss.call(scene, 1);
+  } catch (error) {
+    console.error("[quest] final strike canonical defeat failed; attempting safe boss fallback", error);
+    // If the canonical call threw before destroying the boss, use the scene's own
+    // defeat routine as a last resort rather than leaving the game locked at 1 HP.
+    try {
+      if (scene.boss === boss && boss.active && typeof scene.defeatActBoss === "function") {
+        scene.bossHp = 0;
+        scene.defeatActBoss();
+      }
+    } catch (fallbackError) {
+      console.error("[quest] final strike fallback defeat failed", fallbackError);
+    }
+  } finally {
+    state.allowLethal = false;
+  }
 }
 
 function executeFinisher(scene: any, originalDamageBoss: Function) {
@@ -199,7 +273,7 @@ function executeFinisher(scene: any, originalDamageBoss: Function) {
   if (!state || state.cleaned || state.mode !== "armed") return;
   const boss = state.boss;
   const player = scene.player as Phaser.Physics.Arcade.Sprite | undefined;
-  if (!boss?.active || !player?.active) {
+  if (!boss?.active || !player?.active || scene.boss !== boss) {
     cleanupFinisher(scene, state);
     return;
   }
@@ -222,58 +296,58 @@ function executeFinisher(scene: any, originalDamageBoss: Function) {
   const uy = dy / len;
   const approachX = bx - ux * 34;
   const approachY = by - uy * 34;
-  const throughX = bx + ux * 52;
-  const throughY = by + uy * 52;
   setFacing(scene, dx, dy);
 
-  scene.hand?.setVisible?.(false);
-  cam.zoomTo(Math.min(2.2, Math.max(state.savedZoom * 1.18, state.savedZoom + 0.12)), 240, "Sine.easeOut", true);
-  const title = fixedText(scene, cam.height * 0.30, style.subtitle, "15px", "#fff4ca", 992).setAlpha(0);
-  scene.tweens.add({ targets: title, alpha: 1, y: title.y - 8, duration: 180, ease: "Quad.easeOut" });
+  try {
+    scene.hand?.setVisible?.(false);
+    cam.zoomTo?.(Math.min(2.2, Math.max(state.savedZoom * 1.18, state.savedZoom + 0.12)), 220, "Sine.easeOut", true);
+    state.title = fixedText(scene, cam.height * 0.30, style.subtitle, "15px", "#fff4ca", 992).setAlpha(0);
+    scene.tweens.add({ targets: state.title, alpha: 1, y: state.title.y - 8, duration: 170, ease: "Quad.easeOut" });
 
-  scene.tweens.add({
-    targets: player,
-    x: approachX,
-    y: approachY,
-    duration: 260,
-    ease: "Cubic.easeIn",
-    onComplete: () => {
-      if (!scene.sys?.isActive?.()) return;
-      player.setVelocity?.(0, 0);
-      scene.hand?.setVisible?.(true);
-      scene.updateHand?.(scene.lastDir);
+    scene.tweens.add({
+      targets: player,
+      x: approachX,
+      y: approachY,
+      duration: 240,
+      ease: "Cubic.easeIn",
+      onComplete: () => {
+        if (!sceneActive(scene) || state.cleaned || scene.boss !== boss || !boss.active) {
+          cleanupFinisher(scene, state);
+          return;
+        }
 
-      const angle = Math.atan2(uy, ux);
-      const slash = scene.add.arc(bx, by, 56, Phaser.Math.RadToDeg(angle) - 78, Phaser.Math.RadToDeg(angle) + 78, false, style.accent, 0.52)
-        .setStrokeStyle(5, 0xffffff, 0.9).setDepth(984);
-      slash.setRotation(angle);
-      scene.tweens.add({ targets: slash, scale: 1.55, alpha: 0, duration: 280, ease: "Quad.easeOut", onComplete: () => destroySafe(slash) });
+        try {
+          player.setVelocity?.(0, 0);
+          scene.hand?.setVisible?.(true);
+          scene.updateHand?.(scene.lastDir);
+          const angle = Math.atan2(uy, ux);
+          const slash = scene.add.arc(bx, by, 56, Phaser.Math.RadToDeg(angle) - 78, Phaser.Math.RadToDeg(angle) + 78, false, style.accent, 0.52)
+            .setStrokeStyle(5, 0xffffff, 0.9).setDepth(984);
+          slash.setRotation(angle);
+          scene.tweens.add({ targets: slash, scale: 1.55, alpha: 0, duration: 260, ease: "Quad.easeOut", onComplete: () => destroySafe(slash) });
+          impactBurst(scene, bx, by, style);
+        } catch (error) {
+          console.error("[quest] final strike cinematic step failed", error);
+        }
 
-      impactBurst(scene, bx, by, style);
-      scene.bossHp = 1;
-      scene.bossHitAt = 0;
-      state.allowLethal = true;
-      try {
-        originalDamageBoss.call(scene, 1);
-      } finally {
-        state.allowLethal = false;
-      }
-      cleanupFinisher(scene, state);
+        completeBossDefeat(scene, state, originalDamageBoss);
+      },
+    });
+  } catch (error) {
+    console.error("[quest] final strike execution setup failed", error);
+    completeBossDefeat(scene, state, originalDamageBoss);
+  }
 
-      try {
-        scene.tweens.add({ targets: player, x: throughX, y: throughY, duration: 220, ease: "Cubic.easeOut" });
-        scene.tweens.add({ targets: title, alpha: 0, duration: 260, onComplete: () => destroySafe(title) });
-      } catch {
-        destroySafe(title);
-      }
-    },
-  });
-
+  // Independent watchdog: if any Phaser tween/callback is interrupted, the boss
+  // still resolves through the normal defeat path instead of trapping the game.
   if (typeof window !== "undefined") {
     window.setTimeout(() => {
-      if (!state.cleaned) cleanupFinisher(scene, state);
-      destroySafe(title);
-    }, 1800);
+      if (!state.cleaned && sceneActive(scene) && scene.boss === boss && boss.active) {
+        completeBossDefeat(scene, state, originalDamageBoss);
+      } else if (!state.cleaned) {
+        cleanupFinisher(scene, state);
+      }
+    }, 1400);
   }
 }
 
@@ -282,6 +356,7 @@ export function installBossFinisher(QuestScene: any) {
   if (!p || p[INSTALLED]) return;
   p[INSTALLED] = true;
 
+  const originalSpawnActBoss = p.spawnActBoss;
   const originalDamageBoss = p.damageBoss;
   const originalAttack = p.attack;
   const originalDash = p.dash;
@@ -289,35 +364,42 @@ export function installBossFinisher(QuestScene: any) {
   const originalUpdate = p.update;
   if (typeof originalDamageBoss !== "function" || typeof originalAttack !== "function") return;
 
+  if (typeof originalSpawnActBoss === "function") {
+    p.spawnActBoss = function (...args: any[]) {
+      const result = originalSpawnActBoss.apply(this, args);
+      markBossKind(this);
+      styleAct4ShardGuardian(this);
+      return result;
+    };
+  }
+
   p.damageBoss = function (amount: number, ...args: any[]) {
     const state = this[STATE] as FinisherState | undefined;
     if (state?.mode === "executing" && state.allowLethal) return originalDamageBoss.call(this, amount, ...args);
     if (state && !state.cleaned) return;
 
-    // Act IV's shard sentinels belong to the pillar puzzle. They are deliberately
-    // NOT cinematic bosses: resolve their damage/death through the authored path
-    // so a FINAL STRIKE cannot lock the pillar progression. The true Act IV boss
-    // still receives the full finisher after all five pillars are gold.
-    if (isAct4ShardGuardian(this)) {
-      return originalDamageBoss.call(this, amount, ...args);
-    }
-
     const boss = this.boss as Phaser.Physics.Arcade.Sprite | null;
+    markBossKind(this);
+
+    // Pillar shard guardians are miniboss puzzle sentinels, not cinematic bosses.
+    if (!isFinisherEligible(this, boss)) return originalDamageBoss.call(this, amount, ...args);
+
     const hp = Number(this.bossHp ?? 0);
     const max = Number(this.bossMax ?? 0);
-    if (!boss?.active || hp <= 0 || max <= 0) return originalDamageBoss.call(this, amount, ...args);
-
     const incoming = Math.max(0, Number(amount) || 0);
     const threshold = Math.max(1, Math.ceil(max * 0.12));
     const projected = hp - incoming;
     if (projected > threshold) return originalDamageBoss.call(this, amount, ...args);
 
     const damageToOne = Math.max(0, hp - 1);
-    if (damageToOne > 0) originalDamageBoss.call(this, damageToOne, ...args);
+    if (damageToOne > 0) {
+      this.bossHitAt = 0;
+      originalDamageBoss.call(this, damageToOne, ...args);
+    }
 
-    if (this.boss?.active) {
+    if (this.boss === boss && boss?.active) {
       this.bossHp = 1;
-      armFinisher(this, this.boss);
+      armFinisher(this, boss);
       this.pushHud?.(true);
     }
   };
@@ -352,8 +434,7 @@ export function installBossFinisher(QuestScene: any) {
     p.update = function (...args: any[]) {
       const result = originalUpdate.apply(this, args);
 
-      // Keep Act IV pillar sentinels visually separate from the true boss and
-      // keep their crystal frame attached while they move.
+      markBossKind(this);
       styleAct4ShardGuardian(this);
       const shard = this.boss;
       const diamond = shard?.getData?.("act4-shard-diamond");
@@ -365,10 +446,16 @@ export function installBossFinisher(QuestScene: any) {
 
       const state = this[STATE] as FinisherState | undefined;
       if (state && !state.cleaned) {
+        // If another boss replaced this one, release immediately. This matters for
+        // multi-boss encounters in Act IV and future chained boss fights.
+        if (!state.boss?.active || this.boss !== state.boss) {
+          cleanupFinisher(this, state);
+          return result;
+        }
         this.player?.setVelocity?.(0, 0);
         state.boss?.setVelocity?.(0, 0);
         if (this.vel) { this.vel.x = 0; this.vel.y = 0; }
-        this.stick = { x: 0, y: 0 };
+        if (this.stick) { this.stick.x = 0; this.stick.y = 0; }
         state.ring?.setPosition?.(state.boss.x, state.boss.y);
       }
       return result;
