@@ -45,8 +45,6 @@ function playArrival(scene: SceneLike) {
 
   scene.__actArrivalActive = true;
   const camera = scene.cameras.main;
-  // Capture the exact gameplay camera state produced by the existing scene and decorators.
-  // The cinematic only scales that framing proportionally, so the screen never squeezes.
   const normalZoom = currentZoom(camera);
   const revealZoom = { x: normalZoom.x * cfg.zoom, y: normalZoom.y * cfg.zoom };
   const startX = scene.player.x;
@@ -55,10 +53,23 @@ function playArrival(scene: SceneLike) {
   const revealY = Phaser.Math.Clamp(startY + cfg.panY, camera.height * 0.2, scene.mapH * 16 - camera.height * 0.2);
 
   const previousFrozen = !!scene.frozen;
-  scene.frozen = true;
-  scene.vel && (scene.vel.x = scene.vel.y = 0);
-  scene.player.body?.setVelocity?.(0, 0);
-  camera.stopFollow();
+  const keepGameplayLive = zone === "starry_ascent";
+
+  // Act IV keeps the cinematic presentation but NEVER owns movement/input state.
+  // The camera continues following Maria and only the zoom/title treatment plays.
+  if (keepGameplayLive) {
+    scene.frozen = false;
+    scene.physics?.world?.resume?.();
+    scene.input?.keyboard && (scene.input.keyboard.enabled = true);
+    if (scene.player?.body) scene.player.body.enable = true;
+    scene.player?.setActive?.(true)?.setVisible?.(true);
+    camera.startFollow(scene.player, true, 0.12, 0.12);
+  } else {
+    scene.frozen = true;
+    scene.vel && (scene.vel.x = scene.vel.y = 0);
+    scene.player.body?.setVelocity?.(0, 0);
+    camera.stopFollow();
+  }
 
   const veil = scene.add.rectangle(scene.scale.width / 2, scene.scale.height / 2, scene.scale.width + 8, scene.scale.height + 8, 0x071020, 0.08)
     .setScrollFactor(0).setDepth(200000).setAlpha(0);
@@ -96,23 +107,23 @@ function playArrival(scene: SceneLike) {
     scene.tweens.killTweensOf([veil, act, rule, title, subtitle, hint]);
     scene.tweens.add({ targets: [act, title, subtitle, hint, veil], alpha: 0, duration: 650, ease: "Sine.easeInOut" });
     scene.tweens.add({ targets: rule, alpha: 0, width: 0, duration: 600, ease: "Sine.easeInOut" });
-    camera.pan(startX, startY, 1450, "Sine.easeInOut");
+
+    if (!keepGameplayLive) {
+      camera.pan(startX, startY, 1450, "Sine.easeInOut");
+    }
     zoomTween = tweenCameraZoom(scene, camera, currentZoom(camera), normalZoom, 1450);
+
     scene.time.delayedCall(1470, () => {
       camera.startFollow(scene.player, true, 0.12, 0.12);
       camera.setZoom(normalZoom.x, normalZoom.y);
 
-      // Act IV must always hand control back after its arrival reveal. The realm
-      // has no authored modal/cutscene at spawn that should keep Maria frozen,
-      // and restoring a stale previousFrozen value can permanently lock movement.
-      if (zone === "starry_ascent") {
+      if (keepGameplayLive) {
+        // Act IV is explicitly movement-safe. Never restore stale frozen/input state.
         scene.frozen = false;
         scene.physics?.world?.resume?.();
         scene.input?.keyboard && (scene.input.keyboard.enabled = true);
         if (scene.player?.body) scene.player.body.enable = true;
         scene.player?.setActive?.(true)?.setVisible?.(true);
-        scene.player?.setVelocity?.(0, 0);
-        if (scene.vel) { scene.vel.x = 0; scene.vel.y = 0; }
       } else {
         scene.frozen = previousFrozen;
       }
@@ -123,8 +134,12 @@ function playArrival(scene: SceneLike) {
 
   scene.__skipActArrival = cleanup;
   scene.tweens.add({ targets: veil, alpha: 1, duration: 1200, ease: "Sine.easeInOut" });
-  camera.pan(revealX, revealY, 2500, "Sine.easeInOut");
+
+  if (!keepGameplayLive) {
+    camera.pan(revealX, revealY, 2500, "Sine.easeInOut");
+  }
   zoomTween = tweenCameraZoom(scene, camera, normalZoom, revealZoom, 2500);
+
   scene.time.delayedCall(950, () => scene.tweens.add({ targets: act, alpha: 1, y: act.y - 2, duration: 900, ease: "Sine.easeOut" }));
   scene.time.delayedCall(1300, () => scene.tweens.add({ targets: rule, width: Math.min(245, scene.scale.width * 0.45), duration: 1000, ease: "Sine.easeInOut" }));
   scene.time.delayedCall(1480, () => scene.tweens.add({ targets: title, alpha: 1, scale: 1, duration: 1000, ease: "Sine.easeOut" }));
