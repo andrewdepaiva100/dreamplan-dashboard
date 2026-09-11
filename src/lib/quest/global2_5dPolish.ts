@@ -50,9 +50,6 @@ function makeSpriteSilhouette(scene: any, source: any, xOffset: number, yOffset:
 
 function addLandmarkDepth(scene: any, sprite: any) {
   if (!sprite?.active || !isPolishedZone(scene)) return [];
-  // Stack silhouettes made from the authored landmark itself. The staggered
-  // copies read as wall/roof thickness under the tilted camera without adding
-  // replacement geometry or changing collision.
   return [
     makeSpriteSilhouette(scene, sprite, 2, 4, 0.22, -0.19),
     makeSpriteSilhouette(scene, sprite, 4, 8, 0.16, -0.18),
@@ -119,9 +116,6 @@ function ensureActorContactShadow(scene: any, actor: any) {
   const key = actor.texture?.key;
   if (!key || !scene.textures?.exists?.(key)) return;
 
-  // A compressed copy of the actual sprite creates a pixel-consistent contact
-  // shadow. It stays in the game's authored pixel language rather than using
-  // smooth procedural ellipses.
   const shadow = scene.add
     .sprite(actor.x + 3, actor.y + Math.max(4, (actor.displayHeight ?? 20) * 0.3), key)
     .setOrigin(actor.originX ?? 0.5, actor.originY ?? 0.5)
@@ -153,7 +147,6 @@ function updateActorDepth(scene: any) {
   feetDepth(scene, scene.companion, 2);
   feetDepth(scene, scene.dog, 2);
   feetDepth(scene, scene.boss, 4);
-
   for (const enemy of scene.enemies?.getChildren?.() ?? []) feetDepth(scene, enemy, 3);
   for (const animal of scene.animals ?? []) feetDepth(scene, animal, 1);
   for (const it of scene.interactables ?? []) {
@@ -170,7 +163,21 @@ export function installGlobal25DPolish(QuestScene: any) {
 
   const originalAddLandmark = proto.addLandmark;
   proto.addLandmark = function polished25DLandmark(...args: any[]) {
-    const result = originalAddLandmark.apply(this, args);
+    // Landmark/building ground shadows were visually overpowering the art.
+    // Shrink only the building shadow footprint by 25% in every act, leaving
+    // character/animal contact shadows and gameplay geometry untouched.
+    const originalBakeShadow = this.bakeShadow;
+    if (typeof originalBakeShadow === "function") {
+      this.bakeShadow = function smallerLandmarkShadow(x: number, y: number, w: number, alpha?: number) {
+        return originalBakeShadow.call(this, x, y, w * 0.75, alpha);
+      };
+    }
+    let result;
+    try {
+      result = originalAddLandmark.apply(this, args);
+    } finally {
+      if (typeof originalBakeShadow === "function") this.bakeShadow = originalBakeShadow;
+    }
     if (isPolishedZone(this)) {
       const shadows = addLandmarkDepth(this, this.landmark?.sprite);
       if (shadows.length) {
@@ -185,14 +192,12 @@ export function installGlobal25DPolish(QuestScene: any) {
   proto.create = function polished25DCreate(...args: any[]) {
     const result = originalCreate.apply(this, args);
     this.cameras?.main?.setRoundPixels?.(true);
-
     this.__global25d = {
       occluders: collectOccluders(this),
       polishedZone: isPolishedZone(this),
       actorShadows: new Map(),
       propShadows: [],
     };
-
     for (const obj of this.solidDecor?.getChildren?.() ?? []) {
       if (!obj?.active) continue;
       feetDepth(this, obj, 0);
