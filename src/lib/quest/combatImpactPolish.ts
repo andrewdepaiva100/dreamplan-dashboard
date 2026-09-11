@@ -11,6 +11,9 @@ const MARIA_CONTACT_WINDOW = 180;
 const BOSS_REACTION_LOCK = 90;
 const ACT4_ZONE = "starry_ascent";
 const WEARINESS_NAME = "The Weight of Weariness";
+const HOLLOW_NAME = "The Hollow of Doubtful Nights";
+const HOLLOW_TELEPORT_COOLDOWN_MIN = 5200;
+const HOLLOW_TELEPORT_COOLDOWN_MAX = 6800;
 
 function weaponColor(scene: SceneLike) {
   try { return Number(scene.equippedWeapon?.()?.color ?? 0xffd7e5); } catch { return 0xffd7e5; }
@@ -82,6 +85,10 @@ function isWeariness(scene: SceneLike, bossName = String(scene.bossName ?? "")) 
   return scene.save?.current_zone === ACT4_ZONE && bossName === WEARINESS_NAME;
 }
 
+function isHollow(scene: SceneLike, bossName = String(scene.bossName ?? "")) {
+  return scene.save?.current_zone === ACT4_ZONE && bossName === HOLLOW_NAME;
+}
+
 function isAct4ShardGuardian(scene: SceneLike, bossName: string) {
   return scene.save?.current_zone === ACT4_ZONE && /shard guardian/i.test(bossName);
 }
@@ -93,7 +100,7 @@ function bossImpact(scene: SceneLike, boss: Phaser.Physics.Arcade.Sprite | null,
   scene.__combatBossReactionAt = now;
   const tint = mariaHit ? weaponColor(scene) : 0xffd7e5;
   const bossName = String(scene.bossName ?? "");
-  if (!isWeariness(scene, bossName) && !isAct4ShardGuardian(scene, bossName)) impactRing(scene, x, y, tint, finishing);
+  if (!isWeariness(scene, bossName) && !isHollow(scene, bossName) && !isAct4ShardGuardian(scene, bossName)) impactRing(scene, x, y, tint, finishing);
   directionalSparks(scene, x, y, tint, scene.player?.x ?? x - 1, scene.player?.y ?? y, finishing ? 11 : 7);
   if (boss?.active && boss.scene) bossFlashEcho(scene, boss, x, y, finishing);
   if (mariaHit) scene.cameras?.main?.shake?.(finishing ? 85 : 48, finishing ? 0.0022 : 0.00125);
@@ -204,6 +211,63 @@ function tuneWeariness(scene: SceneLike) {
   }
 }
 
+/** Hollow keeps its bolts, but loses every boss-centred pulse/ring effect. */
+function removeHollowPulse(scene: SceneLike) {
+  if (!isHollow(scene)) return;
+  const halo = scene.bossHalo;
+  if (halo) {
+    try { scene.tweens?.killTweensOf?.(halo); halo.destroy?.(); } catch {}
+    scene.bossHalo = null;
+  }
+  removeAct4BossAttackRings(scene, (name) => name === HOLLOW_NAME);
+}
+
+/**
+ * Lightweight teleport: no looping timer, no extra physics objects, no chained
+ * callbacks. The normal update loop checks one timestamp and moves the boss to
+ * a walkable point a safe distance from Maria.
+ */
+function updateHollowTeleport(scene: SceneLike, time: number) {
+  if (!isHollow(scene) || scene.frozen || scene.bossPhase !== 1 || !scene.player?.active) return;
+  const boss = scene.boss as Phaser.Physics.Arcade.Sprite | null;
+  if (!boss?.active || !boss.body?.enable) return;
+
+  if (!Number.isFinite(scene.__hollowNextTeleportAt)) {
+    scene.__hollowNextTeleportAt = time + HOLLOW_TELEPORT_COOLDOWN_MIN;
+    return;
+  }
+  if (time < Number(scene.__hollowNextTeleportAt)) return;
+
+  // Schedule the next attempt first so a failed destination search cannot spam.
+  scene.__hollowNextTeleportAt = time + Phaser.Math.Between(HOLLOW_TELEPORT_COOLDOWN_MIN, HOLLOW_TELEPORT_COOLDOWN_MAX);
+
+  const worldW = Math.max(160, Number(scene.mapW ?? 35) * 16);
+  const worldH = Math.max(160, Number(scene.mapH ?? 35) * 16);
+  let destination: { x: number; y: number } | null = null;
+
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    const distance = Phaser.Math.Between(135, 215);
+    const x = Phaser.Math.Clamp(scene.player.x + Math.cos(angle) * distance, 48, worldW - 48);
+    const y = Phaser.Math.Clamp(scene.player.y + Math.sin(angle) * distance, 48, worldH - 48);
+    if (Phaser.Math.Distance.Between(x, y, scene.player.x, scene.player.y) < 120) continue;
+    const tile = scene.layer?.getTileAtWorldXY?.(x, y);
+    if (tile?.collides) continue;
+    destination = { x, y };
+    break;
+  }
+
+  if (!destination) return;
+
+  const fromX = boss.x;
+  const fromY = boss.y;
+  scene.spawnSparkle?.(fromX, fromY, 0x6574c9, 10);
+  boss.setVelocity?.(0, 0);
+  boss.setPosition?.(destination.x, destination.y);
+  boss.body?.reset?.(destination.x, destination.y);
+  scene.spawnSparkle?.(destination.x, destination.y, 0x6574c9, 10);
+}
+
 function swingAccent(scene: SceneLike) {
   const player = scene.player;
   if (!player?.active) return;
@@ -271,6 +335,10 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
         const overrideName = String(override?.name ?? "");
         if (override && (/shard guardian/i.test(overrideName) || overrideName === WEARINESS_NAME)) {
           args[2] = { ...override, projectile: undefined };
+        } else if (override && overrideName === HOLLOW_NAME && override.projectile) {
+          // 10% higher firing rate = the same shot with a 1/1.10 cadence.
+          const every = Math.max(500, Math.round(Number(override.projectile.every ?? 1900) / 1.10));
+          args[2] = { ...override, projectile: { ...override.projectile, every } };
         }
       }
 
@@ -290,6 +358,10 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
             this.__wearinessMobTimer = this.bossTimer;
             this.bossTimer.timeScale = 2;
           }
+        }
+        if (name === HOLLOW_NAME) {
+          this.__hollowNextTeleportAt = Number(this.time?.now ?? 0) + HOLLOW_TELEPORT_COOLDOWN_MIN;
+          removeHollowPulse(this);
         }
       }
       return result;
@@ -311,6 +383,9 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
         } else if (name === WEARINESS_NAME) {
           removeWearinessPulse(this);
           tuneWeariness(this);
+        } else if (name === HOLLOW_NAME) {
+          removeHollowPulse(this);
+          updateHollowTeleport(this, time);
         }
       }
       return result;
