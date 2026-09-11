@@ -116,10 +116,34 @@ function shardTint(name: string) {
   return 0xffe79a;
 }
 
+function removeGuardianAttackRings(scene: SceneLike) {
+  const boss = scene.boss as Phaser.Physics.Arcade.Sprite | null;
+  if (!boss?.active || !isAct4ShardGuardian(scene, String(scene.bossName ?? ""))) return;
+
+  const act4State = scene.__act4StarryRemaster;
+  const keep = new Set<any>([
+    scene.aura,
+    act4State?.summitHalo,
+    ...(act4State?.shrineGlows ?? []),
+  ].filter(Boolean));
+
+  for (const obj of [...(scene.children?.list ?? [])]) {
+    if (!obj?.active || keep.has(obj) || obj === boss || obj === scene.player) continue;
+    if (!(obj instanceof Phaser.GameObjects.Arc)) continue;
+
+    const d = Phaser.Math.Distance.Between(Number(obj.x ?? 0), Number(obj.y ?? 0), boss.x, boss.y);
+    if (d > 240) continue;
+
+    // Any runtime Arc appearing around a shard guardian during combat is the
+    // unwanted impulse telegraph/attack ring. Kill its tween and object on the
+    // same frame it is created. Authored Act-IV shrine glows and Maria's aura
+    // are explicitly preserved above.
+    try { scene.tweens?.killTweensOf?.(obj); } catch {}
+    try { obj.destroy?.(); } catch {}
+  }
+}
+
 function removeGuardianImpulse(scene: SceneLike) {
-  // Remove the boss halo object itself. Hiding it was not enough because the
-  // base spawner still owned its tween; destroying it means there is no ring
-  // left for any later callback to reveal or pulse.
   const halo = scene.bossHalo;
   if (halo) {
     try {
@@ -129,13 +153,12 @@ function removeGuardianImpulse(scene: SceneLike) {
     scene.bossHalo = null;
   }
 
-  // Pillar guardians have no ranged/impulse attack. The timer is removed as a
-  // safety net and all already-created projectiles are destroyed immediately.
   if (scene.bossShotTimer) {
     try { scene.bossShotTimer.remove?.(); } catch {}
     scene.bossShotTimer = undefined;
   }
   try { scene.bolts?.clear?.(true, true); } catch {}
+  removeGuardianAttackRings(scene);
 }
 
 function restyleShardGuardian(scene: SceneLike) {
@@ -280,9 +303,6 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
   const originalSpawnActBoss = proto.spawnActBoss;
   if (typeof originalSpawnActBoss === "function") {
     proto.spawnActBoss = function(this: SceneLike, ...args: any[]) {
-      // IMPORTANT: strip the guardian projectile BEFORE the base spawner sees
-      // the config. This prevents the impulse/projectile timer from ever being
-      // created in the first place rather than trying to clean it up afterward.
       if (this.save?.current_zone === ACT4_ZONE) {
         const override = args[2];
         if (override && /shard guardian/i.test(String(override.name ?? ""))) {
@@ -297,6 +317,7 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
           restyleShardGuardian(this);
           tuneShardGuardianStats(this);
           removeGuardianImpulse(this);
+          removeGuardianAttackRings(this);
         }
         if (name === WEARINESS_NAME) {
           this.__wearinessMobTimer = null;
@@ -319,6 +340,7 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
         const name = String(this.bossName ?? "");
         if (isAct4ShardGuardian(this, name)) {
           removeGuardianImpulse(this);
+          removeGuardianAttackRings(this);
           this.boss?.setAlpha?.(1);
           const body = this.boss?.body as Phaser.Physics.Arcade.Body | undefined;
           if (body && (body.velocity.x || body.velocity.y)) {
