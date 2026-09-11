@@ -28,6 +28,11 @@ export function installInteractionCopyFixes(QuestScene: any) {
     let corrected: string | null = null;
     if (kind === "guest" && id === "alicia") corrected = "Talk to Alicia";
     else if (haystack.includes("lamp")) corrected = "Lighten the lamp";
+    else if (
+      kind === "season-mini-game" &&
+      (String(near.data?.season ?? "").toLowerCase() === "autumn" || id.startsWith("autumn:")) &&
+      raw.toLowerCase().includes("release")
+    ) corrected = "Release";
 
     if (corrected) {
       this.prompt = corrected;
