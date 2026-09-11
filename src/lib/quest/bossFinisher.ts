@@ -42,6 +42,9 @@ function markBossKind(scene: any) {
 
 function isFinisherEligible(scene: any, boss: any) {
   if (!boss?.active) return false;
+  // Act IV pillar guardians are puzzle encounters. They must bypass every part of
+  // the Final Strike controller and remain owned by the canonical Act IV code.
+  if (isAct4ShardGuardian(scene)) return false;
   markBossKind(scene);
   if (boss.getData?.(KIND) === "guardian") return false;
   if (boss.getData?.(DONE)) return false;
@@ -49,34 +52,6 @@ function isFinisherEligible(scene: any, boss: any) {
   if (!Number.isFinite(Number(scene?.bossHp)) || Number(scene?.bossHp) <= 0) return false;
   if (!Number.isFinite(Number(scene?.bossMax)) || Number(scene?.bossMax) <= 0) return false;
   return true;
-}
-
-function styleAct4ShardGuardian(scene: any) {
-  const boss = scene?.boss;
-  if (!boss?.active || !isAct4ShardGuardian(scene)) return;
-  markBossKind(scene);
-  if (boss.getData?.("act4-shard-styled")) return;
-  boss.setData?.("act4-shard-styled", true);
-  boss.setTint?.(0x7fdcff);
-  boss.setScale?.(Math.max(0.72, Number(boss.scaleX || 1) * 0.78));
-  boss.setAlpha?.(0.92);
-
-  const diamond = scene.add.rectangle(boss.x, boss.y, 72, 72, 0x7fdcff, 0.025)
-    .setStrokeStyle(2, 0xbff4ff, 0.72)
-    .setRotation(Math.PI / 4)
-    .setDepth(18)
-    .setBlendMode(Phaser.BlendModes.ADD);
-  boss.setData?.("act4-shard-diamond", diamond);
-  scene.tweens.add({
-    targets: diamond,
-    angle: 405,
-    alpha: { from: 0.32, to: 0.78 },
-    scale: { from: 0.86, to: 1.08 },
-    duration: 1800,
-    yoyo: true,
-    repeat: -1,
-    ease: "Sine.easeInOut",
-  });
 }
 
 function destroySafe(obj: any) {
@@ -141,8 +116,6 @@ function cleanupFinisher(scene: any, state: FinisherState) {
   try {
     scene.player?.setVelocity?.(0, 0);
     if (scene.vel) { scene.vel.x = 0; scene.vel.y = 0; }
-    // Do not zero scene.stick here. Touch controls own that state and clearing it
-    // can strand movement until another pointer event is emitted.
   } catch {}
 
   try {
@@ -350,7 +323,6 @@ export function installBossFinisher(QuestScene: any) {
   if (!p || p[INSTALLED]) return;
   p[INSTALLED] = true;
 
-  const originalSpawnActBoss = p.spawnActBoss;
   const originalDamageBoss = p.damageBoss;
   const originalAttack = p.attack;
   const originalDash = p.dash;
@@ -358,16 +330,13 @@ export function installBossFinisher(QuestScene: any) {
   const originalUpdate = p.update;
   if (typeof originalDamageBoss !== "function" || typeof originalAttack !== "function") return;
 
-  if (typeof originalSpawnActBoss === "function") {
-    p.spawnActBoss = function (...args: any[]) {
-      const result = originalSpawnActBoss.apply(this, args);
-      markBossKind(this);
-      styleAct4ShardGuardian(this);
-      return result;
-    };
-  }
-
   p.damageBoss = function (amount: number, ...args: any[]) {
+    // Hard bypass: Shard Guardians never enter, mutate, clean up, or otherwise
+    // participate in Final Strike state. Their damage/death path is untouched.
+    if (isAct4ShardGuardian(this)) {
+      return originalDamageBoss.call(this, amount, ...args);
+    }
+
     const state = this[STATE] as FinisherState | undefined;
     if (state?.mode === "executing" && state.allowLethal) return originalDamageBoss.call(this, amount, ...args);
     if (state && !state.cleaned) return;
@@ -398,6 +367,8 @@ export function installBossFinisher(QuestScene: any) {
   };
 
   p.attack = function (...args: any[]) {
+    // Shard Guardian attacks always use the original combat input path.
+    if (isAct4ShardGuardian(this)) return originalAttack.apply(this, args);
     const state = this[STATE] as FinisherState | undefined;
     if (state?.mode === "armed" && !state.cleaned) {
       executeFinisher(this, originalDamageBoss);
@@ -409,6 +380,7 @@ export function installBossFinisher(QuestScene: any) {
 
   if (typeof originalDash === "function") {
     p.dash = function (...args: any[]) {
+      if (isAct4ShardGuardian(this)) return originalDash.apply(this, args);
       const state = this[STATE] as FinisherState | undefined;
       if (state && !state.cleaned) return;
       return originalDash.apply(this, args);
@@ -417,6 +389,7 @@ export function installBossFinisher(QuestScene: any) {
 
   if (typeof originalInteract === "function") {
     p.interact = function (...args: any[]) {
+      if (isAct4ShardGuardian(this)) return originalInteract.apply(this, args);
       const state = this[STATE] as FinisherState | undefined;
       if (state && !state.cleaned) return;
       return originalInteract.apply(this, args);
@@ -427,37 +400,12 @@ export function installBossFinisher(QuestScene: any) {
     p.update = function (...args: any[]) {
       const result = originalUpdate.apply(this, args);
 
+      // Most importantly, do nothing at all to Shard Guardian runtime state.
+      // No frozen/input/physics/timer/camera/body writes happen here.
+      if (isAct4ShardGuardian(this)) return result;
+
       markBossKind(this);
-      styleAct4ShardGuardian(this);
-      const shard = this.boss;
-      const diamond = shard?.getData?.("act4-shard-diamond");
-      if (diamond?.active && shard?.active && isAct4ShardGuardian(this)) {
-        diamond.setPosition?.(shard.x, shard.y);
-      } else if (diamond?.active && (!shard?.active || !isAct4ShardGuardian(this))) {
-        destroySafe(diamond);
-      }
-
-      let state = this[STATE] as FinisherState | undefined;
-
-      // Shard Guardians must never inherit a Final Strike lock. They are regular
-      // pillar minibosses and Maria must remain fully mobile for the entire fight.
-      // If stale finisher state survives from another encounter, release it now.
-      if (isAct4ShardGuardian(this)) {
-        if (state && !state.cleaned) cleanupFinisher(this, state);
-        state = undefined;
-
-        if (!this.__actArrivalActive && !this.bossTalking) {
-          this.frozen = false;
-          try { this.physics?.world?.resume?.(); } catch {}
-          try { if (this.input) this.input.enabled = true; } catch {}
-          try {
-            const body = this.player?.body as Phaser.Physics.Arcade.Body | undefined;
-            if (body) body.enable = true;
-            this.player?.setActive?.(true)?.setVisible?.(true);
-          } catch {}
-        }
-      }
-
+      const state = this[STATE] as FinisherState | undefined;
       if (state && !state.cleaned) {
         if (!state.boss?.active || this.boss !== state.boss) {
           cleanupFinisher(this, state);
@@ -480,8 +428,6 @@ export function installBossFinisher(QuestScene: any) {
       this.events?.once?.(Phaser.Scenes.Events.SHUTDOWN, () => {
         const state = this[STATE] as FinisherState | undefined;
         if (state && !state.cleaned) cleanupFinisher(this, state);
-        const diamond = this.boss?.getData?.("act4-shard-diamond");
-        destroySafe(diamond);
         this[STATE] = null;
       });
       return result;
