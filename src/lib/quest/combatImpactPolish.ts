@@ -21,14 +21,7 @@ function impactRing(scene: SceneLike, x: number, y: number, tint: number, finish
     .setStrokeStyle(finishing ? 4 : 3, tint, 0.9)
     .setDepth(980)
     .setBlendMode(Phaser.BlendModes.ADD);
-  scene.tweens.add({
-    targets: ring,
-    radius: finishing ? 52 : 36,
-    alpha: 0,
-    duration: finishing ? 230 : 150,
-    ease: "Quad.easeOut",
-    onComplete: () => ring.destroy(),
-  });
+  scene.tweens.add({ targets: ring, radius: finishing ? 52 : 36, alpha: 0, duration: finishing ? 230 : 150, ease: "Quad.easeOut", onComplete: () => ring.destroy() });
 }
 
 function directionalSparks(scene: SceneLike, x: number, y: number, tint: number, sourceX: number, sourceY: number, count: number) {
@@ -100,9 +93,7 @@ function bossImpact(scene: SceneLike, boss: Phaser.Physics.Arcade.Sprite | null,
   scene.__combatBossReactionAt = now;
   const tint = mariaHit ? weaponColor(scene) : 0xffd7e5;
   const bossName = String(scene.bossName ?? "");
-  if (!isWeariness(scene, bossName) && !isAct4ShardGuardian(scene, bossName)) {
-    impactRing(scene, x, y, tint, finishing);
-  }
+  if (!isWeariness(scene, bossName) && !isAct4ShardGuardian(scene, bossName)) impactRing(scene, x, y, tint, finishing);
   directionalSparks(scene, x, y, tint, scene.player?.x ?? x - 1, scene.player?.y ?? y, finishing ? 11 : 7);
   if (boss?.active && boss.scene) bossFlashEcho(scene, boss, x, y, finishing);
   if (mariaHit) scene.cameras?.main?.shake?.(finishing ? 85 : 48, finishing ? 0.0022 : 0.00125);
@@ -116,9 +107,10 @@ function shardTint(name: string) {
   return 0xffe79a;
 }
 
-function removeGuardianAttackRings(scene: SceneLike) {
+function removeAct4BossAttackRings(scene: SceneLike, match: (name: string) => boolean) {
   const boss = scene.boss as Phaser.Physics.Arcade.Sprite | null;
-  if (!boss?.active || !isAct4ShardGuardian(scene, String(scene.bossName ?? ""))) return;
+  const name = String(scene.bossName ?? "");
+  if (!boss?.active || !match(name)) return;
 
   const act4State = scene.__act4StarryRemaster;
   const keep = new Set<any>([
@@ -130,29 +122,23 @@ function removeGuardianAttackRings(scene: SceneLike) {
   for (const obj of [...(scene.children?.list ?? [])]) {
     if (!obj?.active || keep.has(obj) || obj === boss || obj === scene.player) continue;
     if (!(obj instanceof Phaser.GameObjects.Arc)) continue;
-
     const d = Phaser.Math.Distance.Between(Number(obj.x ?? 0), Number(obj.y ?? 0), boss.x, boss.y);
-    if (d > 240) continue;
-
-    // Any runtime Arc appearing around a shard guardian during combat is the
-    // unwanted impulse telegraph/attack ring. Kill its tween and object on the
-    // same frame it is created. Authored Act-IV shrine glows and Maria's aura
-    // are explicitly preserved above.
+    if (d > 280) continue;
     try { scene.tweens?.killTweensOf?.(obj); } catch {}
     try { obj.destroy?.(); } catch {}
   }
 }
 
+function removeGuardianAttackRings(scene: SceneLike) {
+  removeAct4BossAttackRings(scene, (name) => /shard guardian/i.test(name));
+}
+
 function removeGuardianImpulse(scene: SceneLike) {
   const halo = scene.bossHalo;
   if (halo) {
-    try {
-      scene.tweens?.killTweensOf?.(halo);
-      halo.destroy?.();
-    } catch {}
+    try { scene.tweens?.killTweensOf?.(halo); halo.destroy?.(); } catch {}
     scene.bossHalo = null;
   }
-
   if (scene.bossShotTimer) {
     try { scene.bossShotTimer.remove?.(); } catch {}
     scene.bossShotTimer = undefined;
@@ -190,19 +176,18 @@ function tuneShardGuardianStats(scene: SceneLike) {
 }
 
 function removeWearinessPulse(scene: SceneLike) {
+  if (!isWeariness(scene)) return;
   const halo = scene.bossHalo;
   if (halo) {
-    try {
-      scene.tweens?.killTweensOf?.(halo);
-      halo.setAlpha?.(0);
-      halo.setVisible?.(false);
-    } catch {}
+    try { scene.tweens?.killTweensOf?.(halo); halo.destroy?.(); } catch {}
+    scene.bossHalo = null;
   }
-  try { scene.bolts?.clear?.(true, true); } catch {}
   if (scene.bossShotTimer) {
     try { scene.bossShotTimer.remove?.(); } catch {}
     scene.bossShotTimer = undefined;
   }
+  try { scene.bolts?.clear?.(true, true); } catch {}
+  removeAct4BossAttackRings(scene, (name) => name === WEARINESS_NAME);
 }
 
 function tuneWeariness(scene: SceneLike) {
@@ -212,9 +197,7 @@ function tuneWeariness(scene: SceneLike) {
   boss.setAlpha(1);
   removeWearinessPulse(scene);
   const body = boss.body as Phaser.Physics.Arcade.Body | undefined;
-  if (body && (body.velocity.x || body.velocity.y)) {
-    boss.setVelocity(body.velocity.x * 1.05, body.velocity.y * 1.05);
-  }
+  if (body && (body.velocity.x || body.velocity.y)) boss.setVelocity(body.velocity.x * 1.05, body.velocity.y * 1.05);
   if (scene.bossTimer && scene.__wearinessMobTimer !== scene.bossTimer) {
     scene.__wearinessMobTimer = scene.bossTimer;
     scene.bossTimer.timeScale = 2;
@@ -226,25 +209,11 @@ function swingAccent(scene: SceneLike) {
   if (!player?.active) return;
   const w = scene.equippedWeapon?.();
   if (!w) return;
-  const dir = scene.lastDir === "up"
-    ? -Math.PI / 2
-    : scene.lastDir === "down"
-      ? Math.PI / 2
-      : scene.facing > 0
-        ? 0
-        : Math.PI;
+  const dir = scene.lastDir === "up" ? -Math.PI / 2 : scene.lastDir === "down" ? Math.PI / 2 : scene.facing > 0 ? 0 : Math.PI;
   const x = player.x + Math.cos(dir) * w.reach * 0.72;
   const y = player.y + Math.sin(dir) * w.reach * 0.72;
-  const streak = scene.add.arc(
-    player.x,
-    player.y,
-    Math.max(18, w.reach * 0.82),
-    Phaser.Math.RadToDeg(dir) - 34,
-    Phaser.Math.RadToDeg(dir) + 34,
-    false,
-    w.color,
-    0.18,
-  ).setStrokeStyle(2, w.color, 0.72).setDepth(20).setBlendMode(Phaser.BlendModes.ADD);
+  const streak = scene.add.arc(player.x, player.y, Math.max(18, w.reach * 0.82), Phaser.Math.RadToDeg(dir) - 34, Phaser.Math.RadToDeg(dir) + 34, false, w.color, 0.18)
+    .setStrokeStyle(2, w.color, 0.72).setDepth(20).setBlendMode(Phaser.BlendModes.ADD);
   const glint = scene.add.sprite(x, y, "spark").setTint(w.color).setDepth(21).setScale(0.7).setAlpha(0.8);
   scene.tweens.add({ targets: streak, alpha: 0, scale: 1.06, duration: 120, ease: "Quad.easeOut", onComplete: () => streak.destroy() });
   scene.tweens.add({ targets: glint, alpha: 0, scale: 0.15, duration: 115, ease: "Quad.easeOut", onComplete: () => glint.destroy() });
@@ -260,9 +229,7 @@ function halveAct4SwordKnockback(scene: SceneLike) {
   const py = scene.player.y;
   const targets: Phaser.Physics.Arcade.Sprite[] = [];
   if (scene.boss?.active) targets.push(scene.boss);
-  for (const enemy of (scene.enemies?.getChildren?.() ?? []) as Phaser.Physics.Arcade.Sprite[]) {
-    if (enemy?.active) targets.push(enemy);
-  }
+  for (const enemy of (scene.enemies?.getChildren?.() ?? []) as Phaser.Physics.Arcade.Sprite[]) if (enemy?.active) targets.push(enemy);
   for (const target of targets) {
     if (Phaser.Math.Distance.Between(px, py, target.x, target.y) > reach) continue;
     const body = target.body as Phaser.Physics.Arcade.Body | undefined;
@@ -277,11 +244,7 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
 
   const originalAttack = proto.attack;
   proto.attack = function combatImpactAttack(this: SceneLike, ...args: any[]) {
-    const canSwing =
-      !this.frozen &&
-      this.player?.active &&
-      this.save?.weapons?.includes(this.save?.equipped_weapon ?? "") &&
-      Number(this.time?.now ?? 0) >= Number(this.swingAt ?? 0);
+    const canSwing = !this.frozen && this.player?.active && this.save?.weapons?.includes(this.save?.equipped_weapon ?? "") && Number(this.time?.now ?? 0) >= Number(this.swingAt ?? 0);
     if (canSwing) {
       this.__combatImpactMariaSwingUntil = Number(this.time?.now ?? 0) + MARIA_CONTACT_WINDOW;
       swingAccent(this);
@@ -305,7 +268,8 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
     proto.spawnActBoss = function(this: SceneLike, ...args: any[]) {
       if (this.save?.current_zone === ACT4_ZONE) {
         const override = args[2];
-        if (override && /shard guardian/i.test(String(override.name ?? ""))) {
+        const overrideName = String(override?.name ?? "");
+        if (override && (/shard guardian/i.test(overrideName) || overrideName === WEARINESS_NAME)) {
           args[2] = { ...override, projectile: undefined };
         }
       }
@@ -343,10 +307,9 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
           removeGuardianAttackRings(this);
           this.boss?.setAlpha?.(1);
           const body = this.boss?.body as Phaser.Physics.Arcade.Body | undefined;
-          if (body && (body.velocity.x || body.velocity.y)) {
-            this.boss.setVelocity(body.velocity.x * 1.1, body.velocity.y * 1.1);
-          }
+          if (body && (body.velocity.x || body.velocity.y)) this.boss.setVelocity(body.velocity.x * 1.1, body.velocity.y * 1.1);
         } else if (name === WEARINESS_NAME) {
+          removeWearinessPulse(this);
           tuneWeariness(this);
         }
       }
@@ -357,9 +320,7 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
   const originalDamageBoss = proto.damageBoss;
   proto.damageBoss = function(this: SceneLike, amount: number, ...args: any[]) {
     const bossNameBefore = String(this.bossName ?? "");
-    if (isAct4ShardGuardian(this, bossNameBefore)) {
-      return originalDamageBoss.call(this, amount, ...args);
-    }
+    if (isAct4ShardGuardian(this, bossNameBefore)) return originalDamageBoss.call(this, amount, ...args);
     const boss = this.boss as Phaser.Physics.Arcade.Sprite | null;
     const hpBefore = Number(this.bossHp ?? 0);
     const x = boss?.x ?? 0;
@@ -368,11 +329,8 @@ export function installCombatImpactPolish(QuestScene: SceneCtor) {
     const hpAfter = Number(this.bossHp ?? hpBefore);
     if (boss && hpAfter < hpBefore) {
       const mariaHit = Number(this.time?.now ?? 0) <= Number(this.__combatImpactMariaSwingUntil ?? -Infinity);
-      try {
-        bossImpact(this, boss?.active && boss.scene ? boss : null, x, y, hpAfter <= 0, mariaHit);
-      } catch (err) {
-        console.warn?.("[quest] combat impact skipped after boss state changed", err);
-      }
+      try { bossImpact(this, boss?.active && boss.scene ? boss : null, x, y, hpAfter <= 0, mariaHit); }
+      catch (err) { console.warn?.("[quest] combat impact skipped after boss state changed", err); }
     }
     return result;
   };
