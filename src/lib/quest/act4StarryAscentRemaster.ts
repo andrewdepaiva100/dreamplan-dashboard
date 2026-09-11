@@ -16,6 +16,127 @@ function safeDestroy(obj: any) {
   try { obj?.destroy?.(); } catch { /* scene shutdown */ }
 }
 
+/**
+ * Static Act-IV scenery pass. Everything in here is presentation-only:
+ * no physics bodies, no colliders, no timers, no per-frame updates, and no
+ * progression state. That keeps the plateau richer without adding gameplay
+ * risk or a meaningful runtime cost.
+ */
+function addStaticScenery(scene: any) {
+  const scenery: any[] = [];
+  const world = scene.add.graphics().setDepth(2).setBlendMode(Phaser.BlendModes.ADD);
+  scenery.push(world);
+
+  // Low-contrast constellation lines laid into open ground. One Graphics
+  // object draws every line so this stays extremely cheap to render.
+  const constellations: [number, number][][] = [
+    [[12, 18], [18, 22], [24, 18], [30, 24]],
+    [[94, 34], [100, 30], [106, 36], [112, 31]],
+    [[18, 58], [24, 54], [30, 60], [36, 56]],
+    [[74, 72], [80, 76], [86, 72], [92, 78]],
+    [[48, 88], [54, 84], [60, 90], [66, 86]],
+  ];
+  for (const chain of constellations) {
+    world.lineStyle(1, 0xaec8ff, 0.16);
+    for (let i = 0; i < chain.length - 1; i++) {
+      const [ax, ay] = chain[i]!;
+      const [bx, by] = chain[i + 1]!;
+      world.lineBetween(scene.wx(ax), scene.wy(ay), scene.wx(bx), scene.wy(by));
+    }
+    for (const [gx, gy] of chain) {
+      world.fillStyle(0xe5edff, 0.35);
+      world.fillCircle(scene.wx(gx), scene.wy(gy), 2.1);
+    }
+  }
+
+  // Edge crystal formations: small, static silhouettes outside the main paths.
+  // Triangles are non-interactive GameObjects and never receive physics bodies.
+  const crystalClusters: [number, number, number][] = [
+    [10, 30, 0x7da6ff], [16, 12, 0x9e8cff], [36, 10, 0x77b8ff],
+    [58, 12, 0x9d8dff], [116, 16, 0x7caeff], [120, 40, 0x8f9fff],
+    [118, 66, 0xb4a0ff], [110, 90, 0x7faeff], [72, 92, 0xa591ff],
+    [14, 88, 0x7cb5ff], [8, 68, 0x9d8cff], [98, 88, 0x79a9ff],
+  ];
+  crystalClusters.forEach(([gx, gy, tint], index) => {
+    const x = scene.wx(gx);
+    const y = scene.wy(gy);
+    const h = 14 + (index % 3) * 4;
+    const main = scene.add.triangle(x, y, 0, -h, -7, 8, 7, 8, tint, 0.34)
+      .setStrokeStyle(1, 0xdce7ff, 0.28)
+      .setDepth(4);
+    const shard = scene.add.triangle(x + 8, y + 3, 0, -(h * 0.65), -4, 5, 4, 5, 0xd7cbff, 0.24)
+      .setDepth(4);
+    scenery.push(main, shard);
+  });
+
+  // Small celestial stone clusters fill dead corners without narrowing any
+  // route. Ellipses are intentionally low and fully non-colliding.
+  const rockClusters: [number, number][] = [
+    [20, 34], [34, 74], [48, 28], [64, 64], [82, 40],
+    [96, 76], [108, 48], [44, 82], [76, 18], [24, 46],
+  ];
+  rockClusters.forEach(([gx, gy], i) => {
+    const x = scene.wx(gx);
+    const y = scene.wy(gy);
+    const shadow = scene.add.ellipse(x + 4, y + 5, 28, 10, 0x0a1026, 0.18).setDepth(2);
+    const a = scene.add.ellipse(x, y, 20 + (i % 3) * 4, 12, 0x34436d, 0.62)
+      .setStrokeStyle(1, 0x7d8db8, 0.2)
+      .setDepth(4);
+    const b = scene.add.ellipse(x + 10, y + 2, 12, 8, 0x46547d, 0.54).setDepth(4);
+    scenery.push(shadow, a, b);
+  });
+
+  // Star-flowers: reuse an already-loaded texture, but keep these completely
+  // static. No animation/tween is attached to any of them.
+  if (scene.textures?.exists?.("flowers")) {
+    const flowerSpots: [number, number, number][] = [
+      [30, 18, 0xcbd7ff], [38, 38, 0xe2d3ff], [52, 54, 0xbfd8ff],
+      [66, 82, 0xffe4ad], [80, 60, 0xd8c9ff], [94, 54, 0xbfdcff],
+      [106, 26, 0xe2d5ff], [102, 84, 0xffe6b7], [22, 78, 0xc9d8ff],
+      [58, 18, 0xd5c8ff], [86, 24, 0xbddcff], [112, 72, 0xdfd0ff],
+    ];
+    flowerSpots.forEach(([gx, gy, tint], i) => {
+      const f = scene.add.sprite(scene.wx(gx), scene.wy(gy), "flowers")
+        .setTint(tint)
+        .setScale(0.52 + (i % 3) * 0.08)
+        .setAlpha(0.68)
+        .setDepth(4);
+      scenery.push(f);
+    });
+  }
+
+  // Give each pillar a subtle static four-point floor sigil. The pillar itself
+  // remains fully accessible because these are visual marks only.
+  PILLARS.forEach(([gx, gy], i) => {
+    const x = scene.wx(gx);
+    const y = scene.wy(gy);
+    const g = scene.add.graphics().setDepth(3).setBlendMode(Phaser.BlendModes.ADD);
+    g.lineStyle(1, i % 2 ? 0xe0d5ff : 0xbcd6ff, 0.22);
+    g.lineBetween(x - 18, y, x + 18, y);
+    g.lineBetween(x, y - 12, x, y + 12);
+    g.strokeCircle(x, y, 16);
+    scenery.push(g);
+  });
+
+  // Observatory approach markers: two quiet rows of star-stones that visually
+  // lead toward the landmark without creating a corridor or any collision.
+  const approach: [number, number][] = [
+    [86, 34], [90, 31], [94, 28], [98, 25],
+    [88, 38], [92, 35], [96, 32], [100, 29],
+  ];
+  approach.forEach(([gx, gy], i) => {
+    const x = scene.wx(gx);
+    const y = scene.wy(gy);
+    const base = scene.add.ellipse(x, y + 3, 14, 6, 0x111a38, 0.24).setDepth(2);
+    const marker = scene.add.diamond(x, y, 8, 12, i % 2 ? 0xcbbcff : 0xffe3a0, 0.4)
+      .setStrokeStyle(1, 0xffffff, 0.22)
+      .setDepth(4);
+    scenery.push(base, marker);
+  });
+
+  return scenery;
+}
+
 function addCelestialWildlife(scene: any) {
   const animals: any[] = [];
 
@@ -152,6 +273,7 @@ function makeState(scene: any) {
     shrineCores,
     summitHalo,
     edgeStars,
+    staticScenery: addStaticScenery(scene),
     celestialWildlife: addCelestialWildlife(scene),
     lastPillarSignature: "",
     lastGoldCount: 0,
