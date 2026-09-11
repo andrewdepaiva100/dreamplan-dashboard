@@ -101,7 +101,22 @@ function playArrival(scene: SceneLike) {
     scene.time.delayedCall(1470, () => {
       camera.startFollow(scene.player, true, 0.12, 0.12);
       camera.setZoom(normalZoom.x, normalZoom.y);
-      scene.frozen = previousFrozen;
+
+      // Act IV must always hand control back after its arrival reveal. The realm
+      // has no authored modal/cutscene at spawn that should keep Maria frozen,
+      // and restoring a stale previousFrozen value can permanently lock movement.
+      if (zone === "starry_ascent") {
+        scene.frozen = false;
+        scene.physics?.world?.resume?.();
+        scene.input?.keyboard && (scene.input.keyboard.enabled = true);
+        if (scene.player?.body) scene.player.body.enable = true;
+        scene.player?.setActive?.(true)?.setVisible?.(true);
+        scene.player?.setVelocity?.(0, 0);
+        if (scene.vel) { scene.vel.x = 0; scene.vel.y = 0; }
+      } else {
+        scene.frozen = previousFrozen;
+      }
+
       [veil, act, rule, title, subtitle, hint].forEach((o: any) => o?.destroy?.());
     });
   };
