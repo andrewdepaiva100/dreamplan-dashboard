@@ -34,6 +34,14 @@ export function installInteractionCopyFixes(QuestScene: any) {
           const speed = Math.max(24, Number(enemy.getData?.("summerSpeed") ?? 51));
           if (dist > 24) enemy.setVelocity?.((dx / dist) * speed, (dy / dist) * speed);
           else enemy.setVelocity?.(0, 0);
+
+          // Make Summer contact damage deterministic instead of depending on the
+          // generic enemy overlap callback. hurtPlayerDirect uses the normal
+          // player invulnerability window, so sustained contact cannot drain
+          // multiple hearts in a single frame. This path never changes guardian scale.
+          if (dist <= 30 && typeof this.hurtPlayerDirect === "function") {
+            this.hurtPlayerDirect();
+          }
         }
       }
 
