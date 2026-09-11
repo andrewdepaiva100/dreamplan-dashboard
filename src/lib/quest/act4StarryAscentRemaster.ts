@@ -16,6 +16,65 @@ function safeDestroy(obj: any) {
   try { obj?.destroy?.(); } catch { /* scene shutdown */ }
 }
 
+function addCelestialWildlife(scene: any) {
+  const animals: any[] = [];
+
+  const addDrifter = (
+    texture: string,
+    gx: number,
+    gy: number,
+    tint: number,
+    scale: number,
+    driftX: number,
+    driftY: number,
+    duration: number,
+  ) => {
+    if (!scene.textures?.exists?.(texture)) return;
+    const x = scene.wx(gx);
+    const y = scene.wy(gy);
+    const animal = scene.add.sprite(x, y, texture)
+      .setTint(tint)
+      .setScale(scale)
+      .setAlpha(0.88)
+      .setDepth(9);
+    animal.setData?.("act4-celestial-wildlife", true);
+    animals.push(animal);
+
+    scene.tweens.add({
+      targets: animal,
+      x: x + driftX,
+      y: y + driftY,
+      duration,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+      onYoyo: () => animal?.active && animal.setFlipX?.(driftX < 0),
+      onRepeat: () => animal?.active && animal.setFlipX?.(driftX >= 0),
+    });
+
+    scene.tweens.add({
+      targets: animal,
+      alpha: { from: 0.72, to: 1 },
+      duration: 1300 + Math.floor(duration * 0.18),
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+  };
+
+  // Act-IV-only celestial wildlife. These are decorative sprites only: no
+  // collisions, combat, drops, pickups, objectives, or progression hooks.
+  addDrifter("deer", 18, 22, 0xb9d8ff, 1.18, 52, 8, 5200);
+  addDrifter("deer", 112, 76, 0xe5d5ff, 1.08, -46, -6, 5700);
+  addDrifter("bird", 30, 32, 0xc8b9ff, 1.24, 72, -22, 3100);
+  addDrifter("bird", 92, 20, 0x9fdcff, 1.18, -84, 18, 3400);
+  addDrifter("bird", 108, 58, 0xffe5a8, 1.12, 66, -16, 3600);
+  addDrifter("butterfly", 38, 86, 0xd8c8ff, 1.2, 34, -28, 2800);
+  addDrifter("butterfly", 78, 54, 0xaedfff, 1.15, -30, -24, 3000);
+
+  return animals;
+}
+
 function makeState(scene: any) {
   const summit = { x: scene.wx(84), y: scene.wy(16) };
   const beamGfx = scene.add.graphics().setDepth(3).setBlendMode(Phaser.BlendModes.ADD);
@@ -93,13 +152,14 @@ function makeState(scene: any) {
     shrineCores,
     summitHalo,
     edgeStars,
+    celestialWildlife: addCelestialWildlife(scene),
     lastPillarSignature: "",
     lastGoldCount: 0,
     stairsCelebrated: false,
     nextRefreshAt: 0,
-    nextStarAt: Number(scene.time?.now ?? 0) + Phaser.Math.Between(28000, 42000),
+    // Decorative stars appear about twice as often as before.
+    nextStarAt: Number(scene.time?.now ?? 0) + Phaser.Math.Between(14000, 21000),
     fallingStar: null,
-    landingGlow: null,
   };
 }
 
@@ -254,81 +314,49 @@ function chooseStarLanding(scene: any) {
 }
 
 function launchFallingStar(scene: any, state: any) {
-  if (state.fallingStar?.active || state.landingGlow?.active || scene.frozen || scene.boss?.active) return;
+  // Falling stars are now scenery only. They never run during combat and they
+  // create no pickup, blessing, save mutation, HUD change, or interaction.
+  if (state.fallingStar?.active || scene.frozen || scene.boss?.active) return;
   const landing = chooseStarLanding(scene);
   if (!landing) return;
 
-  const star = scene.add.sprite(landing.x - 220, landing.y - 180, "spark")
+  const startX = landing.x - 250;
+  const startY = landing.y - 210;
+  const star = scene.add.sprite(startX, startY, "spark")
     .setTint(0xffe58a)
     .setBlendMode(Phaser.BlendModes.ADD)
-    .setScale(3.8)
-    .setAlpha(0.95)
-    .setDepth(990);
-  const trail = scene.add.graphics().setDepth(989).setBlendMode(Phaser.BlendModes.ADD);
-  trail.lineStyle(5, 0xffe58a, 0.18).lineBetween(star.x, star.y, landing.x, landing.y);
-  trail.lineStyle(2, 0xffffff, 0.45).lineBetween(star.x, star.y, landing.x, landing.y);
+    .setScale(3.5)
+    .setAlpha(0.92)
+    .setDepth(11);
+  const trail = scene.add.graphics().setDepth(10).setBlendMode(Phaser.BlendModes.ADD);
+  trail.lineStyle(5, 0xffe58a, 0.14).lineBetween(startX, startY, landing.x, landing.y);
+  trail.lineStyle(2, 0xffffff, 0.34).lineBetween(startX, startY, landing.x, landing.y);
   state.fallingStar = star;
-  scene.emitToast?.("A falling star streaks across the ascent...");
 
   scene.tweens.add({
     targets: star,
     x: landing.x,
     y: landing.y,
-    scale: 1.2,
-    duration: 900,
+    scale: 0.7,
+    alpha: 0,
+    // Previous fall lasted 900 ms. 450 ms makes the streak cross twice as fast.
+    duration: 450,
     ease: "Cubic.easeIn",
     onComplete: () => {
       safeDestroy(trail);
       safeDestroy(star);
       state.fallingStar = null;
-      scene.spawnSparkle?.(landing.x, landing.y, 0xffe58a, 22);
-      const glow = scene.add.circle(landing.x, landing.y, 24, 0xffdf73, 0.16)
-        .setStrokeStyle(2, 0xfff4c4, 0.75)
-        .setDepth(12)
-        .setBlendMode(Phaser.BlendModes.ADD);
-      state.landingGlow = glow;
-      scene.tweens.add({
-        targets: glow,
-        radius: { from: 21, to: 34 },
-        alpha: { from: 0.12, to: 0.28 },
-        duration: 900,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut",
-      });
-      scene.time.delayedCall(15000, () => {
-        if (state.landingGlow === glow) {
-          safeDestroy(glow);
-          state.landingGlow = null;
-        }
-      });
+      // Tiny visual-only glint at the endpoint; it cannot be collected.
+      try { scene.spawnSparkle?.(landing.x, landing.y, 0xffe58a, 5); } catch {}
     },
   });
 }
 
 function updateFallingStar(scene: any, state: any, time: number) {
-  if (state.landingGlow?.active && scene.player?.active) {
-    const d = Phaser.Math.Distance.Between(scene.player.x, scene.player.y, state.landingGlow.x, state.landingGlow.y);
-    if (d < 42) {
-      const x = state.landingGlow.x, y = state.landingGlow.y;
-      safeDestroy(state.landingGlow);
-      state.landingGlow = null;
-      scene.stamina = 100;
-      if (typeof scene.save?.player_health === "number") {
-        scene.save.player_health = Math.min(5, scene.save.player_health + 0.5);
-        scene.emitSave?.();
-      }
-      scene.spawnSparkle?.(x, y, 0xffe89c, 30);
-      scene.cameras?.main?.flash?.(160, 255, 241, 190);
-      scene.emitToast?.("Star Blessing — your heart and stamina brighten.");
-      scene.pushHud?.(true);
-      state.nextStarAt = time + Phaser.Math.Between(38000, 60000);
-    }
-  }
-
-  if (!state.fallingStar && !state.landingGlow && time >= state.nextStarAt) {
+  if (!state.fallingStar && time >= state.nextStarAt) {
     launchFallingStar(scene, state);
-    state.nextStarAt = time + Phaser.Math.Between(38000, 60000);
+    // About twice the old frequency, still one decorative streak at a time.
+    state.nextStarAt = time + Phaser.Math.Between(19000, 30000);
   }
 }
 
@@ -338,8 +366,8 @@ export function installAct4StarryAscentRemaster(QuestScene: any) {
   proto.__act4StarryAscentRemasterInstalled = true;
 
   // Act IV's authored build creates its main boss immediately. Hold only that
-  // default boss spawn while the realm is being built. No pillar-guardian
-  // requirement exists here: the main boss is gated strictly by pillar color.
+  // default boss spawn while the realm is being built. The true boss is gated
+  // strictly by all five pillar values being gold.
   const originalSpawnActBoss = proto.spawnActBoss;
   if (typeof originalSpawnActBoss === "function") {
     proto.spawnActBoss = function act4GoldenPillarBossGate(...args: any[]) {
@@ -392,8 +420,6 @@ export function installAct4StarryAscentRemaster(QuestScene: any) {
         refreshPillars(this);
       }
 
-      // The main boss appears as soon as the existing pillar puzzle reaches
-      // its solved state: all five pillar values are gold (1).
       if (
         !this.__act4MainBossSpawned
         && this.__act4MainBossDeferred
