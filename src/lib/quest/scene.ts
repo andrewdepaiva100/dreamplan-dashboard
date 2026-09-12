@@ -9,6 +9,7 @@ import {
   MemoryWalkScene,
 } from "./memoryWalk";
 import { EV } from "./events";
+import "./cathedralVowsDirectFix";
 
 export { EV } from "./events";
 export type { HudState, ModalPayload } from "./events";
@@ -62,6 +63,36 @@ export class QuestScene extends BaseQuestScene {
     return this.save?.current_zone === ACT4 && this.save?.relics_collected?.includes?.(SEAL);
   }
 
+  /** Cathedral letter stays discoverable, but without the tall rose beacon/glow. */
+  private addKeyBeacon(x: number, y: number, id: string, tint: number) {
+    if (this.save?.current_zone === ACT5 && String(id).startsWith("env-cathedral")) return;
+    return super.addKeyBeacon(x, y, id, tint);
+  }
+
+  /** Defensive cleanup: Act V must never inherit Maria's cottage or its house trigger. */
+  private removeCathedralHomeRemnants() {
+    if (this.save?.current_zone !== ACT5) return;
+
+    try {
+      const keep: any[] = [];
+      for (const it of this.interactables ?? []) {
+        if (it?.kind === "house") {
+          it.obj?.destroy?.();
+          continue;
+        }
+        keep.push(it);
+      }
+      this.interactables = keep;
+    } catch {}
+
+    try {
+      for (const child of [...(this.children?.list ?? [])]) {
+        const key = String((child as any)?.texture?.key ?? "");
+        if (key === "house" || key === "cottage") child?.destroy?.();
+      }
+    } catch {}
+  }
+
   override create() {
     if (String(this.save?.current_zone) === MEMORY_WALK_SAVE_ID) {
       this.scene.start(MEMORY_WALK_SCENE_KEY, { save: this.save });
@@ -78,6 +109,7 @@ export class QuestScene extends BaseQuestScene {
     }
 
     super.create();
+    this.removeCathedralHomeRemnants();
 
     if (this.act4SealComplete()) {
       this.objective = "The stars remember — the Memory Walk begins.";
