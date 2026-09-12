@@ -11,6 +11,8 @@ export type QuestSave = {
   weapons: string[];
   equipped_weapon: string | null;
   swift_boots: boolean;
+  /** Local migration flag for the interlude between Act IV and Act V. */
+  memory_walk_completed: boolean;
   /** 0..1 position in the day/night cycle (0 = dawn, 0.5 = dusk). */
   time_of_day: number;
   /** Backpack contents: item id -> count. */
@@ -35,6 +37,7 @@ export const EMPTY_SAVE: QuestSave = {
   weapons: [],
   equipped_weapon: null,
   swift_boots: false,
+  memory_walk_completed: false,
   time_of_day: 0.38,
   inventory: {},
   chest: {},
@@ -91,6 +94,7 @@ function writeLocal(save: QuestSave) {
 
 export async function loadSave(): Promise<QuestSave | null> {
   try {
+    const local = readLocal();
     const { data, error } = await supabase
       .from("maria_quest_saves")
       .select(
@@ -99,7 +103,7 @@ export async function loadSave(): Promise<QuestSave | null> {
       .eq("slot", SLOT)
       .maybeSingle();
     if (error) throw error;
-    if (!data) return readLocal();
+    if (!data) return local;
     const remote: QuestSave = {
       current_zone: (data.current_zone as ZoneId) ?? "sunlit_shores",
       player_health: data.player_health ?? 5,
@@ -114,6 +118,7 @@ export async function loadSave(): Promise<QuestSave | null> {
       weapons: Array.isArray(data.weapons) ? (data.weapons as string[]) : [],
       equipped_weapon: (data.equipped_weapon as string | null) ?? null,
       swift_boots: Boolean(data.swift_boots),
+      memory_walk_completed: Boolean(local?.memory_walk_completed),
       time_of_day: typeof data.time_of_day === "number" ? data.time_of_day : 0.38,
       inventory: asCounts(data.inventory),
       chest: asCounts(data.chest),
