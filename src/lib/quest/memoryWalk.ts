@@ -16,6 +16,7 @@ const PATH_TOP = 500;
 type MemoryGroup = {
   root: Phaser.GameObjects.Container;
   centerX: number;
+  tint: number;
 };
 
 export class MemoryWalkScene extends Phaser.Scene {
@@ -31,21 +32,15 @@ export class MemoryWalkScene extends Phaser.Scene {
   private lastWalkFrameAt = 0;
   private lastFootGlowAt = 0;
   private lastButterflyTrailAt = 0;
+  private lastAmbientSparkleAt = 0;
   private memoryAudio: AudioContext | null = null;
   private memoryMusicStop: (() => void) | null = null;
   private cathedralSwelled = false;
+  private focusMemory = -1;
 
-  constructor() {
-    super(MEMORY_WALK_SCENE_KEY);
-  }
-
-  init(data: { save?: any }) {
-    this.save = data?.save;
-  }
-
-  preload() {
-    preloadQuestArt(this);
-  }
+  constructor() { super(MEMORY_WALK_SCENE_KEY); }
+  init(data: { save?: any }) { this.save = data?.save; }
+  preload() { preloadQuestArt(this); }
 
   create() {
     try {
@@ -69,10 +64,24 @@ export class MemoryWalkScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
 
     const bg = this.add.graphics().setDepth(0);
-    bg.fillGradientStyle(0x070a18, 0x0d1735, 0x21183b, 0x17101f, 1);
+    bg.fillGradientStyle(0x060916, 0x0b1632, 0x24193e, 0x170f20, 1);
     bg.fillRect(0, 0, WORLD_W, WORLD_H);
 
-    // Layered celestial haze creates depth before any landmark appears.
+    // Very soft act-to-act colour fields. They overlap, so the palette melts
+    // between chapters instead of looking like four separate panels.
+    const moods = this.add.graphics().setDepth(0);
+    const moodStops = [
+      [160, 0xffc66e, 0.045],
+      [720, 0xff8fbd, 0.05],
+      [1240, 0xe5aa63, 0.045],
+      [1760, 0x799cff, 0.055],
+      [2220, 0xffd680, 0.05],
+    ];
+    moodStops.forEach(([x, tint, alpha]) => {
+      moods.fillStyle(tint, alpha);
+      moods.fillEllipse(x, 300, 760, 520);
+    });
+
     const hazeBack = this.add.graphics().setDepth(0).setScrollFactor(0.82, 1);
     for (let i = 0; i < 8; i++) {
       const x = 210 + i * 405;
@@ -88,47 +97,36 @@ export class MemoryWalkScene extends Phaser.Scene {
       hazeFront.fillEllipse(x, 386 + (i % 3) * 20, 260, 92);
     }
 
-    for (let i = 0; i < 165; i++) {
+    for (let i = 0; i < 175; i++) {
       const x = 22 + ((i * 197) % (WORLD_W - 44));
       const y = 18 + ((i * 83) % 455);
       const r = i % 13 === 0 ? 2.4 : i % 4 === 0 ? 1.45 : 0.8;
       const tint = x > 2180 ? 0xffe2a0 : i % 5 === 0 ? 0xc8ddff : 0xffffff;
       const star = this.add.circle(x, y, r, tint, i % 4 === 0 ? 0.82 : 0.5).setDepth(1);
-      if (i % 11 === 0) {
-        this.tweens.add({
-          targets: star,
-          alpha: { from: 0.25, to: 0.98 },
-          scale: { from: 0.72, to: 1.35 },
-          duration: 1450 + (i % 6) * 190,
-          yoyo: true,
-          repeat: -1,
-          ease: "Sine.easeInOut",
-        });
-      }
+      if (i % 11 === 0) this.tweens.add({
+        targets: star,
+        alpha: { from: 0.25, to: 0.98 },
+        scale: { from: 0.72, to: 1.35 },
+        duration: 1450 + (i % 6) * 190,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
     }
 
-    // Ornamental constellations in the deep background.
     const constellations = this.add.graphics().setDepth(1).setScrollFactor(0.88, 1);
-    const constellationXs = [420, 970, 1500, 2010, 2520];
-    constellationXs.forEach((cx, idx) => {
+    [420, 970, 1500, 2010, 2520].forEach((cx, idx) => {
       const tint = idx === 4 ? 0xffdf94 : idx === 1 ? 0xffaad0 : 0xc9d4ff;
       const pts = [
-        [cx - 72, 95 + idx * 7],
-        [cx - 25, 72 + idx * 4],
-        [cx + 18, 108 - idx * 2],
-        [cx + 66, 78 + idx * 5],
+        [cx - 72, 95 + idx * 7], [cx - 25, 72 + idx * 4],
+        [cx + 18, 108 - idx * 2], [cx + 66, 78 + idx * 5],
       ];
       constellations.lineStyle(1, tint, 0.12);
-      for (let p = 0; p < pts.length - 1; p++) {
-        constellations.lineBetween(pts[p]![0], pts[p]![1], pts[p + 1]![0], pts[p + 1]![1]);
-      }
-      pts.forEach(([px, py]) => {
-        constellations.fillStyle(tint, 0.42);
-        constellations.fillCircle(px, py, 2.1);
-      });
+      for (let p = 0; p < pts.length - 1; p++) constellations.lineBetween(pts[p]![0], pts[p]![1], pts[p + 1]![0], pts[p + 1]![1]);
+      pts.forEach(([px, py]) => { constellations.fillStyle(tint, 0.42); constellations.fillCircle(px, py, 2.1); });
     });
 
-    // The road lives below every landmark caption and quote.
+    // Low, luminous road. All titles/quotes remain safely above it.
     const pathGlow = this.add.graphics().setDepth(2);
     pathGlow.fillStyle(0x8fa9ff, 0.07);
     pathGlow.fillRoundedRect(-20, PATH_TOP - 12, WORLD_W + 40, 142, 54);
@@ -136,7 +134,7 @@ export class MemoryWalkScene extends Phaser.Scene {
     pathGlow.fillRoundedRect(-8, PATH_TOP - 4, WORLD_W + 16, 126, 50);
 
     const path = this.add.graphics().setDepth(3);
-    path.fillGradientStyle(0x7f95cb, 0xaec2ec, 0x3f5078, 0x5e73a1, 0.94);
+    path.fillGradientStyle(0x7188bd, 0xaec2ec, 0x34466e, 0x596f9e, 0.94);
     path.fillRoundedRect(0, PATH_TOP, WORLD_W, 112, 44);
     path.fillStyle(0xf9f4e6, 0.12);
     path.fillRoundedRect(18, PATH_TOP + 17, WORLD_W - 36, 76, 34);
@@ -152,29 +150,21 @@ export class MemoryWalkScene extends Phaser.Scene {
     for (let x = 72; x < WORLD_W; x += 78) {
       const warm = Phaser.Math.Clamp((x - 1840) / 820, 0, 1);
       const tint = warm > 0.35 ? 0xffde8f : 0xe6ecff;
-      const dot = this.add.circle(
-        x,
-        WALK_Y + 8 + Math.sin(x * 0.031) * 10,
-        4.5 + warm * 3,
-        tint,
-        0.2 + warm * 0.24,
-      ).setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
-      if (x % 156 === 72) {
-        this.tweens.add({
-          targets: dot,
-          alpha: { from: 0.12, to: 0.58 + warm * 0.2 },
-          scale: { from: 0.75, to: 1.3 },
-          duration: 1500 + (x % 5) * 120,
-          yoyo: true,
-          repeat: -1,
-          ease: "Sine.easeInOut",
-        });
-      }
+      const dot = this.add.circle(x, WALK_Y + 8 + Math.sin(x * 0.031) * 10, 4.5 + warm * 3, tint, 0.2 + warm * 0.24)
+        .setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
+      if (x % 156 === 72) this.tweens.add({
+        targets: dot,
+        alpha: { from: 0.12, to: 0.58 + warm * 0.2 },
+        scale: { from: 0.75, to: 1.3 },
+        duration: 1500 + (x % 5) * 120,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
     }
 
     const guide = this.add.rectangle(WORLD_W / 2, PATH_TOP + 83, WORLD_W - 90, 2, 0xf7f1dc, 0.22)
-      .setDepth(4)
-      .setBlendMode(Phaser.BlendModes.ADD);
+      .setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
     this.tweens.add({ targets: guide, alpha: { from: 0.12, to: 0.4 }, duration: 1900, yoyo: true, repeat: -1 });
 
     this.addOpeningTitle();
@@ -183,52 +173,15 @@ export class MemoryWalkScene extends Phaser.Scene {
     this.addMemorySeparator(1745, 0xf2c582);
     this.addMemorySeparator(2255, 0xb6c8ff);
 
-    this.memories.push(this.addMemory(
-      470,
-      "ACT I",
-      "Sunlit Shores",
-      0xffd48a,
-      "landmark-temple",
-      ["tree", "fountain"],
-      "Every beginning is a promise we do not yet know we are making.",
-      "shore",
-    ));
-    this.memories.push(this.addMemory(
-      980,
-      "ACT II",
-      "Wedding Garden",
-      0xff9fca,
-      "landmark-conservatory",
-      ["flowers", "arbor"],
-      "Love does not bloom once. It chooses every season.",
-      "garden",
-    ));
-    this.memories.push(this.addMemory(
-      1490,
-      "ACT III",
-      "The Haven",
-      0xf1c27f,
-      "landmark-townhall",
-      ["house", "lamp"],
-      "Home is not where the road ends. It is who waits there with you.",
-      "haven",
-    ));
-    this.memories.push(this.addMemory(
-      2000,
-      "ACT IV",
-      "Starry Ascent",
-      0x9ab7ff,
-      "landmark-observatory",
-      ["pillar", "adriel"],
-      "Some climbs change the view. Others change the heart.",
-      "stars",
-    ));
+    this.memories.push(this.addMemory(470, "ACT I", "Sunlit Shores", 0xffd48a, "landmark-temple", ["tree", "fountain"], "Every beginning is a promise we do not yet know we are making.", "shore"));
+    this.memories.push(this.addMemory(980, "ACT II", "Wedding Garden", 0xff9fca, "landmark-conservatory", ["flowers", "arbor"], "Love does not bloom once. It chooses every season.", "garden"));
+    this.memories.push(this.addMemory(1490, "ACT III", "The Haven", 0xf1c27f, "landmark-townhall", ["house", "lamp"], "Home is not where the road ends. It is who waits there with you.", "haven"));
+    this.memories.push(this.addMemory(2000, "ACT IV", "Starry Ascent", 0x9ab7ff, "landmark-observatory", ["pillar", "adriel"], "Some climbs change the view. Others change the heart.", "stars"));
     this.addAct4Pillars(2000);
     this.addCathedralReveal();
 
-    // Foreground silhouettes gently frame the walk and move a touch faster than the camera.
     const foreground = this.add.graphics().setDepth(28).setScrollFactor(1.035, 1);
-    foreground.fillStyle(0x050711, 0.5);
+    foreground.fillStyle(0x050711, 0.44);
     for (let i = 0; i < 18; i++) {
       const x = 20 + i * 165;
       const h = 18 + (i % 4) * 6;
@@ -245,37 +198,26 @@ export class MemoryWalkScene extends Phaser.Scene {
       this.game.events.off(EV.stick, this.onStick, this);
       this.stopMemoryWalkMusic();
     });
-
     this.cameras.main.fadeIn(1000, 5, 8, 23);
   }
 
   private addOpeningTitle() {
     const root = this.add.container(160, 204).setDepth(30);
-    const veil = this.add.rectangle(0, 0, 510, 178, 0x050817, 0.4).setOrigin(0, 0.5);
+    const glow = this.add.rectangle(250, 0, 530, 190, 0x7e8cff, 0.035).setBlendMode(Phaser.BlendModes.ADD);
+    const veil = this.add.rectangle(0, 0, 510, 178, 0x050817, 0.44).setOrigin(0, 0.5).setStrokeStyle(1, 0xd9e3ff, 0.12);
     const small = this.add.text(14, -52, "BETWEEN ACT IV & ACT V", {
-      fontFamily: "system-ui, sans-serif",
-      fontSize: "12px",
-      fontStyle: "bold",
-      color: "#d9e3ff",
-      letterSpacing: 4,
+      fontFamily: "system-ui, sans-serif", fontSize: "12px", fontStyle: "bold", color: "#d9e3ff", letterSpacing: 4,
     });
     const title = this.add.text(10, -18, "MEMORY WALK", {
-      fontFamily: "Georgia, serif",
-      fontSize: "38px",
-      color: "#ffe7ae",
-      stroke: "#080b1c",
-      strokeThickness: 6,
-      letterSpacing: 5,
+      fontFamily: "Georgia, serif", fontSize: "38px", color: "#ffe7ae", stroke: "#080b1c", strokeThickness: 6, letterSpacing: 5,
     });
     const sub = this.add.text(14, 39, "Walk forward. Let every chapter pass beside you.", {
-      fontFamily: "Georgia, serif",
-      fontSize: "14px",
-      fontStyle: "italic",
-      color: "#f0f2ff",
+      fontFamily: "Georgia, serif", fontSize: "14px", fontStyle: "italic", color: "#f0f2ff",
     });
     const star = this.add.circle(438, -20, 3, 0xffe5a3, 0.85).setBlendMode(Phaser.BlendModes.ADD);
-    root.add([veil, small, title, sub, star]);
+    root.add([glow, veil, small, title, sub, star]);
     this.tweens.add({ targets: star, scale: { from: 0.7, to: 1.8 }, alpha: { from: 0.35, to: 1 }, duration: 1400, yoyo: true, repeat: -1 });
+    this.tweens.add({ targets: glow, alpha: { from: 0.02, to: 0.07 }, duration: 2200, yoyo: true, repeat: -1 });
     this.titleCard = root;
   }
 
@@ -303,137 +245,92 @@ export class MemoryWalkScene extends Phaser.Scene {
   ): MemoryGroup {
     const root = this.add.container(x, 0).setDepth(7);
 
-    const outerGlow = this.add.ellipse(0, 334, 430, 300, tint, 0.09).setBlendMode(Phaser.BlendModes.ADD);
-    const innerGlow = this.add.ellipse(0, 344, 320, 228, tint, 0.13).setBlendMode(Phaser.BlendModes.ADD);
-    const floorGlow = this.add.ellipse(0, 437, 330, 54, tint, 0.09).setBlendMode(Phaser.BlendModes.ADD);
-    const echo = this.add.sprite(8, 342, landmarkKey).setTint(tint).setAlpha(0.1);
-    const landmark = this.add.sprite(0, 334, landmarkKey).setAlpha(0.98);
-    if (landmark.width > 0) landmark.setScale(Math.min(1.24, 210 / landmark.width));
+    // A vertical spotlight gives each landmark a real hero moment without hiding the art.
+    const beam = this.add.rectangle(0, 320, 150, 300, tint, 0.025)
+      .setAngle(theme === "garden" ? -4 : theme === "stars" ? 4 : 0)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    const crownGlow = this.add.ellipse(0, 285, 280, 185, tint, 0.055).setBlendMode(Phaser.BlendModes.ADD);
+    const outerGlow = this.add.ellipse(0, 334, 440, 306, tint, 0.095).setBlendMode(Phaser.BlendModes.ADD);
+    const innerGlow = this.add.ellipse(0, 344, 326, 232, tint, 0.14).setBlendMode(Phaser.BlendModes.ADD);
+    const floorGlow = this.add.ellipse(0, 437, 340, 58, tint, 0.1).setBlendMode(Phaser.BlendModes.ADD);
+    const echo = this.add.sprite(8, 342, landmarkKey).setTint(tint).setAlpha(0.08);
+    const landmark = this.add.sprite(0, 332, landmarkKey).setAlpha(1);
+    if (landmark.width > 0) landmark.setScale(Math.min(1.28, 218 / landmark.width));
     echo.setScale(landmark.scaleX * 1.045, landmark.scaleY * 1.045);
-    root.add([outerGlow, innerGlow, floorGlow, echo, landmark]);
+    root.add([beam, crownGlow, outerGlow, innerGlow, floorGlow, echo, landmark]);
 
-    // Each act gets a small environmental vignette rather than only a landmark.
     const vignette = this.add.graphics();
     if (theme === "shore") {
-      vignette.lineStyle(2, 0x8fc7ff, 0.2);
+      vignette.lineStyle(2, 0x8fc7ff, 0.24);
       for (let i = 0; i < 4; i++) vignette.strokeEllipse(-110 + i * 72, 433 + (i % 2) * 7, 72, 14);
-      vignette.fillStyle(0xffd98b, 0.16);
-      vignette.fillCircle(-156, 352, 18);
+      vignette.fillStyle(0xffd98b, 0.18); vignette.fillCircle(-156, 352, 18);
+      vignette.lineStyle(1, 0xffefbd, 0.22);
+      for (let i = 0; i < 7; i++) vignette.lineBetween(-156, 352, -196 + i * 13, 322 + Math.abs(3 - i) * 5);
     } else if (theme === "garden") {
-      vignette.fillStyle(0xffa6c9, 0.18);
-      for (let i = 0; i < 10; i++) vignette.fillCircle(-160 + i * 35, 424 - (i % 3) * 8, 5 + (i % 2));
-      vignette.lineStyle(1, 0xb6d993, 0.18);
-      for (let i = 0; i < 7; i++) vignette.lineBetween(-150 + i * 48, 440, -142 + i * 48, 414 - (i % 2) * 12);
+      vignette.fillStyle(0xffa6c9, 0.2);
+      for (let i = 0; i < 12; i++) vignette.fillCircle(-170 + i * 31, 424 - (i % 3) * 8, 5 + (i % 2));
+      vignette.lineStyle(1, 0xb6d993, 0.2);
+      for (let i = 0; i < 8; i++) vignette.lineBetween(-158 + i * 45, 440, -150 + i * 45, 414 - (i % 2) * 12);
     } else if (theme === "haven") {
-      vignette.fillStyle(0xffcc7f, 0.13);
+      vignette.fillStyle(0xffcc7f, 0.16);
       for (let i = 0; i < 6; i++) vignette.fillRoundedRect(-150 + i * 58, 414 + (i % 2) * 6, 34, 18, 4);
-      vignette.lineStyle(1, 0xffe3a5, 0.18);
-      for (let i = 0; i < 5; i++) vignette.lineBetween(-120 + i * 60, 407, -120 + i * 60, 438);
+      vignette.fillStyle(0xffe2a5, 0.42);
+      for (let i = 0; i < 5; i++) vignette.fillCircle(-120 + i * 60, 410, 3.5);
     } else {
-      vignette.lineStyle(1.5, 0xc7d5ff, 0.18);
+      vignette.lineStyle(1.5, 0xc7d5ff, 0.22);
       for (let i = 0; i < 5; i++) vignette.strokeCircle(-126 + i * 63, 421 + Math.abs(2 - i) * 7, 15 + (i % 2) * 4);
-      vignette.fillStyle(0x9cbcff, 0.14);
-      for (let i = 0; i < 9; i++) vignette.fillCircle(-160 + i * 40, 390 - (i % 3) * 15, 2.5);
+      vignette.fillStyle(0x9cbcff, 0.18);
+      for (let i = 0; i < 11; i++) vignette.fillCircle(-180 + i * 36, 392 - (i % 3) * 15, 2.5);
     }
     root.add(vignette);
 
     accents.forEach((key, i) => {
       if (!this.textures.exists(key)) return;
       const side = i === 0 ? -1 : 1;
-      const a = this.add.sprite(side * 136, 408 - i * 18, key).setAlpha(0.88);
+      const a = this.add.sprite(side * 138, 408 - i * 18, key).setAlpha(0.9);
       if (theme === "stars" || i === 0) a.setTint(tint);
-      a.setScale(key === "pillar" ? 1.12 : key === "adriel" ? 1.04 : 0.88);
+      a.setScale(key === "pillar" ? 1.15 : key === "adriel" ? 1.06 : 0.9);
       root.add(a);
     });
 
-    for (let i = 0; i < 18; i++) {
-      const mote = this.add.circle(
-        -180 + ((i * 43) % 360),
-        266 + ((i * 31) % 178),
-        i % 4 === 0 ? 2.5 : 1.25,
-        tint,
-        0.66,
-      );
+    for (let i = 0; i < 20; i++) {
+      const mote = this.add.circle(-185 + ((i * 43) % 370), 258 + ((i * 31) % 186), i % 4 === 0 ? 2.5 : 1.25, tint, 0.68);
       root.add(mote);
-      this.tweens.add({
-        targets: mote,
-        y: mote.y - 17 - (i % 5) * 4,
-        alpha: 0.16,
-        duration: 1350 + i * 82,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut",
-      });
+      this.tweens.add({ targets: mote, y: mote.y - 18 - (i % 5) * 4, alpha: 0.16, duration: 1350 + i * 82, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     }
 
-    const actText = this.add.text(0, 178, act, {
-      fontFamily: "system-ui, sans-serif",
-      fontSize: "11px",
-      fontStyle: "bold",
-      color: "#f8eabf",
-      letterSpacing: 4,
-    }).setOrigin(0.5).setAlpha(0.92);
-
-    const titleText = this.add.text(0, 211, title, {
-      fontFamily: "Georgia, serif",
-      fontSize: "26px",
-      color: "#ffffff",
-      stroke: "#080b1c",
-      strokeThickness: 5,
+    const actText = this.add.text(0, 172, act, {
+      fontFamily: "system-ui, sans-serif", fontSize: "11px", fontStyle: "bold", color: "#f8eabf", letterSpacing: 4,
+    }).setOrigin(0.5).setAlpha(0.94);
+    const titleText = this.add.text(0, 205, title, {
+      fontFamily: "Georgia, serif", fontSize: "27px", color: "#ffffff", stroke: "#080b1c", strokeThickness: 5,
     }).setOrigin(0.5);
 
-    const quoteGlow = this.add.rectangle(0, 458, 362, 82, tint, 0.04)
-      .setOrigin(0.5)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    const quotePanel = this.add.rectangle(0, 458, 348, 70, 0x070b19, 0.82)
-      .setOrigin(0.5)
-      .setStrokeStyle(1, tint, 0.4);
+    // Layered glass plaque: outer aura, translucent glass, inner hairline, then ornament.
+    const quoteAura = this.add.rectangle(0, 458, 378, 90, tint, 0.035).setOrigin(0.5).setBlendMode(Phaser.BlendModes.ADD);
+    const quotePanel = this.add.rectangle(0, 458, 354, 72, 0x070b19, 0.86).setOrigin(0.5).setStrokeStyle(1, tint, 0.45);
+    const quoteInner = this.add.rectangle(0, 458, 340, 60, 0x11182c, 0.18).setOrigin(0.5).setStrokeStyle(1, 0xffffff, 0.06);
     const quoteText = this.add.text(0, 458, `“${quote}”`, {
-      fontFamily: "Georgia, serif",
-      fontSize: "13px",
-      fontStyle: "italic",
-      color: "#fffaf0",
-      align: "center",
-      lineSpacing: 4,
-      wordWrap: { width: 306 },
-      stroke: "#050817",
-      strokeThickness: 2,
+      fontFamily: "Georgia, serif", fontSize: "13px", fontStyle: "italic", color: "#fffaf0", align: "center",
+      lineSpacing: 4, wordWrap: { width: 306 }, stroke: "#050817", strokeThickness: 2,
     }).setOrigin(0.5);
-
-    // Tiny ornamental corners keep the quote feeling like a keepsake plaque.
     const ornaments = this.add.graphics();
-    ornaments.lineStyle(1, tint, 0.5);
+    ornaments.lineStyle(1, tint, 0.56);
     for (const sx of [-1, 1]) {
-      ornaments.lineBetween(sx * 174, 432, sx * 154, 432);
-      ornaments.lineBetween(sx * 174, 432, sx * 174, 444);
-      ornaments.lineBetween(sx * 174, 484, sx * 154, 484);
-      ornaments.lineBetween(sx * 174, 484, sx * 174, 472);
+      ornaments.lineBetween(sx * 177, 431, sx * 156, 431);
+      ornaments.lineBetween(sx * 177, 431, sx * 177, 444);
+      ornaments.lineBetween(sx * 177, 485, sx * 156, 485);
+      ornaments.lineBetween(sx * 177, 485, sx * 177, 472);
+      ornaments.fillStyle(tint, 0.72); ornaments.fillCircle(sx * 177, 458, 2.2);
     }
-    ornaments.fillStyle(tint, 0.65);
-    ornaments.fillCircle(-174, 458, 2.2);
-    ornaments.fillCircle(174, 458, 2.2);
+    root.add([actText, titleText, quoteAura, quotePanel, quoteInner, quoteText, ornaments]);
 
-    root.add([actText, titleText, quoteGlow, quotePanel, quoteText, ornaments]);
+    this.tweens.add({ targets: outerGlow, alpha: { from: 0.05, to: 0.17 }, scaleX: { from: 0.94, to: 1.06 }, duration: 2500, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.tweens.add({ targets: innerGlow, alpha: { from: 0.08, to: 0.21 }, duration: 1900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.tweens.add({ targets: beam, alpha: { from: 0.012, to: 0.055 }, scaleX: { from: 0.85, to: 1.18 }, duration: 2800, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.tweens.add({ targets: quoteAura, alpha: { from: 0.015, to: 0.07 }, duration: 2100, yoyo: true, repeat: -1 });
 
-    this.tweens.add({
-      targets: outerGlow,
-      alpha: { from: 0.05, to: 0.16 },
-      scaleX: { from: 0.94, to: 1.06 },
-      duration: 2500,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-    });
-    this.tweens.add({
-      targets: innerGlow,
-      alpha: { from: 0.08, to: 0.2 },
-      duration: 1900,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-    });
-
-    return { root, centerX: x };
+    return { root, centerX: x, tint };
   }
 
   private addAct4Pillars(x: number) {
@@ -441,84 +338,49 @@ export class MemoryWalkScene extends Phaser.Scene {
     for (let i = 0; i < 5; i++) {
       const px = x - 126 + i * 63;
       const py = 414 + Math.abs(2 - i) * 7;
-      const p = this.add.sprite(px, py, "pillar")
-        .setDepth(10)
-        .setTint(0xffdf8a)
-        .setAlpha(0.86)
-        .setScale(0.84);
+      const p = this.add.sprite(px, py, "pillar").setDepth(10).setTint(0xffdf8a).setAlpha(0.88).setScale(0.86);
       const halo = this.add.ellipse(px, py + 18, 50, 20, 0xffd98a, 0.08).setDepth(9).setBlendMode(Phaser.BlendModes.ADD);
-      this.tweens.add({ targets: p, alpha: { from: 0.62, to: 0.98 }, duration: 1600 + i * 130, yoyo: true, repeat: -1 });
-      this.tweens.add({ targets: halo, alpha: { from: 0.03, to: 0.14 }, scaleX: { from: 0.8, to: 1.25 }, duration: 1500 + i * 100, yoyo: true, repeat: -1 });
+      this.tweens.add({ targets: p, alpha: { from: 0.64, to: 1 }, duration: 1600 + i * 130, yoyo: true, repeat: -1 });
+      this.tweens.add({ targets: halo, alpha: { from: 0.03, to: 0.15 }, scaleX: { from: 0.8, to: 1.25 }, duration: 1500 + i * 100, yoyo: true, repeat: -1 });
     }
   }
 
   private addCathedralReveal() {
     const x = 2580;
+    const farHalo = this.add.ellipse(x, 336, 760, 500, 0xffd37a, 0.09).setDepth(2).setBlendMode(Phaser.BlendModes.ADD);
+    const aura = this.add.ellipse(x, 340, 610, 410, 0xffd37a, 0.21).setDepth(3).setBlendMode(Phaser.BlendModes.ADD);
+    const innerAura = this.add.ellipse(x, 346, 410, 300, 0xffefbd, 0.09).setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: farHalo, alpha: { from: 0.035, to: 0.14 }, scale: { from: 0.94, to: 1.09 }, duration: 3100, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.tweens.add({ targets: aura, alpha: { from: 0.09, to: 0.36 }, scale: { from: 0.9, to: 1.12 }, duration: 2200, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.tweens.add({ targets: innerAura, alpha: { from: 0.04, to: 0.15 }, duration: 1700, yoyo: true, repeat: -1 });
 
-    const farHalo = this.add.ellipse(x, 336, 700, 470, 0xffd37a, 0.08).setDepth(2).setBlendMode(Phaser.BlendModes.ADD);
-    const aura = this.add.ellipse(x, 340, 570, 390, 0xffd37a, 0.2).setDepth(3).setBlendMode(Phaser.BlendModes.ADD);
-    const innerAura = this.add.ellipse(x, 346, 390, 285, 0xffefbd, 0.08).setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
-    this.tweens.add({ targets: farHalo, alpha: { from: 0.035, to: 0.12 }, scale: { from: 0.94, to: 1.08 }, duration: 3100, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
-    this.tweens.add({ targets: aura, alpha: { from: 0.09, to: 0.34 }, scale: { from: 0.9, to: 1.11 }, duration: 2200, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
-    this.tweens.add({ targets: innerAura, alpha: { from: 0.04, to: 0.14 }, duration: 1700, yoyo: true, repeat: -1 });
+    const cathedral = this.add.sprite(x, 307, "landmark-cathedral").setDepth(10).setTint(0xfff7e6).setAlpha(1);
+    if (cathedral.width > 0) cathedral.setScale(Math.min(1.76, 310 / cathedral.width));
+    const echo = this.add.sprite(x, 315, "landmark-cathedral").setDepth(9).setTint(0xffc85a).setAlpha(0.2);
+    echo.setScale(cathedral.scaleX * 1.15, cathedral.scaleY * 1.15);
 
-    const cathedral = this.add.sprite(x, 315, "landmark-cathedral")
-      .setDepth(10)
-      .setTint(0xfff5df)
-      .setAlpha(1);
-    if (cathedral.width > 0) cathedral.setScale(Math.min(1.68, 296 / cathedral.width));
-    const echo = this.add.sprite(x, 321, "landmark-cathedral")
-      .setDepth(9)
-      .setTint(0xffc85a)
-      .setAlpha(0.19);
-    echo.setScale(cathedral.scaleX * 1.14, cathedral.scaleY * 1.14);
-
-    for (let i = 0; i < 9; i++) {
-      const beam = this.add.rectangle(x - 188 + i * 47, 236, 17, 320, 0xffe3a1, 0.075)
-        .setDepth(4)
-        .setAngle(i % 2 ? 5 : -5)
-        .setBlendMode(Phaser.BlendModes.ADD);
-      this.tweens.add({
-        targets: beam,
-        alpha: { from: 0.025, to: 0.18 },
-        duration: 1700 + i * 155,
-        yoyo: true,
-        repeat: -1,
-      });
+    for (let i = 0; i < 11; i++) {
+      const beam = this.add.rectangle(x - 235 + i * 47, 232, 18, 330, 0xffe3a1, 0.075)
+        .setDepth(4).setAngle(i % 2 ? 5 : -5).setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({ targets: beam, alpha: { from: 0.02, to: 0.19 }, duration: 1650 + i * 145, yoyo: true, repeat: -1 });
     }
 
-    for (let i = 0; i < 22; i++) {
-      const mote = this.add.circle(
-        x - 235 + ((i * 47) % 470),
-        250 + ((i * 37) % 220),
-        i % 5 === 0 ? 2.8 : 1.4,
-        i % 3 === 0 ? 0xffffff : 0xffdc8a,
-        0.56,
-      ).setDepth(12).setBlendMode(Phaser.BlendModes.ADD);
-      this.tweens.add({ targets: mote, y: mote.y - 24 - (i % 4) * 7, alpha: { from: 0.16, to: 0.78 }, duration: 1400 + i * 75, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    for (let i = 0; i < 28; i++) {
+      const mote = this.add.circle(x - 260 + ((i * 47) % 520), 220 + ((i * 37) % 250), i % 5 === 0 ? 3 : 1.4, i % 3 === 0 ? 0xffffff : 0xffdc8a, 0.58)
+        .setDepth(12).setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({ targets: mote, y: mote.y - 26 - (i % 4) * 7, alpha: { from: 0.16, to: 0.82 }, duration: 1350 + i * 72, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     }
 
-    const quoteGlow = this.add.rectangle(x, 455, 410, 88, 0xffd37a, 0.07)
-      .setDepth(18)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    const quotePanel = this.add.rectangle(x, 455, 396, 76, 0x0a0b15, 0.84)
-      .setDepth(19)
-      .setStrokeStyle(1, 0xffd98a, 0.5);
-    this.add.text(x, 446, "“Everything led me here.”", {
-      fontFamily: "Georgia, serif",
-      fontSize: "20px",
-      fontStyle: "italic",
-      color: "#fff4d2",
-      stroke: "#080b1c",
-      strokeThickness: 3,
+    const quoteAura = this.add.rectangle(x, 455, 430, 94, 0xffd37a, 0.075).setDepth(18).setBlendMode(Phaser.BlendModes.ADD);
+    const quotePanel = this.add.rectangle(x, 455, 408, 78, 0x0a0b15, 0.87).setDepth(19).setStrokeStyle(1, 0xffd98a, 0.56);
+    const quoteInner = this.add.rectangle(x, 455, 394, 64, 0x251b12, 0.13).setDepth(19).setStrokeStyle(1, 0xffffff, 0.06);
+    this.add.text(x, 445, "“Everything led me here.”", {
+      fontFamily: "Georgia, serif", fontSize: "21px", fontStyle: "italic", color: "#fff5d8", stroke: "#080b1c", strokeThickness: 3,
     }).setOrigin(0.5).setDepth(20);
-    this.add.text(x, 477, "ACT V · THE CATHEDRAL", {
-      fontFamily: "system-ui, sans-serif",
-      fontSize: "10px",
-      fontStyle: "bold",
-      color: "#ffe39a",
-      letterSpacing: 4,
-    }).setOrigin(0.5).setDepth(20).setAlpha(0.94);
+    this.add.text(x, 479, "ACT V · THE CATHEDRAL", {
+      fontFamily: "system-ui, sans-serif", fontSize: "10px", fontStyle: "bold", color: "#ffe39a", letterSpacing: 4,
+    }).setOrigin(0.5).setDepth(20).setAlpha(0.96);
+    this.tweens.add({ targets: quoteAura, alpha: { from: 0.035, to: 0.12 }, scaleX: { from: 0.95, to: 1.05 }, duration: 2100, yoyo: true, repeat: -1 });
   }
 
   private onStick(v: { x?: number; y?: number }) {
@@ -536,11 +398,7 @@ export class MemoryWalkScene extends Phaser.Scene {
     dx = Phaser.Math.Clamp(dx, -1, 1);
 
     const moving = Math.abs(dx) > 0.05;
-    this.maria.x = Phaser.Math.Clamp(
-      this.maria.x + dx * 108 * Math.min(delta, 50) / 1000,
-      72,
-      2670,
-    );
+    this.maria.x = Phaser.Math.Clamp(this.maria.x + dx * 108 * Math.min(delta, 50) / 1000, 72, 2670);
 
     if (moving) {
       this.maria.setFlipX(dx < 0);
@@ -550,10 +408,7 @@ export class MemoryWalkScene extends Phaser.Scene {
         this.maria.setTexture(`maria-side-${this.walkFrame}`);
       }
       this.maria.y = WALK_Y + Math.sin(time / 92) * 1.4;
-      if (time - this.lastFootGlowAt >= 245) {
-        this.lastFootGlowAt = time;
-        this.spawnFootGlow();
-      }
+      if (time - this.lastFootGlowAt >= 245) { this.lastFootGlowAt = time; this.spawnFootGlow(); }
     } else {
       this.walkFrame = 0;
       this.maria.setTexture("maria-side-0");
@@ -561,21 +416,32 @@ export class MemoryWalkScene extends Phaser.Scene {
     }
 
     let nearest = 9999;
-    for (const m of this.memories) {
+    let nearestIndex = -1;
+    this.memories.forEach((m, index) => {
       const d = this.maria.x - m.centerX;
-      nearest = Math.min(nearest, Math.abs(d));
+      if (Math.abs(d) < nearest) { nearest = Math.abs(d); nearestIndex = index; }
       const approach = Phaser.Math.Clamp(1 - Math.abs(d) / 500, 0, 1);
-      const passedFade = d > 280 ? Phaser.Math.Clamp(1 - (d - 280) / 320, 0.08, 1) : 1;
-      const alpha = Math.min(1, 0.78 + approach * 0.22) * passedFade;
+      const passedFade = d > 300 ? Phaser.Math.Clamp(1 - (d - 300) / 330, 0.08, 1) : 1;
+      const alpha = Math.min(1, 0.8 + approach * 0.2) * passedFade;
       m.root.setAlpha(alpha);
-      const focusScale = 1 + approach * 0.018 + (d > 280 ? (1 - passedFade) * 0.02 : 0);
+      const focusScale = 1 + approach * 0.028 + (d > 300 ? (1 - passedFade) * 0.012 : 0);
       m.root.setScale(focusScale);
-    }
+    });
 
-    // A barely perceptible camera push makes each memory feel like a vignette,
-    // while returning to normal scale between exhibits.
-    const targetZoom = nearest < 250 ? 1.025 : 1;
-    this.cameras.main.zoom += (targetZoom - this.cameras.main.zoom) * 0.045;
+    // Hero framing: a gentle zoom plus a slight horizontal lead toward the exhibit.
+    const cathedralApproach = this.maria.x > 2240;
+    const targetZoom = cathedralApproach ? 1.055 : nearest < 265 ? 1.035 : 1;
+    this.cameras.main.zoom += (targetZoom - this.cameras.main.zoom) * 0.035;
+    const desiredOffsetX = cathedralApproach ? -150 : nearest < 265 && nearestIndex >= 0 ? -128 : -118;
+    this.cameras.main.setFollowOffset(
+      this.cameras.main.followOffset.x + (desiredOffsetX - this.cameras.main.followOffset.x) * 0.04,
+      22,
+    );
+
+    if (nearestIndex !== this.focusMemory && nearest < 210) {
+      this.focusMemory = nearestIndex;
+      this.cueMemoryFocus(nearestIndex);
+    }
 
     this.titleCard?.setAlpha(Phaser.Math.Clamp(1 - (this.maria.x - 150) / 430, 0, 1));
 
@@ -583,8 +449,6 @@ export class MemoryWalkScene extends Phaser.Scene {
     const reached = milestones.reduce((n, m, i) => this.maria.x >= m ? i : n, -1);
     if (reached > this.lastMilestone) {
       this.lastMilestone = reached;
-      // The butterfly becomes a thread through the memories after Act I rather
-      // than appearing only at the very end.
       if (reached >= 0 && !this.butterfly?.active) this.spawnGuidingButterfly();
       if (reached === 4) this.cueCathedralSwell();
     }
@@ -595,54 +459,50 @@ export class MemoryWalkScene extends Phaser.Scene {
       this.butterfly.x += (tx - this.butterfly.x) * 0.055;
       this.butterfly.y += (ty - this.butterfly.y) * 0.065;
       this.butterfly.setFlipX(tx < this.butterfly.x);
-      if (time - this.lastButterflyTrailAt >= 105) {
-        this.lastButterflyTrailAt = time;
-        this.spawnButterflyTrail();
-      }
+      if (time - this.lastButterflyTrailAt >= 105) { this.lastButterflyTrailAt = time; this.spawnButterflyTrail(); }
+    }
+
+    if (time - this.lastAmbientSparkleAt >= 520 && nearest < 330) {
+      this.lastAmbientSparkleAt = time;
+      this.spawnAmbientSparkle(nearestIndex);
     }
 
     if (this.maria.x >= 2635) this.beginExit();
+  }
+
+  private cueMemoryFocus(index: number) {
+    const m = this.memories[index];
+    if (!m) return;
+    const ring = this.add.ellipse(m.centerX, 427, 280, 54, m.tint, 0.12).setDepth(6).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: ring, alpha: 0, scaleX: 1.45, scaleY: 1.3, duration: 950, ease: "Sine.easeOut", onComplete: () => ring.destroy() });
+  }
+
+  private spawnAmbientSparkle(index: number) {
+    const m = this.memories[index];
+    if (!m) return;
+    const sparkle = this.add.circle(
+      m.centerX + Phaser.Math.Between(-155, 155),
+      Phaser.Math.Between(245, 430),
+      Phaser.Math.FloatBetween(1.2, 2.2),
+      m.tint,
+      0.55,
+    ).setDepth(16).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: sparkle, y: sparkle.y - 25, alpha: 0, scale: 1.8, duration: 900, ease: "Sine.easeOut", onComplete: () => sparkle.destroy() });
   }
 
   private spawnFootGlow() {
     const warm = Phaser.Math.Clamp((this.maria.x - 1880) / 760, 0, 1);
     const tint = warm > 0.3 ? 0xffdc91 : 0xe4ebff;
     const shadow = this.add.ellipse(this.maria.x, WALK_Y + 17, 28, 8, 0x111526, 0.2).setDepth(5);
-    const ripple = this.add.ellipse(
-      this.maria.x - (this.maria.flipX ? -4 : 4),
-      WALK_Y + 15,
-      18,
-      6,
-      tint,
-      0.24,
-    ).setDepth(6).setBlendMode(Phaser.BlendModes.ADD);
+    const ripple = this.add.ellipse(this.maria.x - (this.maria.flipX ? -4 : 4), WALK_Y + 15, 18, 6, tint, 0.24).setDepth(6).setBlendMode(Phaser.BlendModes.ADD);
     this.tweens.add({ targets: shadow, alpha: 0, scaleX: 1.25, duration: 520, onComplete: () => shadow.destroy() });
-    this.tweens.add({
-      targets: ripple,
-      alpha: 0,
-      scaleX: 1.8,
-      scaleY: 1.5,
-      duration: 540,
-      ease: "Sine.easeOut",
-      onComplete: () => ripple.destroy(),
-    });
+    this.tweens.add({ targets: ripple, alpha: 0, scaleX: 1.8, scaleY: 1.5, duration: 540, ease: "Sine.easeOut", onComplete: () => ripple.destroy() });
   }
 
   private spawnGuidingButterfly() {
     if (this.butterfly?.active || !this.textures.exists("butterfly")) return;
-    this.butterfly = this.add.sprite(this.maria.x + 90, WALK_Y - 66, "butterfly")
-      .setDepth(45)
-      .setTint(0xffdc83)
-      .setScale(1.3);
-    this.tweens.add({
-      targets: this.butterfly,
-      alpha: { from: 0.45, to: 1 },
-      scale: { from: 1.02, to: 1.38 },
-      duration: 820,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-    });
+    this.butterfly = this.add.sprite(this.maria.x + 90, WALK_Y - 66, "butterfly").setDepth(45).setTint(0xffdc83).setScale(1.3);
+    this.tweens.add({ targets: this.butterfly, alpha: { from: 0.45, to: 1 }, scale: { from: 1.02, to: 1.38 }, duration: 820, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
   }
 
   private spawnButterflyTrail() {
@@ -650,20 +510,9 @@ export class MemoryWalkScene extends Phaser.Scene {
     const mote = this.add.circle(
       this.butterfly.x - 8 + Phaser.Math.Between(-4, 4),
       this.butterfly.y + Phaser.Math.Between(-4, 4),
-      Phaser.Math.FloatBetween(1.2, 2.6),
-      0xffe2a0,
-      0.7,
+      Phaser.Math.FloatBetween(1.2, 2.6), 0xffe2a0, 0.7,
     ).setDepth(44).setBlendMode(Phaser.BlendModes.ADD);
-    this.tweens.add({
-      targets: mote,
-      x: mote.x - 22,
-      y: mote.y + Phaser.Math.Between(-10, 10),
-      alpha: 0,
-      scale: 0.25,
-      duration: 680,
-      ease: "Sine.easeOut",
-      onComplete: () => mote.destroy(),
-    });
+    this.tweens.add({ targets: mote, x: mote.x - 22, y: mote.y + Phaser.Math.Between(-10, 10), alpha: 0, scale: 0.25, duration: 680, ease: "Sine.easeOut", onComplete: () => mote.destroy() });
   }
 
   private startMemoryWalkMusic() {
@@ -736,9 +585,7 @@ export class MemoryWalkScene extends Phaser.Scene {
           master.gain.setValueAtTime(Math.max(master.gain.value, 0.0001), ctx.currentTime);
           master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
         } catch {}
-        window.setTimeout(() => {
-          try { void ctx.close(); } catch {}
-        }, 900);
+        window.setTimeout(() => { try { void ctx.close(); } catch {} }, 900);
       };
     } catch (err) {
       console.warn?.("[quest] Memory Walk music unavailable", err);
@@ -778,8 +625,9 @@ export class MemoryWalkScene extends Phaser.Scene {
     this.exiting = true;
     this.stopMemoryWalkMusic();
     this.game.events.emit(EV.music, "home");
-    this.cameras.main.fadeOut(1200, 255, 244, 214);
-    this.time.delayedCall(1240, () => this.finishToCathedral());
+    // Give the final quote one extra beat before the white-gold handoff.
+    this.cameras.main.fadeOut(1550, 255, 244, 214);
+    this.time.delayedCall(1620, () => this.finishToCathedral());
   }
 
   private finishToCathedral() {
@@ -791,7 +639,6 @@ export class MemoryWalkScene extends Phaser.Scene {
     } catch (err) {
       console.warn?.("[quest] Memory Walk save handoff warning", err);
     }
-
     try {
       this.scene.stop(MEMORY_WALK_SCENE_KEY);
       this.scene.start("quest", { save: this.save });
