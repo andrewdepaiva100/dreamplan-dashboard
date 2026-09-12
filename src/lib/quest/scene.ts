@@ -59,6 +59,83 @@ export class QuestScene extends BaseQuestScene {
     return super.openModal(payload);
   }
 
+  /**
+   * One shared, synthesized finishing cue for every boss. It deliberately uses
+   * the browser audio context instead of an external asset so every boss gets
+   * the exact same hit and there is nothing new to preload or fail to fetch.
+   */
+  private playBossFinisherSound() {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = ((this.game as any).__bossFinisherAudioContext ??= new AudioCtx()) as AudioContext;
+      if (ctx.state === "suspended") void ctx.resume();
+
+      const now = ctx.currentTime;
+      const master = ctx.createGain();
+      master.gain.setValueAtTime(0.0001, now);
+      master.gain.exponentialRampToValueAtTime(0.34, now + 0.012);
+      master.gain.exponentialRampToValueAtTime(0.0001, now + 1.18);
+      master.connect(ctx.destination);
+
+      // Deep cinematic impact.
+      const impact = ctx.createOscillator();
+      const impactGain = ctx.createGain();
+      impact.type = "sine";
+      impact.frequency.setValueAtTime(112, now);
+      impact.frequency.exponentialRampToValueAtTime(38, now + 0.46);
+      impactGain.gain.setValueAtTime(0.9, now);
+      impactGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.72);
+      impact.connect(impactGain).connect(master);
+      impact.start(now);
+      impact.stop(now + 0.74);
+
+      // Bright crystalline crack so the final strike cuts through the music.
+      [760, 1140, 1710].forEach((frequency, index) => {
+        const crack = ctx.createOscillator();
+        const crackGain = ctx.createGain();
+        crack.type = index === 0 ? "triangle" : "sine";
+        crack.frequency.setValueAtTime(frequency, now + index * 0.008);
+        crack.frequency.exponentialRampToValueAtTime(frequency * 0.58, now + 0.22);
+        crackGain.gain.setValueAtTime(0.22 / (index + 1), now);
+        crackGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.34 + index * 0.06);
+        crack.connect(crackGain).connect(master);
+        crack.start(now + index * 0.008);
+        crack.stop(now + 0.46);
+      });
+
+      // A short victorious shimmer after the impact, not long enough to fight
+      // the transition music that follows a boss defeat.
+      [523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => {
+        const shimmer = ctx.createOscillator();
+        const shimmerGain = ctx.createGain();
+        shimmer.type = "sine";
+        const start = now + 0.16 + index * 0.055;
+        shimmer.frequency.setValueAtTime(frequency, start);
+        shimmerGain.gain.setValueAtTime(0.0001, start);
+        shimmerGain.gain.exponentialRampToValueAtTime(0.075, start + 0.025);
+        shimmerGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.48);
+        shimmer.connect(shimmerGain).connect(master);
+        shimmer.start(start);
+        shimmer.stop(start + 0.5);
+      });
+    } catch (err) {
+      // Audio must never be able to interrupt boss defeat/progression.
+      console.warn?.("[quest] boss finisher audio unavailable", err);
+    }
+  }
+
+  /** Play the shared finisher only when this accepted hit crosses boss HP to zero. */
+  private damageBoss(amount: number) {
+    const beforeHp = Number(this.bossHp ?? 0);
+    const wasFight = Boolean(this.boss?.active && this.bossPhase === 1);
+    const result = super.damageBoss(amount);
+    if (wasFight && beforeHp > 0 && Number(this.bossHp ?? 0) <= 0) {
+      this.playBossFinisherSound();
+    }
+    return result;
+  }
+
   private act4SealComplete() {
     return this.save?.current_zone === ACT4 && this.save?.relics_collected?.includes?.(SEAL);
   }
