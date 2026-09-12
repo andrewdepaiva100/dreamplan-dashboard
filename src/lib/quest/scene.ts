@@ -20,6 +20,22 @@ const LEGACY_SECOND_BOSS_WARNING = "The sky is not finished with you";
 const OMINOUS_SECOND_BOSS_TITLE = "Something has followed you from the dark";
 const OMINOUS_SECOND_BOSS_BODY =
   "The blossoms have barely settled, but the stars are already dying. Something ancient is moving where the shadow stood. It knows you’re here.";
+const THIRD_REMINISCENCE =
+  "Andrew was here through all of it… somehow that made this place feel like home.";
+
+/** The registered Memory Walk scene owns Maria's third reflection directly. */
+class DirectMemoryWalkScene extends MemoryWalkScene {
+  private showReminiscence(index: number, ...args: any[]) {
+    const result = super.showReminiscence(index, ...args);
+    if (index !== 2) return result;
+
+    const bubble = this.reminiscenceBubble;
+    const children = bubble?.list ?? [];
+    const text = children.find((child: any) => child instanceof Phaser.GameObjects.Text);
+    text?.setText?.(THIRD_REMINISCENCE);
+    return result;
+  }
+}
 
 /**
  * The full quest implementation lives in sceneBase.ts unchanged. This class
@@ -30,11 +46,7 @@ export class QuestScene extends BaseQuestScene {
   private act4DirectExitQueued = false;
   private act4DirectExitPending = false;
 
-  /**
-   * Route the second-boss warning through the active scene itself. This makes
-   * the ominous copy authoritative before React receives the modal event,
-   * instead of relying on a DOM observer to rewrite visible text afterward.
-   */
+  /** Route the second-boss warning through the active scene before React sees it. */
   private openModal(payload: any) {
     if (payload?.type === "info" && payload?.title === LEGACY_SECOND_BOSS_WARNING) {
       return super.openModal({
@@ -51,16 +63,11 @@ export class QuestScene extends BaseQuestScene {
   }
 
   override create() {
-    // A save made during the interlude must resume in the interlude, never let
-    // the base realm builder try to interpret memory_walk as a normal realm.
     if (String(this.save?.current_zone) === MEMORY_WALK_SAVE_ID) {
       this.scene.start(MEMORY_WALK_SCENE_KEY, { save: this.save });
       return;
     }
 
-    // Reaching the Cathedral from the Memory Walk marks the interlude complete.
-    // Existing pre-fix Cathedral saves are intercepted in createQuestGame below,
-    // so this branch only runs after the Memory Walk itself starts Act V.
     if (
       this.save?.current_zone === ACT5 &&
       this.save?.relics_collected?.includes?.(SEAL) &&
@@ -72,8 +79,6 @@ export class QuestScene extends BaseQuestScene {
 
     super.create();
 
-    // Completed Act IV saves used to rebuild Portal 5 on load. Instead, make
-    // the saved progression state explicitly become the Memory Walk.
     if (this.act4SealComplete()) {
       this.objective = "The stars remember — the Memory Walk begins.";
       this.queueAct4MemoryWalk(700);
@@ -104,7 +109,6 @@ export class QuestScene extends BaseQuestScene {
         }
       } catch {}
 
-      // This is a real persisted progression state between Act IV and Act V.
       this.save.current_zone = MEMORY_WALK_SAVE_ID as any;
       this.save.memory_walk_completed = false;
       this.save.player_health = 5;
@@ -141,15 +145,9 @@ export class QuestScene extends BaseQuestScene {
     }
   }
 
-  /**
-   * Act IV has no portal to Act V. Any legacy request to create one is converted
-   * into the Memory Walk handoff instead. Acts I-III keep their base portals.
-   */
   private spawnGateway(x: number, y: number, relocate = false) {
     if (this.save?.current_zone === ACT4) {
       if (this.save?.relics_collected?.includes?.(SEAL)) {
-        // Relic collection opens a modal before it asks for the old gateway.
-        // Wait for that modal to close; boss/reload paths may transition now.
         if (this.frozen || !this.enemies) this.act4DirectExitPending = true;
         else this.queueAct4MemoryWalk(650);
       }
@@ -158,13 +156,11 @@ export class QuestScene extends BaseQuestScene {
     return super.spawnGateway(x, y, relocate);
   }
 
-  /** The recurring gateway safety net must never recreate Portal 5. */
   private ensureGateway() {
     if (this.save?.current_zone === ACT4) return;
     return super.ensureGateway();
   }
 
-  /** Start the Memory Walk only after the Seal presentation has closed. */
   private onResume() {
     super.onResume();
     if (!this.act4SealComplete()) return;
@@ -188,12 +184,9 @@ export function createQuestGame(parent: HTMLElement, save: QuestSave) {
     fps: { target: 60, forceSetTimeOut: false },
     physics: { default: "arcade", arcade: { gravity: { x: 0, y: 0 }, debug: false } },
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [QuestScene, QuestHouseScene, MemoryWalkScene],
+    scene: [QuestScene, QuestHouseScene, DirectMemoryWalkScene],
   });
 
-  // One-time migration for saves that were already pushed straight into Act V
-  // by the old transition bug. Once Memory Walk completes, the local completion
-  // marker prevents this recovery from ever running again.
   const skippedMemoryWalk =
     String(save?.current_zone) === ACT5 &&
     save?.relics_collected?.includes?.(SEAL) &&
