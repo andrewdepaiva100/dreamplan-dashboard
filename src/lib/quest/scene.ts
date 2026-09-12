@@ -71,11 +71,7 @@ export class QuestScene extends BaseQuestScene {
     return super.openModal(payload);
   }
 
-  /**
-   * One shared, synthesized finishing cue for every boss. It deliberately uses
-   * the browser audio context instead of an external asset so every boss gets
-   * the exact same hit and there is nothing new to preload or fail to fetch.
-   */
+  /** One shared dark, heavy finishing cue for every boss. */
   private playBossFinisherSound() {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -85,52 +81,75 @@ export class QuestScene extends BaseQuestScene {
 
       const now = ctx.currentTime;
       const master = ctx.createGain();
+      const compressor = ctx.createDynamicsCompressor();
+      compressor.threshold.setValueAtTime(-18, now);
+      compressor.knee.setValueAtTime(12, now);
+      compressor.ratio.setValueAtTime(8, now);
+      compressor.attack.setValueAtTime(0.004, now);
+      compressor.release.setValueAtTime(0.32, now);
       master.gain.setValueAtTime(0.0001, now);
-      master.gain.exponentialRampToValueAtTime(0.34, now + 0.012);
-      master.gain.exponentialRampToValueAtTime(0.0001, now + 1.18);
-      master.connect(ctx.destination);
+      master.gain.exponentialRampToValueAtTime(0.46, now + 0.008);
+      master.gain.exponentialRampToValueAtTime(0.0001, now + 1.42);
+      master.connect(compressor).connect(ctx.destination);
 
-      // Deep cinematic impact.
-      const impact = ctx.createOscillator();
-      const impactGain = ctx.createGain();
-      impact.type = "sine";
-      impact.frequency.setValueAtTime(112, now);
-      impact.frequency.exponentialRampToValueAtTime(38, now + 0.46);
-      impactGain.gain.setValueAtTime(0.9, now);
-      impactGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.72);
-      impact.connect(impactGain).connect(master);
-      impact.start(now);
-      impact.stop(now + 0.74);
+      // Sub-bass body: a fast pitch collapse makes the killing blow feel massive.
+      const sub = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      sub.type = "sine";
+      sub.frequency.setValueAtTime(86, now);
+      sub.frequency.exponentialRampToValueAtTime(27, now + 0.58);
+      subGain.gain.setValueAtTime(1.0, now);
+      subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.92);
+      sub.connect(subGain).connect(master);
+      sub.start(now);
+      sub.stop(now + 0.94);
 
-      // Bright crystalline crack so the final strike cuts through the music.
-      [760, 1140, 1710].forEach((frequency, index) => {
-        const crack = ctx.createOscillator();
-        const crackGain = ctx.createGain();
-        crack.type = index === 0 ? "triangle" : "sine";
-        crack.frequency.setValueAtTime(frequency, now + index * 0.008);
-        crack.frequency.exponentialRampToValueAtTime(frequency * 0.58, now + 0.22);
-        crackGain.gain.setValueAtTime(0.22 / (index + 1), now);
-        crackGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.34 + index * 0.06);
-        crack.connect(crackGain).connect(master);
-        crack.start(now + index * 0.008);
-        crack.stop(now + 0.46);
+      // Low distorted hammer hit. The waveshaper adds weight without using an asset.
+      const hammer = ctx.createOscillator();
+      const hammerGain = ctx.createGain();
+      const distortion = ctx.createWaveShaper();
+      const curve = new Float32Array(256);
+      for (let i = 0; i < curve.length; i++) {
+        const x = (i * 2) / (curve.length - 1) - 1;
+        curve[i] = Math.tanh(3.8 * x);
+      }
+      distortion.curve = curve;
+      distortion.oversample = "2x";
+      hammer.type = "sawtooth";
+      hammer.frequency.setValueAtTime(118, now);
+      hammer.frequency.exponentialRampToValueAtTime(43, now + 0.24);
+      hammerGain.gain.setValueAtTime(0.48, now);
+      hammerGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
+      hammer.connect(distortion).connect(hammerGain).connect(master);
+      hammer.start(now);
+      hammer.stop(now + 0.44);
+
+      // Dark metallic clang: deliberately low and dissonant, not crystalline or victorious.
+      [146.83, 207.65, 293.66].forEach((frequency, index) => {
+        const metal = ctx.createOscillator();
+        const metalGain = ctx.createGain();
+        metal.type = index === 1 ? "square" : "triangle";
+        metal.frequency.setValueAtTime(frequency, now + 0.018);
+        metal.frequency.exponentialRampToValueAtTime(frequency * 0.72, now + 0.48);
+        metalGain.gain.setValueAtTime(0.18 / (index + 1), now + 0.018);
+        metalGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.62 + index * 0.08);
+        metal.connect(metalGain).connect(master);
+        metal.start(now + 0.018);
+        metal.stop(now + 0.86);
       });
 
-      // A short victorious shimmer after the impact, not long enough to fight
-      // the transition music that follows a boss defeat.
-      [523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => {
-        const shimmer = ctx.createOscillator();
-        const shimmerGain = ctx.createGain();
-        shimmer.type = "sine";
-        const start = now + 0.16 + index * 0.055;
-        shimmer.frequency.setValueAtTime(frequency, start);
-        shimmerGain.gain.setValueAtTime(0.0001, start);
-        shimmerGain.gain.exponentialRampToValueAtTime(0.075, start + 0.025);
-        shimmerGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.48);
-        shimmer.connect(shimmerGain).connect(master);
-        shimmer.start(start);
-        shimmer.stop(start + 0.5);
-      });
+      // Ominous low tail leaves a brief sense of finality after the impact.
+      const tail = ctx.createOscillator();
+      const tailGain = ctx.createGain();
+      tail.type = "sine";
+      tail.frequency.setValueAtTime(55, now + 0.18);
+      tail.frequency.exponentialRampToValueAtTime(36, now + 1.28);
+      tailGain.gain.setValueAtTime(0.0001, now + 0.18);
+      tailGain.gain.exponentialRampToValueAtTime(0.2, now + 0.27);
+      tailGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.36);
+      tail.connect(tailGain).connect(master);
+      tail.start(now + 0.18);
+      tail.stop(now + 1.38);
     } catch (err) {
       // Audio must never be able to interrupt boss defeat/progression.
       console.warn?.("[quest] boss finisher audio unavailable", err);
