@@ -4,6 +4,7 @@ import QuestJournal from "./QuestJournal";
 import { EMPTY_SAVE, loadSave, type QuestSave } from "@/lib/quest/save";
 import type { JournalProgress } from "@/lib/quest/journalContent";
 import "@/lib/quest/inventoryArmoryPolish";
+import "@/lib/quest/ominousTransitionPolish";
 import { openMariaWardrobe } from "@/lib/quest/mariaWardrobe";
 
 function progressFromSave(save: QuestSave): JournalProgress {
@@ -75,6 +76,57 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
     <>
       <style>{`
         button[aria-label="Memories"] { visibility: hidden !important; }
+        .quest-ominous-warning-overlay {
+          background: radial-gradient(circle at 50% 42%, rgba(78, 7, 18, .30), rgba(1, 2, 8, .94) 70%) !important;
+          backdrop-filter: blur(5px) saturate(.72) !important;
+        }
+        .quest-ominous-warning {
+          position: relative !important;
+          overflow: hidden !important;
+          border-color: rgba(165, 31, 48, .82) !important;
+          background: linear-gradient(155deg, rgba(18, 15, 22, .985), rgba(5, 7, 14, .99)) !important;
+          box-shadow: 0 0 0 1px rgba(255, 77, 92, .08), 0 0 48px rgba(145, 8, 28, .34), 0 28px 80px rgba(0, 0, 0, .78) !important;
+          animation: ominous-warning-breathe 2.8s ease-in-out infinite !important;
+        }
+        .quest-ominous-warning::before {
+          content: "";
+          pointer-events: none;
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 50% -15%, rgba(170, 24, 42, .24), transparent 47%), repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 4px);
+        }
+        .quest-ominous-warning h3 {
+          position: relative;
+          color: #f1d7da !important;
+          text-shadow: 0 0 18px rgba(215, 38, 58, .38) !important;
+          letter-spacing: .015em !important;
+        }
+        .quest-ominous-warning .mt-3 {
+          position: relative;
+          color: rgba(230, 218, 222, .82) !important;
+        }
+        .quest-ominous-warning .mt-3 p {
+          color: #cbbbc1 !important;
+          line-height: 1.75 !important;
+        }
+        .quest-ominous-warning button[aria-label="Skip"] {
+          position: relative;
+          border-color: rgba(183, 48, 64, .55) !important;
+          background: rgba(8, 8, 14, .9) !important;
+          color: #d7a9b1 !important;
+        }
+        .quest-ominous-warning-continue {
+          position: relative !important;
+          border: 1px solid rgba(190, 40, 58, .62) !important;
+          background: linear-gradient(180deg, #36101a, #170911) !important;
+          color: #f5e7e9 !important;
+          box-shadow: inset 0 0 18px rgba(170, 18, 38, .16), 0 0 22px rgba(120, 5, 22, .22) !important;
+          letter-spacing: .05em !important;
+        }
+        @keyframes ominous-warning-breathe {
+          0%, 100% { box-shadow: 0 0 0 1px rgba(255,77,92,.07), 0 0 38px rgba(145,8,28,.25), 0 28px 80px rgba(0,0,0,.78); }
+          50% { box-shadow: 0 0 0 1px rgba(255,77,92,.13), 0 0 62px rgba(160,8,30,.42), 0 28px 80px rgba(0,0,0,.82); }
+        }
         @media (hover: hover) and (pointer: fine) {
           button[aria-label="Memory Journal"] {
             width: 52px !important;
