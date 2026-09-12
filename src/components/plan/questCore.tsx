@@ -2514,107 +2514,146 @@ export function MariasQuest({ onExit }: { onExit?: () => void }) {
       ) : null}
 
       {ceremony ? (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[rgba(6,10,24,0.88)] p-4">
-          <div className="w-full max-w-lg max-h-full overflow-y-auto rounded-2xl border border-gold/60 bg-[#fdfaf3] p-6 text-center">
-            {ceremony.phase === "script"
-              ? (() => {
-                  const beat = CEREMONY_SCRIPT[ceremony.i]!;
-                  const advance = () =>
-                    setCeremony(
-                      ceremony.i + 1 < CEREMONY_SCRIPT.length
-                        ? { phase: "script", i: ceremony.i + 1 }
-                        : { phase: "proposal", i: ceremony.i },
-                    );
-                  if ("choices" in beat && !ceremony.reply) {
+        <div className="absolute inset-0 z-50 flex items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_28%,rgba(214,173,84,0.22),transparent_28%),radial-gradient(circle_at_18%_78%,rgba(214,120,157,0.12),transparent_34%),rgba(2,6,18,0.94)] p-4 backdrop-blur-md">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle,rgba(255,239,190,0.75)_0_1px,transparent_1.5px)] bg-[length:84px_84px] opacity-30" />
+          <div className="relative w-full max-w-lg max-h-full overflow-y-auto rounded-[30px] border border-[#e6c778]/80 bg-[radial-gradient(circle_at_50%_-12%,rgba(255,225,152,0.18),transparent_42%),linear-gradient(155deg,rgba(16,22,41,0.985),rgba(7,11,25,0.99)_58%,rgba(28,15,30,0.985))] p-6 text-center text-[#fff8e9] shadow-[0_0_0_1px_rgba(255,247,219,0.06),0_0_70px_rgba(218,170,70,0.24),0_34px_110px_rgba(0,0,0,0.72)] sm:p-8">
+            <div className="pointer-events-none absolute inset-[9px] rounded-[22px] border border-[#fff1c6]/10" />
+            <div className="relative">
+              <div className="mx-auto mb-5 w-fit rounded-full border border-[#e6c778]/45 bg-[#fff2c7]/[0.05] px-4 py-1.5 font-serif text-[10px] tracking-[0.42em] text-[#f7d98f] shadow-[0_0_24px_rgba(230,199,120,0.12)]">
+                A · M
+              </div>
+
+              {ceremony.phase === "script"
+                ? (() => {
+                    const beat = CEREMONY_SCRIPT[ceremony.i]!;
+                    const advance = () =>
+                      setCeremony(
+                        ceremony.i + 1 < CEREMONY_SCRIPT.length
+                          ? { phase: "script", i: ceremony.i + 1 }
+                          : { phase: "proposal", i: ceremony.i },
+                      );
+                    if ("choices" in beat && !ceremony.reply) {
+                      return (
+                        <>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#e6c778]/70">
+                            Her answer
+                          </p>
+                          <h3 className="mt-2 font-display text-2xl font-bold text-[#f0bdcf] drop-shadow-[0_0_18px_rgba(224,137,170,0.22)]">
+                            Maria
+                          </h3>
+                          <div className="mx-auto mt-4 h-px w-24 bg-gradient-to-r from-transparent via-[#e6c778]/70 to-transparent" />
+                          <div className="mt-5 space-y-3 text-left">
+                            {beat.choices.map((c) => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() =>
+                                  setCeremony({ phase: "script", i: ceremony.i, reply: c.andrew })
+                                }
+                                className="w-full rounded-2xl border border-[#e6c778]/40 bg-[linear-gradient(135deg,rgba(255,249,233,0.08),rgba(238,195,214,0.06))] px-4 py-3.5 font-serif-italic text-sm italic leading-relaxed text-[#fff8e9] shadow-[inset_0_1px_rgba(255,255,255,0.05)] transition hover:border-[#f3d997]/75 hover:bg-[#fff2c7]/10 active:scale-[0.99]"
+                              >
+                                “{c.player}”
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      );
+                    }
+                    const speaker = "choices" in beat ? "Andrew" : beat.speaker;
+                    const text = "choices" in beat ? ceremony.reply! : beat.text;
+                    const mariaSpeaking = speaker === "Maria";
                     return (
                       <>
-                        <h3 className="font-display text-xl font-bold text-navy">Maria</h3>
-                        <div className="mt-4 space-y-2 text-left">
-                          {beat.choices.map((c) => (
-                            <button
-                              key={c.id}
-                              type="button"
-                              onClick={() =>
-                                setCeremony({ phase: "script", i: ceremony.i, reply: c.andrew })
-                              }
-                              className="w-full rounded-xl border border-navy/20 bg-white px-4 py-3 text-sm font-medium text-navy"
-                            >
-                              {c.player}
-                            </button>
-                          ))}
-                        </div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#e6c778]/70">
+                          {mariaSpeaking ? "Her vow" : speaker === "Andrew" ? "His vow" : "The ceremony"}
+                        </p>
+                        <h3
+                          className={`mt-2 font-display text-2xl font-bold ${
+                            mariaSpeaking
+                              ? "text-[#f0bdcf] drop-shadow-[0_0_18px_rgba(224,137,170,0.22)]"
+                              : "text-[#f5d98e] drop-shadow-[0_0_18px_rgba(235,190,88,0.24)]"
+                          }`}
+                        >
+                          {speaker}
+                        </h3>
+                        <div className="mx-auto mt-4 h-px w-24 bg-gradient-to-r from-transparent via-[#e6c778]/70 to-transparent" />
+                        <p className="mx-auto mt-5 max-w-md font-serif-italic text-[15px] italic leading-8 text-[#fff9ed] sm:text-base">
+                          “{text}”
+                        </p>
+                        <p className="mt-5 text-[10px] uppercase tracking-[0.28em] text-[#e6c778]/65">
+                          {ceremony.i + 1} / {CEREMONY_SCRIPT.length}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={advance}
+                          className="mt-5 w-full rounded-2xl border border-[#f0d58f]/55 bg-[linear-gradient(180deg,#d4aa52,#98702b)] px-4 py-3.5 text-sm font-bold text-[#fffaf0] shadow-[0_10px_28px_rgba(128,86,28,0.28),inset_0_1px_rgba(255,255,255,0.22)] transition hover:brightness-110 active:scale-[0.99]"
+                        >
+                          Continue
+                        </button>
                       </>
                     );
-                  }
-                  const speaker = "choices" in beat ? "Andrew" : beat.speaker;
-                  const text = "choices" in beat ? ceremony.reply! : beat.text;
-                  return (
-                    <>
-                      <h3 className="font-display text-xl font-bold text-navy">{speaker}</h3>
-                      <p className="mt-3 text-sm leading-relaxed text-navy/85">{text}</p>
-                      <p className="mt-4 text-[11px] uppercase tracking-[0.2em] text-gold">
-                        {ceremony.i + 1} / {CEREMONY_SCRIPT.length}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={advance}
-                        className="mt-4 w-full rounded-xl bg-navy px-4 py-3 text-sm font-semibold text-white"
-                      >
-                        Continue
-                      </button>
-                    </>
-                  );
-                })()
-              : null}
+                  })()
+                : null}
 
-            {ceremony.phase === "proposal" ? (
-              <>
-                <img
-                  src={PHOTO_SRC}
-                  alt="Andrew and Maria together"
-                  className="mx-auto max-h-72 rounded-xl object-cover"
-                />
-                <p className="mt-4 text-sm leading-relaxed text-navy/85">{FINAL_PROPOSAL}</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const scene = gameRef.current?.scene.getScene("quest") as
-                      | { completeWedding: () => void }
-                      | undefined;
-                    scene?.completeWedding();
-                    setCeremony({ phase: "finale", i: 0 });
-                  }}
-                  className="mt-6 w-full rounded-xl bg-gold px-4 py-3 text-sm font-bold text-navy"
-                >
-                  Yes — forever
-                </button>
-              </>
-            ) : null}
+              {ceremony.phase === "proposal" ? (
+                <>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#e6c778]/70">
+                    One last promise
+                  </p>
+                  <img
+                    src={PHOTO_SRC}
+                    alt="Andrew and Maria together"
+                    className="mx-auto mt-4 max-h-72 rounded-2xl border border-[#e6c778]/55 object-cover shadow-[0_18px_50px_rgba(0,0,0,0.42),0_0_28px_rgba(224,178,80,0.14)]"
+                  />
+                  <div className="mx-auto mt-5 h-px w-24 bg-gradient-to-r from-transparent via-[#e6c778]/70 to-transparent" />
+                  <p className="mx-auto mt-5 max-w-md font-serif-italic text-[15px] italic leading-8 text-[#fff9ed]">
+                    {FINAL_PROPOSAL}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const scene = gameRef.current?.scene.getScene("quest") as
+                        | { completeWedding: () => void }
+                        | undefined;
+                      scene?.completeWedding();
+                      setCeremony({ phase: "finale", i: 0 });
+                    }}
+                    className="mt-6 w-full rounded-2xl border border-[#ffe3a0]/65 bg-[linear-gradient(180deg,#e0b65d,#a77b31)] px-4 py-3.5 text-sm font-bold text-[#fffaf0] shadow-[0_12px_34px_rgba(178,125,37,0.32),inset_0_1px_rgba(255,255,255,0.24)] transition hover:brightness-110 active:scale-[0.99]"
+                  >
+                    Yes — forever
+                  </button>
+                </>
+              ) : null}
 
-            {ceremony.phase === "finale" ? (
-              <>
-                <h3 className="font-display text-2xl font-extrabold text-navy">
-                  Realm of the Golden Ring
-                </h3>
-                <p className="mt-2 font-serif-italic text-lg italic text-gold">
-                  Andrew &amp; Maria — forever begins here.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setPhoto(true)}
-                  className="mt-5 w-full rounded-xl bg-navy px-4 py-3 text-sm font-semibold text-white"
-                >
-                  View our photo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void returnToTitle()}
-                  className="mt-3 w-full rounded-xl border border-navy/30 px-4 py-3 text-sm font-semibold text-navy"
-                >
-                  Return to the title screen
-                </button>
-              </>
-            ) : null}
+              {ceremony.phase === "finale" ? (
+                <>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#e6c778]/70">
+                    The promise is made
+                  </p>
+                  <h3 className="mt-3 font-display text-3xl font-extrabold text-[#f5d98e] drop-shadow-[0_0_22px_rgba(235,190,88,0.28)]">
+                    Realm of the Golden Ring
+                  </h3>
+                  <div className="mx-auto mt-4 h-px w-28 bg-gradient-to-r from-transparent via-[#e6c778]/80 to-transparent" />
+                  <p className="mt-4 font-serif-italic text-lg italic text-[#f0bdcf]">
+                    Andrew &amp; Maria — forever begins here.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setPhoto(true)}
+                    className="mt-6 w-full rounded-2xl border border-[#f0d58f]/55 bg-[linear-gradient(180deg,#d4aa52,#98702b)] px-4 py-3.5 text-sm font-bold text-[#fffaf0] shadow-[0_10px_28px_rgba(128,86,28,0.28)] transition hover:brightness-110 active:scale-[0.99]"
+                  >
+                    View our photo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void returnToTitle()}
+                    className="mt-3 w-full rounded-2xl border border-[#e6c778]/35 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-[#f4e5bc] transition hover:bg-white/[0.08] active:scale-[0.99]"
+                  >
+                    Return to the title screen
+                  </button>
+                </>
+              ) : null}
+            </div>
           </div>
         </div>
       ) : null}
