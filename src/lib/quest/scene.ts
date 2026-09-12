@@ -24,8 +24,20 @@ const OMINOUS_SECOND_BOSS_BODY =
 const THIRD_REMINISCENCE =
   "Andrew was here through all of it… somehow that made this place feel like home.";
 
-/** The registered Memory Walk scene owns Maria's third reflection directly. */
+/** The registered Memory Walk scene owns Maria's visible interlude presentation directly. */
 class DirectMemoryWalkScene extends MemoryWalkScene {
+  override create() {
+    super.create();
+
+    // Keep the interlude title clean: no visible "between Act IV & Act V" label.
+    this.game.events.emit(EV.act, { title: "MEMORY WALK" });
+    for (const child of this.children?.list ?? []) {
+      if (!(child instanceof Phaser.GameObjects.Text)) continue;
+      const value = String(child.text ?? "").toUpperCase();
+      if (value.includes("BETWEEN ACT IV & ACT V")) child.setText("");
+    }
+  }
+
   private showReminiscence(index: number, ...args: any[]) {
     const result = super.showReminiscence(index, ...args);
     if (index !== 2) return result;
@@ -133,6 +145,21 @@ export class QuestScene extends BaseQuestScene {
     if (wasFight && beforeHp > 0 && Number(this.bossHp ?? 0) <= 0) {
       this.playBossFinisherSound();
     }
+    return result;
+  }
+
+  /** Respawn Andrew beside Maria instead of making him run across the realm to catch up. */
+  private respawnAtCheckpoint() {
+    const result = super.respawnAtCheckpoint();
+    try {
+      if (this.companion?.active && this.player?.active) {
+        this.companion.setPosition(this.player.x - 28, this.player.y + 12);
+        this.companion.setVelocity?.(0, 0);
+        if (this.allyBlade?.active) {
+          this.allyBlade.setPosition(this.companion.x, this.companion.y);
+        }
+      }
+    } catch {}
     return result;
   }
 
