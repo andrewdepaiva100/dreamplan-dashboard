@@ -14,7 +14,6 @@ const WALK_Y = 548;
 const PATH_TOP = 500;
 const MARIA_SCALE = 1.357;
 const WALK_SPEED = 86.4;
-const MEMORY_CENTERS = [470, 980, 1490, 2000] as const;
 const REMINISCENCES = [
   "I remember thinking the road ahead was endless.",
   "This was when love started to feel like home.",
@@ -29,7 +28,7 @@ type MemoryGroup = {
   centerX: number;
   tint: number;
   theme: MemoryTheme;
-  pulse: Phaser.GameObjects.Ellipse;
+  landmark: Phaser.GameObjects.Sprite;
 };
 
 export class MemoryWalkScene extends Phaser.Scene {
@@ -50,19 +49,25 @@ export class MemoryWalkScene extends Phaser.Scene {
   private lastButterflyTrailAt = 0;
   private lastPocketParticleAt = 0;
   private memoryAudio: AudioContext | null = null;
+  private memoryMaster: GainNode | null = null;
   private memoryMusicStop: (() => void) | null = null;
   private cathedralSwelled = false;
+  private cathedralBellPlayed = false;
   private focusMemory = -1;
   private reminiscenceShown = new Set<number>();
   private motifPlayed = new Set<number>();
   private pausePlayed = new Set<number>();
+  private releasedMemories = new Set<number>();
   private reminiscenceBubble: Phaser.GameObjects.Container | null = null;
   private worldVeil!: Phaser.GameObjects.Rectangle;
   private goldRoad!: Phaser.GameObjects.Rectangle;
   private cathedralRoot!: Phaser.GameObjects.Container;
   private cathedralTitle!: Phaser.GameObjects.Container;
+  private cathedralOutline!: Phaser.GameObjects.Sprite;
   private act4Pillars: Phaser.GameObjects.Sprite[] = [];
   private pauseUntil = 0;
+  private reactionIndex = -1;
+  private lastMariaX = 110;
 
   constructor() { super(MEMORY_WALK_SCENE_KEY); }
   init(data: { save?: any }) { this.save = data?.save; }
@@ -90,30 +95,28 @@ export class MemoryWalkScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
 
     const bg = this.add.graphics().setDepth(0);
-    bg.fillGradientStyle(0x060916, 0x0b1632, 0x24193e, 0x170f20, 1);
+    bg.fillGradientStyle(0x050713, 0x0b1530, 0x211735, 0x140d1c, 1);
     bg.fillRect(0, 0, WORLD_W, WORLD_H);
 
     const moods = this.add.graphics().setDepth(0);
-    [[160,0xffc66e],[720,0xff8fbd],[1240,0xe5aa63],[1760,0x799cff],[2360,0xffd680]].forEach(([x,tint], i) => {
-      moods.fillStyle(tint, i === 4 ? 0.045 : 0.035);
+    [[420,0xffc66e],[930,0xff8fbd],[1450,0xe5aa63],[1980,0x799cff],[2550,0xffd680]].forEach(([x,tint], i) => {
+      moods.fillStyle(tint, i === 4 ? 0.045 : 0.032);
       moods.fillEllipse(x, 300, 760, 520);
     });
 
-    const hazeBack = this.add.graphics().setDepth(0).setScrollFactor(0.82,1);
-    for (let i=0;i<8;i++) {
-      const x=210+i*405;
-      const tint=i>=6?0xffd792:i%2?0x7967b4:0x6d8bc4;
-      hazeBack.fillStyle(tint,0.025+(i%3)*0.01);
-      hazeBack.fillEllipse(x,250+(i%2)*35,420,210);
+    const haze = this.add.graphics().setDepth(0).setScrollFactor(0.84,1);
+    for (let i=0;i<9;i++) {
+      haze.fillStyle(i>6?0xffd792:(i%2?0x7967b4:0x6d8bc4),0.025+(i%3)*0.009);
+      haze.fillEllipse(160+i*340,270+(i%2)*32,430,210);
     }
 
-    for (let i=0;i<175;i++) {
+    for (let i=0;i<180;i++) {
       const x=22+((i*197)%(WORLD_W-44));
       const y=18+((i*83)%455);
       const r=i%13===0?2.4:i%4===0?1.45:0.8;
       const tint=x>2240?0xffe2a0:i%5===0?0xc8ddff:0xffffff;
-      const star=this.add.circle(x,y,r,tint,i%4===0?0.76:0.44).setDepth(1);
-      if(i%11===0)this.tweens.add({targets:star,alpha:{from:0.18,to:0.92},scale:{from:0.72,to:1.35},duration:1450+(i%6)*190,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
+      const star=this.add.circle(x,y,r,tint,i%4===0?0.76:0.42).setDepth(1);
+      if(i%11===0)this.tweens.add({targets:star,alpha:{from:0.16,to:0.92},scale:{from:0.72,to:1.35},duration:1450+(i%6)*190,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
     }
 
     const pathGlow=this.add.graphics().setDepth(2);
@@ -123,10 +126,9 @@ export class MemoryWalkScene extends Phaser.Scene {
     path.fillGradientStyle(0x7188bd,0xaec2ec,0x34466e,0x596f9e,0.94);
     path.fillRoundedRect(0,PATH_TOP,WORLD_W,112,44);
     path.fillStyle(0xf9f4e6,0.12);path.fillRoundedRect(18,PATH_TOP+17,WORLD_W-36,76,34);
-    path.lineStyle(2,0xe8efff,0.45);path.strokeRoundedRect(0,PATH_TOP,WORLD_W,112,44);
-
-    this.goldRoad=this.add.rectangle(2390,PATH_TOP+56,860,104,0xffd98a,0).setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
-    this.add.rectangle(WORLD_W/2,PATH_TOP+83,WORLD_W-90,2,0xf7f1dc,0.22).setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
+    path.lineStyle(2,0xe8efff,0.42);path.strokeRoundedRect(0,PATH_TOP,WORLD_W,112,44);
+    this.goldRoad=this.add.rectangle(2480,PATH_TOP+56,680,104,0xffd98a,0).setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
+    this.add.rectangle(WORLD_W/2,PATH_TOP+83,WORLD_W-90,2,0xf7f1dc,0.18).setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
 
     this.addOpeningTitle();
     this.memories.push(this.addMemory(470,"ACT I","Sunlit Shores",0xffd48a,"landmark-temple",["tree","fountain"],"Every beginning is a promise we do not yet know we are making.","shore"));
@@ -139,13 +141,14 @@ export class MemoryWalkScene extends Phaser.Scene {
 
     const foreground=this.add.graphics().setDepth(28).setScrollFactor(1.035,1);
     foreground.fillStyle(0x050711,0.44);
-    for(let i=0;i<18;i++){const x=20+i*165;foreground.fillEllipse(x,PATH_TOP+111,95,18+(i%4)*6);}
+    for(let i=0;i<18;i++)foreground.fillEllipse(20+i*165,PATH_TOP+111,95,18+(i%4)*6);
 
     this.maria=this.add.sprite(110,WALK_Y,"maria-side-0").setDepth(40).setScale(MARIA_SCALE);
+    this.lastMariaX=this.maria.x;
     this.cameras.main.startFollow(this.maria,true,0.075,0.075,-118,22);
     this.cameras.main.setDeadzone(220,120);
 
-    this.worldVeil=this.add.rectangle(0,0,2400,1400,0x03040c,0.05).setOrigin(0).setScrollFactor(0).setDepth(35);
+    this.worldVeil=this.add.rectangle(0,0,2400,1400,0x02030a,0.05).setOrigin(0).setScrollFactor(0).setDepth(35);
     this.worldVeil.setInteractive(false);
 
     this.cursors=this.input.keyboard!.createCursorKeys();
@@ -176,12 +179,12 @@ export class MemoryWalkScene extends Phaser.Scene {
     const beam=this.add.rectangle(0,320,150,300,tint,0.018).setAngle(theme==="garden"?-4:theme==="stars"?4:0).setBlendMode(Phaser.BlendModes.ADD);
     const outerGlow=this.add.ellipse(0,334,460,318,tint,0.07).setBlendMode(Phaser.BlendModes.ADD);
     const innerGlow=this.add.ellipse(0,344,326,232,tint,0.12).setBlendMode(Phaser.BlendModes.ADD);
-    const pulse=this.add.ellipse(0,428,360,72,tint,0.06).setBlendMode(Phaser.BlendModes.ADD);
+    const floorGlow=this.add.ellipse(0,428,360,72,tint,0.06).setBlendMode(Phaser.BlendModes.ADD);
     const echo=this.add.sprite(8,342,landmarkKey).setTint(tint).setAlpha(0.07);
     const landmark=this.add.sprite(0,332,landmarkKey).setAlpha(1);
     if(landmark.width>0)landmark.setScale(Math.min(1.28,218/landmark.width));
     echo.setScale(landmark.scaleX*1.045,landmark.scaleY*1.045);
-    root.add([beam,outerGlow,innerGlow,pulse,echo,landmark]);
+    root.add([beam,outerGlow,innerGlow,floorGlow,echo,landmark]);
 
     const vignette=this.add.graphics();
     if(theme==="shore"){
@@ -197,7 +200,13 @@ export class MemoryWalkScene extends Phaser.Scene {
     }
     root.add(vignette);
 
-    accents.forEach((key,i)=>{if(!this.textures.exists(key))return;const side=i===0?-1:1;const a=this.add.sprite(side*138,408-i*18,key).setAlpha(0.9);if(theme==="stars"||i===0)a.setTint(tint);a.setScale(key==="pillar"?1.15:key==="adriel"?1.06:0.9);root.add(a);});
+    accents.forEach((key,i)=>{
+      if(!this.textures.exists(key))return;
+      const a=this.add.sprite((i===0?-1:1)*138,408-i*18,key).setAlpha(0.9);
+      if(theme==="stars"||i===0)a.setTint(tint);
+      a.setScale(key==="pillar"?1.15:key==="adriel"?1.06:0.9);
+      root.add(a);
+    });
 
     for(let i=0;i<18;i++){
       const mote=this.add.circle(-185+((i*43)%370),258+((i*31)%186),i%4===0?2.5:1.25,tint,0.48);
@@ -213,18 +222,18 @@ export class MemoryWalkScene extends Phaser.Scene {
 
     this.tweens.add({targets:outerGlow,alpha:{from:0.035,to:0.14},scaleX:{from:0.94,to:1.06},duration:2500,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
     this.tweens.add({targets:innerGlow,alpha:{from:0.06,to:0.18},duration:1900,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
-    this.tweens.add({targets:pulse,alpha:{from:0.025,to:0.12},scaleX:{from:0.85,to:1.2},duration:2100,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
-    return{root,centerX:x,tint,theme,pulse};
+    this.tweens.add({targets:floorGlow,alpha:{from:0.025,to:0.12},scaleX:{from:0.85,to:1.2},duration:2100,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
+    return {root,centerX:x,tint,theme,landmark};
   }
 
   private addHavenPresence(x:number){
-    const root=this.add.container(x+145,356).setDepth(8).setAlpha(0.18);
-    const halo=this.add.ellipse(0,16,72,118,0xffd88d,0.08).setBlendMode(Phaser.BlendModes.ADD);
-    const head=this.add.circle(0,-24,8,0xffe7b5,0.32);
-    const body=this.add.ellipse(0,10,22,54,0xffd88d,0.2);
-    const ground=this.add.ellipse(0,42,58,12,0xffcf74,0.11).setBlendMode(Phaser.BlendModes.ADD);
+    const root=this.add.container(x+145,356).setDepth(8).setAlpha(0.14);
+    const halo=this.add.ellipse(0,16,80,124,0xffd88d,0.1).setBlendMode(Phaser.BlendModes.ADD);
+    const head=this.add.circle(0,-24,8,0xffe7b5,0.34);
+    const body=this.add.ellipse(0,10,22,54,0xffd88d,0.22);
+    const ground=this.add.ellipse(0,42,62,12,0xffcf74,0.12).setBlendMode(Phaser.BlendModes.ADD);
     root.add([halo,head,body,ground]);
-    this.tweens.add({targets:root,alpha:{from:0.1,to:0.34},duration:2200,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
+    this.tweens.add({targets:root,alpha:{from:0.08,to:0.36},duration:2400,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
   }
 
   private addAct4Pillars(x:number){
@@ -239,7 +248,7 @@ export class MemoryWalkScene extends Phaser.Scene {
 
   private addCathedralReveal(){
     const x=2580;
-    const root=this.add.container(0,0).setDepth(8).setAlpha(0.08);
+    const root=this.add.container(0,0).setDepth(8).setAlpha(0);
     const farHalo=this.add.ellipse(x,336,760,500,0xffd37a,0.1).setBlendMode(Phaser.BlendModes.ADD);
     const aura=this.add.ellipse(x,340,610,410,0xffd37a,0.26).setBlendMode(Phaser.BlendModes.ADD);
     const cathedral=this.add.sprite(x,307,"landmark-cathedral").setTint(0xfff7e6);
@@ -247,6 +256,10 @@ export class MemoryWalkScene extends Phaser.Scene {
     root.add([farHalo,aura,cathedral]);
     for(let i=0;i<9;i++)root.add(this.add.rectangle(x-220+i*55,238,18,320,0xffe3a1,0.08).setAngle(i%2?5:-5).setBlendMode(Phaser.BlendModes.ADD));
     this.cathedralRoot=root;
+
+    this.cathedralOutline=this.add.sprite(x,307,"landmark-cathedral").setDepth(9).setTint(0xffd977).setAlpha(0);
+    if(this.cathedralOutline.width>0)this.cathedralOutline.setScale(Math.min(1.82,320/this.cathedralOutline.width));
+    this.cathedralOutline.setBlendMode(Phaser.BlendModes.ADD);
 
     const title=this.add.container(x,455).setDepth(20).setAlpha(0);
     const panel=this.add.rectangle(0,0,430,96,0x080912,0.9).setStrokeStyle(1,0xffd98a,0.62);
@@ -273,10 +286,11 @@ export class MemoryWalkScene extends Phaser.Scene {
     }
 
     let pocketSlow=1;
-    if(nearestIndex>=0&&nearest<155)pocketSlow=nearestIndex===2?0.58:0.74;
+    if(nearestIndex>=0&&nearest<170)pocketSlow=nearestIndex===2?0.42:nearestIndex===3?0.64:0.72;
     if(time<this.pauseUntil)pocketSlow=0;
 
     const moving=Math.abs(dx)>0.05&&pocketSlow>0;
+    this.lastMariaX=this.maria.x;
     this.maria.x=Phaser.Math.Clamp(this.maria.x+dx*WALK_SPEED*pocketSlow*Math.min(delta,50)/1000,72,2670);
 
     if(moving){
@@ -294,74 +308,160 @@ export class MemoryWalkScene extends Phaser.Scene {
       const ad=Math.abs(d);
       if(ad<nearest){nearest=ad;nearestIndex=index;}
       const approach=Phaser.Math.Clamp(1-ad/430,0,1);
-      const passed=d>130?Phaser.Math.Clamp(1-(d-130)/350,0.035,1):1;
-      const alpha=(0.38+approach*0.62)*passed;
-      m.root.setAlpha(alpha);
-      m.root.setScale(0.985+approach*0.045);
-      if(d>250)m.root.setY(Math.min(16,(d-250)*0.035));
+      const passed=d>150?Phaser.Math.Clamp(1-(d-150)/360,0.02,1):1;
+      const alpha=(0.34+approach*0.66)*passed;
+      if(!this.releasedMemories.has(index)){
+        m.root.setAlpha(alpha);
+        m.root.setScale(0.985+approach*0.045);
+      }
+      if(d>260&&!this.releasedMemories.has(index))this.releaseMemory(index);
     });
 
-    const inPocket=nearestIndex>=0&&nearest<260;
-    const quietGap=this.maria.x>2160&&this.maria.x<2380;
-    const cathedralApproach=this.maria.x>=2380;
-    const targetVeil=quietGap?0.28:inPocket?0.105:cathedralApproach?0.06:0.17;
+    const inPocket=nearestIndex>=0&&nearest<270;
+    const quietGap=this.maria.x>2180&&this.maria.x<2410;
+    const cathedralApproach=this.maria.x>=2410;
+    const targetVeil=quietGap?0.42:inPocket?0.10:cathedralApproach?0.04:0.17;
     this.worldVeil.alpha+=(targetVeil-this.worldVeil.alpha)*0.045;
-    const targetZoom=cathedralApproach?1.065:inPocket?1.035:quietGap?0.99:1;
+    const targetZoom=cathedralApproach?1.07:inPocket?1.035:quietGap?0.985:1;
     this.cameras.main.zoom+=(targetZoom-this.cameras.main.zoom)*0.035;
-    const desiredOffsetX=cathedralApproach?-170:inPocket?-132:-118;
+    const desiredOffsetX=cathedralApproach?-172:inPocket?-132:-118;
     this.cameras.main.setFollowOffset(this.cameras.main.followOffset.x+(desiredOffsetX-this.cameras.main.followOffset.x)*0.04,22);
     this.titleCard?.setAlpha(Phaser.Math.Clamp(1-(this.maria.x-150)/430,0,1));
 
-    if(nearestIndex>=0&&nearest<115){
-      if(this.focusMemory!==nearestIndex){this.focusMemory=nearestIndex;this.cueMemoryFocus(nearestIndex);this.cuePocketMotif(nearestIndex);}
+    if(nearestIndex>=0&&nearest<120){
+      if(this.focusMemory!==nearestIndex){this.focusMemory=nearestIndex;this.cueMemoryFocus(nearestIndex);this.cuePocketMotif(nearestIndex);this.beginMariaReaction(nearestIndex,time);}
       if(!this.reminiscenceShown.has(nearestIndex))this.showReminiscence(nearestIndex);
       if(!this.pausePlayed.has(nearestIndex)){
         this.pausePlayed.add(nearestIndex);
-        this.pauseUntil=time+(nearestIndex===2?650:260);
+        this.pauseUntil=time+(nearestIndex===2?1050:nearestIndex===3?420:280);
       }
     }
 
-    if(nearestIndex>=0&&nearest<300&&time-this.lastPocketParticleAt>170){
+    this.updateMariaReaction(nearestIndex,nearest,time,moving);
+    this.updateHavenAudio(nearestIndex,nearest);
+
+    if(nearestIndex>=0&&nearest<310&&time-this.lastPocketParticleAt>165){
       this.lastPocketParticleAt=time;
       this.spawnPocketParticle(nearestIndex);
     }
 
     if(this.maria.x>2080){
       this.act4Pillars.forEach((p,i)=>{
-        const extinguishAt=2110+i*34;
-        if(this.maria.x>extinguishAt)p.alpha=Math.max(0.08,p.alpha-0.035);
+        const extinguishAt=2100+i*36;
+        if(this.maria.x>extinguishAt)p.alpha=Math.max(0.035,p.alpha-0.038);
       });
     }
 
-    if(this.maria.x>=2320&&!this.butterfly?.active)this.spawnGuidingButterfly();
+    this.updateCathedralReveal(time);
+
+    if(this.reminiscenceBubble?.active)this.reminiscenceBubble.setPosition(this.maria.x,this.maria.y-118);
+    if(this.maria.x>=2635)this.beginExit();
+  }
+
+  private beginMariaReaction(index:number,time:number){
+    this.reactionIndex=index;
+    if(index===2){
+      this.maria.setTexture("maria-side-0");
+      this.maria.setFlipX(false);
+      this.tweens.add({targets:this.maria,scaleX:MARIA_SCALE*1.02,scaleY:MARIA_SCALE*1.02,duration:420,yoyo:true,ease:"Sine.easeInOut"});
+    }else if(index===3){
+      this.maria.setTexture("maria-side-0");
+      this.tweens.add({targets:this.maria,y:WALK_Y-5,angle:-2,duration:360,yoyo:true,hold:260,ease:"Sine.easeInOut"});
+    }else{
+      this.tweens.add({targets:this.maria,angle:index===0?-1.4:1.4,duration:220,yoyo:true,hold:120,ease:"Sine.easeInOut"});
+    }
+  }
+
+  private updateMariaReaction(index:number,nearest:number,time:number,moving:boolean){
+    if(index<0||nearest>200){
+      if(this.reactionIndex!==-1){this.reactionIndex=-1;this.maria.angle+=(0-this.maria.angle)*0.18;}
+      return;
+    }
+    const m=this.memories[index];
+    if(!m)return;
+    if(index===2&&nearest<150){
+      this.maria.setFlipX(this.maria.x>m.centerX);
+      if(time<this.pauseUntil)this.maria.setTexture("maria-side-0");
+    }
+    if(index===3&&nearest<150&&time>=this.pauseUntil){
+      this.maria.angle+=( -1.2-this.maria.angle)*0.08;
+      this.maria.y+=(WALK_Y-3-this.maria.y)*0.08;
+    }else if(moving){
+      this.maria.angle+=(0-this.maria.angle)*0.12;
+    }
+  }
+
+  private releaseMemory(index:number){
+    if(this.releasedMemories.has(index))return;
+    const m=this.memories[index];if(!m)return;
+    this.releasedMemories.add(index);
+
+    this.tweens.killTweensOf(m.root);
+    this.tweens.add({targets:m.root,alpha:0.035,y:24,scaleX:0.94,scaleY:0.94,duration:index===2?2400:1800,ease:"Sine.easeInOut"});
+
+    for(let i=0;i<18;i++){
+      const shard=this.add.circle(
+        m.centerX+Phaser.Math.Between(-115,115),
+        Phaser.Math.Between(270,438),
+        Phaser.Math.FloatBetween(1.2,3.2),
+        m.tint,
+        Phaser.Math.FloatBetween(0.25,0.65),
+      ).setDepth(18).setBlendMode(Phaser.BlendModes.ADD);
+      const driftX=Phaser.Math.Between(-70,55);
+      this.tweens.add({targets:shard,x:shard.x+driftX,y:shard.y-Phaser.Math.Between(28,85),alpha:0,scale:0.25,duration:1200+i*55,ease:"Sine.easeOut",onComplete:()=>shard.destroy()});
+    }
+
+    const shadeWidth=Math.max(140,m.centerX+210);
+    const shade=this.add.rectangle(shadeWidth/2,PATH_TOP+56,shadeWidth,108,0x050712,0).setDepth(5);
+    this.tweens.add({targets:shade,alpha:index===2?0.20:0.15,duration:1200,ease:"Sine.easeInOut"});
+
+    if(index===2){
+      const linger=this.add.ellipse(m.centerX+90,392,300,150,0xffc874,0.12).setDepth(6).setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({targets:linger,alpha:0,scale:1.28,duration:3200,ease:"Sine.easeOut",onComplete:()=>linger.destroy()});
+    }
+  }
+
+  private updateCathedralReveal(time:number){
+    if(this.maria.x>=2260&&!this.butterfly?.active)this.spawnGuidingButterfly();
     if(this.butterfly?.active){
-      const lead=this.maria.x>2380?175:105;
+      const lead=this.maria.x>2380?185:112;
       const tx=Math.min(2620,this.maria.x+lead);
-      const ty=WALK_Y-70+Math.sin(this.time.now/220)*14;
+      const ty=WALK_Y-72+Math.sin(this.time.now/220)*14;
       this.butterfly.x+=(tx-this.butterfly.x)*(this.maria.x>2380?0.085:0.055);
       this.butterfly.y+=(ty-this.butterfly.y)*0.065;
       if(time-this.lastButterflyTrailAt>=90){this.lastButterflyTrailAt=time;this.spawnButterflyTrail();}
     }
 
-    const gold=Phaser.Math.Clamp((this.maria.x-2290)/290,0,1);
-    this.goldRoad.setAlpha(gold*0.34);
-    this.cathedralRoot.setAlpha(0.08+gold*0.92);
-    this.cathedralRoot.setScale(0.94+gold*0.06);
-
-    if(this.maria.x>=2445&&!this.reminiscenceShown.has(4)){
-      this.showReminiscence(4);
-      this.cueCathedralSwell();
+    // Stage 1: quiet darkness. Stage 2: a single bell and distant outline.
+    if(this.maria.x>=2360&&!this.cathedralBellPlayed){
+      this.cathedralBellPlayed=true;
+      this.cueCathedralBell();
+      this.tweens.add({targets:this.cathedralOutline,alpha:0.34,duration:1200,ease:"Sine.easeOut"});
     }
-    if(this.maria.x>=2510){
+
+    // Stage 3: gold begins under Maria's feet only after the outline is established.
+    const gold=Phaser.Math.Clamp((this.maria.x-2420)/170,0,1);
+    this.goldRoad.setAlpha(gold*0.36);
+    if(gold>0){
+      const pulse=this.add.circle(this.maria.x,WALK_Y+13,4+gold*4,0xffdf95,0.05+gold*0.1).setDepth(6).setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({targets:pulse,alpha:0,scale:2.2,duration:420,onComplete:()=>pulse.destroy()});
+    }
+
+    // Stage 4: full Cathedral reveal after the road has answered her steps.
+    const reveal=Phaser.Math.Clamp((this.maria.x-2480)/105,0,1);
+    this.cathedralRoot.setAlpha(reveal);
+    this.cathedralRoot.setScale(0.92+reveal*0.08);
+    this.cathedralOutline.setAlpha(Math.max(this.cathedralOutline.alpha*(1-reveal*0.06),0.04));
+
+    if(this.maria.x>=2515&&!this.cathedralSwelled)this.cueCathedralSwell();
+    if(this.maria.x>=2535&&!this.reminiscenceShown.has(4))this.showReminiscence(4);
+    if(this.maria.x>=2550){
       this.cathedralTitle.alpha+=(1-this.cathedralTitle.alpha)*0.045;
       if(!this.pausePlayed.has(4)){
         this.pausePlayed.add(4);
-        this.pauseUntil=time+900;
+        this.pauseUntil=time+1050;
       }
     }
-
-    if(this.reminiscenceBubble?.active)this.reminiscenceBubble.setPosition(this.maria.x,this.maria.y-118);
-    if(this.maria.x>=2635)this.beginExit();
   }
 
   private showReminiscence(index:number){
@@ -379,7 +479,7 @@ export class MemoryWalkScene extends Phaser.Scene {
     root.add([glow,panel,text,tail]);
     this.reminiscenceBubble=root;
     this.tweens.add({targets:root,alpha:1,scale:1,y:root.y-6,duration:340,ease:"Back.easeOut"});
-    const hold=index===2?3900:index===4?4200:3000;
+    const hold=index===2?4200:index===4?4400:3000;
     this.time.delayedCall(hold,()=>{if(!root.active)return;this.tweens.add({targets:root,alpha:0,y:root.y-10,duration:560,ease:"Sine.easeIn",onComplete:()=>{if(this.reminiscenceBubble===root)this.reminiscenceBubble=null;root.destroy();}});});
   }
 
@@ -409,7 +509,7 @@ export class MemoryWalkScene extends Phaser.Scene {
   }
 
   private spawnFootGlow(){
-    const warm=Phaser.Math.Clamp((this.maria.x-2260)/400,0,1);
+    const warm=Phaser.Math.Clamp((this.maria.x-2400)/260,0,1);
     const tint=warm>0.15?0xffdc91:0xe4ebff;
     const ripple=this.add.ellipse(this.maria.x-(this.maria.flipX?-4:4),WALK_Y+15,18,6,tint,0.24).setDepth(6).setBlendMode(Phaser.BlendModes.ADD);
     this.tweens.add({targets:ripple,alpha:0,scaleX:1.8,scaleY:1.5,duration:540,ease:"Sine.easeOut",onComplete:()=>ripple.destroy()});
@@ -431,16 +531,23 @@ export class MemoryWalkScene extends Phaser.Scene {
     if(this.motifPlayed.has(index)||!this.memoryAudio)return;
     this.motifPlayed.add(index);
     try{
-      const ctx=this.memoryAudio;
-      const now=ctx.currentTime+0.03;
+      const ctx=this.memoryAudio;const now=ctx.currentTime+0.03;
       const motifs=[[261.63,329.63,392],[293.66,369.99,440],[220,277.18,329.63],[329.63,493.88,659.25]];
       const motif=motifs[index]??motifs[0];
       motif.forEach((freq,i)=>{
-        const o=ctx.createOscillator();const g=ctx.createGain();
-        o.type=index===3?"sine":"triangle";o.frequency.value=freq;
-        g.gain.setValueAtTime(0.0001,now+i*0.13);g.gain.linearRampToValueAtTime(0.022,now+i*0.13+0.08);g.gain.exponentialRampToValueAtTime(0.0001,now+i*0.13+1.5);
+        const o=ctx.createOscillator();const g=ctx.createGain();o.type=index===3?"sine":"triangle";o.frequency.value=freq;
+        g.gain.setValueAtTime(0.0001,now+i*0.13);g.gain.linearRampToValueAtTime(index===2?0.016:0.022,now+i*0.13+0.08);g.gain.exponentialRampToValueAtTime(0.0001,now+i*0.13+1.5);
         o.connect(g).connect(ctx.destination);o.start(now+i*0.13);o.stop(now+i*0.13+1.6);
       });
+    }catch{}
+  }
+
+  private updateHavenAudio(index:number,nearest:number){
+    if(!this.memoryAudio||!this.memoryMaster)return;
+    const inHaven=index===2&&nearest<240;
+    try{
+      const target=inHaven?0.018:(this.maria.x>2180&&this.maria.x<2410?0.009:0.04);
+      this.memoryMaster.gain.setTargetAtTime(target,this.memoryAudio.currentTime,0.28);
     }catch{}
   }
 
@@ -448,7 +555,7 @@ export class MemoryWalkScene extends Phaser.Scene {
     try{
       const AC=window.AudioContext??(window as any).webkitAudioContext;if(!AC)return;
       const ctx=new AC();this.memoryAudio=ctx;void ctx.resume();
-      const master=ctx.createGain();master.gain.value=0.0001;master.connect(ctx.destination);master.gain.exponentialRampToValueAtTime(0.04,ctx.currentTime+2.4);
+      const master=ctx.createGain();this.memoryMaster=master;master.gain.value=0.0001;master.connect(ctx.destination);master.gain.exponentialRampToValueAtTime(0.04,ctx.currentTime+2.4);
       const soft=ctx.createBiquadFilter();soft.type="lowpass";soft.frequency.value=1700;soft.Q.value=0.35;soft.connect(master);
       const hz=(n:number)=>220*Math.pow(2,n/12);
       const melody=[7,12,14,19,16,14,12,9,7,11,14,16,19,21,19,14];
@@ -461,6 +568,14 @@ export class MemoryWalkScene extends Phaser.Scene {
     }catch(err){console.warn?.("[quest] Memory Walk music unavailable",err);}
   }
 
+  private cueCathedralBell(){
+    if(!this.memoryAudio)return;
+    try{
+      const ctx=this.memoryAudio;const now=ctx.currentTime+0.03;
+      [196,293.66,392].forEach((freq,i)=>{const o=ctx.createOscillator();const g=ctx.createGain();o.type="sine";o.frequency.value=freq;g.gain.setValueAtTime(0.0001,now);g.gain.linearRampToValueAtTime(i===0?0.032:0.014,now+0.035);g.gain.exponentialRampToValueAtTime(0.0001,now+3.5+i*0.4);o.connect(g).connect(ctx.destination);o.start(now);o.stop(now+4.2);});
+    }catch{}
+  }
+
   private cueCathedralSwell(){
     if(this.cathedralSwelled||!this.memoryAudio)return;
     this.cathedralSwelled=true;
@@ -470,7 +585,7 @@ export class MemoryWalkScene extends Phaser.Scene {
     }catch{}
   }
 
-  private stopMemoryWalkMusic(){try{this.memoryMusicStop?.();}catch{}this.memoryMusicStop=null;this.memoryAudio=null;}
+  private stopMemoryWalkMusic(){try{this.memoryMusicStop?.();}catch{}this.memoryMusicStop=null;this.memoryAudio=null;this.memoryMaster=null;}
   private beginExit(){if(this.exiting)return;this.exiting=true;this.stopMemoryWalkMusic();this.game.events.emit(EV.music,"home");this.cameras.main.fadeOut(1550,255,244,214);this.time.delayedCall(1620,()=>this.finishToCathedral());}
   private finishToCathedral(){if(!this.save)return;try{this.save.current_zone=ACT5;this.save.player_health=5;this.game.events.emit(EV.save,{...this.save});}catch(err){console.warn?.("[quest] Memory Walk save handoff warning",err);}try{this.scene.stop(MEMORY_WALK_SCENE_KEY);this.scene.start("quest",{save:this.save});}catch(err){console.warn?.("[quest] Memory Walk Cathedral handoff failed",err);}}
 }
