@@ -14,6 +14,7 @@ export { EV } from "./events";
 export type { HudState, ModalPayload } from "./events";
 
 const ACT4 = "starry_ascent";
+const ACT5 = "cathedral";
 const SEAL = "seal";
 
 /**
@@ -35,6 +36,18 @@ export class QuestScene extends BaseQuestScene {
     if (String(this.save?.current_zone) === MEMORY_WALK_SAVE_ID) {
       this.scene.start(MEMORY_WALK_SCENE_KEY, { save: this.save });
       return;
+    }
+
+    // Reaching the Cathedral from the Memory Walk marks the interlude complete.
+    // Existing pre-fix Cathedral saves are intercepted in createQuestGame below,
+    // so this branch only runs after the Memory Walk itself starts Act V.
+    if (
+      this.save?.current_zone === ACT5 &&
+      this.save?.relics_collected?.includes?.(SEAL) &&
+      !this.save?.memory_walk_completed
+    ) {
+      this.save.memory_walk_completed = true;
+      this.emitSave();
     }
 
     super.create();
@@ -73,6 +86,7 @@ export class QuestScene extends BaseQuestScene {
 
       // This is a real persisted progression state between Act IV and Act V.
       this.save.current_zone = MEMORY_WALK_SAVE_ID as any;
+      this.save.memory_walk_completed = false;
       this.save.player_health = 5;
       this.emitSave();
       this.game.events.emit(EV.music, "home");
@@ -156,6 +170,17 @@ export function createQuestGame(parent: HTMLElement, save: QuestSave) {
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: [QuestScene, QuestHouseScene, MemoryWalkScene],
   });
+
+  // One-time migration for saves that were already pushed straight into Act V
+  // by the old transition bug. Once Memory Walk completes, the local completion
+  // marker prevents this recovery from ever running again.
+  const skippedMemoryWalk =
+    String(save?.current_zone) === ACT5 &&
+    save?.relics_collected?.includes?.(SEAL) &&
+    !save?.wedding_completed &&
+    !save?.memory_walk_completed;
+
+  if (skippedMemoryWalk) save.current_zone = MEMORY_WALK_SAVE_ID as any;
 
   const startKey = String(save?.current_zone) === MEMORY_WALK_SAVE_ID ? MEMORY_WALK_SCENE_KEY : "quest";
   game.scene.start(startKey, { save });
