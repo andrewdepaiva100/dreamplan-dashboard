@@ -16,6 +16,10 @@ export type { HudState, ModalPayload } from "./events";
 const ACT4 = "starry_ascent";
 const ACT5 = "cathedral";
 const SEAL = "seal";
+const LEGACY_SECOND_BOSS_WARNING = "The sky is not finished with you";
+const OMINOUS_SECOND_BOSS_TITLE = "Something has followed you from the dark";
+const OMINOUS_SECOND_BOSS_BODY =
+  "The blossoms have barely settled, but the stars are already dying. Something ancient is moving where the shadow stood. It knows you’re here.";
 
 /**
  * The full quest implementation lives in sceneBase.ts unchanged. This class
@@ -25,6 +29,22 @@ const SEAL = "seal";
 export class QuestScene extends BaseQuestScene {
   private act4DirectExitQueued = false;
   private act4DirectExitPending = false;
+
+  /**
+   * Route the second-boss warning through the active scene itself. This makes
+   * the ominous copy authoritative before React receives the modal event,
+   * instead of relying on a DOM observer to rewrite visible text afterward.
+   */
+  private openModal(payload: any) {
+    if (payload?.type === "info" && payload?.title === LEGACY_SECOND_BOSS_WARNING) {
+      return super.openModal({
+        ...payload,
+        title: OMINOUS_SECOND_BOSS_TITLE,
+        body: OMINOUS_SECOND_BOSS_BODY,
+      });
+    }
+    return super.openModal(payload);
+  }
 
   private act4SealComplete() {
     return this.save?.current_zone === ACT4 && this.save?.relics_collected?.includes?.(SEAL);
