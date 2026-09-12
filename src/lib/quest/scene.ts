@@ -3,6 +3,12 @@ import * as Phaser from "phaser";
 import { QuestScene as BaseQuestScene } from "./sceneBase";
 import { QuestHouseScene } from "./house";
 import type { QuestSave } from "./save";
+import {
+  MEMORY_WALK_SAVE_ID,
+  MEMORY_WALK_SCENE_KEY,
+  MemoryWalkScene,
+} from "./memoryWalk";
+import { EV } from "./events";
 
 export { EV } from "./events";
 export type { HudState, ModalPayload } from "./events";
@@ -12,8 +18,8 @@ const SEAL = "seal";
 
 /**
  * The full quest implementation lives in sceneBase.ts unchanged. This class
- * owns the Act IV -> Memory Walk handoff directly so Portal 5 cannot be created
- * by the base scene's legacy gateway safety net.
+ * owns the Act IV -> Memory Walk -> Act V handoff directly so Portal 5 cannot
+ * be created by the legacy gateway safety net.
  */
 export class QuestScene extends BaseQuestScene {
   private act4DirectExitQueued = false;
@@ -24,10 +30,17 @@ export class QuestScene extends BaseQuestScene {
   }
 
   override create() {
+    // A save made during the interlude must resume in the interlude, never let
+    // the base realm builder try to interpret memory_walk as a normal realm.
+    if (String(this.save?.current_zone) === MEMORY_WALK_SAVE_ID) {
+      this.scene.start(MEMORY_WALK_SCENE_KEY, { save: this.save });
+      return;
+    }
+
     super.create();
 
-    // Completed Act IV saves used to rebuild Portal 5 on load. Never leave a
-    // completed save sitting in the old portal state: enter the Memory Walk.
+    // Completed Act IV saves used to rebuild Portal 5 on load. Instead, make
+    // the saved progression state explicitly become the Memory Walk.
     if (this.act4SealComplete()) {
       this.objective = "The stars remember — the Memory Walk begins.";
       this.queueAct4MemoryWalk(700);
@@ -44,8 +57,47 @@ export class QuestScene extends BaseQuestScene {
     const go = () => {
       this.act4DirectExitQueued = false;
       if (!this.act4SealComplete() || this.__memoryWalkLaunching) return;
+
+      this.__memoryWalkLaunching = true;
       this.traveling = true;
-      this.advanceZone();
+      this.frozen = true;
+      try { this.player?.setVelocity?.(0, 0); } catch {}
+      try { this.physics?.pause?.(); } catch {}
+      try { this.bossTimer?.remove?.(); } catch {}
+      try { this.bossShotTimer?.remove?.(); } catch {}
+      try {
+        for (const bolt of this.bolts?.getChildren?.() ?? []) {
+          if (bolt?.active) bolt.destroy?.();
+        }
+      } catch {}
+
+      // This is a real persisted progression state between Act IV and Act V.
+      this.save.current_zone = MEMORY_WALK_SAVE_ID as any;
+      this.save.player_health = 5;
+      this.emitSave();
+      this.game.events.emit(EV.music, "home");
+      this.game.events.emit(EV.hud, null);
+
+      const enter = () => {
+        try {
+          this.scene.start(MEMORY_WALK_SCENE_KEY, { save: this.save });
+        } catch (err) {
+          console.warn?.("[quest] Memory Walk start failed; restoring Act IV safely", err);
+          this.save.current_zone = ACT4;
+          this.__memoryWalkLaunching = false;
+          this.traveling = false;
+          this.frozen = false;
+          try { this.physics?.resume?.(); } catch {}
+          this.emitSave();
+        }
+      };
+
+      try {
+        this.cameras.main.fadeOut(760, 5, 8, 23);
+        this.time.delayedCall(800, enter);
+      } catch {
+        enter();
+      }
     };
 
     try {
@@ -102,8 +154,10 @@ export function createQuestGame(parent: HTMLElement, save: QuestSave) {
     fps: { target: 60, forceSetTimeOut: false },
     physics: { default: "arcade", arcade: { gravity: { x: 0, y: 0 }, debug: false } },
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [QuestScene, QuestHouseScene],
+    scene: [QuestScene, QuestHouseScene, MemoryWalkScene],
   });
-  game.scene.start("quest", { save });
+
+  const startKey = String(save?.current_zone) === MEMORY_WALK_SAVE_ID ? MEMORY_WALK_SCENE_KEY : "quest";
+  game.scene.start(startKey, { save });
   return game;
 }
