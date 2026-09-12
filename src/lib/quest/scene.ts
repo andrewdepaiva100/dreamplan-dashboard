@@ -17,6 +17,8 @@ export type { HudState, ModalPayload } from "./events";
 const ACT4 = "starry_ascent";
 const ACT5 = "cathedral";
 const SEAL = "seal";
+const WEARINESS_NAME = "The Weight of Weariness";
+const WEARINESS_SCALE = 1.2;
 const LEGACY_SECOND_BOSS_WARNING = "The sky is not finished with you";
 const OMINOUS_SECOND_BOSS_TITLE = "Something has followed you from the dark";
 const OMINOUS_SECOND_BOSS_BODY =
@@ -92,7 +94,6 @@ export class QuestScene extends BaseQuestScene {
       master.gain.exponentialRampToValueAtTime(0.0001, now + 1.42);
       master.connect(compressor).connect(ctx.destination);
 
-      // Sub-bass body: a fast pitch collapse makes the killing blow feel massive.
       const sub = ctx.createOscillator();
       const subGain = ctx.createGain();
       sub.type = "sine";
@@ -104,7 +105,6 @@ export class QuestScene extends BaseQuestScene {
       sub.start(now);
       sub.stop(now + 0.94);
 
-      // Low distorted hammer hit. The waveshaper adds weight without using an asset.
       const hammer = ctx.createOscillator();
       const hammerGain = ctx.createGain();
       const distortion = ctx.createWaveShaper();
@@ -124,7 +124,6 @@ export class QuestScene extends BaseQuestScene {
       hammer.start(now);
       hammer.stop(now + 0.44);
 
-      // Dark metallic clang: deliberately low and dissonant, not crystalline or victorious.
       [146.83, 207.65, 293.66].forEach((frequency, index) => {
         const metal = ctx.createOscillator();
         const metalGain = ctx.createGain();
@@ -138,7 +137,6 @@ export class QuestScene extends BaseQuestScene {
         metal.stop(now + 0.86);
       });
 
-      // Ominous low tail leaves a brief sense of finality after the impact.
       const tail = ctx.createOscillator();
       const tailGain = ctx.createGain();
       tail.type = "sine";
@@ -151,8 +149,18 @@ export class QuestScene extends BaseQuestScene {
       tail.start(now + 0.18);
       tail.stop(now + 1.38);
     } catch (err) {
-      // Audio must never be able to interrupt boss defeat/progression.
       console.warn?.("[quest] boss finisher audio unavailable", err);
+    }
+  }
+
+  /** The first Act IV boss must stay at its authored size through every hit reaction. */
+  private lockWearinessScale() {
+    if (
+      this.save?.current_zone === ACT4 &&
+      this.boss?.active &&
+      String(this.bossName ?? "") === WEARINESS_NAME
+    ) {
+      this.boss.setScale(WEARINESS_SCALE);
     }
   }
 
@@ -161,9 +169,17 @@ export class QuestScene extends BaseQuestScene {
     const beforeHp = Number(this.bossHp ?? 0);
     const wasFight = Boolean(this.boss?.active && this.bossPhase === 1);
     const result = super.damageBoss(amount);
+    this.lockWearinessScale();
     if (wasFight && beforeHp > 0 && Number(this.bossHp ?? 0) <= 0) {
       this.playBossFinisherSound();
     }
+    return result;
+  }
+
+  /** Keep presentation decorators from accumulating scale on Weariness between hits. */
+  override update(time: number, delta: number) {
+    const result = super.update(time, delta);
+    this.lockWearinessScale();
     return result;
   }
 
