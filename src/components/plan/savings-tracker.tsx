@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { currency } from "@/lib/plan-data";
+import { supabase } from "@/integrations/supabase/client";
 
 type Owner = "andrew" | "maria" | "family" | "other";
 type Contribution = { id: string; date: string; owner: Owner; amount: number; note?: string };
