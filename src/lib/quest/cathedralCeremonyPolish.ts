@@ -1,3 +1,4 @@
+export {};
 // Presentation-only polish for the Cathedral ceremony. No quest/save/progression changes.
 // The selectors below target the actual ceremony DOM directly so the vows render
 // beautifully even if MutationObserver timing differs between browsers.
@@ -324,7 +325,7 @@ function markCeremony() {
   if (card) {
     card.classList.add(CARD_CLASS);
     const speaker = card.querySelector("h3")?.textContent?.trim();
-    if (speaker) card.dataset.vowSpeaker = speaker;
+    if (speaker) card.dataset["vowSpeaker"] = speaker;
   }
   startWeddingMusic();
 }
