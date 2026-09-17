@@ -13,6 +13,7 @@ const ANDREW_FAMILY = 6038;
 const STORAGE_KEY = "dreamplan-savings-contributions-v1";
 const OVERRIDES_KEY = "dreamplan-savings-week-overrides-v1";
 const START_BALANCES_KEY = "dreamplan-savings-start-balances-v1";
+const SHARED_ID = "shared";
 const OWNER_LABEL: Record<Owner, string> = { andrew: "Andrew", maria: "Maria", family: "Maria's Family", other: "Other" };
 
 // Source entries transcribed from the supplied trackers. The original wedding tracker ends Jul 11;
