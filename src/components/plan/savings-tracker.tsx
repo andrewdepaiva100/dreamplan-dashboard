@@ -234,6 +234,6 @@ export function SavingsTracker() {
         </tbody>
       </table>
     </div>
-    <p className="text-[11px] text-ink-soft">Tap any weekly amount to edit it. Enter 0 to clear that amount. Historical entries through Jul 11 come from the original tracker; later entries are transcribed from the honeymoon and apartment sheets you provided. Direct edits and new entries are saved in this browser.</p>
+    <p className="text-[11px] text-ink-soft">Tap any weekly amount to edit it. Enter 0 to clear that amount. Historical entries through Jul 11 come from the original tracker; later entries are transcribed from the honeymoon and apartment sheets you provided. Direct edits and new entries sync instantly across every phone and computer signed in.</p>
   </div>;
 }
