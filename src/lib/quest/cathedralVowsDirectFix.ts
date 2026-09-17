@@ -1,3 +1,4 @@
+export {};
 // Direct DOM hardening for the Cathedral ceremony popup.
 // Presentation only: no quest, save, progression, or ceremony state changes.
 

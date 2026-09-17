@@ -138,7 +138,7 @@ function GuestList() {
   }, [bucket]);
 
   useEffect(() => {
-    setSection(sectionOptions[0]);
+    setSection(sectionOptions[0] ?? "");
   }, [sectionOptions]);
 
   const allGuests = blocks.flatMap((block) => block.sections.flatMap((s) => s.guests));

@@ -99,7 +99,7 @@ if (typeof window !== "undefined") {
       safeInstall("act2GuideCleanup", act2GuideCleanup ? () => act2GuideCleanup.installAct2GuideCleanup(QuestScene) : null);
       safeInstall("act2SeasonIdentity", act2SeasonIdentity ? () => act2SeasonIdentity.installAct2SeasonIdentity(QuestScene) : null);
       safeInstall("act2BramForgemaster", act2BramForgemaster ? () => act2BramForgemaster.installAct2BramForgemaster(QuestScene) : null);
-      safeInstall("act2BramWeaponOwnership", act2BramWeaponOwnership ? () => act2BramWeaponOwnership.installBramWeaponOwnership(QuestScene) : null);
+      safeInstall("act2BramWeaponOwnership", act2BramWeaponOwnership ? () => act2BramWeaponOwnership.installAct2BramWeaponOwnership(QuestScene) : null);
       safeInstall("act2SeasonChallenges", act2SeasonChallenges ? () => act2SeasonChallenges.installAct2SeasonChallenges(QuestScene) : null);
       safeInstall("act2BossRemaster", act2BossRemaster ? () => act2BossRemaster.installAct2BossRemaster(QuestScene) : null);
       safeInstall("act2Wildlife", act2Wildlife ? () => act2Wildlife.installAct2Wildlife(QuestScene) : null);

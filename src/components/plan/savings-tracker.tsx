@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { currency } from "@/lib/plan-data";
+import { supabase } from "@/integrations/supabase/client";
 
 type Owner = "andrew" | "maria" | "family" | "other";
 type Contribution = { id: string; date: string; owner: Owner; amount: number; note?: string };
@@ -12,6 +13,7 @@ const ANDREW_FAMILY = 6038;
 const STORAGE_KEY = "dreamplan-savings-contributions-v1";
 const OVERRIDES_KEY = "dreamplan-savings-week-overrides-v1";
 const START_BALANCES_KEY = "dreamplan-savings-start-balances-v1";
+const SHARED_ID = "shared";
 const OWNER_LABEL: Record<Owner, string> = { andrew: "Andrew", maria: "Maria", family: "Maria's Family", other: "Other" };
 
 // Source entries transcribed from the supplied trackers. The original wedding tracker ends Jul 11;
@@ -87,10 +89,71 @@ function EditableAmount({value,onSave,label}:{value:number;onSave:(value:number)
   return <button type="button" onClick={begin} className="min-w-12 rounded-md px-1.5 py-1 text-left tabular-nums hover:bg-gold/10 focus:outline-none focus:ring-2 focus:ring-navy/20" aria-label={`Edit ${label}`}>{value?currency(value):"—"}</button>;
 }
 
+type SharedSavings = { extras: Contribution[]; overrides: Overrides; startBalances: StartBalances };
+
 export function SavingsTracker() {
   const [extras,setExtras]=useState<Contribution[]>(loadExtras);
   const [overrides,setOverrides]=useState<Overrides>(loadOverrides);
   const [startBalances,setStartBalances]=useState<StartBalances>(loadStartBalances);
+  const lastSynced=useRef<string>("");
+
+  const applyShared=useCallback((s:Partial<SharedSavings>|null|undefined)=>{
+    if(!s) return;
+    const next:SharedSavings={
+      extras: Array.isArray(s.extras)?s.extras:[],
+      overrides: s.overrides && typeof s.overrides==="object" ? s.overrides : {},
+      startBalances: {
+        andrew: Number.isFinite(Number(s.startBalances?.andrew))?Number(s.startBalances!.andrew):ANDREW_START,
+        andrewFamily: Number.isFinite(Number(s.startBalances?.andrewFamily))?Number(s.startBalances!.andrewFamily):ANDREW_FAMILY,
+      },
+    };
+    lastSynced.current=JSON.stringify(next);
+    setExtras(next.extras); setOverrides(next.overrides); setStartBalances(next.startBalances);
+    try {
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(next.extras));
+      localStorage.setItem(OVERRIDES_KEY,JSON.stringify(next.overrides));
+      localStorage.setItem(START_BALANCES_KEY,JSON.stringify(next.startBalances));
+    } catch { /* ignore */ }
+  },[]);
+
+  // Load the shared record, then stay live with edits from the other devices.
+  useEffect(()=>{
+    let cancelled=false;
+    (async()=>{
+      const { data } = await supabase.from("savings_state").select("state").eq("id",SHARED_ID).maybeSingle();
+      if(cancelled) return;
+      if(data?.state && Object.keys(data.state as object).length) applyShared(data.state as Partial<SharedSavings>);
+      else {
+        const seed:SharedSavings={extras:loadExtras(),overrides:loadOverrides(),startBalances:loadStartBalances()};
+        lastSynced.current=JSON.stringify(seed);
+        await supabase.from("savings_state").upsert({id:SHARED_ID,state:seed,updated_at:new Date().toISOString()});
+      }
+    })();
+    const channel=supabase.channel("savings_state_sync").on("postgres_changes",
+      {event:"*",schema:"public",table:"savings_state",filter:`id=eq.${SHARED_ID}`},
+      (payload)=>{
+        const incoming=(payload.new as {state?:Partial<SharedSavings>}|null)?.state;
+        if(!incoming) return;
+        if(JSON.stringify(incoming)===lastSynced.current) return; // our own echo
+        applyShared(incoming);
+      }).subscribe();
+    return ()=>{cancelled=true; supabase.removeChannel(channel);};
+  },[applyShared]);
+
+  const persist=useCallback((next:Partial<SharedSavings>)=>{
+    const state:SharedSavings={
+      extras: next.extras ?? extras,
+      overrides: next.overrides ?? overrides,
+      startBalances: next.startBalances ?? startBalances,
+    };
+    lastSynced.current=JSON.stringify(state);
+    try {
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(state.extras));
+      localStorage.setItem(OVERRIDES_KEY,JSON.stringify(state.overrides));
+      localStorage.setItem(START_BALANCES_KEY,JSON.stringify(state.startBalances));
+    } catch { /* ignore */ }
+    void supabase.from("savings_state").upsert({id:SHARED_ID,state,updated_at:new Date().toISOString()});
+  },[extras,overrides,startBalances]);
   const [date,setDate]=useState(todayIso());
   const [amount,setAmount]=useState("");
   const [owner,setOwner]=useState<Owner>("andrew");
@@ -127,20 +190,22 @@ export function SavingsTracker() {
     e.preventDefault(); const n=Number(amount);
     if(!date||!Number.isFinite(n)||n<=0){setMessage("Choose a date and enter an amount greater than $0.");return;}
     const item:Contribution={id:`manual-${Date.now()}`,date,owner,amount:Math.round(n*100)/100};
-    const next=[...extras,item]; setExtras(next); localStorage.setItem(STORAGE_KEY,JSON.stringify(next));
+    const next=[...extras,item]; setExtras(next);
     const key=overrideKey(weekEndFor(date),owner);
+    let nextOverrides=overrides;
     if(Object.prototype.hasOwnProperty.call(overrides,key)){
-      const nextOverrides={...overrides,[key]:Math.round((overrides[key]!+item.amount)*100)/100};
-      setOverrides(nextOverrides); localStorage.setItem(OVERRIDES_KEY,JSON.stringify(nextOverrides));
+      nextOverrides={...overrides,[key]:Math.round((overrides[key]!+item.amount)*100)/100};
+      setOverrides(nextOverrides);
     }
+    persist({extras:next,overrides:nextOverrides});
     setAmount(""); setMessage(`${OWNER_LABEL[owner]} — ${currency(item.amount)} added to the week containing ${fmt(date)}.`);
   }
   function saveWeekAmount(end:string,who:Owner,value:number){
-    const next={...overrides,[overrideKey(end,who)]:value}; setOverrides(next); localStorage.setItem(OVERRIDES_KEY,JSON.stringify(next));
+    const next={...overrides,[overrideKey(end,who)]:value}; setOverrides(next); persist({overrides:next});
     setMessage(`${OWNER_LABEL[who]} — ${currency(value)} saved for the week ending ${fmt(end)}.`);
   }
   function saveStart(which:keyof StartBalances,value:number){
-    const next={...startBalances,[which]:value}; setStartBalances(next); localStorage.setItem(START_BALANCES_KEY,JSON.stringify(next));
+    const next={...startBalances,[which]:value}; setStartBalances(next); persist({startBalances:next});
     setMessage(`${which==="andrew"?"Andrew":"Andrew's Family"} starting balance updated to ${currency(value)}.`);
   }
 
@@ -169,6 +234,6 @@ export function SavingsTracker() {
         </tbody>
       </table>
     </div>
-    <p className="text-[11px] text-ink-soft">Tap any weekly amount to edit it. Enter 0 to clear that amount. Historical entries through Jul 11 come from the original tracker; later entries are transcribed from the honeymoon and apartment sheets you provided. Direct edits and new entries are saved in this browser.</p>
+    <p className="text-[11px] text-ink-soft">Tap any weekly amount to edit it. Enter 0 to clear that amount. Historical entries through Jul 11 come from the original tracker; later entries are transcribed from the honeymoon and apartment sheets you provided. Direct edits and new entries sync instantly across every phone and computer signed in.</p>
   </div>;
 }
