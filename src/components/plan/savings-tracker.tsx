@@ -190,20 +190,22 @@ export function SavingsTracker() {
     e.preventDefault(); const n=Number(amount);
     if(!date||!Number.isFinite(n)||n<=0){setMessage("Choose a date and enter an amount greater than $0.");return;}
     const item:Contribution={id:`manual-${Date.now()}`,date,owner,amount:Math.round(n*100)/100};
-    const next=[...extras,item]; setExtras(next); localStorage.setItem(STORAGE_KEY,JSON.stringify(next));
+    const next=[...extras,item]; setExtras(next);
     const key=overrideKey(weekEndFor(date),owner);
+    let nextOverrides=overrides;
     if(Object.prototype.hasOwnProperty.call(overrides,key)){
-      const nextOverrides={...overrides,[key]:Math.round((overrides[key]!+item.amount)*100)/100};
-      setOverrides(nextOverrides); localStorage.setItem(OVERRIDES_KEY,JSON.stringify(nextOverrides));
+      nextOverrides={...overrides,[key]:Math.round((overrides[key]!+item.amount)*100)/100};
+      setOverrides(nextOverrides);
     }
+    persist({extras:next,overrides:nextOverrides});
     setAmount(""); setMessage(`${OWNER_LABEL[owner]} — ${currency(item.amount)} added to the week containing ${fmt(date)}.`);
   }
   function saveWeekAmount(end:string,who:Owner,value:number){
-    const next={...overrides,[overrideKey(end,who)]:value}; setOverrides(next); localStorage.setItem(OVERRIDES_KEY,JSON.stringify(next));
+    const next={...overrides,[overrideKey(end,who)]:value}; setOverrides(next); persist({overrides:next});
     setMessage(`${OWNER_LABEL[who]} — ${currency(value)} saved for the week ending ${fmt(end)}.`);
   }
   function saveStart(which:keyof StartBalances,value:number){
-    const next={...startBalances,[which]:value}; setStartBalances(next); localStorage.setItem(START_BALANCES_KEY,JSON.stringify(next));
+    const next={...startBalances,[which]:value}; setStartBalances(next); persist({startBalances:next});
     setMessage(`${which==="andrew"?"Andrew":"Andrew's Family"} starting balance updated to ${currency(value)}.`);
   }
 
