@@ -265,6 +265,24 @@ export type Database = {
         }
         Relationships: []
       }
+      savings_state: {
+        Row: {
+          id: string
+          state: Json
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          state?: Json
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          state?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
