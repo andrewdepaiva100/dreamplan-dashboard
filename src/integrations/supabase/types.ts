@@ -112,6 +112,24 @@ export type Database = {
         }
         Relationships: []
       }
+      guests_state: {
+        Row: {
+          id: string
+          state: Json
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          state?: Json
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          state?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       health_snapshots: {
         Row: {
           connections_max: number
