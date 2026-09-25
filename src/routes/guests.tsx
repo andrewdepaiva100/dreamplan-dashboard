@@ -263,16 +263,23 @@ function GuestList() {
 
   const save = () => {
     try {
-      const cleaned = blocks.map((block) => ({
+      const cleaned = normalizeBlocks(blocks.map((block) => ({
         ...block,
         sections: block.sections.map((s) => ({
           ...s,
           guests: s.guests.map((g) => ({ ...g, name: cleanName(g.name) })),
         })),
-      }));
+      })));
       setBlocks(cleaned);
+      lastSynced.current = JSON.stringify(cleaned);
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ blocks: cleaned }));
       localStorage.removeItem(OLD_STORAGE_KEY);
+      void supabase
+        .from("guests_state")
+        .upsert({ id: SHARED_ID, state: { blocks: cleaned }, updated_at: new Date().toISOString() })
+        .then(({ error }) => {
+          if (error) console.warn("Guest list cloud save failed", error);
+        });
       setSaved(true);
       window.setTimeout(() => setSaved(false), 1800);
     } catch {
