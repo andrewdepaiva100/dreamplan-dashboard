@@ -1,7 +1,8 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Plus, Save, Trash2, X } from "lucide-react";
 import { isUnlocked } from "@/lib/gate.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 type Guest = { id: string; number: number; name: string };
 type GuestSection = { title: string; guests: Guest[] };
@@ -82,6 +83,7 @@ const initialBlocks: PersonBlock[] = [
 
 const STORAGE_KEY = "marriage-invitation-guests-v3";
 const OLD_STORAGE_KEY = "marriage-invitation-guests-v2";
+const SHARED_ID = "shared";
 
 export const Route = createFileRoute("/guests")({
   loader: async () => {
