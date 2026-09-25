@@ -85,7 +85,13 @@ function EditableAmount({value,onSave,label}:{value:number;onSave:(value:number)
     if(Number.isFinite(n)&&n>=0) onSave(Math.round(n*100)/100);
     setEditing(false);
   }
-  if(editing) return <input autoFocus type="number" min="0" step="0.01" inputMode="decimal" value={draft} onChange={e=>setDraft(e.target.value)} onBlur={save} onKeyDown={e=>{if(e.key==="Enter")e.currentTarget.blur();if(e.key==="Escape")setEditing(false);}} aria-label={label} className="w-24 rounded-md border border-navy/30 bg-white px-2 py-1 text-sm tabular-nums text-ink outline-none focus:ring-2 focus:ring-navy/20"/>;
+  if(editing) return (
+    <span className="inline-flex items-center gap-1">
+      <input autoFocus type="number" min="0" step="0.01" inputMode="decimal" value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();save();}if(e.key==="Escape")setEditing(false);}} aria-label={label} className="w-24 rounded-md border border-navy/30 bg-white px-2 py-1 text-sm tabular-nums text-ink outline-none focus:ring-2 focus:ring-navy/20"/>
+      <button type="button" onClick={save} aria-label={`Save ${label}`} className="min-h-8 rounded-md bg-navy px-2.5 text-xs font-bold text-white shadow-sm active:scale-95">Save</button>
+      <button type="button" onClick={()=>setEditing(false)} aria-label={`Cancel editing ${label}`} className="min-h-8 rounded-md border border-mist bg-white px-2 text-xs font-semibold text-ink-soft active:scale-95">✕</button>
+    </span>
+  );
   return <button type="button" onClick={begin} className="min-w-12 rounded-md px-1.5 py-1 text-left tabular-nums hover:bg-gold/10 focus:outline-none focus:ring-2 focus:ring-navy/20" aria-label={`Edit ${label}`}>{value?currency(value):"—"}</button>;
 }
 
