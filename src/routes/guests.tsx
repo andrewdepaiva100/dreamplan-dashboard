@@ -121,15 +121,75 @@ function GuestList() {
   const [section, setSection] = useState("Family");
   const [guestName, setGuestName] = useState("");
 
+  const lastSynced = useRef<string>("");
+
+  const applyBlocks = (raw: PersonBlock[]) => {
+    const next = normalizeBlocks(raw);
+    lastSynced.current = JSON.stringify(next);
+    setBlocks(next);
+  };
+
+  // Load: shared cloud record wins, local cache is the offline fallback.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(OLD_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { blocks?: PersonBlock[] };
-      if (parsed.blocks?.length) setBlocks(normalizeBlocks(parsed.blocks));
-    } catch {
-      // Use the supplied list if local storage is unavailable or corrupt.
-    }
+    let cancelled = false;
+    const readLocal = (): PersonBlock[] | null => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(OLD_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as { blocks?: PersonBlock[] };
+        return parsed.blocks?.length ? parsed.blocks : null;
+      } catch {
+        return null;
+      }
+    };
+
+    (async () => {
+      const { data, error } = await supabase
+        .from("guests_state")
+        .select("state")
+        .eq("id", SHARED_ID)
+        .maybeSingle();
+      if (cancelled) return;
+      const remote = (data?.state as { blocks?: PersonBlock[] } | null)?.blocks;
+      if (!error && remote?.length) {
+        applyBlocks(remote);
+      } else if (!error && data) {
+        const local = readLocal();
+        if (local) applyBlocks(local);
+      } else if (!error) {
+        // First device seeds the shared record.
+        const seed = readLocal() ?? cloneBlocks();
+        lastSynced.current = JSON.stringify(normalizeBlocks(seed));
+        await supabase.from("guests_state").upsert({ id: SHARED_ID, state: { blocks: seed } });
+        if (!cancelled) applyBlocks(seed);
+      } else {
+        const local = readLocal();
+        if (local) applyBlocks(local);
+      }
+    })();
+
+    // Live updates from other devices.
+    const channel = supabase
+      .channel("guests_state_sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "guests_state", filter: `id=eq.${SHARED_ID}` },
+        (payload) => {
+          const incoming = (payload.new as { state?: { blocks?: PersonBlock[] } } | null)?.state?.blocks;
+          if (!incoming?.length) return;
+          const serialized = JSON.stringify(normalizeBlocks(incoming));
+          if (serialized === lastSynced.current) return;
+          lastSynced.current = serialized;
+          setBlocks(JSON.parse(serialized) as PersonBlock[]);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const sectionOptions = useMemo(() => {
