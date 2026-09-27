@@ -158,7 +158,7 @@ export function SavingsTracker() {
       localStorage.setItem(OVERRIDES_KEY,JSON.stringify(state.overrides));
       localStorage.setItem(START_BALANCES_KEY,JSON.stringify(state.startBalances));
     } catch { /* ignore */ }
-    void supabase.from("savings_state").upsert({id:SHARED_ID,state,updated_at:new Date().toISOString()});
+    supabase.from("savings_state").upsert({id:SHARED_ID,state,updated_at:new Date().toISOString()}).then(({error})=>{ if(error) console.warn("Savings cloud save failed", error); });
   },[extras,overrides,startBalances]);
   const [date,setDate]=useState(todayIso());
   const [amount,setAmount]=useState("");
