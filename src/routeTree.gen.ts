@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GameRouteImport } from './routes/game'
 import { Route as GuestsRouteImport } from './routes/guests'
-import { Route as SavingsTestRouteImport } from './routes/savings-test'
 import { Route as UnlockRouteImport } from './routes/unlock'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AssistantIndexRouteImport } from './routes/assistant.index'
@@ -32,11 +31,6 @@ const GameRoute = GameRouteImport.update({
 const GuestsRoute = GuestsRouteImport.update({
   id: '/guests',
   path: '/guests',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SavingsTestRoute = SavingsTestRouteImport.update({
-  id: '/savings-test',
-  path: '/savings-test',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UnlockRoute = UnlockRouteImport.update({
@@ -69,7 +63,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/game': typeof GameRoute
   '/guests': typeof GuestsRoute
-  '/savings-test': typeof SavingsTestRoute
   '/unlock': typeof UnlockRoute
   '/api/chat': typeof ApiChatRoute
   '/assistant/$threadId': typeof AssistantThreadIdRoute
@@ -80,7 +73,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/game': typeof GameRoute
   '/guests': typeof GuestsRoute
-  '/savings-test': typeof SavingsTestRoute
   '/unlock': typeof UnlockRoute
   '/api/chat': typeof ApiChatRoute
   '/assistant/$threadId': typeof AssistantThreadIdRoute
@@ -92,7 +84,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/game': typeof GameRoute
   '/guests': typeof GuestsRoute
-  '/savings-test': typeof SavingsTestRoute
   '/unlock': typeof UnlockRoute
   '/api/chat': typeof ApiChatRoute
   '/assistant/$threadId': typeof AssistantThreadIdRoute
@@ -105,7 +96,6 @@ export interface FileRouteTypes {
     | '/'
     | '/game'
     | '/guests'
-    | '/savings-test'
     | '/unlock'
     | '/api/chat'
     | '/assistant/$threadId'
@@ -116,7 +106,6 @@ export interface FileRouteTypes {
     | '/'
     | '/game'
     | '/guests'
-    | '/savings-test'
     | '/unlock'
     | '/api/chat'
     | '/assistant/$threadId'
@@ -127,7 +116,6 @@ export interface FileRouteTypes {
     | '/'
     | '/game'
     | '/guests'
-    | '/savings-test'
     | '/unlock'
     | '/api/chat'
     | '/assistant/$threadId'
@@ -139,7 +127,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GameRoute: typeof GameRoute
   GuestsRoute: typeof GuestsRoute
-  SavingsTestRoute: typeof SavingsTestRoute
   UnlockRoute: typeof UnlockRoute
   ApiChatRoute: typeof ApiChatRoute
   AssistantThreadIdRoute: typeof AssistantThreadIdRoute
@@ -168,13 +155,6 @@ declare module '@tanstack/react-router' {
       path: '/guests'
       fullPath: '/guests'
       preLoaderRoute: typeof GuestsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/savings-test': {
-      id: '/savings-test'
-      path: '/savings-test'
-      fullPath: '/savings-test'
-      preLoaderRoute: typeof SavingsTestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/unlock': {
@@ -219,7 +199,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GameRoute: GameRoute,
   GuestsRoute: GuestsRoute,
-  SavingsTestRoute: SavingsTestRoute,
   UnlockRoute: UnlockRoute,
   ApiChatRoute: ApiChatRoute,
   AssistantThreadIdRoute: AssistantThreadIdRoute,
