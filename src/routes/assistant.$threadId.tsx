@@ -1,7 +1,6 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { PanelLeft } from "lucide-react";
-import { isUnlocked } from "@/lib/gate.functions";
 import { AssistantChat, AssistantHeader, ThreadList } from "@/components/plan/assistant";
 import { usePlan } from "@/lib/use-plan";
 
@@ -23,11 +22,6 @@ export const Route = createFileRoute("/assistant/$threadId")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  loader: async () => {
-    const { unlocked } = await isUnlocked();
-    if (!unlocked) throw redirect({ to: "/unlock" });
-    return null;
-  },
   component: AssistantThread,
 });
 
