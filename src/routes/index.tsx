@@ -1,4 +1,4 @@
-import { Link, createFileRoute, redirect, useRouter } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -19,7 +19,6 @@ import {
   Sofa,
   Wallet,
 } from "lucide-react";
-import { isUnlocked, lockSite } from "@/lib/gate.functions";
 
 import {
   Callout,
@@ -72,11 +71,6 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  loader: async () => {
-    const { unlocked } = await isUnlocked();
-    if (!unlocked) throw redirect({ to: "/unlock" });
-    return null;
-  },
   component: Index,
 });
 
@@ -180,8 +174,6 @@ const MONTHLY_ROWS: {
 
 function Index() {
   const { plan, hydrated, savedAt, online, setField, setFurnishing, setPaymentField, togglePayment, addExpense, removeExpense, addComment, openDevotional, setDevotionalNote, selectDevotionalDay, reset, logChange } = usePlan();
-  const router = useRouter();
-  const lock = useServerFn(lockSite);
   const getMetrics = useServerFn(getDbMetrics);
   const snapMetrics = useServerFn(takeHealthSnapshot);
   const [, tick] = useState(0);
@@ -331,16 +323,6 @@ function Index() {
                 ? `Live sync · updated ${relativeTime(savedAt)} — everyone sees this`
                 : "Live sync on — edits appear on every device instantly"}
         </div>
-        <button
-          type="button"
-          onClick={async () => {
-            await lock({});
-            await router.navigate({ to: "/unlock" });
-          }}
-          className="absolute right-4 top-4 rounded-lg border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/20"
-        >
-          Lock
-        </button>
       </header>
 
       {/* SECTION QUICK NAV (overview only) */}

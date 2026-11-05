@@ -1,7 +1,6 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Plus, Save, Trash2, X } from "lucide-react";
-import { isUnlocked } from "@/lib/gate.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 type Guest = { id: string; number: number; name: string };
@@ -86,11 +85,16 @@ const OLD_STORAGE_KEY = "marriage-invitation-guests-v2";
 const SHARED_ID = "shared";
 
 export const Route = createFileRoute("/guests")({
-  loader: async () => {
-    const { unlocked } = await isUnlocked();
-    if (!unlocked) throw redirect({ to: "/unlock" });
-    return null;
-  },
+  head: () => ({
+    meta: [
+      { title: "Wedding Guest List — Andrew & Maria" },
+      { name: "description", content: "Andrew & Maria's shared wedding invitation and guest list." },
+      { property: "og:title", content: "Wedding Guest List — Andrew & Maria" },
+      { property: "og:description", content: "Andrew & Maria's shared wedding invitation and guest list." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: GuestList,
 });
 

@@ -1,5 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { isUnlocked } from "@/lib/gate.functions";
+import { createFileRoute } from "@tanstack/react-router";
 import { AssistantHeader, ThreadList } from "@/components/plan/assistant";
 
 export const Route = createFileRoute("/assistant/")({
@@ -20,11 +19,6 @@ export const Route = createFileRoute("/assistant/")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  loader: async () => {
-    const { unlocked } = await isUnlocked();
-    if (!unlocked) throw redirect({ to: "/unlock" });
-    return null;
-  },
   component: AssistantIndex,
 });
 
