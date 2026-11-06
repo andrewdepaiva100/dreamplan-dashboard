@@ -23,6 +23,10 @@ Full 3D rebuild (low-poly, R3F) alongside existing 2D game. 2D stays playable un
 - [ ] Post-processing (bloom/vignette), audio, haptics
 - [ ] Migrate saves, make 3D the default mode, retire 2D
 
+## Current tasks
+- [ ] Remove shared-password gate from all pages
+- [ ] Add "Saving for: Miscellaneous" account ending 8285 with $600
+
 ## Cross-device sync (Sep 25, 2026)
 - [x] Guest list moved from device-only storage to shared cloud table with live updates
 - [x] Audit: budget/payments/expenses/devotionals/notes (plan_state), savings (savings_state), calendar (calendar_events), chat (chat_threads/messages), quest saves (maria_quest_saves) all already shared
